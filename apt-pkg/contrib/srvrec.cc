@@ -149,51 +149,7 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result)
 
 SrvRec PopFromSrvRecs(std::vector<SrvRec> &Recs)
 {
-   // FIXME: instead of the simplistic shuffle below use the algorithm
-   //        described in rfc2782 (with weights)
-   //        and figure out how the weights need to be adjusted if
-   //        a host refuses connections
-
-#if 0  // all code below is only needed for the weight adjusted selection 
-   // assign random number ranges
-   int prev_weight = 0;
-   int prev_priority = 0;
-   for(std::vector<SrvRec>::iterator I = Result.begin();
-      I != Result.end(); ++I)
-   {
-      if(prev_priority != I->priority)
-         prev_weight = 0;
-      I->random_number_range_start = prev_weight;
-      I->random_number_range_end = prev_weight + I->weight;
-      prev_weight = I->random_number_range_end;
-      prev_priority = I->priority;
-
-      if (_config->FindB("Debug::Acquire::SrvRecs", false) == true)
-         std::cerr << "SrvRecs: got " << I->target
-                   << " prio: " << I->priority
-                   << " weight: " << I->weight
-                   << std::endl;
-   }
-
-   // go over the code in reverse order and note the max random range
-   int max = 0;
-   prev_priority = 0;
-   for(std::vector<SrvRec>::iterator I = Result.end();
-      I != Result.begin(); --I)
-   {
-      if(prev_priority != I->priority)
-         max = I->random_number_range_end;
-      I->random_number_range_max = max;
-   }
-#endif
-
-   // shuffle in a very simplistic way for now (equal weights)
    std::vector<SrvRec>::iterator I = Recs.begin();
-   std::vector<SrvRec>::iterator const J = std::find_if(Recs.begin(), Recs.end(),
-	 [&I](SrvRec const &J) { return I->priority != J.priority; });
-
-   // clock seems random enough.
-   I += std::max(static_cast<clock_t>(0), clock()) % std::distance(I, J);
    SrvRec const selected = std::move(*I);
    Recs.erase(I);
 
