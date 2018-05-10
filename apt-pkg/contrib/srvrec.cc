@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <map>
+#include <random>
 #include <tuple>
 
 #include <apt-pkg/configuration.h>
@@ -84,6 +85,7 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result)
    int answer_len, compressed_name_len;
    int answer_count;
    std::map<SrvRecPriorityKey, std::vector<SrvRec> > result_by_prio;
+   std::mt19937 generator(clock());
 
    if (res_init() != 0)
       return _error->Errno("res_init", "Failed to init resolver");
@@ -150,12 +152,39 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result)
       result_by_prio[SrvRecPriorityKey(priority, weight == 0)].emplace_back(buf, priority, weight, port);
    }
 
-   // implement load balancing as specified in RFC-2782
-
    // add them by priority into result
-   for (auto rec_by_prio : result_by_prio)
+   for (auto &rec_by_prio : result_by_prio)
    {
-      Result.insert(Result.end(), rec_by_prio.second.begin(), rec_by_prio.second.end());
+      if (rec_by_prio.first.weight_zero) {
+         Result.insert(Result.end(), rec_by_prio.second.begin(), rec_by_prio.second.end());
+      }
+      else
+      {
+         // sort weight according to RFC2782:
+         // (records with weight zero are excluded, as they are always sorted to the end)
+         // - arrange all not yet sorted entries of same priority
+         while (rec_by_prio.second.size())
+         {
+            std::multimap<int, std::vector<SrvRec>::iterator> rec_by_weight;
+            int sum = 0;
+            for (auto it_rec = rec_by_prio.second.begin(); it_rec != rec_by_prio.second.end(); ++it_rec)
+            {
+               // compute sum of weights
+               sum += it_rec->weight;
+               // assign running sum to record
+               rec_by_weight.insert(std::make_pair(sum, it_rec));
+            }
+
+            // select uniform random number up to calculated sum
+            std::uniform_int_distribution<int> distribution(0, sum);
+            int lower = distribution(generator);
+            // select record whose running sum is >= random number
+            auto rec = rec_by_weight.lower_bound(lower);
+            Result.push_back(*rec->second);
+            // remove entry
+            rec_by_prio.second.erase(rec->second);
+         }
+      }
    }
 
    for(std::vector<SrvRec>::iterator I = Result.begin();
