@@ -14,9 +14,11 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <resolv.h>
+#include <stdint.h>
 #include <time.h>
 
 #include <algorithm>
+#include <map>
 #include <tuple>
 
 #include <apt-pkg/configuration.h>
@@ -24,6 +26,26 @@
 #include <apt-pkg/strutl.h>
 
 #include "srvrec.h"
+
+class APT_HIDDEN SrvRecPriorityKey
+{
+   public:
+      const uint16_t priority;
+      const bool weight_zero;
+
+      SrvRecPriorityKey(const uint16_t &priority, const bool &weight_zero)
+         : priority(priority), weight_zero(weight_zero)
+      { }
+
+      bool operator<(const SrvRecPriorityKey &other) const
+      {
+         if (priority < other.priority)
+            return true;
+         if (priority == other.priority)
+            return weight_zero < other.weight_zero;
+         return false;
+      }
+};
 
 bool SrvRec::operator==(SrvRec const &other) const
 {
@@ -61,6 +83,7 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result)
    unsigned char answer[PACKETSZ];
    int answer_len, compressed_name_len;
    int answer_count;
+   std::map<SrvRecPriorityKey, std::vector<SrvRec> > result_by_prio;
 
    if (res_init() != 0)
       return _error->Errno("res_init", "Failed to init resolver");
@@ -123,14 +146,17 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result)
          return _error->Warning("dn_expand failed %i", compressed_name_len);
       pt += compressed_name_len;
 
-      // add it to our class
-      Result.emplace_back(buf, priority, weight, port);
+      // add it to our intermediate result
+      result_by_prio[SrvRecPriorityKey(priority, weight == 0)].emplace_back(buf, priority, weight, port);
    }
 
    // implement load balancing as specified in RFC-2782
 
-   // sort them by priority
-   std::stable_sort(Result.begin(), Result.end());
+   // add them by priority into result
+   for (auto rec_by_prio : result_by_prio)
+   {
+      Result.insert(Result.end(), rec_by_prio.second.begin(), rec_by_prio.second.end());
+   }
 
    for(std::vector<SrvRec>::iterator I = Result.begin();
       I != Result.end(); ++I)
