@@ -1415,7 +1415,6 @@ libapt-pkg.so.5.0 libapt-pkg5.0 #MINVER#
  (c++)"pkgVersionMatch::VersionMatches(pkgCache::VerIterator)@APTPKG_5.0" 1.1~exp9
  (c++)"GetSrvRecords(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int, std::vector<SrvRec, std::allocator<SrvRec> >&)@APTPKG_5.0" 1.1~exp15
  (c++)"GetSrvRecords(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::vector<SrvRec, std::allocator<SrvRec> >&)@APTPKG_5.0" 1.1~exp15
- (c++)"PopFromSrvRecs(std::vector<SrvRec, std::allocator<SrvRec> >&)@APTPKG_5.0" 1.1~exp15
  (c++)"SrvRec::operator==(SrvRec const&) const@APTPKG_5.0" 1.1~exp15
  (c++)"debDebianSourceDirIndex::GetComponent[abi:cxx11]() const@APTPKG_5.0" 1.1.4
  (c++)"debDscFileIndex::GetArchitecture[abi:cxx11]() const@APTPKG_5.0" 1.1.4

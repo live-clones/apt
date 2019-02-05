@@ -201,15 +201,3 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result)
 
    return true;
 }
-
-SrvRec PopFromSrvRecs(std::vector<SrvRec> &Recs)
-{
-   std::vector<SrvRec>::iterator I = Recs.begin();
-   SrvRec const selected = std::move(*I);
-   Recs.erase(I);
-
-   if (_config->FindB("Debug::Acquire::SrvRecs", false) == true)
-      std::cerr << "PopFromSrvRecs: selecting " << selected.target << std::endl;
-
-   return selected;
-}

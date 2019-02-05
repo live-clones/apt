@@ -46,9 +46,4 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result);
  */
 bool GetSrvRecords(std::string host, int port, std::vector<SrvRec> &Result);
 
-/** \brief Pop a single SRV record from the vector of SrvRec taking
- *         priority and weight into account
- */
-SrvRec PopFromSrvRecs(std::vector<SrvRec> &Recs);
-
 #endif

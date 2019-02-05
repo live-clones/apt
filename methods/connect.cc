@@ -507,12 +507,10 @@ ResultState Connect(std::string Host, int Port, const char *Service,
    // try to connect in the priority order of the srv records
    std::string initialHost{std::move(Host)};
    auto const initialPort = Port;
-   while(SrvRecords.empty() == false)
+   for(auto const &Srv : SrvRecords)
    {
       _error->PushToStack();
       ++stackSize;
-      // PopFromSrvRecs will also remove the server
-      auto Srv = PopFromSrvRecs(SrvRecords);
       Host = Srv.target;
       Port = Srv.port;
       auto const ret = ConnectToHostname(Host, Port, Service, DefPort, Fd, TimeOut, Owner);
