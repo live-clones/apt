@@ -16,3 +16,8 @@ cp "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure.output" "${TMPWORKINGDIRECTOR
 testsuccess grep "^E: Could not open lock file" "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
 testsuccess grep "^E: Unable to lock directory" "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
 testfailure grep "^W: " "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
+if [ "$(id -u)" = '0' ]; then
+	testfailure grep "^N: You are not root" "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
+else
+	testsuccess grep "^N: You are not root" "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
+fi
