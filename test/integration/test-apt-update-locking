@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+setupaptarchive
+
+rm "$TMPWORKINGDIRECTORY/rootdir/var/lib/apt/lists/lock"
+# mkdir() in the framework is too clever for us, so avoid it
+command mkdir "$TMPWORKINGDIRECTORY/rootdir/var/lib/apt/lists/lock"
+testfailure aptget update
+cp "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure.output" "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
+testsuccess grep "^E: Could not open lock file" "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
+testsuccess grep "^E: Unable to lock directory" "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
+testfailure grep "^W: " "${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure"
