@@ -334,8 +334,12 @@ bool AcqTextStatus::MediaChange(std::string Media, std::string Drive)
 bool AcqTextStatus::ReleaseInfoChanges(metaIndex const * const L, metaIndex const * const N, std::vector<ReleaseInfoChange> &&Changes)/*{{{*/
 {
    if (Quiet >= 2 || isatty(STDOUT_FILENO) != 1 || isatty(STDIN_FILENO) != 1 ||
-	 _config->FindB("APT::Get::Update::InteractiveReleaseInfoChanges", false) == false)
-      return pkgAcquireStatus::ReleaseInfoChanges(nullptr, nullptr, std::move(Changes));
+       not _config->FindB("APT::Get::Update::InteractiveReleaseInfoChanges", false))
+   {
+      if (pkgAcquireStatus::ReleaseInfoChanges(L, N, std::move(Changes)))
+	 return true;
+      return _error->Notice(_("These changes can be acknowledged interactively with 'apt' or with --allow-releaseinfo-change."));
+   }
 
    _error->PushToStack();
    auto const confirmed = pkgAcquireStatus::ReleaseInfoChanges(L, N, std::move(Changes));
