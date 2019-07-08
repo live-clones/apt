@@ -5,6 +5,7 @@
 
 #include <apt-pkg/debmetaindex.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 									/*}}}*/
@@ -17,6 +18,14 @@ class metaIndexPrivate							/*{{{*/
    std::string Version;
    signed short DefaultPin;
    std::string ReleaseNotes;
+
+   std::string FutureOrigin;
+   std::string FutureLabel;
+   std::string FutureVersion;
+   std::string FutureCodename;
+   std::string FutureSuite;
+   signed short FutureDefaultPin;
+   std::string FutureReleaseNotes;
 };
 									/*}}}*/
 
@@ -70,6 +79,13 @@ APT_PURE std::string metaIndex::GetCodename() const { return Codename; }
 APT_PURE std::string metaIndex::GetSuite() const { return Suite; }
 APT_PURE std::string metaIndex::GetReleaseNotes() const { return d->ReleaseNotes; }
 APT_PURE signed short metaIndex::GetDefaultPin() const { return d->DefaultPin; }
+APT_PURE std::string metaIndex::GetFutureOrigin() const { return d->FutureOrigin; }
+APT_PURE std::string metaIndex::GetFutureLabel() const { return d->FutureLabel; }
+APT_PURE std::string metaIndex::GetFutureVersion() const { return d->FutureVersion; }
+APT_PURE std::string metaIndex::GetFutureCodename() const { return d->FutureCodename; }
+APT_PURE std::string metaIndex::GetFutureSuite() const { return d->FutureSuite; }
+APT_PURE std::string metaIndex::GetFutureReleaseNotes() const { return d->FutureReleaseNotes; }
+APT_PURE signed short metaIndex::GetFutureDefaultPin() const { return d->FutureDefaultPin; }
 APT_PURE bool metaIndex::GetSupportsAcquireByHash() const { return SupportsAcquireByHash; }
 APT_PURE time_t metaIndex::GetValidUntil() const { return ValidUntil; }
 APT_PURE time_t metaIndex::GetNotBefore() const
@@ -137,10 +153,28 @@ void metaIndex::swapLoad(metaIndex * const OldMetaIndex)		/*{{{*/
    std::swap(Entries, OldMetaIndex->Entries);
    std::swap(LoadedSuccessfully, OldMetaIndex->LoadedSuccessfully);
 
-   OldMetaIndex->SetOrigin(d->Origin);
-   OldMetaIndex->SetLabel(d->Label);
-   OldMetaIndex->SetVersion(d->Version);
-   OldMetaIndex->SetDefaultPin(d->DefaultPin);
+   struct SwapperStruct
+   {
+      decltype(d->Origin) &Member;
+      decltype(&metaIndex::GetOrigin) Getter;
+   } dswapper[] = {
+      {d->Origin, &metaIndex::GetOrigin},
+      {d->Label, &metaIndex::GetLabel},
+      {d->Version, &metaIndex::GetVersion},
+      {d->ReleaseNotes, &metaIndex::GetReleaseNotes},
+
+      {d->FutureOrigin, &metaIndex::GetFutureOrigin},
+      {d->FutureLabel, &metaIndex::GetFutureLabel},
+      {d->FutureVersion, &metaIndex::GetFutureVersion},
+      {d->FutureCodename, &metaIndex::GetFutureCodename},
+      {d->FutureSuite, &metaIndex::GetFutureSuite},
+      {d->FutureReleaseNotes, &metaIndex::GetFutureReleaseNotes},
+   };
+   std::for_each(std::begin(dswapper), std::end(dswapper),
+		 [&](SwapperStruct const &swp) { swp.Member = (OldMetaIndex->*swp.Getter)(); });
+
+   d->DefaultPin = OldMetaIndex->GetDefaultPin();
+   d->FutureDefaultPin = OldMetaIndex->GetFutureDefaultPin();
 }
 									/*}}}*/
 
@@ -174,3 +208,11 @@ void metaIndex::SetLabel(std::string const &label) { d->Label = label; }
 void metaIndex::SetVersion(std::string const &version) { d->Version = version; }
 void metaIndex::SetDefaultPin(signed short const defaultpin) { d->DefaultPin = defaultpin; }
 void metaIndex::SetReleaseNotes(std::string const &notes) { d->ReleaseNotes = notes; }
+
+void metaIndex::SetFutureOrigin(std::string const &origin) { d->FutureOrigin = origin; }
+void metaIndex::SetFutureLabel(std::string const &label) { d->FutureLabel = label; }
+void metaIndex::SetFutureVersion(std::string const &version) { d->FutureVersion = version; }
+void metaIndex::SetFutureCodename(std::string const &codename) { d->FutureCodename = codename; }
+void metaIndex::SetFutureSuite(std::string const &suite) { d->FutureSuite = suite; }
+void metaIndex::SetFutureDefaultPin(signed short const defaultpin) { d->FutureDefaultPin = defaultpin; }
+void metaIndex::SetFutureReleaseNotes(std::string const &notes) { d->FutureReleaseNotes = notes; }

@@ -1808,42 +1808,79 @@ bool pkgAcqMetaBase::VerifyVendor(string const &)			/*{{{*/
    {
       std::vector<pkgAcquireStatus::ReleaseInfoChange> Changes;
       auto const AllowInfoChange = _config->FindB("Acquire::AllowReleaseInfoChange", false);
+      auto const AllowInfoChangeIfAnnounced = _config->FindB("Acquire::AllowReleaseInfoChangeIfAnnounced", false);
       auto const quietInfoChange = _config->FindB("quiet::ReleaseInfoChange", false);
-      struct {
+      auto const quietFutureInfoChange = _config->FindB("quiet::FutureReleaseInfoChange", false);
+      struct DataCheck
+      {
 	 char const * const Type;
 	 bool const Allowed;
+	 bool const AllowedIfAnnounced;
 	 decltype(&metaIndex::GetOrigin) const Getter;
+	 decltype(&metaIndex::GetFutureOrigin) const FutureGetter;
       } checkers[] = {
-	 { "Origin", AllowInfoChange, &metaIndex::GetOrigin },
-	 { "Label", AllowInfoChange, &metaIndex::GetLabel },
-	 { "Version", true, &metaIndex::GetVersion }, // numbers change all the time, that is okay
-	 { "Suite", AllowInfoChange, &metaIndex::GetSuite },
-	 { "Codename", AllowInfoChange, &metaIndex::GetCodename },
-	 { nullptr, false, nullptr }
+	 {"Origin", AllowInfoChange, AllowInfoChangeIfAnnounced, &metaIndex::GetOrigin, &metaIndex::GetFutureOrigin},
+	 {"Label", AllowInfoChange, AllowInfoChangeIfAnnounced, &metaIndex::GetLabel, &metaIndex::GetFutureLabel},
+	 {"Version", true, AllowInfoChangeIfAnnounced, &metaIndex::GetVersion, &metaIndex::GetFutureVersion}, // numbers change all the time, that is okay
+	 {"Suite", AllowInfoChange, true, &metaIndex::GetSuite, &metaIndex::GetFutureSuite},		      // with some preparation changing the suite of a release is okay
+	 {"Codename", AllowInfoChange, AllowInfoChangeIfAnnounced, &metaIndex::GetCodename, &metaIndex::GetFutureCodename},
       };
-      auto const CheckReleaseInfo = [&](char const * const Type, bool const AllowChange, decltype(checkers[0].Getter) const Getter) {
-	 std::string const Last = (TransactionManager->LastMetaIndexParser->*Getter)();
-	 std::string const Now = (TransactionManager->MetaIndexParser->*Getter)();
+      auto const CheckReleaseInfo = [&](DataCheck const &data) {
+	 std::string const Last = (TransactionManager->LastMetaIndexParser->*data.Getter)();
+	 std::string const Now = (TransactionManager->MetaIndexParser->*data.Getter)();
 	 if (Last == Now)
+	 {
+	    std::string const Future = (TransactionManager->MetaIndexParser->*data.FutureGetter)();
+	    if (not Future.empty() && Future != Now &&
+		not _config->FindB(std::string("quiet::FutureReleaseInfoChange::").append(data.Type), quietFutureInfoChange))
+	    {
+	       std::string msg;
+	       strprintf(msg, _("Repository '%s' changes its '%s' value from '%s' to '%s' soon."),
+			 Desc.Description.c_str(), data.Type, Now.c_str(), Future.c_str());
+	       Changes.push_back({std::string{"Future-"}.append(data.Type), std::move(Now), std::move(Future), std::move(msg), true});
+	    }
 	    return;
-	 auto const Allow = _config->FindB(std::string("Acquire::AllowReleaseInfoChange::").append(Type), AllowChange);
-	 if (Allow == true && _config->FindB(std::string("quiet::ReleaseInfoChange::").append(Type), quietInfoChange) == true)
+	 }
+	 auto Allow = _config->FindB(std::string("Acquire::AllowReleaseInfoChange::").append(data.Type), data.Allowed);
+	 if (not Allow)
+	 {
+	    std::string const LastFuture = (TransactionManager->LastMetaIndexParser->*data.FutureGetter)();
+	    if (LastFuture == Now)
+	       Allow = _config->FindB(std::string("Acquire::AllowReleaseInfoChangeIfAnnounced::").append(data.Type), data.AllowedIfAnnounced);
+	 }
+	 if (Allow && _config->FindB(std::string("quiet::ReleaseInfoChange::").append(data.Type), quietInfoChange))
 	    return;
 	 std::string msg;
 	 strprintf(msg, _("Repository '%s' changed its '%s' value from '%s' to '%s'"),
-	       Desc.Description.c_str(), Type, Last.c_str(), Now.c_str());
-	 Changes.push_back({Type, std::move(Last), std::move(Now), std::move(msg), Allow});
+		   Desc.Description.c_str(), data.Type, Last.c_str(), Now.c_str());
+	 Changes.push_back({data.Type, std::move(Last), std::move(Now), std::move(msg), Allow});
       };
-      for (short i = 0; checkers[i].Type != nullptr; ++i)
-	 CheckReleaseInfo(checkers[i].Type, checkers[i].Allowed, checkers[i].Getter);
+      std::for_each(std::begin(checkers), std::end(checkers), CheckReleaseInfo);
 
       {
 	 auto const Last = TransactionManager->LastMetaIndexParser->GetDefaultPin();
 	 auto const Now = TransactionManager->MetaIndexParser->GetDefaultPin();
-	 if (Last != Now)
+	 if (Last == Now)
 	 {
-	    auto const Allow = _config->FindB("Acquire::AllowReleaseInfoChange::DefaultPin", AllowInfoChange);
-	    if (Allow == false || _config->FindB("quiet::ReleaseInfoChange::DefaultPin", quietInfoChange) == false)
+	    auto const Future = TransactionManager->MetaIndexParser->GetFutureDefaultPin();
+	    if (Future != Now && not _config->FindB("quiet::FutureReleaseInfoChange::DefaultPin", quietFutureInfoChange))
+	    {
+	       std::string msg;
+	       strprintf(msg, _("Repository '%s' changes its default priority for %s from %hi to %hi soon."),
+			 Desc.Description.c_str(), "apt_preferences(5)", Now, Future);
+	       Changes.push_back({"Future-DefaultPin", std::to_string(Now), std::to_string(Future), std::move(msg), true});
+	    }
+	 }
+	 else
+	 {
+	    auto Allow = _config->FindB("Acquire::AllowReleaseInfoChange::DefaultPin", AllowInfoChange);
+	    if (not Allow)
+	    {
+	       auto const LastFuture = TransactionManager->LastMetaIndexParser->GetFutureDefaultPin();
+	       if (LastFuture == Now)
+		  Allow = _config->FindB("Acquire::AllowReleaseInfoChangeIfAnnounced::DefaultPin", AllowInfoChangeIfAnnounced);
+	    }
+	    if (not Allow || not _config->FindB("quiet::ReleaseInfoChange::DefaultPin", quietInfoChange))
 	    {
 	       std::string msg;
 	       strprintf(msg, _("Repository '%s' changed its default priority for %s from %hi to %hi."),
@@ -1852,9 +1889,18 @@ bool pkgAcqMetaBase::VerifyVendor(string const &)			/*{{{*/
 	    }
 	 }
       }
+
+      // only display Future- notices if we don't show now-changes
+      bool reportsFuture = false;
+      auto const startsWithFuture = [](auto const &change) { return APT::String::Startswith(change.Type, "Future-"); };
+      if (std::all_of(Changes.begin(), Changes.end(), startsWithFuture))
+	 reportsFuture = true;
+      else
+	 Changes.erase(std::remove_if(Changes.begin(), Changes.end(), startsWithFuture), Changes.end());
+
       if (Changes.empty() == false)
       {
-	 auto const notes = TransactionManager->MetaIndexParser->GetReleaseNotes();
+	 auto const notes = reportsFuture ? TransactionManager->MetaIndexParser->GetFutureReleaseNotes() : TransactionManager->MetaIndexParser->GetReleaseNotes();
 	 if (notes.empty() == false)
 	 {
 	    std::string msg;

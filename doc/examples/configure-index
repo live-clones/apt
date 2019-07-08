@@ -42,6 +42,16 @@ quiet "<INT>" {
     Suite "<BOOL>";
     DefaultPin "<BOOL>";
   };
+  FutureReleaseInfoChange "<BOOL>" // don't print the notices about future changes
+  {
+    Origin "<BOOL>";
+    Label "<BOOL>";
+    Version "<BOOL>";
+    Codename "<BOOL>";
+    Suite "<BOOL>";
+    DefaultPin "<BOOL>";
+  };
+
 };
 
 // Options for APT in general
@@ -252,6 +262,16 @@ Acquire
     Version "<BOOL>"; // allowed by default
     Codename "<BOOL>";
     Suite "<BOOL>";
+    DefaultPin "<BOOL>";
+  };
+  // allow repositories to change information if the change was announced in the last Release file
+  AllowReleaseInfoChangeIfAnnounced "<BOOL>"
+  {
+    Origin "<BOOL>";
+    Label "<BOOL>";
+    Version "<BOOL>";
+    Codename "<BOOL>";
+    Suite "<BOOL>"; // allowed by default
     DefaultPin "<BOOL>";
   };
 

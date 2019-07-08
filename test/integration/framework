@@ -1070,6 +1070,7 @@ compressfile() {
 }
 
 # can be overridden by testcases for their pleasure
+getsuitefromreleasefile() { echo "$1" | cut -d'/' -f 4; }
 getcodenamefromsuite() {
 	case "$1" in
 	unstable) echo 'sid';;
@@ -1099,7 +1100,7 @@ generatereleasefiles() {
 		msgninfo "\tGenerate Release files for dists… "
 		for dir in $(find ./aptarchive/dists -mindepth 1 -maxdepth 1 -type d); do
 			local ARCHITECTURES="$(getarchitecturesfromreleasefile "$dir")"
-			local SUITE="$(echo "$dir" | cut -d'/' -f 4)"
+			local SUITE="$(getsuitefromreleasefile "$dir")"
 			local CODENAME="$(getcodenamefromsuite $SUITE)"
 			local VERSION="$(getreleaseversionfromsuite $SUITE)"
 			local LABEL="$(getlabelfromsuite $SUITE)"

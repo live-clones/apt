@@ -65,6 +65,15 @@ public:
    std::string GetSuite() const;
    std::string GetReleaseNotes() const;
    signed short GetDefaultPin() const;
+
+   std::string GetFutureOrigin() const;
+   std::string GetFutureLabel() const;
+   std::string GetFutureVersion() const;
+   std::string GetFutureCodename() const;
+   std::string GetFutureSuite() const;
+   std::string GetFutureReleaseNotes() const;
+   signed short GetFutureDefaultPin() const;
+
    bool GetSupportsAcquireByHash() const;
    time_t GetValidUntil() const;
    time_t GetDate() const;
@@ -112,6 +121,14 @@ public:
    APT_HIDDEN void SetVersion(std::string const &version);
    APT_HIDDEN void SetDefaultPin(signed short const defaultpin);
    APT_HIDDEN void SetReleaseNotes(std::string const &notes);
+
+   APT_HIDDEN void SetFutureOrigin(std::string const &origin);
+   APT_HIDDEN void SetFutureLabel(std::string const &label);
+   APT_HIDDEN void SetFutureVersion(std::string const &version);
+   APT_HIDDEN void SetFutureCodename(std::string const &version);
+   APT_HIDDEN void SetFutureSuite(std::string const &version);
+   APT_HIDDEN void SetFutureDefaultPin(signed short const defaultpin);
+   APT_HIDDEN void SetFutureReleaseNotes(std::string const &notes);
 };
 
 #endif

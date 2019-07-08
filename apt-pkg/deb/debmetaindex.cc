@@ -453,6 +453,14 @@ bool debReleaseIndex::Load(std::string const &Filename, std::string * const Erro
    Suite = Section.FindS("Suite");
    Codename = Section.FindS("Codename");
    SetReleaseNotes(Section.FindS("Release-Notes"));
+
+   SetFutureOrigin(Section.FindS("Future-Origin"));
+   SetFutureLabel(Section.FindS("Future-Label"));
+   SetFutureVersion(Section.FindS("Future-Version"));
+   SetFutureCodename(Section.FindS("Future-Codename"));
+   SetFutureSuite(Section.FindS("Future-Suite"));
+   SetFutureReleaseNotes(Section.FindS("Future-Release-Notes"));
+
    {
       std::string const archs = Section.FindS("Architectures");
       if (archs.empty() == false)
@@ -486,6 +494,23 @@ bool debReleaseIndex::Load(std::string const &Filename, std::string * const Erro
       }
       SetDefaultPin(defaultpin);
    }
+   if (Section.Exists("Future-NotAutomatic"))
+   {
+      decltype(pkgCache::ReleaseFile::Flags) flags = 0;
+      Section.FindFlag("Future-NotAutomatic", flags, pkgCache::Flag::NotAutomatic);
+      signed short defaultpin = 500;
+      if ((flags & pkgCache::Flag::NotAutomatic) == pkgCache::Flag::NotAutomatic)
+      {
+	 Section.FindFlag("Future-ButAutomaticUpgrades", flags, pkgCache::Flag::ButAutomaticUpgrades);
+	 if ((flags & pkgCache::Flag::ButAutomaticUpgrades) == pkgCache::Flag::ButAutomaticUpgrades)
+	    defaultpin = 100;
+	 else
+	    defaultpin = 1;
+      }
+      SetFutureDefaultPin(defaultpin);
+   }
+   else
+      SetFutureDefaultPin(GetDefaultPin());
 
    bool FoundHashSum = false;
    bool FoundStrongHashSum = false;
