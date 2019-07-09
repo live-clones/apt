@@ -621,6 +621,40 @@ APT::Compressor::rev {
 	 </para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>AllowReleaseInfoChange</option> scope</term>
+	 <listitem><para>
+	   Allow the fields <option>Origin</option>, <option>Label</option>, <option>Version</option>,
+	   <option>Codename</option> and <option>Suite</option> to change their value compared to the
+	   value accepted with the last <command>update</command> command.
+	   The field <option>DefaultPin</option> does not exist in the file but is a combination of the
+	   fields <literal>NotAutomatic</literal> and <literal>ButAutomaticUpgrades</literal> defining together
+	   the default value in &apt-preferences;. The default for allowing changes
+	   to all these fields (e.g. <option>Acquire::AllowReleaseInfoChange::<replaceable>Origin</replaceable></option>)
+	   is <literal>false</literal> meaning that a change is not accepted except for
+	   <option>Acquire::AllowReleaseInfoChange::Version</option> where the default is <literal>true</literal>.
+	   The default value for all options can be changed to <literal>true</literal> by setting <option>Acquire::AllowReleaseInfoChange</option>.
+	   It is not possible to set all options to <literal>false</literal> in this way.
+	   Settings in <option>Acquire::AllowReleaseInfoChangeIfAnnounced</option> can override
+	   <literal>false</literal> values and set them to <literal>true</literal> if the
+	   requirements are satisfied.
+	   Concept, implications as well as alternatives are detailed in &apt-secure;.
+	 </para></listitem>
+     </varlistentry>
+
+     <varlistentry><term><option>AllowReleaseInfoChangeIfAnnounced</option> scope</term>
+	 <listitem><para>
+	       Similar to the previously described <option>Acquire::AllowReleaseInfoChange</option> scope this
+	       configures the behaviour of APT clients if they encounter changed values in metadata fields in
+	       an <command>update</command> command. Here all options for the fields default to <literal>false</literal>
+	       except for the <option>Acquire::AllowReleaseInfoChangeIfAnnounced::Suite</option> option which defaults
+	       to <literal>true</literal>. This means that if the previously stored file contains a <option>Future-Suite</option>
+	       field with the same value as the new value for the <option>Suite</option> field in the file acquired by the current
+	       <command>update</command> process APT will behave as if <option>Acquire::AllowReleaseInfoChange::Suite</option> is
+	       set to <literal>true</literal>. Setting a field option in this scope to <literal>false</literal> leaves the
+	       value of the same field in the <option>Acquire::AllowReleaseInfoChange</option> scope unchanged.
+	 </para></listitem>
+     </varlistentry>
+
      <varlistentry><term><option>Changelogs::URI</option> scope</term>
 	<listitem><para>
 	  Acquiring changelogs can only be done if an URI is known from where to get them.

@@ -171,12 +171,30 @@
    also general information about the repository like the origin, codename or
    version number of the release.
    </para><para>
-   This information is shown in various places so a repository owner should always
-   ensure correctness. Further more user configuration like &apt-preferences;
-   can depend and make use of this information. Since version 1.5 the user must
+   This information is shown in various places and used by many applications and
+   users to refer to individual releases and repositories. A repository owner
+   should therefore always ensure correctness of the provided information and
+   update them as needed, but that might break existing user expectations or
+   configuration like &apt-preferences;. Since version 1.5 the user must
    therefore explicitly confirm changes to signal that the user is sufficiently
    prepared e.g. for the new major release of the distribution shipped in the
-   repository (as e.g. indicated by the codename).
+   repository (as e.g. indicated by the codename) or an upcoming change in security
+   support (might e.g. be indicated by the suite changing to oldstable).
+   </para><para>
+   Refer to the documentation of your APT client for details on how to confirm
+   the changes – for &apt-get; this would e.g. be described in its manpage.
+   If you want to configure the behaviour of which changes are automatically accepted
+   or not and in which situation you can refer to the configuration groups
+   <option>Acquire::ReleaseInfoChange</option> and <option>Acquire::FutureReleaseInfoChange</option>
+   detailed in &apt-conf;. Note that while this description highlights the practical
+   effects this requirement for explicit confirmation has this is actually an important
+   security check so it shouldn't be carelessly disabled or changes confirmed.
+   </para><para>
+   A repository owner should announce these changes well in advance to allow users to
+   adapt to the changes before they come into effect. The changes themselves should usually
+   also be accompanied with details on what this means for users. APT clients have facilities
+   for both with the <literal>Future-</literal> set of metadata fields and the
+   <option>Release-Notes</option> field defining an URI which the user is pointed to.
    </para>
 </refsect1>
 
