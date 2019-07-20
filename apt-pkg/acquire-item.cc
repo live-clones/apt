@@ -1734,6 +1734,27 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
    }
 }
 									/*}}}*/
+static APT_NONNULL(1, 2) bool VerifyDebianSuiteChange(metaIndex const *const, metaIndex const *const NowIdx, std::string const &LastSuite, std::string const &NowSuite) /*{{{*/
+{
+   std::string const Origin = NowIdx->GetOrigin();
+   if (Origin != "Debian")
+      return false;
+   if ((LastSuite == "testing" && NowSuite == "stable") ||
+       (LastSuite == "stable" && NowSuite == "oldstable") ||
+       (LastSuite == "oldstable" && NowSuite == "oldoldstable"))
+      return true;
+   using APT::String::Startswith;
+   if (Startswith(LastSuite, "testing-") && Startswith(NowSuite, "stable-"))
+   {
+      auto const FutureSuite = std::string{"stable-"} + LastSuite.substr(strlen("testing-"));
+      return FutureSuite == NowSuite;
+   }
+   if (LastSuite.find("stable-") != std::string::npos &&
+       NowSuite.find("stable-") != std::string::npos)
+      return NowSuite == (std::string{"old"} + LastSuite);
+   return false;
+}
+									/*}}}*/
 bool pkgAcqMetaBase::VerifyVendor(string const &)			/*{{{*/
 {
    if (TransactionManager->MetaIndexParser->GetValidUntil() > 0)
@@ -1816,14 +1837,15 @@ bool pkgAcqMetaBase::VerifyVendor(string const &)			/*{{{*/
 	 char const * const Type;
 	 bool const Allowed;
 	 bool const AllowedIfAnnounced;
+	 decltype(&VerifyDebianSuiteChange) const AllowFunctor;
 	 decltype(&metaIndex::GetOrigin) const Getter;
 	 decltype(&metaIndex::GetFutureOrigin) const FutureGetter;
       } checkers[] = {
-	 {"Origin", AllowInfoChange, AllowInfoChangeIfAnnounced, &metaIndex::GetOrigin, &metaIndex::GetFutureOrigin},
-	 {"Label", AllowInfoChange, AllowInfoChangeIfAnnounced, &metaIndex::GetLabel, &metaIndex::GetFutureLabel},
-	 {"Version", true, AllowInfoChangeIfAnnounced, &metaIndex::GetVersion, &metaIndex::GetFutureVersion}, // numbers change all the time, that is okay
-	 {"Suite", AllowInfoChange, true, &metaIndex::GetSuite, &metaIndex::GetFutureSuite},		      // with some preparation changing the suite of a release is okay
-	 {"Codename", AllowInfoChange, AllowInfoChangeIfAnnounced, &metaIndex::GetCodename, &metaIndex::GetFutureCodename},
+	 {"Origin", AllowInfoChange, AllowInfoChangeIfAnnounced, nullptr, &metaIndex::GetOrigin, &metaIndex::GetFutureOrigin},
+	 {"Label", AllowInfoChange, AllowInfoChangeIfAnnounced, nullptr, &metaIndex::GetLabel, &metaIndex::GetFutureLabel},
+	 {"Version", true, AllowInfoChangeIfAnnounced, nullptr, &metaIndex::GetVersion, &metaIndex::GetFutureVersion}, // numbers change all the time, that is okay
+	 {"Suite", AllowInfoChange, true, &VerifyDebianSuiteChange, &metaIndex::GetSuite, &metaIndex::GetFutureSuite}, // with some preparation changing the suite of a release is okay
+	 {"Codename", AllowInfoChange, AllowInfoChangeIfAnnounced, nullptr, &metaIndex::GetCodename, &metaIndex::GetFutureCodename},
       };
       auto const CheckReleaseInfo = [&](DataCheck const &data) {
 	 std::string const Last = (TransactionManager->LastMetaIndexParser->*data.Getter)();
@@ -1848,6 +1870,8 @@ bool pkgAcqMetaBase::VerifyVendor(string const &)			/*{{{*/
 	    if (LastFuture == Now)
 	       Allow = _config->FindB(std::string("Acquire::AllowReleaseInfoChangeIfAnnounced::").append(data.Type), data.AllowedIfAnnounced);
 	 }
+	 if (not Allow && data.AllowFunctor != nullptr)
+	    Allow = data.AllowFunctor(TransactionManager->LastMetaIndexParser, TransactionManager->MetaIndexParser, Last, Now);
 	 if (Allow && _config->FindB(std::string("quiet::ReleaseInfoChange::").append(data.Type), quietInfoChange))
 	    return;
 	 std::string msg;
