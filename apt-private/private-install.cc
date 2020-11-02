@@ -5,6 +5,7 @@
 #include <apt-pkg/acquire.h>
 #include <apt-pkg/algorithms.h>
 #include <apt-pkg/cachefile.h>
+#include <apt-pkg/cachefilter.h>
 #include <apt-pkg/cacheset.h>
 #include <apt-pkg/cmndline.h>
 #include <apt-pkg/configuration.h>
@@ -100,6 +101,30 @@ static void RemoveDownloadNeedingItemsFromFetcher(pkgAcquire &Fetcher, bool &Tra
       I = Fetcher.ItemsBegin();
    }
 }
+
+static bool CheckAllowRemoveEssential(APT::PackageDeque essential, pkgCacheFile *cache)
+{
+   if (_config->FindB("APT::Get::allow-remove-essential", false))
+      return true;
+
+   auto patterns = _config->FindVector("APT::Get::allow-remove");
+   for (auto &pkg : essential)
+   {
+      for (auto &patternStr : patterns)
+      {
+	 // Yes, this is slow, but we're not removing essential packages very often, so let's keep it as is.
+	 auto pattern = APT::CacheFilter::ParsePattern(patternStr, cache);
+	 if (!pattern)
+	    return false;
+	 if ((*pattern)(pkg))
+	    goto next;
+      }
+      return false;
+   next:
+      (void)0;
+   }
+   return true;
+}
 bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask, bool Safety)
 {
    if (not RunScripts("APT::Install::Pre-Invoke"))
@@ -165,8 +190,15 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask, bool Safety)
    bool const Downgrade = !ShowDowngraded(c1out,Cache);
 
    bool Essential = false;
+   APT::PackageDeque pkglist;
    if (_config->FindB("APT::Get::Download-Only",false) == false)
-        Essential = !ShowEssential(c1out,Cache);
+      Essential = !ShowEssential(c1out, Cache, pkglist);
+   _error->PushToStack();
+   bool AllowRemoveEssential = CheckAllowRemoveEssential(pkglist, &Cache);
+   bool NewError = _error->PendingError();
+   _error->MergeWithStack();
+   if (NewError)
+      return false;
 
    Stats(c1out,Cache);
 
@@ -191,7 +223,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask, bool Safety)
        _config->FindB("APT::Get::Assume-Yes",false) == true)
    {
       if (Fail == true && _config->FindB("APT::Get::Force-Yes",false) == false) {
-	 if (Essential == true && _config->FindB("APT::Get::allow-remove-essential", false) == false)
+	 if (Essential == true && not AllowRemoveEssential)
 	    return _error->Error(_("Essential packages were removed and -y was used without --allow-remove-essential."));
 	 if (Downgrade == true && _config->FindB("APT::Get::allow-downgrades", false) == false)
 	    return _error->Error(_("Packages were downgraded and -y was used without --allow-downgrades."));
@@ -270,7 +302,7 @@ bool InstallPackages(CacheFile &Cache,bool ShwKept,bool Ask, bool Safety)
       return true;
    }
 
-   if (Essential == true && Safety == true && _config->FindB("APT::Get::allow-remove-essential", false) == false)
+   if (Essential == true && Safety == true && not AllowRemoveEssential)
    {
       if (_config->FindB("APT::Get::Trivial-Only",false) == true)
 	 return _error->Error(_("Trivial Only specified but this is not a trivial operation."));

@@ -43,6 +43,26 @@ This should NOT be done unless you know exactly what you are doing!
 0 upgraded, 0 newly installed, 1 to remove and 1 not upgraded.
 Remv essential [1]' aptget remove essential -y --allow-remove-essential -s
 
+testsuccessequal 'Reading package lists...
+Building dependency tree...
+The following packages will be REMOVED:
+  essential
+WARNING: The following essential packages will be removed.
+This should NOT be done unless you know exactly what you are doing!
+  essential
+0 upgraded, 0 newly installed, 1 to remove and 1 not upgraded.
+Remv essential [1]' aptget remove essential -y --allow-remove='?name(essential)' -s
+
+testfailureequal 'Reading package lists...
+Building dependency tree...
+The following packages will be REMOVED:
+  essential
+WARNING: The following essential packages will be removed.
+This should NOT be done unless you know exactly what you are doing!
+  essential
+0 upgraded, 0 newly installed, 1 to remove and 1 not upgraded.
+E: Essential packages were removed and -y was used without --allow-remove-essential.' aptget remove essential -y -s --allow-remove='?false'
+
 # Test --allow-change-held-packages (should not influence dist-upgrade, but an install)
 
 testsuccessequal 'Reading package lists...

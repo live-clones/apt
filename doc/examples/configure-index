@@ -72,6 +72,7 @@ APT
      Force-Yes "<BOOL>"; // allows downgrades, essential removal and eats children
      Allow-Downgrades "<BOOL>";
      Allow-Change-Held-Packages "<BOOL>";
+     Allow-Remove "<LIST>";
      Allow-Remove-Essential "<BOOL>";
      Assume-Yes "<BOOL>"; // not as dangerous, but use with care still
      Assume-No "<BOOL>";

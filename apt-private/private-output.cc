@@ -569,10 +569,9 @@ struct APT_HIDDEN PrettyFullNameWithDue {
       return outstr.str();
    }
 };
-bool ShowEssential(ostream &out,CacheFile &Cache)
+bool ShowEssential(ostream &out, CacheFile &Cache, APT::PackageDeque &pkglist)
 {
    std::vector<bool> Added(Cache->Head().PackageCount, false);
-   APT::PackageDeque pkglist;
    PrettyFullNameWithDue withdue;
 
    SortedPackageUniverse Universe(Cache);

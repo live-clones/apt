@@ -273,6 +273,7 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const 
    addArg(0,"only-upgrade","APT::Get::Only-Upgrade",0);
    addArg(0,"allow-change-held-packages","APT::Get::allow-change-held-packages",CommandLine::Boolean);
    addArg(0,"allow-remove-essential","APT::Get::allow-remove-essential",CommandLine::Boolean);
+   addArg(0, "allow-remove", "APT::Get::allow-remove::", CommandLine::HasArg);
    addArg(0,"allow-downgrades","APT::Get::allow-downgrades",CommandLine::Boolean);
    addArg(0,"force-yes","APT::Get::force-yes",0);
    addArg(0,"print-uris","APT::Get::Print-URIs",0);

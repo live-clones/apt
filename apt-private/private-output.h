@@ -1,6 +1,7 @@
 #ifndef APT_PRIVATE_OUTPUT_H
 #define APT_PRIVATE_OUTPUT_H
 
+#include <apt-pkg/cacheset.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/macros.h>
 #include <apt-pkg/pkgcache.h>
@@ -96,7 +97,7 @@ void ShowUpgraded(std::ostream &out,CacheFile &Cache);
 bool ShowDowngraded(std::ostream &out,CacheFile &Cache);
 bool ShowHold(std::ostream &out,CacheFile &Cache);
 
-bool ShowEssential(std::ostream &out,CacheFile &Cache);
+bool ShowEssential(std::ostream &out, CacheFile &Cache, APT::PackageDeque &pkglist);
 
 void Stats(std::ostream &out, pkgDepCache &Dep);
 
