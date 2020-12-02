@@ -116,3 +116,6 @@ Makefile
 /abicheck/apt_installed.xml
 /abicheck/compat_reports/
 /abicheck/logs/
+
+/build
+/obj-*
