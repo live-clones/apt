@@ -246,18 +246,20 @@ bool PackageMap::GenPackages(Configuration &Setup,struct CacheDB::Stats &Stats)
    }
    
    if (Size != 0)
-      c0out << " New "
-             << SizeToStr(Size) << "B ";
+      c0out << _(" New ")
+            //TRANSLATOR: symbol for byte
+            << SizeToStr(Size) << _("B ");
    else
       c0out << ' ';
 
-   c0out << Packages.Stats.Packages << " files " <<
+   c0out << Packages.Stats.Packages << P_(" file ", " files ", Packages.Stats.Packages)
 /*      SizeToStr(Packages.Stats.MD5Bytes) << "B/" << */
-      SizeToStr(Packages.Stats.Bytes) << "B " <<
-      TimeToStr(GetTimeDeltaSince(StartTime)) << endl;
+         //TRANSLATOR: symbol for byte
+         << SizeToStr(Packages.Stats.Bytes) << _("B ")
+         << TimeToStr(GetTimeDeltaSince(StartTime)) << endl;
 
    if(_config->FindB("APT::FTPArchive::ShowCacheMisses", false) == true)
-     c0out << " Misses in Cache: " << Packages.Stats.Misses<< endl;
+     c0out << _(" Misses in Cache: ") << Packages.Stats.Misses << endl;
    
    Stats.Add(Packages.Stats);
    Stats.DeLinkBytes = Packages.Stats.DeLinkBytes;
@@ -327,16 +329,18 @@ bool PackageMap::GenSources(Configuration &Setup,struct CacheDB::Stats &Stats)
    }
       
    if (Size != 0)
-      c0out << " New "
-             << SizeToStr(Size) << "B ";
+      c0out << _(" New ")
+            //TRANSLATOR: symbol for byte
+            << SizeToStr(Size) << _("B ");
    else
       c0out << ' ';
    
-   c0out << Sources.Stats.Packages << " pkgs in " <<
-      TimeToStr(GetTimeDeltaSince(StartTime)) << endl;
+   c0out << Sources.Stats.Packages
+         << P_(" package in ", " packages in ", Sources.Stats.Packages)
+         << TimeToStr(GetTimeDeltaSince(StartTime)) << endl;
 
    if(_config->FindB("APT::FTPArchive::ShowCacheMisses", false) == true)
-     c0out << " Misses in Cache: " << Sources.Stats.Misses << endl;
+     c0out << _(" Misses in Cache: ") << Sources.Stats.Misses << endl;
 
    Stats.Add(Sources.Stats);
    Stats.DeLinkBytes = Sources.Stats.DeLinkBytes;
@@ -434,7 +438,9 @@ bool PackageMap::GenContents(Configuration &Setup,
    
    if (Size != 0)
    {
-      c0out << " New " << SizeToStr(Size) << "B ";
+      c0out << _(" New ")
+            //TRANSLATOR: symbol for byte
+            << SizeToStr(Size) << _("B ");
       if (Left > Size)
 	 Left -= Size;
       else
@@ -444,11 +450,12 @@ bool PackageMap::GenContents(Configuration &Setup,
       c0out << ' ';
    
    if(_config->FindB("APT::FTPArchive::ShowCacheMisses", false) == true)
-     c0out << " Misses in Cache: " << Contents.Stats.Misses<< endl;
+     c0out << _(" Misses in Cache: ") << Contents.Stats.Misses << endl;
 
-   c0out << Contents.Stats.Packages << " files " <<
-      SizeToStr(Contents.Stats.Bytes) << "B " <<
-      TimeToStr(GetTimeDeltaSince(StartTime)) << endl;
+   c0out << Contents.Stats.Packages << P_(" file ", " files ", Contents.Stats.Packages)
+         //TRANSLATOR: symbol for byte
+         << SizeToStr(Contents.Stats.Bytes) << _("B ")
+         << TimeToStr(GetTimeDeltaSince(StartTime)) << endl;
    
    return true;
 }
@@ -687,7 +694,7 @@ static bool SimpleGenPackages(CommandLine &CmdL)
 
    // Give some stats if asked for
    if(_config->FindB("APT::FTPArchive::ShowCacheMisses", false) == true)
-     c0out << " Misses in Cache: " << Packages.Stats.Misses<< endl;
+     c0out << _(" Misses in Cache: ") << Packages.Stats.Misses << endl;
 
    return true;
 }
@@ -747,7 +754,7 @@ static bool SimpleGenSources(CommandLine &CmdL)
 
    // Give some stats if asked for
    if(_config->FindB("APT::FTPArchive::ShowCacheMisses", false) == true)
-     c0out << " Misses in Cache: " << Sources.Stats.Misses<< endl;
+     c0out << _(" Misses in Cache: ") << Sources.Stats.Misses << endl;
 
    return true;
 }
@@ -856,7 +863,7 @@ static bool DoGenerateContents(Configuration &Setup,
 			       vector<PackageMap> &PkgList,
 			       CommandLine &CmdL)
 {
-   c1out << "Packages done, Starting contents." << endl;
+   c1out << _("Packages done, Starting contents.") << endl;
 
    // Sort the contents file list by date
    string ArchiveDir = Setup.FindDir("Dir::ArchiveDir");
@@ -909,7 +916,7 @@ static bool DoGenerateContents(Configuration &Setup,
       // Hit the limit?
       if (MaxContentsChange == 0)
       {
-	 c1out << "Hit contents update byte limit" << endl;
+	 c1out << _("Hit contents update byte limit") << endl;
 	 break;
       }      
    }
@@ -953,7 +960,7 @@ static bool Generate(CommandLine &CmdL)
          return false;
       }
    } else {
-      c1out << "Skipping Packages/Sources generation" << endl;
+      c1out << _("Skipping Packages/Sources generation") << endl;
    }
 
    // do Contents if needed
@@ -964,8 +971,11 @@ static bool Generate(CommandLine &CmdL)
 	 return false;
       }
 
-   c1out << "Done. " << SizeToStr(Stats.Bytes) << "B in " << Stats.Packages
-         << " archives. Took " << TimeToStr(GetTimeDeltaSince(StartTime)) << endl;
+   c1out << _("Done. ") << SizeToStr(Stats.Bytes)
+         //TRANSLATOR: B is the symbol for byte
+         << _("B in ") << Stats.Packages
+         << P_(" archive. Took ", " archives. Took ", Stats.Packages)
+         << TimeToStr(GetTimeDeltaSince(StartTime)) << "." << endl;
 
    UnloadTree(TransList);
    return true;

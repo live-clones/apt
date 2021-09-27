@@ -314,9 +314,9 @@ bool DoClean(CommandLine &)
    {
       std::string const pkgcache = _config->FindFile("Dir::cache::pkgcache");
       std::string const srcpkgcache = _config->FindFile("Dir::cache::srcpkgcache");
-      std::cout << "Del " << archivedir << "* " << archivedir << "partial/*"<< std::endl
-	   << "Del " << listsdir << "partial/*" << std::endl
-	   << "Del " << pkgcache << " " << srcpkgcache << std::endl;
+      std::cout << _("Del ") << archivedir << "* " << archivedir << "partial/*"<< std::endl
+	   << _("Del ") << listsdir << "partial/*" << std::endl
+	   << _("Del ") << pkgcache << " " << srcpkgcache << std::endl;
       return true;
    }
 
@@ -348,7 +348,9 @@ bool DoClean(CommandLine &)
    protected:
       virtual void Erase(int const dirfd, char const * const File, std::string const &Pkg, std::string const &Ver,struct stat const &St) APT_OVERRIDE
       {
-	 c1out << "Del " << Pkg << " " << Ver << " [" << SizeToStr(St.st_size) << "B]" << std::endl;
+         c1out << _("Del ") << Pkg << " " << Ver
+               //TRANSLATOR: B is the symbol for byte
+               << " [" << SizeToStr(St.st_size) << _("B]") << std::endl;
 
 	 if (_config->FindB("APT::Get::Simulate") == false)
 	    RemoveFileAt("Cleaner::Erase", dirfd, File);
