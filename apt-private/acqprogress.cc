@@ -98,7 +98,8 @@ void AcqTextStatus::Fetch(pkgAcquire::ItemDesc &Itm)
    // Potentially replaced later by "Hit:", "Ign:" or "Err:" if something (bad) happens
    ioprintf(out, _("Get:%lu %s"), Itm.Owner->ID, Itm.Description.c_str());
    if (Itm.Owner->FileSize != 0)
-      out << " [" << SizeToStr(Itm.Owner->FileSize) << "B]";
+      //TRANSLATOR: B is the symbol for byte
+      out << " [" << SizeToStr(Itm.Owner->FileSize) << _("B]");
    out << std::endl;
 }
 									/*}}}*/
@@ -225,7 +226,8 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
 	 else
 	 {
 	    if (Mode == Medium || I->CurrentItem->TotalSize == 0)
-	       S << " " << SizeToStr(I->CurrentItem->CurrentSize) << "B";
+	       //TRANSLATOR: symbol for byte
+	       S << " " << SizeToStr(I->CurrentItem->CurrentSize) << _("B");
 	 }
 
 	 // Add the total size and percent
@@ -234,7 +236,8 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
 	    if (Mode == Short)
 	       ioprintf(S, " %.0f%%", (I->CurrentItem->CurrentSize*100.0)/I->CurrentItem->TotalSize);
 	    else
-	       ioprintf(S, "/%sB %.0f%%", SizeToStr(I->CurrentItem->TotalSize).c_str(),
+	       //TRANSLATOR: B is the symbol for byte
+	       ioprintf(S, _("/%sB %.0f%%"), SizeToStr(I->CurrentItem->TotalSize).c_str(),
 		     (I->CurrentItem->CurrentSize*100.0)/I->CurrentItem->TotalSize);
 	 }
 	 S << "]";
@@ -265,7 +268,8 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
    if (CurrentCPS != 0)
    {
       unsigned long long ETA = (TotalBytes - CurrentBytes)/CurrentCPS;
-      std::string Tmp = " " + SizeToStr(CurrentCPS) + "B/s " + TimeToStr(ETA);
+      //TRANSLATOR: B is the symbol for byte, s is the symbol for second
+      std::string Tmp = " " + SizeToStr(CurrentCPS) + _("B/s ") + TimeToStr(ETA);
       size_t alignment = Line.length() + Tmp.length();
       if (alignment < ScreenWidth)
       {

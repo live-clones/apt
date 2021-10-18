@@ -234,12 +234,14 @@ static bool DisplayRecordV2(pkgCacheFile &CacheFile, pkgRecords &Recs, /*{{{*/
    // make size nice
    std::string installed_size;
    if (Tags.FindULL("Installed-Size") > 0)
-      strprintf(installed_size, "%sB", SizeToStr(Tags.FindULL("Installed-Size") * 1024).c_str());
+      //TRANSLATOR: B is the symbol for byte
+      strprintf(installed_size, _("%sB"), SizeToStr(Tags.FindULL("Installed-Size") * 1024).c_str());
    else
       installed_size = _("unknown");
    std::string package_size;
    if (Tags.FindULL("Size") > 0)
-      strprintf(package_size, "%sB", SizeToStr(Tags.FindULL("Size")).c_str());
+      //TRANSLATOR: B is the symbol for byte
+      strprintf(package_size, _("%sB"), SizeToStr(Tags.FindULL("Size")).c_str());
    else
       package_size = _("unknown");
 

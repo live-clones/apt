@@ -442,23 +442,42 @@ string SizeToStr(double Size)
    else
       ASize = -1*Size;
 
+   //no prefix
+   static const char * const N = "";
+   //TRANSLATOR: symbol for prefix "kilo-"
+   static const char * const K = _("k");
+   //TRANSLATOR: symbol for prefix "mega-"
+   static const char * const M = _("M");
+   //TRANSLATOR: symbol for prefix "giga-"
+   static const char * const G = _("G");
+   //TRANSLATOR: symbol for prefix "tera-"
+   static const char * const T = _("T");
+   //TRANSLATOR: symbol for prefix "peta-"
+   static const char * const P = _("P");
+   //TRANSLATOR: symbol for prefix "exa-"
+   static const char * const E = _("E");
+   //TRANSLATOR: symbol for prefix "zetta-"
+   static const char * const Z = _("Z");
+   //TRANSLATOR: symbol for prefix "yotta-"
+   static const char * const Y = _("Y");
+
    /* bytes, KiloBytes, MegaBytes, GigaBytes, TeraBytes, PetaBytes, 
       ExaBytes, ZettaBytes, YottaBytes */
-   char Ext[] = {'\0','k','M','G','T','P','E','Z','Y'};
+   static const char * const Ext[] = {N, K, M, G, T, P, E, Z, Y};
    int I = 0;
    while (I <= 8)
    {
       if (ASize < 100 && I != 0)
       {
 	 std::string S;
-	 strprintf(S, "%'.1f %c", ASize, Ext[I]);
+	 strprintf(S, "%'.1f %s", ASize, Ext[I]);
 	 return S;
       }
 
       if (ASize < 10000)
       {
 	 std::string S;
-	 strprintf(S, "%'.0f %c", ASize, Ext[I]);
+	 strprintf(S, "%'.0f %s", ASize, Ext[I]);
 	 return S;
       }
       ASize /= 1000.0;
