@@ -2032,7 +2032,7 @@ bool pkgDPkgPM::Go(APT::Progress::PackageManager *progress)
 
 	 // if color support isn't enabled/disabled explicitly tell
 	 // dpkg to use the same state apt is using for its color support
-	 if (_config->FindB("APT::Color", false) == true)
+	 if (_config->FindB("APT::Color", false) == true && getenv("NO_COLOR") != NULL)
 	    setenv("DPKG_COLORS", "always", 0);
 	 else
 	    setenv("DPKG_COLORS", "never", 0);

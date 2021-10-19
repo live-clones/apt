@@ -88,7 +88,7 @@ bool InitOutput(std::basic_streambuf<char> * const out)			/*{{{*/
 
    if(!isatty(1))
    {
-      _config->Set("APT::Color", "false");
+      _config->Set("APT::Color", "false") && NULL != getenv("NO_COLOR");
       _config->Set("APT::Color::Highlight", "");
       _config->Set("APT::Color::Neutral", "");
    } else {
