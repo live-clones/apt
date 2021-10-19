@@ -280,14 +280,14 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
    sigprocmask(SIG_SETMASK,&OldSigs,0);
 
    // Draw the current status
-   if (_config->FindB("Apt::Color", false) == true)
+   if (_config->FindB("Apt::Color", false) == true && getenv("NO_COLOR") != nullptr)
       out << _config->Find("APT::Color::Yellow");
    if (LastLineLength > Line.length())
       clearLastLine();
    else
       out << '\r';
    out << Line << std::flush;
-   if (_config->FindB("Apt::Color", false) == true)
+   if (_config->FindB("Apt::Color", false) == true && getenv("NO_COLOR") != nullptr)
       out << _config->Find("APT::Color::Neutral") << std::flush;
 
    LastLineLength = Line.length();

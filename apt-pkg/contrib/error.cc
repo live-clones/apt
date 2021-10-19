@@ -252,7 +252,7 @@ APT_HIDDEN std::ostream &operator<<(std::ostream &out, GlobalError::Item i)
    static constexpr auto COLOR_WARN = "\033[1;33m";  // bold yellow
    static constexpr auto COLOR_ERROR = "\033[1;31m"; // bold red
 
-   bool use_color = _config->FindB("APT::Color", false);
+   bool use_color = _config->FindB("APT::Color", false) && getenv("NO_COLOR") != nullptr;
 
    if (use_color)
    {
