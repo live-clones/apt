@@ -1,0 +1,2 @@
+# Unprivileged user for the apt methods
+u   _apt   -   -   /nonexistent
