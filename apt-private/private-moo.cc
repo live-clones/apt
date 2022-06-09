@@ -99,8 +99,8 @@ static bool DoMoo2(time_t const timenow)				/*{{{*/
    if (_config->FindB("APT::Moo::Color", false) == false)
       c1out <<
 	 OutputInDepth(depth, " ") << "         (__)  \n" <<
-	 OutputInDepth(depth, " ") << " _______~(..)~ \n" <<
-	 OutputInDepth(depth, " ") << "   ,----\\(oo) \n" <<
+	 OutputInDepth(depth, " ") << "        ~(..)~ \n" <<
+	 OutputInDepth(depth, " ") << "   ,----,(oo) \n" <<
 	 OutputInDepth(depth, " ") << "  /|____|,'    \n" <<
 	 OutputInDepth(depth, " ") << " * /\"\\ /\\   \n" <<
 	 OutputInDepth(depth, " ") << "   ~ ~ ~ ~     \n" <<
@@ -109,8 +109,8 @@ static bool DoMoo2(time_t const timenow)				/*{{{*/
    {
       c1out <<
 	 OutputInDepth(depth, " ") << "         \033[1;97m(\033[0;33m__\033[1;97m)\033[0m\n" <<
-	 OutputInDepth(depth, " ") << " \033[31m_______\033[33m~(\033[1;34m..\033[0;33m)~\033[0m\n" <<
-	 OutputInDepth(depth, " ") << "   \033[33m,----\033[31m\\\033[33m(\033[1;4;35moo\033[0;33m)\033[0m\n" <<
+	 OutputInDepth(depth, " ") << "        ~(\033[1;34m..\033[0;33m)~\033[0m\n" <<
+	 OutputInDepth(depth, " ") << "   \033[33m,----,(\033[1;4;35moo\033[0;33m)\033[0m\n" <<
 	 OutputInDepth(depth, " ") << "  \033[33m/|____|,'\033[0m\n" <<
 	 OutputInDepth(depth, " ") << " \033[1;5;97m*\033[0;33m /\\  /\\\033[0m\n" <<
 	 "\033[32m";
