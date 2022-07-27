@@ -1444,6 +1444,34 @@ static bool MarkInstall_RemoveConflictsIfNotUpgradeable(pkgDepCache &Cache, bool
    return not failedToRemoveSomething;
 }
 									/*}}}*/
+static bool MarkInstall_CollectReverseDepends(pkgDepCache &Cache, bool const DebugAutoInstall, pkgCache::VerIterator const &PV, unsigned long Depth, APT::PackageVector &toUpgrade) /*{{{*/
+{
+   auto CurrentVer = PV.ParentPkg().CurrentVer();
+   if (CurrentVer.end())
+      return true;
+   for (pkgCache::DepIterator D = PV.ParentPkg().RevDependsList(); D.end() == false; ++D)
+   {
+      auto ParentPkg = D.ParentPkg();
+      // Skip non-installed versions and packages already marked for upgrade
+      if (ParentPkg.CurrentVer() != D.ParentVer() || Cache[ParentPkg].Install())
+	 continue;
+      // We only handle important positive dependencies, RemoveConflictsIfNotUpgradeable handles negative
+      if (not Cache.IsImportantDep(D) || D.IsNegative())
+	 continue;
+      // The dependency was previously not satisfied (e.g. part of an or group) or will be satisfied, so it's OK
+      if (not D.IsSatisfied(CurrentVer) || D.IsSatisfied(PV))
+	 continue;
+      if (std::find(toUpgrade.begin(), toUpgrade.end(), ParentPkg) != toUpgrade.end())
+	 continue;
+
+      if (DebugAutoInstall)
+	 std::clog << OutputInDepth(Depth) << " Upgrading: " << APT::PrettyPkg(&Cache, ParentPkg) << " due to " << APT::PrettyDep(&Cache, D) << "\n";
+
+      toUpgrade.push_back(ParentPkg);
+   }
+   return true;
+}
+									/*}}}*/
 static bool MarkInstall_UpgradeOrRemoveConflicts(pkgDepCache &Cache, bool const DebugAutoInstall, unsigned long Depth, bool const ForceImportantDeps, APT::PackageVector &toUpgrade, bool const propagateProtected, bool const FromUser) /*{{{*/
 {
    bool failedToRemoveSomething = false;
@@ -1463,6 +1491,41 @@ static bool MarkInstall_UpgradeOrRemoveConflicts(pkgDepCache &Cache, bool const 
       }
    toUpgrade.clear();
    return not failedToRemoveSomething;
+}
+									/*}}}*/
+static bool MarkInstall_UpgradeOtherBinaries(pkgDepCache &Cache, bool const DebugAutoInstall, unsigned long Depth, bool const ForceImportantDeps, pkgCache::PkgIterator Pkg, pkgCache::VerIterator Ver) /*{{{*/
+{
+   APT::PackageSet toUpgrade;
+
+   if (not _config->FindB("APT::Get::Upgrade-By-Source-Package", true))
+      return true;
+
+   auto SrcGrp = Cache.FindGrp(Ver.SourcePkgName());
+   for (auto OtherBinary = SrcGrp.VersionsInSource(); not OtherBinary.end(); OtherBinary = OtherBinary.NextInSource())
+   {
+      auto OtherPkg = OtherBinary.ParentPkg();
+      auto OtherState = Cache[OtherPkg];
+      if (OtherPkg == Pkg)
+	 continue;
+      // Package is not installed or at right version, don't need to upgrade
+      if (OtherPkg->CurrentVer == 0 || OtherPkg.CurrentVer() == OtherBinary)
+	 continue;
+      // Package is to be installed at right version, don't need to upgrade
+      if (OtherState.Install() && OtherState.InstallVer == OtherBinary)
+	 continue;
+      // Package has a different source version than us, so it's not relevant
+      if (strcmp(OtherBinary.SourceVerStr(), Ver.SourceVerStr()) != 0 || OtherState.CandidateVer != OtherBinary)
+	 continue;
+      if (DebugAutoInstall)
+	 std::clog << OutputInDepth(Depth) << "Upgrading " << APT::PrettyPkg(&Cache, OtherPkg) << " due to " << Pkg.FullName() << '\n';
+
+      toUpgrade.insert(OtherPkg);
+   }
+   for (auto &OtherPkg : toUpgrade)
+      Cache.MarkInstall(OtherPkg, false, Depth + 1, false, ForceImportantDeps);
+   for (auto &OtherPkg : toUpgrade)
+      Cache.MarkInstall(OtherPkg, true, Depth + 1, false, ForceImportantDeps);
+   return true;
 }
 									/*}}}*/
 static bool MarkInstall_InstallDependencies(pkgDepCache &Cache, bool const DebugAutoInstall, bool const DebugMarker, pkgCache::PkgIterator const &Pkg, unsigned long Depth, bool const ForceImportantDeps, std::vector<pkgCache::DepIterator> &toInstall, APT::PackageVector *const toMoveAuto, bool const propagateProtected, bool const FromUser) /*{{{*/
@@ -1640,6 +1703,12 @@ bool pkgDepCache::MarkInstall(PkgIterator const &Pkg, bool AutoInst,
 	    return false;
 	 hasFailed = true;
       }
+      if (not MarkInstall_CollectReverseDepends(*this, DebugAutoInstall, PV, Depth, toUpgrade))
+      {
+	 if (failEarly)
+	    return false;
+	 hasFailed = true;
+      }
    }
 
    if (not FromUser && not MarkInstall_StateChange(Pkg, AutoInst, FromUser))
@@ -1670,6 +1739,8 @@ bool pkgDepCache::MarkInstall(PkgIterator const &Pkg, bool AutoInst,
       operator bool() noexcept { return already; }
    } propagateProtected{PkgState[Pkg->ID]};
 
+   if (not MarkInstall_UpgradeOtherBinaries(*this, DebugAutoInstall, Depth, ForceImportantDeps, Pkg, P.CandidateVerIter(*this)))
+      return false;
    if (not MarkInstall_UpgradeOrRemoveConflicts(*this, DebugAutoInstall, Depth, ForceImportantDeps, toUpgrade, propagateProtected, FromUser))
    {
       if (failEarly)
