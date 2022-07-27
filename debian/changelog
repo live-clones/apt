@@ -1,3 +1,12 @@
+apt (2.4.7) jammy; urgency=medium
+
+  * Backport fix for LP: #1974196 from 2.5.2:
+  [ Julian Andres Klode ]
+  * Mark broken reverse depends for upgrade (LP: #1974196)
+  * Upgrade all binaries in a source package
+
+ -- vishnunaini <vishnu@vishnunaini.com>  Wed, 27 Jul 2022 23:11:03 +0530
+
 apt (2.4.6) jammy; urgency=medium
 
   * (Temporarily) Rewrite phased updates using a keep-back approach
