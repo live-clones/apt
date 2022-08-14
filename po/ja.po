@@ -2024,7 +2024,7 @@ msgstr[0] ""
 
 #: apt-private/private-install.cc
 msgid "Note: This is done automatically and on purpose by dpkg."
-msgstr "注意: これは dpkg により自動でわざと行われます。"
+msgstr "注意: これは dpkg により自動かつ意図的に実施されます。"
 
 #: apt-private/private-install.cc
 msgid "We are not supposed to delete stuff, can't start AutoRemover"
