@@ -2,9 +2,26 @@
 set -e
 
 if [ "$1" = 'configure' ]; then
-	# add unprivileged user for the apt methods
-	adduser --force-badname --system --home /nonexistent  \
-	    --no-create-home --quiet _apt || true
+	# Add unprivileged user for the apt methods.
+	# adduser doesn't understand DPKG_ROOT. So if this is an installation
+	# with dpkg --force-script-chrootless, and if /etc/passwd is the same
+	# as passwd.master with shadowed passwords turned on then we fill
+	# /etc/passwd and /etc/shadow manually to create a bit-by-bit identical
+	# situation as adduser would've done it.
+	if [ -n "$DPKG_ROOT" ] && sed 's/^\([^:]\+\):\*:/\1:x:/' \
+		"${DPKG_ROOT}/usr/share/base-passwd/passwd.master" \
+		| cmp --quiet - "${DPKG_ROOT}/etc/passwd"; then
+		cp -a "$DPKG_ROOT/etc/passwd" "$DPKG_ROOT/etc/passwd-"
+		cp -a "$DPKG_ROOT/etc/shadow" "$DPKG_ROOT/etc/shadow-"
+		echo "_apt:x:100:65534::/nonexistent:/usr/sbin/nologin" >> "$DPKG_ROOT/etc/passwd"
+		echo "_apt:!:$((${SOURCE_DATE_EPOCH:-$(date +%s)}/60/60/24))::::::" >> "$DPKG_ROOT/etc/shadow"
+		dd if=/dev/zero of="$DPKG_ROOT/var/log/faillog" seek=3232 count=0 bs=1 2>/dev/null
+		dd if=/dev/zero of="$DPKG_ROOT/var/log/lastlog" seek=29492 count=0 bs=1 2>/dev/null
+	else
+		# This is the normal case.
+		adduser --force-badname --system --home /nonexistent  \
+		   --no-create-home --quiet _apt || true
+	fi
 fi
 
 if [ "$1" = "configure" ] && [ -n "$2" ] && dpkg --compare-versions -- "$2" le-nl "2.4.5~"; then
