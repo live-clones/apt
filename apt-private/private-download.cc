@@ -71,7 +71,8 @@ bool AuthPrompt(std::vector<std::string> const &UntrustedList, bool const Prompt
       return _error->Error(_("Some packages could not be authenticated"));
 
    if (_config->FindI("quiet",0) < 2
-       && _config->FindB("APT::Get::Assume-Yes",false) == false)
+       && _config->FindB("APT::Get::Assume-Yes",false) == false
+       && isatty(STDIN_FILENO))
    {
       if (!YnPrompt(_("Install these packages without verification?"), false))
          return _error->Error(_("Some packages could not be authenticated"));
