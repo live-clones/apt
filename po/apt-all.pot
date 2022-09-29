@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.5.3\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2022-09-28 17:34+0200\n"
+"POT-Creation-Date: 2022-09-29 11:16+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2606,12 +2606,16 @@ msgstr ""
 msgid "Remove packages"
 msgstr ""
 
-#: cmdline/apt-get.cc
+#: cmdline/apt-get.cc cmdline/apt.cc
 msgid "Remove packages and config files"
 msgstr ""
 
 #: cmdline/apt-get.cc cmdline/apt.cc
 msgid "Remove automatically all unused packages"
+msgstr ""
+
+#: cmdline/apt-get.cc cmdline/apt.cc
+msgid "Same as autoremove, but also purge configuration files"
 msgstr ""
 
 #: cmdline/apt-get.cc

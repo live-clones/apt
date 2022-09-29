@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.0.1\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2022-09-28 17:34+0200\n"
-"PO-Revision-Date: 2020-04-04 08:45+0200\n"
+"POT-Creation-Date: 2022-09-29 11:41+0200\n"
+"PO-Revision-Date: 2022-09-29 11:42+0200\n"
 "Last-Translator: Chris Leick <c.leick@vollbio.de>\n"
 "Language-Team: German <debian-l10n-german@lists.debian.org>\n"
 "Language: de\n"
@@ -821,6 +821,17 @@ msgstr ""
 "manuell installiert markieren. Pakete, die Sie explizit per "
 "<command>install</command> installiert haben, werden niemals zum "
 "automatischen Entfernen vorgeschlagen."
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.8.xml apt-get.8.xml
+msgid ""
+"Like <literal>autoremove</literal>, but <literal>autopurge</literal> also "
+"removes configuration files. This is equivalent to <literal>autoremove --"
+"purge</literal>."
+msgstr ""
+"Wie <literal>autoremove</literal>, aber <literal>autopurge</literal> entfernt\n"
+"auch zugehörige Konfigurationsdateien. Dieser Befehl ist äquivalent zu\n"
+"<literal>autoremove --purge</literal>."
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.8.xml
