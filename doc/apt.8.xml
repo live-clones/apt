@@ -109,6 +109,13 @@
      </para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>autopurge</option> (&apt-get;)</term>
+     <listitem><para>Like <literal>autoremove</literal>, but <literal>autopurge</literal> also
+     removes configuration files. This is equivalent to <literal>autoremove
+     --purge</literal>.</para></listitem>
+     </varlistentry>
+
+
      <varlistentry><term><option>satisfy</option> (&apt-get;)</term>
      <listitem><para><option>satisfy</option> satisfies dependency strings, as
 	  used in Build-Depends. It also handles conflicts, by prefixing an argument
