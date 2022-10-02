@@ -55,6 +55,7 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
 									/*}}}*/
 static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
 {
+   // advanced commands are left undocumented on purpose
    return {
       // query
       {"list", &DoList, _("list packages based on package names")},
@@ -67,8 +68,8 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"remove", &DoInstall, _("remove packages")},
       {"autoremove", &DoInstall, _("Remove automatically all unused packages")},
       {"auto-remove", &DoInstall, nullptr},
-      {"autopurge",&DoInstall, _("Same as autoremove, but also purge configuration files")},
-      {"purge", &DoInstall, _("Remove packages and config files")},
+      {"autopurge",&DoInstall, nullptr},
+      {"purge", &DoInstall, nullptr},
 
       // system wide stuff
       {"update", &DoUpdate, _("update list of available packages")},

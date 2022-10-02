@@ -403,6 +403,7 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
 									/*}}}*/
 static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
 {
+   // advanced commands are left undocumented on purpose
    return {
       {"update", &DoUpdate, _("Retrieve new lists of packages")},
       {"upgrade", &DoUpgrade, _("Perform an upgrade")},
@@ -412,7 +413,7 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"purge", &DoInstall, _("Remove packages and config files")},
       {"autoremove", &DoInstall, _("Remove automatically all unused packages")},
       {"auto-remove", &DoInstall, nullptr},
-      {"autopurge",&DoInstall, _("Same as autoremove, but also purge configuration files")},
+      {"autopurge",&DoInstall, nullptr},
       {"markauto", &DoMarkAuto, nullptr},
       {"unmarkauto", &DoMarkAuto, nullptr},
       {"dist-upgrade", &DoDistUpgrade, _("Distribution upgrade, see apt-get(8)")},

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt-doc 2.5.3\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2022-09-29 11:41+0200\n"
+"POT-Creation-Date: 2022-09-28 17:34+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -637,14 +637,6 @@ msgid ""
 "package. You can mark such a package as manually installed by using "
 "&apt-mark;. Packages which you have installed explicitly via "
 "<command>install</command> are also never proposed for automatic removal."
-msgstr ""
-
-#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
-#: apt.8.xml apt-get.8.xml
-msgid ""
-"Like <literal>autoremove</literal>, but <literal>autopurge</literal> also "
-"removes configuration files. This is equivalent to <literal>autoremove "
-"--purge</literal>."
 msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>

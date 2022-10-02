@@ -257,7 +257,7 @@
 
      <varlistentry><term><option>autopurge</option></term>
      <listitem><para>Like <literal>autoremove</literal>, but <literal>autopurge</literal> also
-     removes configuration files. This is equivalent to <literal>autoremove
+     removes configuration files. This is a shortcut for <literal>autoremove
      --purge</literal>.</para></listitem>
      </varlistentry>
 
