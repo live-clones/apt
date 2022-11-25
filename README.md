@@ -62,6 +62,12 @@ You can also use the Ninja generator of CMake, to do that pass
 	-G Ninja
 to the cmake invocation, and then use ninja instead of make.
 
+Building requires a few depenncies that should be installed first. On a `dnf`
+based system you'd have to install these.
+
+	g++ triehash libdb-devel gnutls-devel zlib-devel bzip2-devel xz-devel \
+		lz4-devel libgcrypt-devel xxhash-devel doxygen gtest-devel
+
 The source code uses in most parts a relatively uncommon indent convention,
 namely 3 spaces with 8 space tab (see [doc/style.txt](./doc/style.txt) for more on this).
 Adhering to it avoids unnecessary code-churn destroying history (aka: `git blame`)
