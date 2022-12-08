@@ -215,7 +215,7 @@ static pkgSrcRecords::Parser *FindSrc(const char *Name,
 	 {
 	    if (strcmp(Ver.SourcePkgName(),Ver.ParentPkg().Name()) != 0)
 	       Src = Ver.SourcePkgName();
-	    if (VerTag.empty() == true && strcmp(Ver.SourceVerStr(),Ver.VerStr()) != 0)
+	    if (VerTag.empty() == true && RelTag.empty())
 	       VerTag = Ver.SourceVerStr();
 	 }
       }
