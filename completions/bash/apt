@@ -3,8 +3,8 @@
 _apt()
 {
     local sourcesdir="/etc/apt/sources.list.d"
-    local cur prev words cword
-    _init_completion || return
+    local cur prev words cword split
+    _init_completion -n : -s || return
 
     local GENERIC_APT_GET_OPTIONS='
         -d --download-only
@@ -32,6 +32,7 @@ _apt()
         --no-install-recommends
         --no-install-suggests
         --fix-policy
+        -o --option
     '
 
     # see if the user selected a command already
@@ -59,13 +60,18 @@ _apt()
         fi
     done
 
-    # Complete a -t<SPACE><TAB>
     case $prev in
+        -o|--option)
+            _xfunc apt-config _comp_cmd_apt_config_options -e
+            return
+            ;;
         -t|--target-release)
             COMPREPLY=( $( compgen -W "$(apt-cache policy | grep -Eo 'a=[^,]*|n=[^,]*' | cut -f2- -d= | sort -u)" -- "$cur" ) )
             return 0
             ;;
     esac
+
+    $split && return
 
     # When the cursor (cword) is before the command word (i), only suggest
     # options but not package or file names:
