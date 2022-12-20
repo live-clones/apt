@@ -947,12 +947,19 @@ void HttpMethod::SendReq(FetchItem *Itm)
       Req << "If-Modified-Since: " << TimeRFC1123(Itm->LastModified, false).c_str() << "\r\n";
 
    if ((Server->Proxy.Access == "http" || Server->Proxy.Access == "https") &&
+       not Server->Proxy.Bearer.empty())
+      Req << "Proxy-Authorization: Bearer "
+	 << Server->Proxy.Bearer <<  "\r\n";
+   else if ((Server->Proxy.Access == "http" || Server->Proxy.Access == "https") &&
        (Server->Proxy.User.empty() == false || Server->Proxy.Password.empty() == false))
       Req << "Proxy-Authorization: Basic "
 	 << Base64Encode(Server->Proxy.User + ":" + Server->Proxy.Password) << "\r\n";
 
+
    MaybeAddAuthTo(Uri);
-   if (Uri.User.empty() == false || Uri.Password.empty() == false)
+   if (not Uri.Bearer.empty())
+      Req << "Authorization: Bearer " << Uri.Bearer << "\r\n";
+   else if (Uri.User.empty() == false || Uri.Password.empty() == false)
       Req << "Authorization: Basic "
 	 << Base64Encode(Uri.User + ":" + Uri.Password) << "\r\n";
 
