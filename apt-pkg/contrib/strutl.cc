@@ -25,6 +25,8 @@
 #include <iomanip>
 #include <limits>
 #include <locale>
+#include <numeric>
+#include <optional>
 #include <sstream>
 #include <memory>
 #include <sstream>
@@ -48,10 +50,9 @@
 									/*}}}*/
 using namespace std;
 
+namespace APT::String {
 // Strip - Remove white space from the front and back of a string       /*{{{*/
 // ---------------------------------------------------------------------
-namespace APT {
-   namespace String {
 std::string Strip(const std::string &str)
 {
    // ensure we have at least one character
@@ -73,22 +74,22 @@ std::string Strip(const std::string &str)
 
    return str.substr(start, end - start + 1);
 }
-
-bool Endswith(const std::string &s, const std::string &end)
+									/*}}}*/
+bool Endswith(const std::string &s, const std::string &end)		/*{{{*/
 {
    if (end.size() > s.size())
       return false;
    return (s.compare(s.size() - end.size(), end.size(), end) == 0);
 }
-
-bool Startswith(const std::string &s, const std::string &start)
+									/*}}}*/
+bool Startswith(const std::string &s, const std::string &start)		/*{{{*/
 {
    if (start.size() > s.size())
       return false;
    return (s.compare(0, start.size(), start) == 0);
 }
-
-std::string Join(std::vector<std::string> list, const std::string &sep)
+									/*}}}*/
+std::string Join(std::vector<std::string> list, const std::string &sep)	/*{{{*/
 {
    std::ostringstream oss;
    for (auto it = list.begin(); it != list.end(); it++)
@@ -98,8 +99,8 @@ std::string Join(std::vector<std::string> list, const std::string &sep)
    }
    return oss.str();
 }
-
-// Returns string display length honoring multi-byte characters
+									/*}}}*/
+// DisplayLength – Returns string length honoring multi-byte characters	/*{{{*/
 size_t DisplayLength(StringView str)
 {
    size_t len = 0;
@@ -145,10 +146,21 @@ size_t DisplayLength(StringView str)
 
    return len;
 }
-
-}
+									/*}}}*/
+std::string &vappend(std::string &res, std::initializer_list<std::string_view> const strs)/*{{{*/
+{
+   auto const len = res.length() + std::accumulate(strs.begin(), strs.end(), size_t{0},
+	 [](size_t i, auto const s) { return i + s.length(); });
+   // do not reserve a larger string if we fit into a small string
+   if (len > 15)
+      res.reserve(len * 2);
+   for (auto const str : strs)
+      res.append(str);
+   return res;
 }
 									/*}}}*/
+} // namespace APT::String
+
 // UTF8ToCodeset - Convert some UTF-8 string for some codeset   	/*{{{*/
 // ---------------------------------------------------------------------
 /* This is handy to use before display some information for enduser  */
@@ -819,31 +831,33 @@ std::string LookupTag(const std::string &Message, const char *TagC, const char *
    then returns the result. Several variants on true/false are checked. */
 int StringToBool(const string &Text,int Default)
 {
-   char *ParseEnd;
-   int Res = strtol(Text.c_str(),&ParseEnd,0);
-   // ensure that the entire string was converted by strtol to avoid
-   // failures on "apt-cache show -a 0ad" where the "0" is converted
-   const char *TextEnd = Text.c_str()+Text.size();
-   if (ParseEnd == TextEnd && Res >= 0 && Res <= 1)
-      return Res;
-   
-   // Check for positives
-   if (strcasecmp(Text.c_str(),"no") == 0 ||
-       strcasecmp(Text.c_str(),"false") == 0 ||
-       strcasecmp(Text.c_str(),"without") == 0 ||
-       strcasecmp(Text.c_str(),"off") == 0 ||
-       strcasecmp(Text.c_str(),"disable") == 0)
-      return 0;
-   
-   // Check for negatives
-   if (strcasecmp(Text.c_str(),"yes") == 0 ||
-       strcasecmp(Text.c_str(),"true") == 0 ||
-       strcasecmp(Text.c_str(),"with") == 0 ||
-       strcasecmp(Text.c_str(),"on") == 0 ||
-       strcasecmp(Text.c_str(),"enable") == 0)
-      return 1;
-   
+   auto const stb = StringToOptionalBool(Text);
+   if (stb.has_value())
+      return stb.value() ? 1 : 0;
    return Default;
+}
+									/*}}}*/
+std::optional<bool> StringToOptionalBool(std::string_view const text)	/*{{{*/
+{
+   if (text == "0")
+      return false;
+   if (text == "1")
+      return true;
+   constexpr std::string_view nowords[] {
+      "no", "false", "without", "off", "disable",
+   };
+   auto const comparator = [&](auto const word) {
+      return std::equal(text.begin(), text.end(), word.begin(), word.end(),
+	    [](char a, char b) noexcept { return tolower_ascii(a) == b; });
+   };
+   if (std::any_of(std::begin(nowords), std::end(nowords), comparator))
+      return false;
+   constexpr std::string_view yeswords[] {
+      "yes", "true", "with", "on", "enable",
+   };
+   if (std::any_of(std::begin(yeswords), std::end(yeswords), comparator))
+      return true;
+   return {};
 }
 									/*}}}*/
 // TimeRFC1123 - Convert a time_t into RFC1123 format			/*{{{*/

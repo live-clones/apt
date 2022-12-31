@@ -239,7 +239,13 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const 
       addArg(0,"format","APT::Get::IndexTargets::Format", CommandLine::HasArg);
       addArg(0,"release-info","APT::Get::IndexTargets::ReleaseInfo", 0);
    }
-   else if (CmdMatches("clean", "autoclean", "auto-clean", "check", "download", "changelog") ||
+   else if (CmdMatches("changelog"))
+   {
+      addArg(0, "online", "Acquire::Changelogs::AlwaysOnline", CommandLine::Boolean);
+      addArg(0, "local", "Acquire::Changelogs::AlwaysOnline", CommandLine::InvBoolean);
+      addArg(0, "offline", "Acquire::Changelogs::AlwaysOnline", CommandLine::InvBoolean);
+   }
+   else if (CmdMatches("clean", "autoclean", "auto-clean", "check", "download") ||
 	    CmdMatches("markauto", "unmarkauto")) // deprecated commands
       ;
    else if (CmdMatches("moo"))

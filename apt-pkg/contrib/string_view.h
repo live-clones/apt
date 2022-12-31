@@ -15,6 +15,10 @@
 #include <string>
 #include <string.h>
 
+#if __cplusplus >= 201700L
+#include <string_view>
+#endif
+
 namespace APT {
 
 /**
@@ -38,6 +42,9 @@ public:
 
     StringView(const char *data) : data_(data), size_(strlen(data)) {}
     StringView(std::string const & str): data_(str.data()), size_(str.size()) {}
+#if __cplusplus >= 201700L
+    StringView(std::string_view const str): data_(str.data()), size_(str.size()) {}
+#endif
 
     /* Modifiers */
     void remove_prefix(size_t n) { data_ += n; size_ -= n; }
@@ -106,6 +113,11 @@ public:
     std::string to_string() const {
         return std::string(data_, size_);
     }
+#if __cplusplus >= 201700L
+    [[nodiscard]] std::string_view to_sv() const {
+       return {data_, size_};
+    }
+#endif
 
     /* Comparisons */
     int compare(size_t pos, size_t n, StringView other) const {

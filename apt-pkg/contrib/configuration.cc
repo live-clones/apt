@@ -35,9 +35,11 @@
 #include <fstream>
 #include <iterator>
 #include <numeric>
+#include <optional>
 #include <sstream>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -153,11 +155,11 @@ static void checkFindConfigOptionTypeInternal(std::string name, ConfigType const
 	       name.c_str(), getConfigTypeString(known->second).c_str(), getConfigTypeString(type).c_str());
    }
 }
-static void checkFindConfigOptionType(char const * const name, ConfigType const type)
+static void checkFindConfigOptionType(std::string_view const name, ConfigType const type)
 {
    if (apt_known_config.empty())
       return;
-   checkFindConfigOptionTypeInternal(name, type);
+   checkFindConfigOptionTypeInternal(std::string{name}, type);
 }
 									/*}}}*/
 static bool LoadConfigurationIndex(std::string const &filename)		/*{{{*/
@@ -309,6 +311,42 @@ Configuration::Item *Configuration::Lookup(const char *Name,bool const &Create)
    return Itm;
 }
 									/*}}}*/
+Configuration::Item const *Configuration::LookupSV(std::string_view Name) const/*{{{*/
+{
+   if (Name.empty())
+      return Root->Child;
+
+   Item *Itm = Root;
+   do
+   {
+      auto colons = Name.find("::");
+      auto ChildName = (colons == std::string_view::npos) ? Name : Name.substr(0, colons);
+      auto ChildItm = Itm->Child;
+      for (; ChildItm != nullptr; ChildItm = ChildItm->Next)
+	 if (ChildName.size() == ChildItm->Tag.size() && strncasecmp(ChildName.data(), ChildItm->Tag.data(), ChildName.size()) == 0)
+	    break;
+      if (ChildItm == nullptr)
+	 return nullptr;
+      Itm = ChildItm;
+      if (colons == std::string_view::npos)
+	 break;
+      Name.remove_prefix(colons + 2);
+   } while (not Name.empty());
+
+   return Itm;
+}
+									/*}}}*/
+
+std::optional<bool> Configuration::GetB(std::string_view const Name) const/*{{{*/
+{
+   checkFindConfigOptionType(Name, ConfigType::BOOL);
+   auto const * const Itm = LookupSV(Name);
+   if (Itm == nullptr || Itm->Value.empty())
+      return {};
+   return StringToOptionalBool(Itm->Value);
+}
+									/*}}}*/
+
 // Configuration::Find - Find a value					/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -450,12 +488,7 @@ int Configuration::FindI(const char *Name,int const &Default) const
 /* */
 bool Configuration::FindB(const char *Name,bool const &Default) const
 {
-   checkFindConfigOptionType(Name, ConfigType::BOOL);
-   const Item *Itm = Lookup(Name);
-   if (Itm == 0 || Itm->Value.empty() == true)
-      return Default;
-   
-   return StringToBool(Itm->Value,Default);
+   return GetB(Name).value_or(Default);
 }
 									/*}}}*/
 // Configuration::FindAny - Find an arbitrary type			/*{{{*/

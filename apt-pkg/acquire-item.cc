@@ -3690,28 +3690,29 @@ void pkgAcqChangelog::Init(std::string const &DestDir, std::string const &DestFi
 									/*}}}*/
 std::string pkgAcqChangelog::URI(pkgCache::VerIterator const &Ver)	/*{{{*/
 {
-   std::string const confOnline = "Acquire::Changelogs::AlwaysOnline";
-   bool AlwaysOnline = _config->FindB(confOnline, false);
-   if (AlwaysOnline == false)
+   std::string_view const confOnline = "Acquire::Changelogs::AlwaysOnline";
+   auto AlwaysOnline = _config->GetB(confOnline);
+   if (not AlwaysOnline.has_value())
       for (pkgCache::VerFileIterator VF = Ver.FileList(); VF.end() == false; ++VF)
       {
 	 pkgCache::PkgFileIterator const PF = VF.File();
 	 if (PF.Flagged(pkgCache::Flag::NotSource) || PF->Release == 0)
 	    continue;
 	 pkgCache::RlsFileIterator const RF = PF.ReleaseFile();
-	 if (RF->Origin != 0 && _config->FindB(confOnline + "::Origin::" + RF.Origin(), false))
-	 {
-	    AlwaysOnline = true;
-	    break;
-	 }
+	 if (RF->Origin != 0)
+	    if (auto AO = _config->GetB(APT::String::cat(confOnline, "::Origin::", RF.Origin())); AO.has_value())
+	    {
+	       AlwaysOnline = AO;
+	       break;
+	    }
       }
-   if (AlwaysOnline == false)
+   if (not AlwaysOnline.value_or(false))
    {
       pkgCache::PkgIterator const Pkg = Ver.ParentPkg();
       if (Pkg->CurrentVer != 0 && Pkg.CurrentVer() == Ver)
       {
 	 std::string const root = _config->FindDir("Dir");
-	 std::string const basename = root + std::string("usr/share/doc/") + Pkg.Name() + "/changelog";
+	 std::string const basename = APT::String::cat(root, "usr/share/doc/", Pkg.Name(), "/changelog");
 	 std::string const debianname = basename + ".Debian";
 	 if (FileExists(debianname))
 	    return "copy://" + debianname;
