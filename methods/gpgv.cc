@@ -64,7 +64,6 @@ struct Digest {
       return state;
    }
 };
-
 static constexpr Digest Digests[] = {
    {Digest::State::Untrusted, "Invalid digest"},
    {Digest::State::Untrusted, "MD5"},
@@ -79,7 +78,6 @@ static constexpr Digest Digests[] = {
    {Digest::State::Trusted, "SHA512"},
    {Digest::State::Trusted, "SHA224"},
 };
-
 static Digest FindDigest(std::string const & Digest)
 {
    int id = atoi(Digest.c_str());
@@ -89,6 +87,63 @@ static Digest FindDigest(std::string const & Digest)
    } else {
       return Digests[0];
    }
+}
+
+struct PubKeyAlgo
+{
+   enum class State
+   {
+      Untrusted,
+      Weak,
+      Trusted,
+   } state;
+   char name[32];
+
+   [[nodiscard]] State getState() const
+   {
+      std::string optionUntrusted;
+      std::string optionWeak;
+      strprintf(optionUntrusted, "APT::PubKeyAlgo::%s::Untrusted", name);
+      strprintf(optionWeak, "APT::PubKeyAlgo::%s::Weak", name);
+      if (_config->FindB(optionUntrusted, false) == true)
+	 return State::Untrusted;
+      if (_config->FindB(optionWeak, false) == true)
+	 return State::Weak;
+
+      return state;
+   }
+};
+static constexpr PubKeyAlgo PubKeyAlgos[] = {
+   {PubKeyAlgo::State::Untrusted, "Invalid digest"},
+   {PubKeyAlgo::State::Trusted, "RSA"},
+   {PubKeyAlgo::State::Trusted, "RSA-Encrypt"},
+   {PubKeyAlgo::State::Trusted, "RSA-Sign"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Untrusted, "Unassigned"},
+   {PubKeyAlgo::State::Trusted, "Elgamal"},
+   {PubKeyAlgo::State::Weak, "DSA"},
+   {PubKeyAlgo::State::Trusted, "EllipticCurve"},
+   {PubKeyAlgo::State::Trusted, "ECDSA"},
+   {PubKeyAlgo::State::Trusted, "Reserved"},
+   {PubKeyAlgo::State::Trusted, "Diffie-Hellman"},
+};
+static PubKeyAlgo FindPubKeyAlgo(std::string const &PubKeyAlgo)
+{
+   int id = atoi(PubKeyAlgo.c_str());
+   if (id >= 0 && static_cast<unsigned>(id) < APT_ARRAY_SIZE(PubKeyAlgos))
+      return PubKeyAlgos[id];
+   else
+      return PubKeyAlgos[0];
 }
 
 struct Signer {
@@ -238,15 +293,29 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
          vector<string> tokens{std::istream_iterator<string>{iss},
                                std::istream_iterator<string>{}};
          auto const sig = tokens[0];
-         // Reject weak digest algorithms
-         Digest digest = FindDigest(tokens[7]);
-         switch (digest.getState()) {
+	 // Reject weak digest and pubkey algorithms
+	 auto const pubkeyalgo = FindPubKeyAlgo(tokens[6]);
+	 auto const digest = FindDigest(tokens[7]);
+	 switch (digest.getState())
+	 {
          case Digest::State::Weak:
-            // Treat them like an expired key: For that a message about expiry
-            // is emitted, a VALIDSIG, but no GOODSIG.
-            Signers.SoonWorthless.push_back({sig, digest.name});
-	    if (Debug == true)
-	       std::clog << "Got weak VALIDSIG, key ID: " << sig << std::endl;
+	    if (pubkeyalgo.getState() == PubKeyAlgo::State::Untrusted)
+	    {
+	       // Treat them like an expired key: For that a message about expiry
+	       // is emitted, a VALIDSIG, but no GOODSIG.
+	       Signers.Worthless.push_back(sig);
+	       Signers.Good.erase(std::remove_if(Signers.Good.begin(), Signers.Good.end(), [&](std::string const &goodsig)
+						 { return IsTheSameKey(sig, goodsig); }),
+				  Signers.Good.end());
+	       if (Debug == true)
+		  std::clog << "Got untrusted pubkey VALIDSIG, key ID: " << sig << std::endl;
+	    }
+	    else
+	    {
+	       Signers.SoonWorthless.push_back({sig, digest.name});
+	       if (Debug == true)
+		  std::clog << "Got weak digest VALIDSIG, key ID: " << sig << std::endl;
+	    }
             break;
          case Digest::State::Untrusted:
             // Treat them like an expired key: For that a message about expiry
@@ -255,12 +324,33 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
             Signers.Good.erase(std::remove_if(Signers.Good.begin(), Signers.Good.end(), [&](std::string const &goodsig) {
 		     return IsTheSameKey(sig, goodsig); }), Signers.Good.end());
 	    if (Debug == true)
-	       std::clog << "Got untrusted VALIDSIG, key ID: " << sig << std::endl;
+	       std::clog << "Got untrusted digest VALIDSIG, key ID: " << sig << std::endl;
             break;
 
 	 case Digest::State::Trusted:
-	    if (Debug == true)
-	       std::clog << "Got trusted VALIDSIG, key ID: " << sig << std::endl;
+	    switch (pubkeyalgo.getState())
+	    {
+	    case PubKeyAlgo::State::Weak:
+	       Signers.SoonWorthless.push_back({sig, pubkeyalgo.name});
+	       if (Debug == true)
+		  std::clog << "Got weak pubkey-algo VALIDSIG, key ID: " << sig << std::endl;
+	       break;
+	    case PubKeyAlgo::State::Untrusted:
+	       // Treat them like an expired key: For that a message about expiry
+	       // is emitted, a VALIDSIG, but no GOODSIG.
+	       Signers.Worthless.push_back(sig);
+	       Signers.Good.erase(std::remove_if(Signers.Good.begin(), Signers.Good.end(), [&](std::string const &goodsig)
+						 { return IsTheSameKey(sig, goodsig); }),
+				  Signers.Good.end());
+	       if (Debug == true)
+		  std::clog << "Got untrusted pubkey-algo VALIDSIG, key ID: " << sig << std::endl;
+	       break;
+
+	    case PubKeyAlgo::State::Trusted:
+	       if (Debug == true)
+		  std::clog << "Got trusted VALIDSIG, key ID: " << sig << std::endl;
+	       break;
+	    }
             break;
          }
 
