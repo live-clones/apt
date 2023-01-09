@@ -1821,10 +1821,10 @@ msgstr "Χαλασμένα πακέτα"
 
 #: apt-private/private-install.cc
 msgid ""
-"Unable to fetch some archives, maybe run apt-get update or try with --fix-"
+"Unable to fetch some archives, maybe run apt update or try with --fix-"
 "missing?"
 msgstr ""
-"Αδύνατη η μεταφόρτωση μερικών αρχείων, ίσως αν δοκιμάζατε με apt-get update "
+"Αδύνατη η μεταφόρτωση μερικών αρχείων, ίσως αν δοκιμάζατε με apt update "
 "ή το --fix-missing;"
 
 #: apt-private/private-install.cc

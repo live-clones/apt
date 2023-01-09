@@ -1928,7 +1928,7 @@ msgstr "Pacchetti danneggiati"
 
 #: apt-private/private-install.cc
 msgid ""
-"Unable to fetch some archives, maybe run apt-get update or try with --fix-"
+"Unable to fetch some archives, maybe run apt update or try with --fix-"
 "missing?"
 msgstr ""
 "Impossibile scaricare alcuni pacchetti. Potrebbe essere utile eseguire \"apt-"

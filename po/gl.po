@@ -1857,10 +1857,10 @@ msgstr "Paquetes estragados"
 
 #: apt-private/private-install.cc
 msgid ""
-"Unable to fetch some archives, maybe run apt-get update or try with --fix-"
+"Unable to fetch some archives, maybe run apt update or try with --fix-"
 "missing?"
 msgstr ""
-"Non foi posíbel obter algúns arquivos; probe con apt-get update ou --fix-"
+"Non foi posíbel obter algúns arquivos; probe con apt update ou --fix-"
 "missing."
 
 #: apt-private/private-install.cc
