@@ -81,8 +81,20 @@ bool Endswith(const std::string &s, const std::string &end)		/*{{{*/
       return false;
    return (s.compare(s.size() - end.size(), end.size(), end) == 0);
 }
+bool ends_with(std::string_view const s, std::string_view const end)
+{
+   if (end.size() > s.size())
+      return false;
+   return (s.compare(s.size() - end.size(), end.size(), end) == 0);
+}
 									/*}}}*/
 bool Startswith(const std::string &s, const std::string &start)		/*{{{*/
+{
+   if (start.size() > s.size())
+      return false;
+   return (s.compare(0, start.size(), start) == 0);
+}
+bool starts_with(std::string_view const s, std::string_view const start)
 {
    if (start.size() > s.size())
       return false;

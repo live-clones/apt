@@ -57,8 +57,11 @@ namespace APT {
 	 append(res, std::forward<Strings>(strings)...);
 	 return res;
       }
-#endif
 
+      // if you can, prefer the std::string_view methods added in C++20
+      bool ends_with(std::string_view s, std::string_view ending);
+      bool starts_with(std::string_view s, std::string_view starting);
+#endif
    }
 }
 

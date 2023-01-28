@@ -27,6 +27,8 @@ public:
    aptAcquireWithTextStatus();
 };
 
+void RemoveDownloadNeedingItemsFromFetcher(pkgAcquire &Fetcher, bool &Transient);
+
 class CommandLine;
 
 APT_PUBLIC bool DoDownload(CommandLine &CmdL);

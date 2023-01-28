@@ -260,10 +260,27 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, std::string
       addArg('s', "no-act", "APT::Get::Simulate", 0);
    }
 
+   if (CmdMatches("install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
+	    "dselect-upgrade", "autoremove", "autopurge", "changelog", "download",
+	    "build-dep", "satisfy", "full-upgrade", "source", "update"))
+   {
+      addArg(0,"print-uris","APT::Get::Print-URIs",0);
+      if (not CmdMatches("download"))
+      {
+	 addArg('d',"download-only","APT::Get::Download-Only",0);
+	 addArg(0,"download","APT::Get::Download",0);
+      }
+      if (not CmdMatches("changelog"))
+      {
+	 addArg(0,"fix-missing","APT::Get::Fix-Missing",0);
+	 addArg(0,"allow-unauthenticated","APT::Get::AllowUnauthenticated",0);
+	 addArg(0,"force-yes","APT::Get::force-yes",0);
+      }
+   }
+
    bool const found_something = Args.empty() == false;
 
    // FIXME: move to the correct command(s)
-   addArg('d',"download-only","APT::Get::Download-Only",0);
    addArg('y',"yes","APT::Get::Assume-Yes",0);
    addArg('y',"assume-yes","APT::Get::Assume-Yes",0);
    addArg(0,"assume-no","APT::Get::Assume-No",0);
@@ -271,21 +288,16 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, std::string
    addArg('m',"ignore-missing","APT::Get::Fix-Missing",0);
    addArg('t',"target-release","APT::Default-Release",CommandLine::HasArg);
    addArg('t',"default-release","APT::Default-Release",CommandLine::HasArg);
-   addArg(0,"download","APT::Get::Download",0);
-   addArg(0,"fix-missing","APT::Get::Fix-Missing",0);
    addArg(0,"ignore-hold","APT::Ignore-Hold",0);
    addArg(0,"upgrade","APT::Get::upgrade",0);
    addArg(0,"only-upgrade","APT::Get::Only-Upgrade",0);
    addArg(0,"allow-change-held-packages","APT::Get::allow-change-held-packages",CommandLine::Boolean);
    addArg(0,"allow-remove-essential","APT::Get::allow-remove-essential",CommandLine::Boolean);
    addArg(0,"allow-downgrades","APT::Get::allow-downgrades",CommandLine::Boolean);
-   addArg(0,"force-yes","APT::Get::force-yes",0);
-   addArg(0,"print-uris","APT::Get::Print-URIs",0);
    addArg(0,"trivial-only","APT::Get::Trivial-Only",0);
    addArg(0,"mark-auto","APT::Get::Mark-Auto",0);
    addArg(0,"remove","APT::Get::Remove",0);
    addArg(0,"only-source","APT::Get::Only-Source",0);
-   addArg(0,"allow-unauthenticated","APT::Get::AllowUnauthenticated",0);
    addArg(0,"install-recommends","APT::Install-Recommends",CommandLine::Boolean);
    addArg(0,"install-suggests","APT::Install-Suggests",CommandLine::Boolean);
    addArg(0,"fix-policy","APT::Get::Fix-Policy-Broken",0);

@@ -160,6 +160,27 @@ bool CheckFreeSpaceBeforeDownload(std::string const &Dir, unsigned long long Fet
    return true;
 }
 									/*}}}*/
+void RemoveDownloadNeedingItemsFromFetcher(pkgAcquire &Fetcher, bool &Transient)/*{{{*/
+{
+   for (auto I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd();)
+   {
+      if ((*I)->Local)
+      {
+	 ++I;
+	 continue;
+      }
+
+      // Close the item and check if it was found in cache
+      (*I)->Finished();
+      if (not (*I)->Complete)
+	 Transient = true;
+
+      // Clear it out of the fetch list
+      delete *I;
+      I = Fetcher.ItemsBegin();
+   }
+}
+									/*}}}*/
 
 aptAcquireWithTextStatus::aptAcquireWithTextStatus() : pkgAcquire::pkgAcquire(),
    Stat(std::cout, ScreenWidth, _config->FindI("quiet",0))
@@ -254,9 +275,12 @@ bool DoChangelog(CommandLine &CmdL)
    if (verset.empty() == true)
       return _error->Error(_("No packages found"));
 
-   bool const downOnly = _config->FindB("APT::Get::Download-Only", false);
-   bool const printOnly = _config->FindB("APT::Get::Print-URIs", false);
-   if (printOnly)
+   auto const downAllowed = _config->GetB("APT::Get::Download").value_or(true);
+   auto const downOnly = _config->GetB("APT::Get::Download-Only").value_or(false);
+   auto const printOnly = _config->GetB("APT::Get::Print-URIs").value_or(false);
+   if (not downAllowed)
+      _config->CndSet("Acquire::Changelogs::AlwaysOnline", false);
+   else if (printOnly)
       _config->CndSet("Acquire::Changelogs::AlwaysOnline", true);
 
    aptAcquireWithTextStatus Fetcher;
@@ -270,6 +294,14 @@ bool DoChangelog(CommandLine &CmdL)
 	 new pkgAcqChangelog(&Fetcher, Ver, ".");
       else
 	 new pkgAcqChangelog(&Fetcher, Ver);
+   }
+
+   if (not downAllowed) {
+      bool NeedsDownload = false;
+      RemoveDownloadNeedingItemsFromFetcher(Fetcher, NeedsDownload);
+      // This error message is not ideal, but used elsewhere already and a good message here not really worthed the effort
+      if (NeedsDownload)
+	 return _error->Error(_("Some files failed to download"));
    }
 
    if (printOnly == false)

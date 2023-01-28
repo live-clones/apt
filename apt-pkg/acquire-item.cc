@@ -3641,6 +3641,12 @@ void pkgAcqChangelog::Init(std::string const &DestDir, std::string const &DestFi
       Desc.URI = "changelog:/" + pkgAcquire::URIEncode(DestFile);
       return;
    }
+   else
+   {
+      std::string_view locals[] = { "store", "copy", "file", "cdrom" };
+      if (std::any_of(std::begin(locals), std::end(locals), [&](auto const l) { return APT::String::starts_with(Desc.URI, l); }))
+	 Local = true;
+   }
 
    std::string DestFileName;
    if (DestFilename.empty())
@@ -3805,9 +3811,9 @@ std::string pkgAcqChangelog::URI(std::string const &Template,
 
    // the path is: COMPONENT/SRC/SRCNAME/SRCNAME_SRCVER, e.g. main/a/apt/apt_1.1 or contrib/liba/libapt/libapt_2.0
    std::string const Src{SrcName};
-   std::string path = pkgAcquire::URIEncode(APT::String::Startswith(SrcName, "lib") ? Src.substr(0, 4) : Src.substr(0,1));
-   path.append("/").append(pkgAcquire::URIEncode(Src)).append("/");
-   path.append(pkgAcquire::URIEncode(Src)).append("_").append(pkgAcquire::URIEncode(StripEpoch(SrcVersion)));
+   std::string path = pkgAcquire::URIEncode(APT::String::starts_with(Src, "lib") ? Src.substr(0, 4) : Src.substr(0,1));
+   APT::String::append(path, "/", pkgAcquire::URIEncode(Src), "/",
+		       pkgAcquire::URIEncode(Src), "_", pkgAcquire::URIEncode(StripEpoch(SrcVersion)));
    // we omit component for releases without one (= flat-style repositories)
    if (Component != NULL && strlen(Component) != 0)
       path = pkgAcquire::URIEncode(Component) + "/" + path;
