@@ -307,19 +307,18 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-       {"download-file", &DoDownloadFile, _("download the given uri to the target-path")},
-       {"srv-lookup", &DoSrvLookup, _("lookup a SRV record (e.g. _http._tcp.ftp.debian.org)")},
-       {"cat-file", &DoCatFile, _("concatenate files, with automatic decompression")},
-       {"auto-detect-proxy", &DoAutoDetectProxy, _("detect proxy using apt.conf")},
-       {"wait-online", &DoWaitOnline, _("wait for system to be online")},
-       {"drop-privs", &DropPrivsAndRun, _("drop privileges before running given command")},
-       {"analyze-pattern", &AnalyzePattern, _("analyse a pattern")},
-       {"analyse-pattern", &AnalyzePattern, nullptr},
-       {"quote-string", &DoQuoteString, nullptr},
-       {nullptr, nullptr, nullptr}};
+       {"download-file", &DoDownloadFile, _("download the given uri to the target-path"), {}},
+       {"srv-lookup", &DoSrvLookup, _("lookup a SRV record (e.g. _http._tcp.ftp.debian.org)"), {}},
+       {"cat-file", &DoCatFile, _("concatenate files, with automatic decompression"), {}},
+       {"auto-detect-proxy", &DoAutoDetectProxy, _("detect proxy using apt.conf"), {}},
+       {"wait-online", &DoWaitOnline, _("wait for system to be online"), {}},
+       {"drop-privs", &DropPrivsAndRun, _("drop privileges before running given command"), {}},
+       {"analyze-pattern", &AnalyzePattern, _("analyse a pattern"), {"analyse-pattern"}},
+       {"quote-string", &DoQuoteString, "", {}},
+   };
 }
 									/*}}}*/
 int main(int argc,const char *argv[])					/*{{{*/

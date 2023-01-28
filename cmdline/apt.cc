@@ -53,50 +53,44 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    // advanced commands are left undocumented on purpose
    return {
       // query
-      {"list", &DoList, _("list packages based on package names")},
-      {"search", &DoSearch, _("search in package descriptions")},
-      {"show", &ShowPackage, _("show package details")},
+      {"list", &DoList, _("list packages based on package names"), {}},
+      {"search", &DoSearch, _("search in package descriptions"), {}},
+      {"show", &ShowPackage, _("show package details"), {"info"}},
 
       // package stuff
-      {"install", &DoInstall, _("install packages")},
-      {"reinstall", &DoInstall, _("reinstall packages")},
-      {"remove", &DoInstall, _("remove packages")},
-      {"autoremove", &DoInstall, _("automatically remove all unused packages")},
-      {"auto-remove", &DoInstall, nullptr},
-      {"autopurge",&DoInstall, nullptr},
-      {"purge", &DoInstall, nullptr},
+      {"install", &DoInstall, _("install packages"), {}},
+      {"reinstall", &DoInstall, _("reinstall packages"), {}},
+      {"remove", &DoInstall, _("remove packages"), {}},
+      {"autoremove", &DoInstall, _("automatically remove all unused packages"), {"auto-remove"}},
+      {"autopurge",&DoInstall, "", {"auto-purge"}},
+      {"purge", &DoInstall, "", {}},
 
       // system wide stuff
-      {"update", &DoUpdate, _("update list of available packages")},
-      {"upgrade", &DoUpgrade, _("upgrade the system by installing/upgrading packages")},
-      {"full-upgrade", &DoDistUpgrade, _("upgrade the system by removing/installing/upgrading packages")},
+      {"update", &DoUpdate, _("update list of available packages"), {}},
+      {"upgrade", &DoUpgrade, _("upgrade the system by installing/upgrading packages"), {}},
+      {"full-upgrade", &DoDistUpgrade, _("upgrade the system by removing/installing/upgrading packages"), {"dist-upgrade"}},
 
       // misc
-      {"edit-sources", &EditSources, _("edit the source information file")},
-      {"moo", &DoMoo, nullptr},
-      {"satisfy", &DoBuildDep, _("satisfy dependency strings")},
+      {"edit-sources", &EditSources, _("edit the source information file"), {}},
+      {"moo", &DoMoo, "", {}},
+      {"satisfy", &DoBuildDep, _("satisfy dependency strings"), {}},
 
       // for compat with muscle memory
-      {"dist-upgrade", &DoDistUpgrade, nullptr},
-      {"showsrc",&ShowSrcPackage, nullptr},
-      {"depends",&Depends, nullptr},
-      {"rdepends",&RDepends, nullptr},
-      {"policy",&Policy, nullptr},
-      {"build-dep", &DoBuildDep,nullptr},
-      {"clean", &DoClean, nullptr},
-      {"autoclean", &DoAutoClean, nullptr},
-      {"auto-clean", &DoAutoClean, nullptr},
-      {"source", &DoSource, nullptr},
-      {"download", &DoDownload, nullptr},
-      {"changelog", &DoChangelog, nullptr},
-      {"info", &ShowPackage, nullptr},
-
-      {nullptr, nullptr, nullptr}
+      {"showsrc",&ShowSrcPackage, "", {}},
+      {"depends",&Depends, "", {}},
+      {"rdepends",&RDepends, "", {}},
+      {"policy",&Policy, "", {}},
+      {"build-dep", &DoBuildDep, "", {}},
+      {"clean", &DoClean, "", {}},
+      {"autoclean", &DoAutoClean, "", {"auto-clean"}},
+      {"source", &DoSource, "", {}},
+      {"download", &DoDownload, "", {}},
+      {"changelog", &DoChangelog, "", {}},
    };
 }
 									/*}}}*/

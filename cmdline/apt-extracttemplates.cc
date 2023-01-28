@@ -317,10 +317,10 @@ static bool Go(CommandLine &CmdL)
 	return !_error->PendingError();
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-	{nullptr, nullptr, nullptr}
+      {nullptr, nullptr, "", {}}
    };
 }
 									/*}}}*/

@@ -57,7 +57,7 @@ APT_NORETURN static void DIE(std::string const &message) {		/*{{{*/
 	exit(EXIT_FAILURE);
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {};
 }

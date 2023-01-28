@@ -86,12 +86,11 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-      {"shell", &DoShell, _("get configuration values via shell evaluation")},
-      {"dump", &DoDump, _("show the active configuration setting")},
-      {nullptr, nullptr, nullptr}
+      {"shell", &DoShell, _("get configuration values via shell evaluation"), {}},
+      {"dump", &DoDump, _("show the active configuration setting"), {}},
    };
 }
 									/*}}}*/

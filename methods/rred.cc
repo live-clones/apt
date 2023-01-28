@@ -792,9 +792,9 @@ static const APT::Configuration::Compressor *FindCompressor(std::vector<APT::Con
    return compressor;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()
+static std::vector<aptDispatchWithHelpAlias> GetCommands()
 {
-   return {{nullptr, nullptr, nullptr}};
+   return {};
 }
 int main(int argc, const char *argv[])
 {

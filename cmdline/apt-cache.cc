@@ -1105,27 +1105,26 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-      {"gencaches",&GenCaches, nullptr},
-      {"showsrc",&ShowSrcPackage, _("Show source records")},
-      {"showpkg",&DumpPackage, nullptr},
-      {"stats",&Stats, nullptr},
-      {"dump",&Dump, nullptr},
-      {"dumpavail",&DumpAvail, nullptr},
-      {"unmet",&UnMet, nullptr},
-      {"search",&DoSearch, _("Search the package list for a regex pattern")},
-      {"depends",&Depends, _("Show raw dependency information for a package")},
-      {"rdepends",&RDepends, _("Show reverse dependency information for a package")},
-      {"dotty",&Dotty, nullptr},
-      {"xvcg",&XVcg, nullptr},
-      {"show",&ShowPackage, _("Show a readable record for the package")},
-      {"pkgnames",&ShowPkgNames, _("List the names of all packages in the system")},
-      {"showauto",&ShowAuto, nullptr},
-      {"policy",&Policy, _("Show policy settings")},
-      {"madison",&Madison, nullptr},
-      {nullptr, nullptr, nullptr}
+      {"gencaches",&GenCaches, "", {}},
+      {"showsrc",&ShowSrcPackage, _("Show source records"), {}},
+      {"showpkg",&DumpPackage, "", {}},
+      {"stats",&Stats, "", {}},
+      {"dump",&Dump, "", {}},
+      {"dumpavail",&DumpAvail, "", {}},
+      {"unmet",&UnMet, "", {}},
+      {"search",&DoSearch, _("Search the package list for a regex pattern"), {}},
+      {"depends",&Depends, _("Show raw dependency information for a package"), {}},
+      {"rdepends",&RDepends, _("Show reverse dependency information for a package"), {}},
+      {"dotty",&Dotty, "", {}},
+      {"xvcg",&XVcg, "", {}},
+      {"show",&ShowPackage, _("Show a readable record for the package"), {"info"}},
+      {"pkgnames",&ShowPkgNames, _("List the names of all packages in the system"), {}},
+      {"showauto",&ShowAuto, "", {}},
+      {"policy",&Policy, _("Show policy settings"), {}},
+      {"madison",&Madison, "", {}},
    };
 }
 									/*}}}*/

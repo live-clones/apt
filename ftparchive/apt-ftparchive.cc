@@ -1020,16 +1020,15 @@ static bool Clean(CommandLine &CmdL)
 }
 									/*}}}*/
 
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-      {"packages",&SimpleGenPackages, nullptr},
-      {"contents",&SimpleGenContents, nullptr},
-      {"sources",&SimpleGenSources, nullptr},
-      {"release",&SimpleGenRelease, nullptr},
-      {"generate",&Generate, nullptr},
-      {"clean",&Clean, nullptr},
-      {nullptr, nullptr, nullptr}
+      {"packages",&SimpleGenPackages, "", {}},
+      {"contents",&SimpleGenContents, "", {}},
+      {"sources",&SimpleGenSources, "", {}},
+      {"release",&SimpleGenRelease, "", {}},
+      {"generate",&Generate, "", {}},
+      {"clean",&Clean, "", {}},
    };
 }
 									/*}}}*/

@@ -144,10 +144,10 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-      {nullptr, nullptr, nullptr}
+      {nullptr, nullptr, "", {}}
    };
 }
 									/*}}}*/
