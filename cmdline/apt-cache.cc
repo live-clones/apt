@@ -1109,15 +1109,15 @@ static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
       {"gencaches",&GenCaches, "", {}},
-      {"showsrc",&ShowSrcPackage, _("Show source records"), {}},
-      {"showpkg",&DumpPackage, "", {}},
+      {"showsrc",&ShowSrcPackage, _("Show source records"), {"show-src"}},
+      {"showpkg",&DumpPackage, "", {"show-pkg"}},
       {"stats",&Stats, "", {}},
       {"dump",&Dump, "", {}},
       {"dumpavail",&DumpAvail, "", {}},
       {"unmet",&UnMet, "", {}},
       {"search",&DoSearch, _("Search the package list for a regex pattern"), {}},
       {"depends",&Depends, _("Show raw dependency information for a package"), {}},
-      {"rdepends",&RDepends, _("Show reverse dependency information for a package"), {}},
+      {"rdepends",&RDepends, _("Show reverse dependency information for a package"), {"r-depends"}},
       {"dotty",&Dotty, "", {}},
       {"xvcg",&XVcg, "", {}},
       {"show",&ShowPackage, _("Show a readable record for the package"), {"info"}},

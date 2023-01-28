@@ -435,12 +435,12 @@ static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
       {"install",&DoSelection, "", {}},
       {"deinstall",&DoSelection, "", {"remove"}}, // dpkg uses deinstall, but we use remove everywhere else
       {"purge",&DoSelection, "", {}},
-      {"showauto",&ShowAuto, _("Print the list of automatically installed packages"), {}},
-      {"showmanual",&ShowAuto, _("Print the list of manually installed packages"), {}},
-      {"showhold",&ShowSelection, _("Print the list of packages on hold"), {"showholds", "showheld"}},
-      {"showinstall",&ShowSelection, "", {"showinstalls"}},
-      {"showdeinstall",&ShowSelection, "", {"showdeinstalls", "showremove", "showremoves"}},
-      {"showpurge",&ShowSelection, "", {"showpurges"}},
+      {"showauto",&ShowAuto, _("Print the list of automatically installed packages"), {"show-auto"}},
+      {"showmanual",&ShowAuto, _("Print the list of manually installed packages"), {"show-manual"}},
+      {"showhold",&ShowSelection, _("Print the list of packages on hold"), {"showholds", "showheld","show-hold", "show-holds", "show-held"}},
+      {"showinstall",&ShowSelection, "", {"showinstalls", "show-install", "show-installs"}},
+      {"showdeinstall",&ShowSelection, "", {"showdeinstalls", "showremove", "showremoves", "show-deinstall", "show-deinstalls", "show-remove", "show-removes"}},
+      {"showpurge",&ShowSelection, "", {"showpurges", "show-purge", "show-purges"}},
       // obsolete commands for compatibility
       {"markauto", &DoMarkAuto, "", {}},
       {"unmarkauto", &DoMarkAuto, "", {}},

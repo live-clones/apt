@@ -64,7 +64,7 @@ static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 
       // package stuff
       {"install", &DoInstall, _("install packages"), {}},
-      {"reinstall", &DoInstall, _("reinstall packages"), {}},
+      {"reinstall", &DoInstall, _("reinstall packages"), {"re-install"}},
       {"remove", &DoInstall, _("remove packages"), {}},
       {"autoremove", &DoInstall, _("automatically remove all unused packages"), {"auto-remove"}},
       {"autopurge",&DoInstall, "", {"auto-purge"}},
@@ -76,16 +76,16 @@ static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
       {"full-upgrade", &DoDistUpgrade, _("upgrade the system by removing/installing/upgrading packages"), {"dist-upgrade"}},
 
       // misc
-      {"edit-sources", &EditSources, _("edit the source information file"), {}},
-      {"moo", &DoMoo, "", {}},
+      {"edit-sources", &EditSources, _("edit the source information file"), {"editsources"}},
+      {"moo", &DoMoo, "", {"mooo", "muh"}},
       {"satisfy", &DoBuildDep, _("satisfy dependency strings"), {}},
 
       // for compat with muscle memory
-      {"showsrc",&ShowSrcPackage, "", {}},
+      {"showsrc",&ShowSrcPackage, "", {"show-src"}},
       {"depends",&Depends, "", {}},
-      {"rdepends",&RDepends, "", {}},
+      {"rdepends",&RDepends, "", {"r-depends"}},
       {"policy",&Policy, "", {}},
-      {"build-dep", &DoBuildDep, "", {}},
+      {"build-dep", &DoBuildDep, "", {"builddep"}},
       {"clean", &DoClean, "", {}},
       {"autoclean", &DoAutoClean, "", {"auto-clean"}},
       {"source", &DoSource, "", {}},
