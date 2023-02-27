@@ -20,11 +20,17 @@
 #include <limits>
 #include <string>
 #include <vector>
-#include <apt-pkg/string_view.h>
 #include <stddef.h>
 #include <time.h>
 
-#include "macros.h"
+#if __cplusplus >= 201700L
+#include <initializer_list>
+#include <string_view>
+#include <optional>
+#endif
+
+#include <apt-pkg/string_view.h>
+#include <apt-pkg/macros.h>
 
 
 namespace APT {
@@ -35,6 +41,27 @@ namespace APT {
       APT_PUBLIC std::string Join(std::vector<std::string> list, const std::string &sep);
       // Returns string display length honoring multi-byte characters
       APT_PUBLIC size_t DisplayLength(StringView str);
+
+#if __cplusplus >= 201700L
+      std::string &vappend(std::string &res, std::initializer_list<std::string_view> strs);
+      template<typename... Strings> std::string &append(std::string &res, Strings &&...strings)
+	 //requires std::conjunction_v<std::is_convertible<Strings,std::string_view>...>
+      {
+	 std::initializer_list<std::string_view> const strs{std::forward<Strings>(strings)...};
+	 return vappend(res, strs);
+      }
+      template<typename... Strings> std::string cat(Strings &&...strings)
+	 //requires std::conjunction_v<std::is_convertible<Strings,std::string_view>...>
+      {
+	 std::string res;
+	 append(res, std::forward<Strings>(strings)...);
+	 return res;
+      }
+
+      // if you can, prefer the std::string_view methods added in C++20
+      bool ends_with(std::string_view s, std::string_view ending);
+      bool starts_with(std::string_view s, std::string_view starting);
+#endif
    }
 }
 
@@ -86,6 +113,9 @@ APT_PUBLIC bool RFC1123StrToTime(const std::string &str,time_t &time) APT_MUSTCH
 APT_PUBLIC bool FTPMDTMStrToTime(const char* const str,time_t &time) APT_MUSTCHECK;
 APT_PUBLIC std::string LookupTag(const std::string &Message,const char *Tag,const char *Default = 0);
 APT_PUBLIC int StringToBool(const std::string &Text,int Default = -1);
+#if __cplusplus >= 201700L
+APT_PUBLIC std::optional<bool> StringToOptionalBool(std::string_view Text);
+#endif
 APT_PUBLIC bool ReadMessages(int Fd, std::vector<std::string> &List);
 APT_PUBLIC bool StrToNum(const char *Str,unsigned long &Res,unsigned Len,unsigned Base = 0);
 APT_PUBLIC bool StrToNum(const char *Str,unsigned long long &Res,unsigned Len,unsigned Base = 0);

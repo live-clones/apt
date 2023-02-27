@@ -3641,6 +3641,12 @@ void pkgAcqChangelog::Init(std::string const &DestDir, std::string const &DestFi
       Desc.URI = "changelog:/" + pkgAcquire::URIEncode(DestFile);
       return;
    }
+   else
+   {
+      std::string_view locals[] = { "store", "copy", "file", "cdrom" };
+      if (std::any_of(std::begin(locals), std::end(locals), [&](auto const l) { return APT::String::starts_with(Desc.URI, l); }))
+	 Local = true;
+   }
 
    std::string DestFileName;
    if (DestFilename.empty())
@@ -3690,37 +3696,87 @@ void pkgAcqChangelog::Init(std::string const &DestDir, std::string const &DestFi
 									/*}}}*/
 std::string pkgAcqChangelog::URI(pkgCache::VerIterator const &Ver)	/*{{{*/
 {
-   std::string const confOnline = "Acquire::Changelogs::AlwaysOnline";
-   bool AlwaysOnline = _config->FindB(confOnline, false);
-   if (AlwaysOnline == false)
+   std::string_view const confOnline = "Acquire::Changelogs::AlwaysOnline";
+   auto AlwaysOnline = _config->GetB(confOnline);
+   if (not AlwaysOnline.has_value())
       for (pkgCache::VerFileIterator VF = Ver.FileList(); VF.end() == false; ++VF)
       {
 	 pkgCache::PkgFileIterator const PF = VF.File();
 	 if (PF.Flagged(pkgCache::Flag::NotSource) || PF->Release == 0)
 	    continue;
 	 pkgCache::RlsFileIterator const RF = PF.ReleaseFile();
-	 if (RF->Origin != 0 && _config->FindB(confOnline + "::Origin::" + RF.Origin(), false))
-	 {
-	    AlwaysOnline = true;
-	    break;
-	 }
+	 if (RF->Origin != 0)
+	    if (auto AO = _config->GetB(APT::String::cat(confOnline, "::Origin::", RF.Origin())); AO.has_value())
+	    {
+	       AlwaysOnline = AO;
+	       break;
+	    }
       }
-   if (AlwaysOnline == false)
+   if (not AlwaysOnline.value_or(false))
    {
       pkgCache::PkgIterator const Pkg = Ver.ParentPkg();
       if (Pkg->CurrentVer != 0 && Pkg.CurrentVer() == Ver)
       {
-	 std::string const root = _config->FindDir("Dir");
-	 std::string const basename = root + std::string("usr/share/doc/") + Pkg.Name() + "/changelog";
-	 std::string const debianname = basename + ".Debian";
-	 if (FileExists(debianname))
-	    return "copy://" + debianname;
-	 else if (FileExists(debianname + ".gz"))
-	    return "store://" + debianname + ".gz";
-	 else if (FileExists(basename))
-	    return "copy://" + basename;
-	 else if (FileExists(basename + ".gz"))
-	    return "store://" + basename + ".gz";
+	 auto const LocalFile = [](pkgCache::PkgIterator const &Pkg) -> std::string {
+	    std::string const root = _config->FindDir("Dir");
+	    std::string const basename = APT::String::cat(root, "usr/share/doc/", Pkg.Name(), "/changelog");
+	    std::string const debianname = basename + ".Debian";
+	    auto const exts = APT::Configuration::getCompressorExtensions(); // likely we encounter only .gz
+	    for (auto file : { debianname, basename })
+	    {
+	       if (FileExists(file))
+		  return "copy://" + file;
+	       for (auto const& ext : exts)
+	       {
+		  auto const compressedfile = file + ext;
+		  if (FileExists(compressedfile))
+		     return "store://" + compressedfile;
+	       }
+	    }
+	    return "";
+	 }(Pkg);
+	 if (not LocalFile.empty())
+	 {
+	    if (not AlwaysOnline.value_or(true))
+	       return LocalFile;
+
+	    _error->PushToStack();
+	    FileFd trimmed;
+	    if (APT::String::starts_with(LocalFile, "copy://"))
+	       trimmed.Open(LocalFile.substr(7), FileFd::ReadOnly, FileFd::None);
+	    else
+	       trimmed.Open(LocalFile.substr(8), FileFd::ReadOnly, FileFd::Extension);
+
+	    bool trimmedFile = false;
+	    if (trimmed.IsOpen())
+	    {
+	       /* We want to look at the last line… in a (likely) compressed file,
+		  which means we more or less have to uncompress the entire file.
+		  So we skip ahead the filesize minus our choosen line size in
+		  the hope that changelogs don't grow by being compressed to
+		  avoid doing this costly dance on at least a bit of the file. */
+	       char buffer[150];
+	       if (auto const filesize = trimmed.FileSize(); filesize > sizeof(buffer))
+		  trimmed.Skip(filesize - sizeof(buffer));
+	       std::string_view giveaways[] = {
+		  "# Older entries have been removed", // Debian
+		  "# To read the complete changelog use",
+		  "# For older changelog entries, run", // Ubuntu
+	       };
+	       while (trimmed.ReadLine(buffer, sizeof(buffer)) != nullptr)
+	       {
+		  std::string_view const line{buffer};
+		  if (std::any_of(std::begin(giveaways), std::end(giveaways), [=](auto const gw) { return APT::String::starts_with(line, gw); }))
+		  {
+		     trimmedFile = true;
+		     break;
+		  }
+	       }
+	    }
+	    _error->RevertToStack();
+	    if (not trimmedFile)
+	       return LocalFile;
+	 }
       }
    }
 
@@ -3804,9 +3860,9 @@ std::string pkgAcqChangelog::URI(std::string const &Template,
 
    // the path is: COMPONENT/SRC/SRCNAME/SRCNAME_SRCVER, e.g. main/a/apt/apt_1.1 or contrib/liba/libapt/libapt_2.0
    std::string const Src{SrcName};
-   std::string path = pkgAcquire::URIEncode(APT::String::Startswith(SrcName, "lib") ? Src.substr(0, 4) : Src.substr(0,1));
-   path.append("/").append(pkgAcquire::URIEncode(Src)).append("/");
-   path.append(pkgAcquire::URIEncode(Src)).append("_").append(pkgAcquire::URIEncode(StripEpoch(SrcVersion)));
+   std::string path = pkgAcquire::URIEncode(APT::String::starts_with(Src, "lib") ? Src.substr(0, 4) : Src.substr(0,1));
+   APT::String::append(path, "/", pkgAcquire::URIEncode(Src), "/",
+		       pkgAcquire::URIEncode(Src), "_", pkgAcquire::URIEncode(StripEpoch(SrcVersion)));
    // we omit component for releases without one (= flat-style repositories)
    if (Component != NULL && strlen(Component) != 0)
       path = pkgAcquire::URIEncode(Component) + "/" + path;

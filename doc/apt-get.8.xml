@@ -657,6 +657,13 @@
      <listitem><para>Fail the update command if any error occured, even a transient one.</para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>--online</option></term><term><option>--local</option></term>
+     <listitem><para>The <option>changelog</option> command will ignore local files or prefer using local files
+     if they exist even if they are trimmed overriding configuration and the default auto-detection which will
+     use local files only if they are not trimmed.
+     </para></listitem>
+     </varlistentry>
+
      &apt-commonoptions;
      
    </variablelist>

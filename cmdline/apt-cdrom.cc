@@ -213,12 +213,11 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-      {"add", &DoAdd, "Add a CDROM"},
-      {"ident", &DoIdent, "Report the identity of a CDROM"},
-      {nullptr, nullptr, nullptr}
+      {"add", &DoAdd, "Add a CDROM", {}},
+      {"ident", &DoIdent, "Report the identity of a CDROM", {}},
    };
 }
 									/*}}}*/

@@ -117,15 +117,19 @@ testfailure test -e foo.changelog
 testdpkgnotinstalled 'foo'
 testsuccessequal "'http://localhost:${APTHTTPPORT}/pool/main/f/foo/foo_1.0/changelog' foo.changelog" apt changelog foo --print-uris -o Acquire::Changelogs::AlwaysOnline=false
 testsuccessequal "'http://localhost:${APTHTTPPORT}/pool/main/f/foo/foo_1.0/changelog' foo.changelog" apt changelog foo --print-uris -o Acquire::Changelogs::AlwaysOnline=true
+testfailure apt changelog foo --no-download
 
 testsuccess apt install awesome -y
 # at this moment, we still have the Releasefile claim to be origin:ubuntu
 echo 'Acquire::Changelogs::AlwaysOnline::Origin::Ubuntu "false";' >> rootdir/etc/apt/apt.conf.d/nooriginchangelogs
 testsuccessequal "'http://localhost:${APTHTTPPORT}/pool/main/a/awesome/awesome_42/changelog' awesome.changelog" apt changelog awesome --print-uris
-testsuccessequal "'copy://${TMPWORKINGDIRECTORY}/rootdir/usr/share/doc/awesome/changelog' awesome.changelog" apt changelog awesome --print-uris -o Acquire::Changelogs::AlwaysOnline=false
-testsuccessequal "'http://localhost:${APTHTTPPORT}/pool/main/a/awesome/awesome_42/changelog' awesome.changelog" apt changelog awesome --print-uris -o Acquire::Changelogs::AlwaysOnline=true
-testsuccessequal "'http://localhost:${APTHTTPPORT}/pool/main/a/awesome/awesome_42/changelog' awesome.changelog" apt changelog awesome --print-uris -o Acquire::Changelogs::AlwaysOnline=false -o Acquire::Changelogs::AlwaysOnline::Origin::Ubuntu=true
-testsuccessequal "'copy://${TMPWORKINGDIRECTORY}/rootdir/usr/share/doc/awesome/changelog' awesome.changelog" apt changelog awesome --print-uris -o Acquire::Changelogs::AlwaysOnline=false -o Acquire::Changelogs::AlwaysOnline::Origin::Debian=true
+testsuccessequal "'copy://${TMPWORKINGDIRECTORY}/rootdir/usr/share/doc/awesome/changelog' awesome.changelog" apt changelog awesome --print-uris --local
+testsuccessequal "'http://localhost:${APTHTTPPORT}/pool/main/a/awesome/awesome_42/changelog' awesome.changelog" apt changelog awesome --print-uris --online
+# we use undefined here as it a non-truth value and --print-uris defaults the option to true otherwise
+testsuccessequal "'http://localhost:${APTHTTPPORT}/pool/main/a/awesome/awesome_42/changelog' awesome.changelog" apt changelog awesome --print-uris -o Acquire::Changelogs::AlwaysOnline='undefined' -o Acquire::Changelogs::AlwaysOnline::Origin::Ubuntu=true
+testsuccessequal "'copy://${TMPWORKINGDIRECTORY}/rootdir/usr/share/doc/awesome/changelog' awesome.changelog" apt changelog awesome --print-uris -o Acquire::Changelogs::AlwaysOnline='undefined' -o Acquire::Changelogs::AlwaysOnline::Origin::Ubuntu=false
+testsuccess apt changelog awesome --no-download
+testsuccessequal "'copy://${TMPWORKINGDIRECTORY}/rootdir/usr/share/doc/awesome/changelog' awesome.changelog" apt changelog awesome --print-uris --no-download
 
 testsuccess apt changelog awesome -d
 testfilestats 'awesome.changelog' '%U:%G:%a' '=' "${TEST_DEFAULT_USER}:${TEST_DEFAULT_GROUP}:644"

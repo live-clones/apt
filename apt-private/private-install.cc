@@ -90,26 +90,6 @@ public:
       SimulateWithActionGroupInhibited& operator=(SimulateWithActionGroupInhibited &&Cache) = delete;
       ~SimulateWithActionGroupInhibited() = default;
 };
-static void RemoveDownloadNeedingItemsFromFetcher(pkgAcquire &Fetcher, bool &Transient)
-{
-   for (pkgAcquire::ItemIterator I = Fetcher.ItemsBegin(); I < Fetcher.ItemsEnd();)
-   {
-      if ((*I)->Local == true)
-      {
-	 ++I;
-	 continue;
-      }
-
-      // Close the item and check if it was found in cache
-      (*I)->Finished();
-      if ((*I)->Complete == false)
-	 Transient = true;
-
-      // Clear it out of the fetch list
-      delete *I;
-      I = Fetcher.ItemsBegin();
-   }
-}
 bool InstallPackages(CacheFile &Cache, APT::PackageVector &HeldBackPackages, bool ShwKept, bool Ask, bool Safety, std::string const &Hook, CommandLine const &CmdL)
 {
    if (not RunScripts("APT::Install::Pre-Invoke"))

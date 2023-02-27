@@ -24,21 +24,19 @@
 #include <apti18n.h>
 									/*}}}*/
 
-APT_NONNULL(1, 2)
-static bool CmdMatches_fn(char const *const Cmd, char const *const Match)
+static bool CmdMatches_fn(std::string_view const Cmd, std::string_view const Match)
 {
-   return strcmp(Cmd, Match) == 0;
+   return Cmd == Match;
 }
 template <typename... Tail>
-APT_NONNULL(1, 2)
-static bool CmdMatches_fn(char const *const Cmd, char const *const Match, Tail... MoreMatches)
+static bool CmdMatches_fn(std::string_view const Cmd, std::string_view const Match, Tail... MoreMatches)
 {
    return CmdMatches_fn(Cmd, Match) || CmdMatches_fn(Cmd, MoreMatches...);
 }
 #define addArg(w, x, y, z) Args.emplace_back(CommandLine::MakeArgs(w, x, y, z))
-#define CmdMatches(...) (Cmd != nullptr && CmdMatches_fn(Cmd, __VA_ARGS__))
+#define CmdMatches(...) (CmdMatches_fn(Cmd, __VA_ARGS__))
 
-static bool addArgumentsAPTCache(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+static bool addArgumentsAPTCache(std::vector<CommandLine::Args> &Args, std::string_view const Cmd)/*{{{*/
 {
    if (CmdMatches("depends", "rdepends"))
    {
@@ -60,7 +58,7 @@ static bool addArgumentsAPTCache(std::vector<CommandLine::Args> &Args, char cons
       addArg('n', "names-only", "APT::Cache::NamesOnly", 0);
       addArg('f', "full", "APT::Cache::ShowFull", 0);
    }
-   else if (CmdMatches("show") | CmdMatches("info"))
+   else if (CmdMatches("show", "info"))
    {
       addArg('a', "all-versions", "APT::Cache::AllVersions", 0);
    }
@@ -96,9 +94,9 @@ static bool addArgumentsAPTCache(std::vector<CommandLine::Args> &Args, char cons
    return found_something;
 }
 									/*}}}*/
-static bool addArgumentsAPTCDROM(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+static bool addArgumentsAPTCDROM(std::vector<CommandLine::Args> &Args, std::string_view const Cmd)/*{{{*/
 {
-   if (CmdMatches("add", "ident") == false)
+   if (not CmdMatches("add", "ident"))
       return false;
 
    // FIXME: move to the correct command(s)
@@ -114,7 +112,7 @@ static bool addArgumentsAPTCDROM(std::vector<CommandLine::Args> &Args, char cons
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTConfig(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+static bool addArgumentsAPTConfig(std::vector<CommandLine::Args> &Args, std::string_view const Cmd)/*{{{*/
 {
    if (CmdMatches("dump"))
    {
@@ -129,19 +127,19 @@ static bool addArgumentsAPTConfig(std::vector<CommandLine::Args> &Args, char con
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTDumpSolver(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
+static bool addArgumentsAPTDumpSolver(std::vector<CommandLine::Args> &Args, std::string_view const)/*{{{*/
 {
    addArg(0,"user","APT::Solver::RunAsUser",CommandLine::HasArg);
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTExtractTemplates(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
+static bool addArgumentsAPTExtractTemplates(std::vector<CommandLine::Args> &Args, std::string_view const)/*{{{*/
 {
    addArg('t',"tempdir","APT::ExtractTemplates::TempDir",CommandLine::HasArg);
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTFTPArchive(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
+static bool addArgumentsAPTFTPArchive(std::vector<CommandLine::Args> &Args, std::string_view const)/*{{{*/
 {
    addArg(0,"md5","APT::FTPArchive::MD5",0);
    addArg(0,"sha1","APT::FTPArchive::SHA1",0);
@@ -156,17 +154,17 @@ static bool addArgumentsAPTFTPArchive(std::vector<CommandLine::Args> &Args, char
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTInternalPlanner(std::vector<CommandLine::Args> &, char const * const)/*{{{*/
+static bool addArgumentsAPTInternalPlanner(std::vector<CommandLine::Args> &, std::string_view const)/*{{{*/
 {
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTInternalSolver(std::vector<CommandLine::Args> &, char const * const)/*{{{*/
+static bool addArgumentsAPTInternalSolver(std::vector<CommandLine::Args> &, std::string_view const)/*{{{*/
 {
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTHelper(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+static bool addArgumentsAPTHelper(std::vector<CommandLine::Args> &Args, std::string_view const Cmd)/*{{{*/
 {
    if (CmdMatches("cat-file"))
    {
@@ -175,7 +173,7 @@ static bool addArgumentsAPTHelper(std::vector<CommandLine::Args> &Args, char con
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, std::string_view const Cmd)/*{{{*/
 {
    if (CmdMatches("install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
 	    "dselect-upgrade", "autoremove", "autopurge", "full-upgrade"))
@@ -239,14 +237,20 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const 
       addArg(0,"format","APT::Get::IndexTargets::Format", CommandLine::HasArg);
       addArg(0,"release-info","APT::Get::IndexTargets::ReleaseInfo", 0);
    }
-   else if (CmdMatches("clean", "autoclean", "auto-clean", "check", "download", "changelog") ||
+   else if (CmdMatches("changelog"))
+   {
+      addArg(0, "online", "Acquire::Changelogs::AlwaysOnline", CommandLine::Boolean);
+      addArg(0, "local", "Acquire::Changelogs::AlwaysOnline", CommandLine::InvBoolean);
+      addArg(0, "offline", "Acquire::Changelogs::AlwaysOnline", CommandLine::InvBoolean);
+   }
+   else if (CmdMatches("clean", "autoclean", "auto-clean", "check", "download") ||
 	    CmdMatches("markauto", "unmarkauto")) // deprecated commands
       ;
    else if (CmdMatches("moo"))
       addArg(0, "color", "APT::Moo::Color", 0);
 
    if (CmdMatches("install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
-	    "dselect-upgrade", "autoremove", "auto-remove", "autopurge", "clean", "autoclean", "auto-clean", "check",
+	    "dselect-upgrade", "autoremove", "autopurge", "clean", "autoclean", "check",
 	    "build-dep", "satisfy", "full-upgrade", "source"))
    {
       addArg('s', "simulate", "APT::Get::Simulate", 0);
@@ -256,10 +260,27 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const 
       addArg('s', "no-act", "APT::Get::Simulate", 0);
    }
 
+   if (CmdMatches("install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
+	    "dselect-upgrade", "autoremove", "autopurge", "changelog", "download",
+	    "build-dep", "satisfy", "full-upgrade", "source", "update"))
+   {
+      addArg(0,"print-uris","APT::Get::Print-URIs",0);
+      if (not CmdMatches("download"))
+      {
+	 addArg('d',"download-only","APT::Get::Download-Only",0);
+	 addArg(0,"download","APT::Get::Download",0);
+      }
+      if (not CmdMatches("changelog"))
+      {
+	 addArg(0,"fix-missing","APT::Get::Fix-Missing",0);
+	 addArg(0,"allow-unauthenticated","APT::Get::AllowUnauthenticated",0);
+	 addArg(0,"force-yes","APT::Get::force-yes",0);
+      }
+   }
+
    bool const found_something = Args.empty() == false;
 
    // FIXME: move to the correct command(s)
-   addArg('d',"download-only","APT::Get::Download-Only",0);
    addArg('y',"yes","APT::Get::Assume-Yes",0);
    addArg('y',"assume-yes","APT::Get::Assume-Yes",0);
    addArg(0,"assume-no","APT::Get::Assume-No",0);
@@ -267,21 +288,16 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const 
    addArg('m',"ignore-missing","APT::Get::Fix-Missing",0);
    addArg('t',"target-release","APT::Default-Release",CommandLine::HasArg);
    addArg('t',"default-release","APT::Default-Release",CommandLine::HasArg);
-   addArg(0,"download","APT::Get::Download",0);
-   addArg(0,"fix-missing","APT::Get::Fix-Missing",0);
    addArg(0,"ignore-hold","APT::Ignore-Hold",0);
    addArg(0,"upgrade","APT::Get::upgrade",0);
    addArg(0,"only-upgrade","APT::Get::Only-Upgrade",0);
    addArg(0,"allow-change-held-packages","APT::Get::allow-change-held-packages",CommandLine::Boolean);
    addArg(0,"allow-remove-essential","APT::Get::allow-remove-essential",CommandLine::Boolean);
    addArg(0,"allow-downgrades","APT::Get::allow-downgrades",CommandLine::Boolean);
-   addArg(0,"force-yes","APT::Get::force-yes",0);
-   addArg(0,"print-uris","APT::Get::Print-URIs",0);
    addArg(0,"trivial-only","APT::Get::Trivial-Only",0);
    addArg(0,"mark-auto","APT::Get::Mark-Auto",0);
    addArg(0,"remove","APT::Get::Remove",0);
    addArg(0,"only-source","APT::Get::Only-Source",0);
-   addArg(0,"allow-unauthenticated","APT::Get::AllowUnauthenticated",0);
    addArg(0,"install-recommends","APT::Install-Recommends",CommandLine::Boolean);
    addArg(0,"install-suggests","APT::Install-Suggests",CommandLine::Boolean);
    addArg(0,"fix-policy","APT::Get::Fix-Policy-Broken",0);
@@ -290,17 +306,16 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const 
    return found_something;
 }
 									/*}}}*/
-static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, std::string_view const Cmd)/*{{{*/
 {
-   if (CmdMatches("auto", "manual", "hold", "unhold", "showauto",
-	    "showmanual", "showhold", "showholds", "showheld",
+   if (CmdMatches("auto", "manual", "hold", "unhold",
+	    "showauto", "showmanual", "showhold",
 	    "markauto", "unmarkauto", "minimize-manual"))
    {
       addArg('f',"file","Dir::State::extended_states",CommandLine::HasArg);
    }
-   else if (CmdMatches("install", "reinstall", "remove", "deinstall", "purge",
-	    "showinstall", "showinstalls", "showremove", "showremoves",
-	    "showdeinstall", "showdeinstalls", "showpurge", "showpurges"))
+   else if (CmdMatches("install", "reinstall", "deinstall", "purge",
+	    "showinstall", "showremove", "showdeinstall", "showpurge"))
       ;
    else
       return false;
@@ -317,7 +332,7 @@ static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, char const
       addArg(0,"assume-no","APT::Get::Assume-No",0);
    }
 
-   if (CmdMatches("minimize-manual") || (Cmd != nullptr && strncmp(Cmd, "show", strlen("show")) != 0))
+   if (CmdMatches("minimize-manual") || Cmd.compare(0, strlen("show"), "show") != 0)
    {
       addArg('s',"simulate","APT::Mark::Simulate",0);
       addArg('s',"just-print","APT::Mark::Simulate",0);
@@ -330,13 +345,13 @@ static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, char const
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTSortPkgs(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
+static bool addArgumentsAPTSortPkgs(std::vector<CommandLine::Args> &Args, std::string_view const)/*{{{*/
 {
    addArg('s',"source","APT::SortPkgs::Source",0);
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, std::string_view const Cmd)/*{{{*/
 {
    if (CmdMatches("list"))
    {
@@ -347,7 +362,7 @@ static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * c
       addArg('v', "verbose", "APT::Cmd::List-Include-Summary", 0);
       addArg('a', "all-versions", "APT::Cmd::All-Versions", 0);
    }
-   else if (CmdMatches("show") || CmdMatches("info"))
+   else if (CmdMatches("show"))
    {
       addArg('a', "all-versions", "APT::Cache::AllVersions", 0);
       addArg('f', "full", "APT::Cache::ShowFull", 0);
@@ -365,7 +380,7 @@ static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * c
    return true;
 }
 									/*}}}*/
-static bool addArgumentsRred(std::vector<CommandLine::Args> &Args, char const * const /*Cmd*/)/*{{{*/
+static bool addArgumentsRred(std::vector<CommandLine::Args> &Args, std::string_view const /*Cmd*/)/*{{{*/
 {
    addArg('t', nullptr, "Rred::T", 0);
    addArg('f', nullptr, "Rred::F", 0);
@@ -373,11 +388,11 @@ static bool addArgumentsRred(std::vector<CommandLine::Args> &Args, char const * 
    return true;
 }
 									/*}}}*/
-std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const * const Cmd)/*{{{*/
+std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, std::string_view const Cmd)/*{{{*/
 {
    std::vector<CommandLine::Args> Args;
    Args.reserve(50);
-   if (Cmd != nullptr && strcmp(Cmd, "help") == 0)
+   if (CmdMatches("help"))
       ; // no options for help so no need to implement it in each
    else
       switch (Program)
@@ -412,20 +427,17 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 }
 									/*}}}*/
 #undef addArg
-static void ShowHelpListCommands(std::vector<aptDispatchWithHelp> const &Cmds)/*{{{*/
+static void ShowHelpListCommands(std::vector<aptDispatchWithHelpAlias> const &Cmds)/*{{{*/
 {
-   if (Cmds.empty() || Cmds[0].Match == nullptr)
+   if (Cmds.empty() || Cmds.front().Match == nullptr)
       return;
-   std::cout << std::endl << _("Most used commands:") << std::endl;
+   std::cout << '\n' << _("Most used commands:") << '\n';
    for (auto const &c: Cmds)
-   {
-      if (c.Help == nullptr)
-	 continue;
-      std::cout << "  " << c.Match << " - " << c.Help << std::endl;
-   }
+      if (not c.Help.empty())
+	 std::cout << "  " << c.Match << " - " << c.Help << '\n';
 }
 									/*}}}*/
-static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<aptDispatchWithHelp> const &Cmds,/*{{{*/
+static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<aptDispatchWithHelpAlias> const &Cmds,/*{{{*/
       bool (*ShowHelp)(CommandLine &))
 {
    std::cout << PACKAGE << " " << PACKAGE_VERSION << " (" << COMMON_ARCH << ")" << std::endl;
@@ -444,16 +456,18 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
       case APT_CMD::APT_CACHE: cmd = "apt-cache(8)"; break;
       case APT_CMD::APT_CDROM: cmd = "apt-cdrom(8)"; break;
       case APT_CMD::APT_CONFIG: cmd = "apt-config(8)"; break;
-      case APT_CMD::APT_DUMP_SOLVER: cmd = nullptr; break;
       case APT_CMD::APT_EXTRACTTEMPLATES: cmd = "apt-extracttemplates(1)"; break;
       case APT_CMD::APT_FTPARCHIVE: cmd = "apt-ftparchive(1)"; break;
       case APT_CMD::APT_GET: cmd = "apt-get(8)"; break;
-      case APT_CMD::APT_HELPER: cmd = nullptr; break;
-      case APT_CMD::APT_INTERNAL_PLANNER: cmd = nullptr; break;
-      case APT_CMD::APT_INTERNAL_SOLVER: cmd = nullptr; break;
       case APT_CMD::APT_MARK: cmd = "apt-mark(8)"; break;
       case APT_CMD::APT_SORTPKG: cmd = "apt-sortpkgs(1)"; break;
-      case APT_CMD::RRED: cmd = nullptr; break;
+      case APT_CMD::APT_HELPER:
+      case APT_CMD::APT_INTERNAL_PLANNER:
+      case APT_CMD::APT_INTERNAL_SOLVER:
+      case APT_CMD::APT_DUMP_SOLVER:
+      case APT_CMD::RRED:
+	 cmd = nullptr;
+	 break;
    }
    if (cmd != nullptr)
       ioprintf(std::cout, _("See %s for more information about the available commands."), cmd);
@@ -500,7 +514,7 @@ static void BinarySpecificConfiguration(char const * const Binary)	/*{{{*/
    _config->Set("Binary", binary);
 }
 									/*}}}*/
-static void BinaryCommandSpecificConfiguration(char const * const Binary, char const * const Cmd)/*{{{*/
+static void BinaryCommandSpecificConfiguration(char const * const Binary, std::string_view const Cmd)/*{{{*/
 {
    std::string const binary = flNotDir(Binary);
    if ((binary == "apt" || binary == "apt-get") && CmdMatches("upgrade", "dist-upgrade", "full-upgrade"))
@@ -515,9 +529,54 @@ static void BinaryCommandSpecificConfiguration(char const * const Binary, char c
 }
 #undef CmdMatches
 									/*}}}*/
+
+// GetCommand - return the first non-option word			/*{{{*/
+/* This is an alias aware c++17 copy-cat of Commandline::GetCommand in libapt */
+static std::string_view GetCommand(std::vector<aptDispatchWithHelpAlias> const &Map,
+      unsigned int const argc, char const * const * const argv)
+{
+   // if there is a -- on the line there must be the word we search for either
+   // before it (as -- marks the end of the options) or right after it (as we can't
+   // decide if the command is actually an option, given that in theory, you could
+   // have parameters named like commands)
+   auto const findMatcher = [](std::string_view const arg) {
+      return [=](aptDispatchWithHelpAlias const &D) {
+	 if (arg == D.Match)
+	    return true;
+	 return std::find(D.Alias.begin(), D.Alias.end(), arg) != D.Alias.end();
+      };
+   };
+   for (size_t i = 1; i < argc; ++i)
+   {
+      if (strcmp(argv[i], "--") != 0)
+	 continue;
+      // check if command is before --
+      for (size_t k = 1; k < i; ++k)
+	 if (auto e = std::find_if(Map.begin(), Map.end(), findMatcher(argv[k])); e != Map.end())
+	    return e->Match;
+      // see if the next token after -- is the command
+      ++i;
+      if (i < argc)
+	 if (auto e = std::find_if(Map.begin(), Map.end(), findMatcher(argv[i])); e != Map.end())
+	    return e->Match;
+      // we found a --, but not a command
+      return "";
+   }
+   // no --, so search for the first word matching a command
+   // FIXME: How like is it that an option parameter will be also a valid Match ?
+   for (size_t i = 1; i < argc; ++i)
+   {
+      if (*(argv[i]) == '-')
+	 continue;
+      if (auto e = std::find_if(Map.begin(), Map.end(), findMatcher(argv[i])); e != Map.end())
+	 return e->Match;
+   }
+   return "";
+}
+									/*}}}*/
 std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD const Binary,/*{{{*/
       Configuration * const * const Cnf, pkgSystem ** const Sys, int const argc, const char *argv[],
-      bool (*ShowHelp)(CommandLine &), std::vector<aptDispatchWithHelp> (*GetCommands)(void))
+      bool (*ShowHelp)(CommandLine &), std::vector<aptDispatchWithHelpAlias> (*GetCommands)(void))
 {
    InitLocale(Binary);
    if (Cnf != NULL && pkgInitConfig(**Cnf) == false)
@@ -530,19 +589,17 @@ std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD c
       BinarySpecificConfiguration(argv[0]);
 
    std::vector<CommandLine::Dispatch> Cmds;
-   std::vector<aptDispatchWithHelp> const CmdsWithHelp = GetCommands();
-   if (CmdsWithHelp.empty() == false)
-   {
-      CommandLine::Dispatch const help = { "help", [](CommandLine &){return false;} };
-      Cmds.push_back(std::move(help));
-   }
+   std::vector<aptDispatchWithHelpAlias> CmdsWithHelp = GetCommands();
+   if (not CmdsWithHelp.empty())
+      CmdsWithHelp.push_back({"help", [](CommandLine &){return false;}, "", {}});
    std::transform(CmdsWithHelp.begin(), CmdsWithHelp.end(), std::back_inserter(Cmds),
 		  [](auto &&cmd) { return CommandLine::Dispatch{cmd.Match, cmd.Handler}; });
+   Cmds.push_back({nullptr, nullptr});
 
-   char const * CmdCalled = nullptr;
-   if (Cmds.empty() == false && Cmds[0].Handler != nullptr)
-      CmdCalled = CommandLine::GetCommand(Cmds.data(), argc, argv);
-   if (CmdCalled != nullptr)
+   std::string_view CmdCalled;
+   if (not Cmds.empty() && Cmds[0].Handler != nullptr)
+      CmdCalled = GetCommand(CmdsWithHelp, argc, argv);
+   if (not CmdCalled.empty())
       BinaryCommandSpecificConfiguration(argv[0], CmdCalled);
    std::string const conf = "Binary::" + _config->Find("Binary");
    _config->MoveSubTree(conf.c_str(), nullptr);
@@ -563,6 +620,11 @@ std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD c
       exit(100);
    }
 
+   // We can do this switcharoo as we know the underlying string is null-terminated
+   static_assert(std::is_same_v<decltype(aptDispatchWithHelpAlias::Match), const char *>);
+   if (not CmdCalled.empty() && CmdL.FileSize() > 0)
+      CmdL.FileList[0] = CmdCalled.data();
+
    if (_config->FindB("APT::Get::Force-Yes", false) == true)
    {
       _error->Warning(_("--force-yes is deprecated, use one of the options starting with --allow instead."));
@@ -575,7 +637,8 @@ std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD c
       ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp);
       exit(0);
    }
-   if (Cmds.empty() == false && CmdL.FileSize() == 0)
+   // help is unconditionally added, so one command exists for sure
+   if (Cmds.size() > 1 && CmdL.FileSize() == 0)
    {
       ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp);
       exit(1);
@@ -583,7 +646,7 @@ std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD c
    return Cmds;
 }
 									/*}}}*/
-unsigned short DispatchCommandLine(CommandLine &CmdL, std::vector<CommandLine::Dispatch> const &Cmds)	/*{{{*/
+unsigned short DispatchCommandLine(CommandLine &CmdL, std::vector<CommandLine::Dispatch> const &Cmds)/*{{{*/
 {
    // Match the operation
    bool const returned = Cmds.empty() ? true : CmdL.DispatchArg(Cmds.data());

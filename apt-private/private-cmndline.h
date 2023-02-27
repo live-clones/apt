@@ -4,6 +4,7 @@
 #include <apt-pkg/cmndline.h>
 #include <apt-pkg/macros.h>
 
+#include <string_view>
 #include <vector>
 
 class Configuration;
@@ -25,18 +26,19 @@ enum class APT_CMD {
    APT_INTERNAL_PLANNER,
    RRED,
 };
-struct aptDispatchWithHelp
+struct aptDispatchWithHelpAlias
 {
    const char *Match;
    bool (*Handler)(CommandLine &);
-   const char *Help;
+   std::string_view Help;
+   std::vector<std::string_view> Alias;
 };
 
 APT_PUBLIC std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD const Binary,
       Configuration * const * const Cnf, pkgSystem ** const Sys, int const argc, const char * argv[],
-      bool (*ShowHelp)(CommandLine &), std::vector<aptDispatchWithHelp> (*GetCommands)(void));
+      bool (*ShowHelp)(CommandLine &), std::vector<aptDispatchWithHelpAlias> (*GetCommands)(void));
 APT_PUBLIC unsigned short DispatchCommandLine(CommandLine &CmdL, std::vector<CommandLine::Dispatch> const &Cmds);
 
-APT_PUBLIC std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const * const Cmd);
+APT_PUBLIC std::vector<CommandLine::Args> getCommandArgs(APT_CMD Program, std::string_view Cmd);
 
 #endif

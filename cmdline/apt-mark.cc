@@ -354,7 +354,7 @@ static bool DoSelection(CommandLine &CmdL)
       // FIXME: Maybe show a message for unchanged states here as well?
       if (strcasecmp(CmdL.FileList[0], "purge") == 0)
 	 std::swap(marks.Purge(), pkgset);
-      else if (strcasecmp(CmdL.FileList[0], "deinstall") == 0 || strcasecmp(CmdL.FileList[0], "remove") == 0)
+      else if (strcasecmp(CmdL.FileList[0], "deinstall") == 0)
 	 std::swap(marks.Remove(), pkgset);
       else //if (strcasecmp(CmdL.FileList[0], "install") == 0)
 	 std::swap(marks.Install(), pkgset);
@@ -389,14 +389,13 @@ static bool ShowSelection(CommandLine &CmdL)				/*{{{*/
       return false;
 
    pkgCache::State::PkgSelectedState selector;
-   if (strncasecmp(CmdL.FileList[0], "showpurge", strlen("showpurge")) == 0)
+   if (strcasecmp(CmdL.FileList[0], "showpurge") == 0)
       selector = pkgCache::State::Purge;
-   else if (strncasecmp(CmdL.FileList[0], "showdeinstall", strlen("showdeinstall")) == 0 ||
-	 strncasecmp(CmdL.FileList[0], "showremove", strlen("showremove")) == 0)
+   else if (strcasecmp(CmdL.FileList[0], "showdeinstall") == 0)
       selector = pkgCache::State::DeInstall;
-   else if (strncasecmp(CmdL.FileList[0], "showhold", strlen("showhold")) == 0 || strncasecmp(CmdL.FileList[0], "showheld", strlen("showheld")) == 0)
+   else if (strcasecmp(CmdL.FileList[0], "showhold") == 0)
       selector = pkgCache::State::Hold;
-   else //if (strcasecmp(CmdL.FileList[0], "showinstall", strlen("showinstall")) == 0)
+   else //if (strcasecmp(CmdL.FileList[0], "showinstall") == 0)
       selector = pkgCache::State::Install;
 
    std::vector<string> packages;
@@ -438,29 +437,26 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    return {
-      {"auto",&DoAuto, _("Mark the given packages as automatically installed")},
-      {"manual",&DoAuto, _("Mark the given packages as manually installed")},
-      {"minimize-manual", &DoMinimize, _("Mark all dependencies of meta packages as automatically installed.")},
-      {"hold",&DoSelection, _("Mark a package as held back")},
-      {"unhold",&DoSelection, _("Unset a package set as held back")},
-      {"install",&DoSelection, nullptr},
-      {"remove",&DoSelection, nullptr}, // dpkg uses deinstall, but we use remove everywhere else
-      {"deinstall",&DoSelection, nullptr},
-      {"purge",&DoSelection, nullptr},
-      {"showauto",&ShowAuto, _("Print the list of automatically installed packages")},
-      {"showmanual",&ShowAuto, _("Print the list of manually installed packages")},
-      {"showhold",&ShowSelection, _("Print the list of packages on hold")}, {"showholds",&ShowSelection, nullptr}, {"showheld",&ShowSelection, nullptr},
-      {"showinstall",&ShowSelection, nullptr}, {"showinstalls",&ShowSelection, nullptr},
-      {"showdeinstall",&ShowSelection, nullptr}, {"showdeinstalls",&ShowSelection, nullptr},
-      {"showremove",&ShowSelection, nullptr}, {"showremoves",&ShowSelection, nullptr},
-      {"showpurge",&ShowSelection, nullptr}, {"showpurges",&ShowSelection, nullptr},
+      {"auto",&DoAuto, _("Mark the given packages as automatically installed"), {}},
+      {"manual",&DoAuto, _("Mark the given packages as manually installed"), {}},
+      {"minimize-manual", &DoMinimize, _("Mark all dependencies of meta packages as automatically installed."), {}},
+      {"hold",&DoSelection, _("Mark a package as held back"), {}},
+      {"unhold",&DoSelection, _("Unset a package set as held back"), {}},
+      {"install",&DoSelection, "", {}},
+      {"deinstall",&DoSelection, "", {"remove"}}, // dpkg uses deinstall, but we use remove everywhere else
+      {"purge",&DoSelection, "", {}},
+      {"showauto",&ShowAuto, _("Print the list of automatically installed packages"), {"show-auto"}},
+      {"showmanual",&ShowAuto, _("Print the list of manually installed packages"), {"show-manual"}},
+      {"showhold",&ShowSelection, _("Print the list of packages on hold"), {"showholds", "showheld","show-hold", "show-holds", "show-held"}},
+      {"showinstall",&ShowSelection, "", {"showinstalls", "show-install", "show-installs"}},
+      {"showdeinstall",&ShowSelection, "", {"showdeinstalls", "showremove", "showremoves", "show-deinstall", "show-deinstalls", "show-remove", "show-removes"}},
+      {"showpurge",&ShowSelection, "", {"showpurges", "show-purge", "show-purges"}},
       // obsolete commands for compatibility
-      {"markauto", &DoMarkAuto, nullptr},
-      {"unmarkauto", &DoMarkAuto, nullptr},
-      {nullptr, nullptr, nullptr}
+      {"markauto", &DoMarkAuto, "", {}},
+      {"unmarkauto", &DoMarkAuto, "", {}},
    };
 }
 									/*}}}*/

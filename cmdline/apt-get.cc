@@ -401,36 +401,32 @@ static bool ShowHelp(CommandLine &)					/*{{{*/
    return true;
 }
 									/*}}}*/
-static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
+static std::vector<aptDispatchWithHelpAlias> GetCommands()		/*{{{*/
 {
    // advanced commands are left undocumented on purpose
    return {
-      {"update", &DoUpdate, _("Retrieve new lists of packages")},
-      {"upgrade", &DoUpgrade, _("Perform an upgrade")},
-      {"install", &DoInstall, _("Install new packages (pkg is libc6 not libc6.deb)")},
-      {"reinstall", &DoInstall, _("Reinstall packages (pkg is libc6 not libc6.deb)")},
-      {"remove", &DoInstall, _("Remove packages")},
-      {"purge", &DoInstall, _("Remove packages and config files")},
-      {"autoremove", &DoInstall, _("Remove automatically all unused packages")},
-      {"auto-remove", &DoInstall, nullptr},
-      {"autopurge",&DoInstall, nullptr},
-      {"markauto", &DoMarkAuto, nullptr},
-      {"unmarkauto", &DoMarkAuto, nullptr},
-      {"dist-upgrade", &DoDistUpgrade, _("Distribution upgrade, see apt-get(8)")},
-      {"full-upgrade", &DoDistUpgrade, nullptr},
-      {"dselect-upgrade", &DoDSelectUpgrade, _("Follow dselect selections")},
-      {"build-dep", &DoBuildDep, _("Configure build-dependencies for source packages")},
-      {"satisfy", &DoBuildDep, _("Satisfy dependency strings")},
-      {"clean", &DoClean, _("Erase downloaded archive files")},
-      {"autoclean", &DoAutoClean, _("Erase old downloaded archive files")},
-      {"auto-clean", &DoAutoClean, nullptr},
-      {"check", &DoCheck, _("Verify that there are no broken dependencies")},
-      {"source", &DoSource, _("Download source archives")},
-      {"download", &DoDownload, _("Download the binary package into the current directory")},
-      {"changelog", &DoChangelog, _("Download and display the changelog for the given package")},
-      {"indextargets", &DoIndexTargets, nullptr},
-      {"moo", &DoMoo, nullptr},
-      {nullptr, nullptr, nullptr}
+      {"update", &DoUpdate, _("Retrieve new lists of packages"), {}},
+      {"upgrade", &DoUpgrade, _("Perform an upgrade"), {}},
+      {"install", &DoInstall, _("Install new packages (pkg is libc6 not libc6.deb)"), {}},
+      {"reinstall", &DoInstall, _("Reinstall packages (pkg is libc6 not libc6.deb)"), {"re-install"}},
+      {"remove", &DoInstall, _("Remove packages"), {}},
+      {"purge", &DoInstall, _("Remove packages and config files"), {}},
+      {"autoremove", &DoInstall, _("Remove automatically all unused packages"), {"auto-remove"}},
+      {"autopurge",&DoInstall, "", {"auto-purge"}},
+      {"markauto", &DoMarkAuto, "", {}},
+      {"unmarkauto", &DoMarkAuto, "", {}},
+      {"dist-upgrade", &DoDistUpgrade, _("Distribution upgrade, see apt-get(8)"), {"full-upgrade"}},
+      {"dselect-upgrade", &DoDSelectUpgrade, _("Follow dselect selections"), {}},
+      {"build-dep", &DoBuildDep, _("Configure build-dependencies for source packages"), {"builddep"}},
+      {"satisfy", &DoBuildDep, _("Satisfy dependency strings"), {}},
+      {"clean", &DoClean, _("Erase downloaded archive files"), {}},
+      {"autoclean", &DoAutoClean, _("Erase old downloaded archive files"), {"auto-clean"}},
+      {"check", &DoCheck, _("Verify that there are no broken dependencies"), {}},
+      {"source", &DoSource, _("Download source archives"), {}},
+      {"download", &DoDownload, _("Download the binary package into the current directory"), {}},
+      {"changelog", &DoChangelog, _("Download and display the changelog for the given package"), {}},
+      {"indextargets", &DoIndexTargets, "", {"index-targets"}},
+      {"moo", &DoMoo, "", {}},
    };
 }
 									/*}}}*/

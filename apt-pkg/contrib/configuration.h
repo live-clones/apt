@@ -33,6 +33,11 @@
 #include <string>
 #include <vector>
 
+#if __cplusplus >= 201700L
+#include <string_view>
+#include <optional>
+#endif
+
 #include <apt-pkg/macros.h>
 
 
@@ -66,6 +71,14 @@ class APT_PUBLIC Configuration
    }  
    
    public:
+
+#if __cplusplus >= 201700L
+private:
+   [[nodiscard]] APT_HIDDEN Item const * LookupSV(std::string_view Name) const;
+public:
+   //[[nodiscard]] std::optional<std::string_view> GetB(std::string_view Name) const;
+   [[nodiscard]] std::optional<bool> GetB(std::string_view Name) const;
+#endif
 
    std::string Find(const char *Name,const char *Default = 0) const;
    std::string Find(std::string const &Name,const char *Default = 0) const {return Find(Name.c_str(),Default);};
