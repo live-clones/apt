@@ -1872,6 +1872,10 @@ bool pkgAcqMetaBase::VerifyVendor(string const &)			/*{{{*/
 	    strprintf(msg, _("This must be accepted explicitly before updates for "
 		     "this repository can be applied. See %s manpage for details."), "apt-secure(8)");
 	    Changes.push_back({"Confirmation", "", "", std::move(msg), true});
+	    strprintf(msg, _("This may happen when a new version of your distribution was released. "
+		     "Please ensure that this change is correct and rerun this command with "
+		     "--allow-releaseinfo-change."));
+	    Changes.push_back({"Confirmation", "", "", std::move(msg), true});
 	 }
 
       }
