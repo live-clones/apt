@@ -23,6 +23,9 @@
 /* Define if we have the systemd library */
 #cmakedefine HAVE_SYSTEMD
 
+/* Define if we have the libproxy library */
+#cmakedefine HAVE_LIBPROXY
+
 /* Define if we have the udev library */
 #cmakedefine HAVE_UDEV
 
