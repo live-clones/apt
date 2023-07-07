@@ -56,6 +56,14 @@ if(USE_NLS)
   include_directories(${Intl_INCLUDE_DIRS})
 endif()
 
+# Add Libproxy support
+find_package(libproxy)
+if (LIBPROXY-1.0_FOUND)
+  set(HAVE_LIBPROXY 1)
+  link_libraries(${libproxy_LIBRARIES})
+  include_directories(${libproxy_INCLUDE_DIRS})
+endif()
+
 # Add large file support
 add_compile_options(${LFS_COMPILE_OPTIONS})
 add_definitions(${LFS_DEFINITIONS})

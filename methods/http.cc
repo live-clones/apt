@@ -412,6 +412,9 @@ HttpServerState::HttpServerState(URI Srv, HttpMethod *Owner) : ServerState(Srv, 
 {
    TimeOut = Owner->ConfigFindI("Timeout", TimeOut);
    ServerFd = MethodFd::FromFd(-1);
+#ifdef HAVE_LIBPROXY
+    pf = px_proxy_factory_new();
+#endif
    Reset();
 }
 									/*}}}*/
@@ -445,24 +448,42 @@ ResultState HttpServerState::Open()
    }
    else
    {
-	   string DefProxy = Owner->ConfigFind("Proxy", "");
-	   if (!DefProxy.empty())
+#ifdef HAVE_LIBPROXY
+	   std::string url = ServerName.Access + "://" + ServerName.Host;
+	   char **proxies = px_proxy_factory_get_proxies(pf, url.c_str());
+
+	   if (proxies)
 	   {
-		   Proxy = DefProxy;
+		    if (strcmp(proxies[0], "direct://") != 0)
+			   Proxy = strdup (proxies[0]);
+
+			    px_proxy_factory_free_proxies(proxies);
 	   }
-	   else
+
+	   if (Proxy.empty())
 	   {
-	      char *result = getenv("http_proxy");
-	      Proxy = result ? result : "";
-	      if (tls == true)
-	      {
-		 char *result = getenv("https_proxy");
-		 if (result != nullptr)
-		 {
-		    Proxy = result;
-		 }
-	      }
-	   }
+#endif
+		   string DefProxy = Owner->ConfigFind("Proxy", "");
+		   if (!DefProxy.empty())
+		   {
+			   Proxy = DefProxy;
+		   }
+		   else
+		   {
+		      char *result = getenv("http_proxy");
+		      Proxy = result ? result : "";
+		      if (tls == true)
+		      {
+			 char *result = getenv("https_proxy");
+			 if (result != nullptr)
+			 {
+			    Proxy = result;
+			 }
+		      }
+		  }
+#ifdef HAVE_LIBPROXY
+	  }
+#endif
    }
    
    // Parse no_proxy, a , separated list of domains

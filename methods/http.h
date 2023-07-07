@@ -18,6 +18,10 @@
 #include <string>
 #include <sys/time.h>
 
+#ifdef HAVE_LIBPROXY
+#include <proxy.h>
+#endif
+
 #include "basehttp.h"
 #include "connect.h"
 
@@ -96,6 +100,9 @@ struct HttpServerState: public ServerState
    CircleBuf In;
    CircleBuf Out;
    std::unique_ptr<MethodFd> ServerFd;
+#ifdef HAVE_LIBPROXY
+   pxProxyFactory *pf;
+#endif
 
    protected:
    virtual bool ReadHeaderLines(std::string &Data) APT_OVERRIDE;
@@ -118,7 +125,12 @@ struct HttpServerState: public ServerState
    virtual ResultState Go(bool ToFile, RequestState &Req) APT_OVERRIDE;
 
    HttpServerState(URI Srv, HttpMethod *Owner);
-   virtual ~HttpServerState() {Close();};
+   virtual ~HttpServerState() {
+#ifdef HAVE_LIBPROXY
+     px_proxy_factory_free(pf);
+#endif
+     Close();
+   };
 };
 
 class HttpMethod : public BaseHttpMethod
