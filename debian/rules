@@ -40,8 +40,10 @@ override_dh_installsystemd:
 	# Do not restart "apt-daily.service" because this script runs
 	# unattended-upgrades. So if apt itself is upgraded as part of
 	# an unattended-upgrades run it would kill itself
-	dh_installsystemd -papt apt-daily.timer apt-daily-upgrade.timer
-	dh_installsystemd -papt --no-restart-on-upgrade --no-restart-after-upgrade --no-start apt-daily.service apt-daily-upgrade.service
+	dh_installsystemd -papt --name apt-daily --no-restart-on-upgrade --no-restart-after-upgrade --no-start apt-daily.service
+	dh_installsystemd -papt --name apt-daily apt-daily.timer
+	dh_installsystemd -papt --name apt-daily-upgrade --no-restart-on-upgrade --no-restart-after-upgrade --no-start apt-daily-upgrade.service
+	dh_installsystemd -papt --name apt-daily-upgrade apt-daily-upgrade.timer
 	dh_installsystemd --remaining-packages
 
 ifneq ($(filter pkg.apt.nodoxygen,$(DEB_BUILD_PROFILES)),)
