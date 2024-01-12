@@ -39,6 +39,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <xxhash.h>
+#include <valgrind/memcheck.h>
 
 #include <apti18n.h>
 									/*}}}*/
@@ -196,6 +197,8 @@ bool pkgCache::ReMap(bool const &Errorchecks)
    auto hash = CacheHash();
    if (_config->FindB("Debug::pkgCacheGen", false))
       std::clog << "Opened cache with hash " << hash << ", expecting " <<  HeaderP->CacheFileSize << "\n";
+   VALGRIND_MAKE_MEM_DEFINED(&hash, sizeof(hash));
+   VALGRIND_MAKE_MEM_DEFINED(&HeaderP->CacheFileSize, sizeof(HeaderP->CacheFileSize));
    if (hash != HeaderP->CacheFileSize)
       return _error->Error(_("The package cache file is corrupted, it has the wrong hash"));
 

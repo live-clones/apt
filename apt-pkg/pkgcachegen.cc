@@ -36,6 +36,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <valgrind/memcheck.h>
+
 #include <apti18n.h>
 									/*}}}*/
 constexpr auto APT_CACHE_START_DEFAULT = 24 * 1024 * 1024;
@@ -94,6 +96,9 @@ bool pkgCacheGenerator::Start()
       // make room for the hashtables for packages and groups
       if (Map.RawAllocate(2 * (Cache.HeaderP->GetHashTableSize() * sizeof(map_pointer<void>))) == 0)
 	 return false;
+
+      VALGRIND_MAKE_MEM_DEFINED(Cache.HeaderP->GrpHashTableP(), Cache.HeaderP->GetHashTableSize() * sizeof(*Cache.HeaderP->GrpHashTableP()));
+      VALGRIND_MAKE_MEM_DEFINED(Cache.HeaderP->PkgHashTableP(), Cache.HeaderP->GetHashTableSize() * sizeof(*Cache.HeaderP->PkgHashTableP()));
 
       map_stringitem_t const idxVerSysName = WriteStringInMap(_system->VS->Label);
       if (unlikely(idxVerSysName == 0))
@@ -232,6 +237,8 @@ uint32_t pkgCacheGenerator::AllocateInMap(const unsigned long &size) {/*{{{*/
       ReMap(oldMap, Map.Data(), oldSize);
    if (index != static_cast<uint32_t>(index))
       abort();					// Internal error
+						//
+   VALGRIND_MAKE_MEM_DEFINED(Map.Data() + index * size, size);
    return static_cast<uint32_t>(index);
 }
 									/*}}}*/
