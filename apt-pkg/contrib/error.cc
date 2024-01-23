@@ -292,7 +292,7 @@ APT_HIDDEN std::ostream &operator<<(std::ostream &out, GlobalError::Item i)
    case GlobalError::NOTICE:
       out << 'N';
       break;
-   case GlobalError::NOTICE:
+   case GlobalError::AUDIT:
       out << 'A';
       break;
    case GlobalError::DEBUG:
