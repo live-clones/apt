@@ -408,6 +408,7 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
    addArg('v', "version", "version", 0);
    // general options
    addArg('q', "quiet", "quiet", CommandLine::IntLevel);
+   addArg(0, "audit", "APT::Audit", CommandLine::IntLevel);
    addArg('q', "silent", "quiet", CommandLine::IntLevel);
    addArg('c', "config-file", 0, CommandLine::ConfigFile);
    addArg('o', "option", 0, CommandLine::ArbItem);
@@ -595,7 +596,9 @@ unsigned short DispatchCommandLine(CommandLine &CmdL, std::vector<CommandLine::D
 
    // Print any errors or warnings found during parsing
    bool const Errors = _error->PendingError();
-   if (_config->FindI("quiet",0) > 0)
+   if (_config->FindI("APT::Audit",0) > 0)
+      _error->DumpErrors(GlobalError::AUDIT);
+   else if (_config->FindI("quiet",0) > 0)
       _error->DumpErrors();
    else
       _error->DumpErrors(GlobalError::NOTICE);
