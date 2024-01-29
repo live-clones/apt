@@ -982,13 +982,15 @@ static bool ShowPkgNames(CommandLine &CmdL)
    pkgCache::GrpIterator I = CacheFile.GetPkgCache()->GrpBegin();
    bool const All = _config->FindB("APT::Cache::AllNames", false);
 
-   if (CmdL.FileList[1] != 0)
+   if (char const *Prefix = CmdL.FileList[1]; Prefix != nullptr)
    {
+      auto const PrefixLen = strlen(Prefix);
+
       for (;I.end() != true; ++I)
       {
 	 if (All == false && (I.PackageList().end() || I.PackageList()->VersionList == 0))
 	    continue;
-	 if (strncmp(I.Name(),CmdL.FileList[1],strlen(CmdL.FileList[1])) == 0)
+	 if (strncmp(I.Name(), Prefix, PrefixLen) == 0)
 	    cout << I.Name() << endl;
       }
 
