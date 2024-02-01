@@ -55,8 +55,10 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <regex.h>
 #include <unistd.h>
@@ -977,32 +979,26 @@ static bool ShowAuto(CommandLine &)
 static bool ShowPkgNames(CommandLine &CmdL)
 {
    pkgCacheFile CacheFile;
-   if (unlikely(CacheFile.BuildCaches(NULL, false) == false))
+   if (not unlikely(CacheFile.BuildCaches(NULL, false)))
       return false;
-   pkgCache::GrpIterator I = CacheFile.GetPkgCache()->GrpBegin();
+
+   auto const Cache = CacheFile.GetPkgCache();
+   if (unlikely(not Cache))
+      return false;
+
    bool const All = _config->FindB("APT::Cache::AllNames", false);
+   auto const Prefix = CmdL.FileList[1] ?
+      std::optional<std::string_view>{CmdL.FileList[1]} : std::nullopt;
 
-   if (char const *Prefix = CmdL.FileList[1]; Prefix != nullptr)
+   for (auto I = Cache->GrpBegin(); not I.end(); ++I)
    {
-      auto const PrefixLen = strlen(Prefix);
+      if (not All && (I.PackageList().end() || not I.PackageList()->VersionList))
+         continue;
 
-      for (;I.end() != true; ++I)
-      {
-	 if (All == false && (I.PackageList().end() || I.PackageList()->VersionList == 0))
-	    continue;
-	 if (strncmp(I.Name(), Prefix, PrefixLen) == 0)
-	    cout << I.Name() << endl;
-      }
-
-      return true;
-   }
-   
-   // Show all pkgs
-   for (;I.end() != true; ++I)
-   {
-      if (All == false && (I.PackageList().end() || I.PackageList()->VersionList == 0))
-	 continue;
-      cout << I.Name() << endl;
+      auto const CachedName = Cache->ViewString(I->Name);
+      std::string_view const Name{CachedName.data(), CachedName.length()};
+      if (not Prefix || *Prefix == Name.substr(0, Prefix->length()))
+         cout << Name << endl;
    }
 
    return true;
