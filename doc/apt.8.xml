@@ -154,6 +154,16 @@
      </para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>add-sources</option> (work-in-progress)</term>
+         <listitem><para><literal>add-sources</literal> downloads a .sources file
+         and installs it to /etc/apt/sources.list. It takes one argument, an https
+         URI or a file path starting with / or ./.
+
+         It also takes an option <option>-f</option>,<option>--force-override</option> that
+         will replace an existing file.
+     </para></listitem>
+     </varlistentry>
+
 
    </variablelist>
  </refsect1>

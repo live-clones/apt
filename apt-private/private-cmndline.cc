@@ -358,6 +358,10 @@ static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * c
       addArg('a', "all-versions", "APT::Cache::AllVersions", 0);
       addArg('f', "full", "APT::Cache::ShowFull", 0);
    }
+   else if (CmdMatches("add-sources"))
+   {
+      addArg('f', "force-override", "APT::Cmd::Force-Override", 0);
+   }
    else if (addArgumentsAPTGet(Args, Cmd) || addArgumentsAPTCache(Args, Cmd))
    {
        // we have no (supported) command-name overlaps so far, so we call

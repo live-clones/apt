@@ -78,9 +78,14 @@ class APT_PUBLIC pkgSourceList
    protected:
 
    std::vector<metaIndex *> SrcList;
+#ifdef APT_COMPILING_APT
+   public:
+#else
+   private:
+#endif
+   bool ParseFileDeb822(std::string const &File);
 
    private:
-   APT_HIDDEN bool ParseFileDeb822(std::string const &File);
    APT_HIDDEN bool ParseFileOldStyle(std::string const &File);
 
    public:
