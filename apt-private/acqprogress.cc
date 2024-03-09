@@ -232,9 +232,11 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
 	 if (I->CurrentItem->TotalSize > 0 && I->CurrentItem->Owner->Complete == false)
 	 {
 	    if (Mode == Short)
-	       ioprintf(S, " %.0f%%", (I->CurrentItem->CurrentSize*100.0)/I->CurrentItem->TotalSize);
+               // TRANSLATORS: Percentage value; %0.f is the number, %% is the sign
+	       ioprintf(S, _(" %.0f%%"), (I->CurrentItem->CurrentSize*100.0)/I->CurrentItem->TotalSize);
 	    else
-	       ioprintf(S, "/%sB %.0f%%", SizeToStr(I->CurrentItem->TotalSize).c_str(),
+                // TRANSLATORS: Percentage value; %0.f is the number, %% is the sign
+	       ioprintf(S, _("/%sB %.0f%%"), SizeToStr(I->CurrentItem->TotalSize).c_str(),
 		     (I->CurrentItem->CurrentSize*100.0)/I->CurrentItem->TotalSize);
 	 }
 	 S << "]";
@@ -249,7 +251,8 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
    // Put in the percent done
    {
       std::stringstream S;
-      ioprintf(S, "%.0f%%", Percent);
+      // TRANSLATORS: Percentage value; %0.f is the number, %% is the sign
+      ioprintf(S, _("%.0f%%"), Percent);
       S << Line;
       Line = S.str();
       S.clear();
