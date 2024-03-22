@@ -51,7 +51,7 @@ testfoo() {
 	testfileequal 'aptsource.output' "foo_${9:-$1}.dsc
 foo_${9:-$1}.tar.gz"
 }
-testfoo '2' '-10' '1' '500' '500' '500' '500' '' '4'
+testfoo '2' '-10' '1' '500' '500' '500' '500' '' '2'
 testfoo '2' '-10' '1' '990' '500' '500' '500' 'unstable' '2'
 testfoo '1' '-10' '1' '500' '500' '500' '990' 'stable'
 testfoo '2~stable.1' '-10' '1' '500' '990' '500' '500' 'stable-updates'
