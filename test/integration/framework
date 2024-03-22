@@ -250,7 +250,7 @@ valgrind() {
 	if [ "${CMD##*/}" = "$CMD" ]; then
 		CMD="${APTCMDLINEBINDIR}/${CMD}"
 	fi
-	runapt command valgrind "$CMD" "$@"
+	runapt command valgrind --suppressions=${TESTDIRECTORY}/../../apt.supp --error-exitcode=1 "$CMD" "$@"
 }
 
 lastmodification() {
