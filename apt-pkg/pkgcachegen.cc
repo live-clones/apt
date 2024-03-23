@@ -1510,7 +1510,7 @@ static bool CheckValidity(FileFd &CacheFile, std::string const &CacheFileName,
       if (Debug == true)
       {
 	 std::clog << "Validity failed because of pending errors:" << std::endl;
-	 _error->DumpErrors(std::clog, GlobalError::DEBUG, false);
+	 _error->DumpErrors(std::clog, GlobalError::NOTICE, false);
       }
       return false;
    }
