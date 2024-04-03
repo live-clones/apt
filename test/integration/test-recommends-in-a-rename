@@ -21,9 +21,36 @@ insertpackage 'unstable' 'instrec' 'all' '2'
 insertpackage 'unstable' 'unsatrec' 'all' '2'
 insertpackage 'unstable' 'newrec' 'all' '2'
 
+insertpackage 'experimental' 'oldname' 'all' '2' 'Depends: newname' '' 'oldlibs'
+
 setupaptarchive
 
 testsuccess aptmark auto oldrec
+
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following package was automatically installed and is no longer required:
+  oldrec
+Use 'apt autoremove' to remove it.
+The following NEW packages will be installed:
+  newname newrec
+The following packages will be upgraded:
+  instrec meta oldname oldrec
+4 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
+Inst instrec [1] (2 unstable [all])
+Inst oldname [1] (2 experimental [all]) []
+Inst newname (2 unstable [all])
+Inst meta [1] (2 unstable [all])
+Inst newrec (2 unstable [all])
+Inst oldrec [1] (2 unstable [all])
+Conf instrec (2 unstable [all])
+Conf oldname (2 experimental [all])
+Conf newname (2 unstable [all])
+Conf meta (2 unstable [all])
+Conf newrec (2 unstable [all])
+Conf oldrec (2 unstable [all])" apt full-upgrade -st experimental
 
 testsuccessequal "Reading package lists...
 Building dependency tree...

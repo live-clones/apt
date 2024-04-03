@@ -1563,8 +1563,28 @@ static pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &C
 	 if (Prv->ProvideVersion == 0)
 	    continue;
 	 auto const Tar = Prv.ParentPkg();
-	 if (Tar->CurrentVer == 0 || Tar->VersionList == 0 || (Cache[Tar].InstallVer != 0 && Tar.CurrentVer() != Cache[Tar].InstallVer))
+	 if (Tar->CurrentVer == 0 || Tar->VersionList == 0)
 	    continue;
+	 if (Cache[Tar].CandidateVer != 0 && Cache[Tar].CandidateVer != Tar.CurrentVer())
+	 {
+	    bool found_dep = false;
+	    for (auto Dep = Tar.CurrentVer().DependsList(); not Dep.end(); ++Dep)
+	       if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.TargetPkg() == Pkg)
+	       {
+		  found_dep = true;
+		  break;
+	       }
+	    if (found_dep)
+	       continue;
+	    for (auto Dep = Cache[Tar].CandidateVerIter(Cache).DependsList(); not Dep.end(); ++Dep)
+	       if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.IsSatisfied(NewVer))
+	       {
+		  found_dep = true;
+		  break;
+	       }
+	    if (not found_dep)
+	       continue;
+	 }
 	 if (Cache.VS().CmpVersion(Tar.CurrentVer().VerStr(), Prv.ProvideVersion()) >= 0)
 	    continue;
 	 bool found_conflict = false;
