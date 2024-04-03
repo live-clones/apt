@@ -9,6 +9,7 @@
 #include <apt-pkg/pkgrecords.h>
 #include <apt-pkg/policy.h>
 #include <apt-pkg/strutl.h>
+#include <apt-pkg/version.h>
 
 #include <apt-private/private-cachefile.h>
 #include <apt-private/private-output.h>
@@ -393,6 +394,21 @@ void ShowWithColumns(ostream &out, vector<string> const &List, size_t Indent, si
    }
 }
 									/*}}}*/
+// PrettyFullNameWithDue - Display function for "libapt (due to apt)" and similar /*{{{*/
+PrettyFullNameWithDue::PrettyFullNameWithDue(char const * const msgstr) : msgformat{msgstr} {}
+std::string PrettyFullNameWithDue::operator() (pkgCache::PkgIterator const &Pkg) const
+{
+   std::string const A = PrettyFullName(Pkg);
+   auto const d = due.find(Pkg->ID);
+   if (d == due.end())
+      return A;
+
+   std::string const B = PrettyFullName(d->second);
+   std::ostringstream outstr;
+   ioprintf(outstr, msgformat, A.c_str(), B.c_str());
+   return outstr.str();
+}
+									/*}}}*/
 // ShowBroken - Debugging aide						/*{{{*/
 // ---------------------------------------------------------------------
 /* This prints out the names of all the packages that are broken along
@@ -546,38 +562,70 @@ void ShowBroken(ostream &out, pkgCacheFile &Cache, bool const Now)
       ShowBrokenPackage(out, &Cache, Pkg, Now);
 }
 									/*}}}*/
-// ShowNew - Show packages to newly install				/*{{{*/
-void ShowNew(ostream &out,CacheFile &Cache)
+// RenameDelNewData - Calculate the three sets New, Del & Rename	/*{{{*/
+RenameDelNewData::RenameDelNewData(CacheFile &Cache, bool const ShowRenames) :
+   Renames{_("%s (replaces %s)")}
 {
    SortedPackageUniverse Universe(Cache);
+
+   for (auto const &Pkg : Universe)
+   {
+      if (Cache[Pkg].Delete())
+	 Del.emplace_back(Pkg);
+      if (Cache[Pkg].NewInstall())
+      {
+	 New.emplace_back(Pkg);
+	 if (not ShowRenames)
+	    continue;
+
+	 if (auto const OldVer = FindOldVersionForImportantDepCompare(Cache, Pkg, false, false); not OldVer.end())
+	 {
+	    NewName.emplace_back(Pkg);
+	    Renames.due[Pkg->ID] = OldVer.ParentPkg();
+	 }
+      }
+   }
+   if (ShowRenames && not NewName.empty())
+   {
+      New.erase(std::remove_if(New.begin(), New.end(), [&](auto const &P) { return std::find(NewName.begin(), NewName.end(), P) != NewName.end(); }), New.end());
+      Del.erase(std::remove_if(Del.begin(), Del.end(), [&](auto const &P) { return std::any_of(Renames.due.begin(), Renames.due.end(), [&](auto const &r) { return r.second == P; }); }), Del.end());
+   }
+}
+									/*}}}*/
+// ShowNew - Show new packages						/*{{{*/
+void ShowNew(std::ostream &out, CacheFile &Cache, RenameDelNewData const &data)
+{
    if (_config->FindI("APT::Output-Version") < 30) {
-      ShowList(out,_("The following NEW packages will be installed:"), Universe,
-	    [&Cache](pkgCache::PkgIterator const &Pkg) { return Cache[Pkg].NewInstall(); },
-	    &PrettyFullName,
-	    CandidateVersion(&Cache),
+      ShowList(out,_("The following NEW packages will be installed:"), data.New,
+	    AlwaysTrue, PrettyFullName, CandidateVersion(&Cache),
 	    "APT::Color::Green");
       return;
    }
 
-   ShowList(out,_("Installing:"), Universe,
-	 [&Cache](pkgCache::PkgIterator const &Pkg) { return Cache[Pkg].NewInstall() && (Cache[Pkg].Flags & pkgCache::Flag::Auto) == 0; },
+   ShowList(out,_("Installing:"), data.New,
+	 [&Cache](pkgCache::PkgIterator const &Pkg) { return (Cache[Pkg].Flags & pkgCache::Flag::Auto) == 0; },
 	 &PrettyFullName,
 	 CandidateVersion(&Cache),
 	 "APT::Color::Green");
-   ShowList(out,_("Installing dependencies:"), Universe,
-	 [&Cache](pkgCache::PkgIterator const &Pkg) { return Cache[Pkg].NewInstall() && Cache[Pkg].Flags & pkgCache::Flag::Auto;},
+   ShowList(out,_("Installing dependencies:"), data.New,
+	 [&Cache](pkgCache::PkgIterator const &Pkg) { return Cache[Pkg].Flags & pkgCache::Flag::Auto;},
 	 &PrettyFullName,
 	 CandidateVersion(&Cache),
 	 "APT::Color::Green");
 }
 									/*}}}*/
-// ShowDel - Show packages to delete					/*{{{*/
-void ShowDel(ostream &out,CacheFile &Cache)
+void ShowRenames(std::ostream &out, CacheFile &/*Cache*/, RenameDelNewData const &data)/*{{{*/
 {
-   SortedPackageUniverse Universe(Cache);
+   auto const title = _config->FindI("APT::Output-Version") < 30 ? _("The following new packages will completely REPLACE old packages:") : _("Complete replacements:");
+   ShowList(out, title, data.NewName, &AlwaysTrue, data.Renames, &EmptyString);
+}
+									/*}}}*/
+// ShowDel - Show packages to delete					/*{{{*/
+void ShowDel(ostream &out,CacheFile &Cache, RenameDelNewData const &data)
+{
    auto title = _config->FindI("APT::Output-Version") < 30 ? _("The following packages will be REMOVED:") : _("REMOVING:");
-   ShowList(out,title, Universe,
-	 [&Cache](pkgCache::PkgIterator const &Pkg) { return Cache[Pkg].Delete(); },
+   ShowList(out, title, data.Del,
+	 AlwaysTrue,
 	 [&Cache](pkgCache::PkgIterator const &Pkg)
 	 {
 	    std::string str = PrettyFullName(Pkg);
@@ -665,27 +713,11 @@ bool ShowHold(ostream &out,CacheFile &Cache)
 /* This prints out a warning message that is not to be ignored. It shows
    all essential packages and their dependents that are to be removed.
    It is insanely risky to remove the dependents of an essential package! */
-struct APT_HIDDEN PrettyFullNameWithDue {
-   std::map<unsigned long long, pkgCache::PkgIterator> due;
-   PrettyFullNameWithDue() {}
-   std::string operator() (pkgCache::PkgIterator const &Pkg)
-   {
-      std::string const A = PrettyFullName(Pkg);
-      std::map<unsigned long long, pkgCache::PkgIterator>::const_iterator d = due.find(Pkg->ID);
-      if (d == due.end())
-        return A;
-
-      std::string const B = PrettyFullName(d->second);
-      std::ostringstream outstr;
-      ioprintf(outstr, _("%s (due to %s)"), A.c_str(), B.c_str());
-      return outstr.str();
-   }
-};
 bool ShowEssential(ostream &out,CacheFile &Cache)
 {
    std::vector<bool> Added(Cache->Head().PackageCount, false);
    APT::PackageDeque pkglist;
-   PrettyFullNameWithDue withdue;
+   PrettyFullNameWithDue withdue{_("%s (due to %s)")};
 
    SortedPackageUniverse Universe(Cache);
    for (pkgCache::PkgIterator const &I: Universe)

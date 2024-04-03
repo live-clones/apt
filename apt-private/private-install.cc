@@ -215,10 +215,15 @@ bool InstallPackages(CacheFile &Cache, APT::PackageVector &HeldBackPackages, boo
 	 return false;
    }
 
+   auto const outputVersion = _config->FindI("APT::Output-Version");
    // Show all the various warning indicators
+   RenameDelNewData rdn{Cache, _config->FindB("APT::Get::Show-Renames", outputVersion >= 30)};
    if (_config->FindI("APT::Output-Version") < 30)
-      ShowDel(c1out,Cache);
-   ShowNew(c1out,Cache);
+   {
+      ShowDel(c1out, Cache, rdn);
+      ShowRenames(c1out, Cache, rdn);
+   }
+   ShowNew(c1out, Cache, rdn);
    if (_config->FindI("APT::Output-Version") >= 30)
       ShowWeakDependencies(Cache);
    if (_config->FindI("APT::Output-Version") >= 30 && _config->FindB("APT::Get::Show-Upgraded",true) == true)
@@ -247,7 +252,10 @@ bool InstallPackages(CacheFile &Cache, APT::PackageVector &HeldBackPackages, boo
 
    // Show removed packages last
    if (_config->FindI("APT::Output-Version") >= 30)
-      ShowDel(c1out,Cache);
+   {
+      ShowRenames(c1out,Cache, rdn);
+      ShowDel(c1out,Cache, rdn);
+   }
    bool Essential = false;
    if (_config->FindB("APT::Get::Download-Only",false) == false)
         Essential = !ShowEssential(c1out,Cache);

@@ -112,8 +112,24 @@ template<class Container, class PredicateC, class DisplayP, class DisplayV> bool
    return true;
 }
 
-void ShowNew(std::ostream &out,CacheFile &Cache);
-void ShowDel(std::ostream &out,CacheFile &Cache);
+
+struct PrettyFullNameWithDue
+{
+   std::map<map_id_t, pkgCache::PkgIterator> due;
+   char const * const msgformat;
+   explicit PrettyFullNameWithDue(char const * msgstr);
+   std::string operator() (pkgCache::PkgIterator const &Pkg) const;
+};
+struct RenameDelNewData
+{
+   APT::PackageVector New, Del, NewName;
+   PrettyFullNameWithDue Renames;
+
+   RenameDelNewData(CacheFile &Cache, bool ShowRenames);
+};
+void ShowNew(std::ostream &out, CacheFile &Cache, RenameDelNewData const &data);
+void ShowDel(std::ostream &out, CacheFile &Cache, RenameDelNewData const &data);
+void ShowRenames(std::ostream &out, CacheFile &Cache, RenameDelNewData const &data);
 void ShowKept(std::ostream &out,CacheFile &Cache, APT::PackageVector const &HeldBackPackages);
 void ShowPhasing(std::ostream &out, CacheFile &Cache, APT::PackageVector const &HeldBackPackages);
 void ShowUpgraded(std::ostream &out,CacheFile &Cache);

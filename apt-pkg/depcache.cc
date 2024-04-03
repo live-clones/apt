@@ -1570,7 +1570,8 @@ static size_t WeightedLevenshteinDistance(APT::StringView const A, APT::StringVi
    return lev.back();
 }
 									/*}}}*/
-static pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg)/*{{{*/
+// FindOldVersionForImportantDepCompare - find old version across renames and soname bumps /*{{{*/
+pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg, bool const AllowTransitional, bool const AllowSonameBump)
 {
    if (Pkg->CurrentVer != 0)
       return Pkg.CurrentVer();
@@ -1584,25 +1585,31 @@ static pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &C
 	 auto const Tar = Prv.ParentPkg();
 	 if (Tar->CurrentVer == 0 || Tar->VersionList == 0)
 	    continue;
-	 if (Cache[Tar].CandidateVer != 0 && Cache[Tar].CandidateVer != Tar.CurrentVer())
+	 // Note that depending on when you call this function, Tar might not be marked for removal yet
+	 if (not Cache[Tar].Delete())
 	 {
-	    bool found_dep = false;
-	    for (auto Dep = Tar.CurrentVer().DependsList(); not Dep.end(); ++Dep)
-	       if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.TargetPkg() == Pkg)
-	       {
-		  found_dep = true;
-		  break;
-	       }
-	    if (found_dep)
+	    if (not AllowTransitional)
 	       continue;
-	    for (auto Dep = Cache[Tar].CandidateVerIter(Cache).DependsList(); not Dep.end(); ++Dep)
-	       if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.IsSatisfied(NewVer))
-	       {
-		  found_dep = true;
-		  break;
-	       }
-	    if (not found_dep)
-	       continue;
+	    if (Cache[Tar].CandidateVer != 0 && Cache[Tar].CandidateVer != Tar.CurrentVer())
+	    {
+	       bool found_dep = false;
+	       for (auto Dep = Tar.CurrentVer().DependsList(); not Dep.end(); ++Dep)
+		  if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.TargetPkg() == Pkg)
+		  {
+		     found_dep = true;
+		     break;
+		  }
+	       if (found_dep)
+		  continue;
+	       for (auto Dep = Cache[Tar].CandidateVerIter(Cache).DependsList(); not Dep.end(); ++Dep)
+		  if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.IsSatisfied(NewVer))
+		  {
+		     found_dep = true;
+		     break;
+		  }
+	       if (not found_dep)
+		  continue;
+	    }
 	 }
 	 if (Cache.VS().CmpVersion(Tar.CurrentVer().VerStr(), Prv.ProvideVersion()) >= 0)
 	    continue;
@@ -1620,7 +1627,7 @@ static pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &C
 	 if (found_conflict && found_replaces)
 	    return Tar.CurrentVer();
       }
-      if ((NewVer->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
+      if (AllowSonameBump && (NewVer->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
       {
 	 auto SrcGrp = Cache.FindGrp(NewVer.SourcePkgName());
 	 std::map<char const*, APT::VersionSet> allOptions;
@@ -1692,7 +1699,7 @@ static bool MarkInstall_InstallDependencies(pkgDepCache &Cache, bool const Debug
       if (not ForceImportantDeps && not IsCriticalDep)
       {
 	 if (not PkgOldVer.has_value())
-	    PkgOldVer = FindOldVersionForImportantDepCompare(Cache, Pkg);
+	    PkgOldVer = FindOldVersionForImportantDepCompare(Cache, Pkg, true, true);
 
 	 if (not PkgOldVer->end())
 	 {

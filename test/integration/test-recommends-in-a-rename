@@ -89,3 +89,31 @@ Conf newname (2 unstable [all])
 Conf instrec (2 unstable [all])
 Conf newrec (2 unstable [all])
 Conf oldrec (2 unstable [all])" aptget full-upgrade -s
+
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following packages were automatically installed and are no longer required:
+  libsame1 oldrec
+Use 'apt autoremove' to remove them.
+The following new packages will completely REPLACE old packages:
+  newname (replaces oldname)
+The following NEW packages will be installed:
+  libsame2 newrec
+The following packages will be upgraded:
+  instrec meta oldrec
+3 upgraded, 3 newly installed, 1 to remove and 0 not upgraded.
+Inst libsame2 (2 unstable [amd64])
+Inst meta [1] (2 unstable [all]) []
+Remv oldname [1] []
+Inst newname (2 unstable [all])
+Inst instrec [1] (2 unstable [all])
+Inst newrec (2 unstable [all])
+Inst oldrec [1] (2 unstable [all])
+Conf libsame2 (2 unstable [amd64])
+Conf meta (2 unstable [all])
+Conf newname (2 unstable [all])
+Conf instrec (2 unstable [all])
+Conf newrec (2 unstable [all])
+Conf oldrec (2 unstable [all])" apt full-upgrade -s
