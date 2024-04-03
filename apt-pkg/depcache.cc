@@ -29,6 +29,7 @@
 #include <apt-pkg/versionmatch.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
@@ -1551,6 +1552,24 @@ static bool MarkInstall_UpgradeOtherBinaries(pkgDepCache &Cache, bool const Debu
    return true;
 }
 									/*}}}*/
+static size_t WeightedLevenshteinDistance(APT::StringView const A, APT::StringView const B)/*{{{*/
+{
+   if (A.length() > B.length())
+      return WeightedLevenshteinDistance(B, A);
+
+   std::vector<size_t> lev(A.size() + 1);
+   std::iota(lev.begin(), lev.end(), 0);
+
+   for (size_t j = 0; j < B.size(); ++j)
+   {
+      auto lastvalue = lev[0]++;
+      for (size_t i = 0; i < A.size(); ++i)
+	 //                                                     equal   :             delete   insert,   replace
+	 lastvalue = std::exchange(lev[i+1], (A[i] == B[j]) ? lastvalue : ((std::min({lev[i], lev[i+1], lastvalue}) + 1) * (A.size() - i)));
+   }
+   return lev.back();
+}
+									/*}}}*/
 static pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg)/*{{{*/
 {
    if (Pkg->CurrentVer != 0)
@@ -1600,6 +1619,33 @@ static pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &C
 	 }
 	 if (found_conflict && found_replaces)
 	    return Tar.CurrentVer();
+      }
+      if ((NewVer->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
+      {
+	 auto SrcGrp = Cache.FindGrp(NewVer.SourcePkgName());
+	 std::map<char const*, APT::VersionSet> allOptions;
+	 for (auto OtherVer = SrcGrp.VersionsInSource(); not OtherVer.end(); OtherVer = OtherVer.NextInSource())
+	 {
+	    if (OtherVer.ParentPkg().CurrentVer() != OtherVer)
+	       continue;
+	    if ((OtherVer->MultiArch & pkgCache::Version::Same) != pkgCache::Version::Same || strcmp(OtherVer.Arch(), NewVer.Arch()) != 0)
+	       continue;
+	    if (Cache.VS().CmpVersion(OtherVer.SourceVerStr(), NewVer.SourceVerStr()) >= 0)
+	       continue;
+	    allOptions[OtherVer.SourceVerStr()].insert(OtherVer);
+	 }
+	 auto newestOptions = std::max_element(allOptions.begin(), allOptions.end(), [&](auto const &A, auto const &B) { return Cache.VS().CmpVersion(A.first, B.first) < 0; });
+	 if (newestOptions != allOptions.end())
+	    return std::min_element(newestOptions->second.begin(), newestOptions->second.end(), [&](auto const &AV, auto const &BV) {
+		  auto const stripVersion = [](std::string str) {
+		     str.erase(std::remove_if(str.begin(), str.end(), [](unsigned char const c) { return isdigit(c) != 0 || c == '.' || c == '-'; }), str.end());
+		     return str;
+		  };
+		  auto const A = stripVersion(AV.ParentPkg().Name());
+		  auto const B = stripVersion(BV.ParentPkg().Name());
+		  auto const P = stripVersion(Pkg.Name());
+		  return WeightedLevenshteinDistance(A, P) < WeightedLevenshteinDistance(P, B);
+	    });
       }
    }
    return pkgCache::VerIterator();
@@ -1671,23 +1717,19 @@ static bool MarkInstall_InstallDependencies(pkgDepCache &Cache, bool const Debug
 		  break;
 	    }
 
+	    auto const ShowDebugInfo = [&](std::string_view const msg) {
+	       if (DebugAutoInstall)
+		  std::clog << OutputInDepth(Depth) << msg << ' '
+			    << Start.TargetPkg().FullName()
+			    << " compared to " << PkgOldVer->ParentPkg().FullName() << "=" << PkgOldVer->VerStr() << '\n';
+	    };
 	    if (isNewImportantDep)
-	    {
-	       if (DebugAutoInstall)
-		  std::clog << OutputInDepth(Depth) << "new important dependency: "
-			    << Start.TargetPkg().FullName() << '\n';
-	    }
+	       ShowDebugInfo("new important dependency:");
 	    else if (isPreviouslySatisfiedImportantDep)
-	    {
-	       if (DebugAutoInstall)
-		  std::clog << OutputInDepth(Depth) << "previously satisfied important dependency on "
-			    << Start.TargetPkg().FullName() << '\n';
-	    }
+	       ShowDebugInfo("previously satisfied important dependency on");
 	    else
 	    {
-	       if (DebugAutoInstall)
-		  std::clog << OutputInDepth(Depth) << "ignore old unsatisfied important dependency on "
-			    << Start.TargetPkg().FullName() << '\n';
+	       ShowDebugInfo("ignore old unsatisfied important dependency on");
 	       continue;
 	    }
 	 }
