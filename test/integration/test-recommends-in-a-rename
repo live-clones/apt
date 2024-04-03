@@ -1,0 +1,52 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+insertinstalledpackage 'meta' 'all' '1' 'Depends: oldname'
+insertinstalledpackage 'oldrec' 'all' '1'
+insertinstalledpackage 'instrec' 'all' '1'
+insertinstalledpackage 'oldname' 'all' '1' 'Recommends: oldrec, instrec, unsatrec'
+
+insertpackage 'unstable' 'meta' 'all' '2' 'Depends: newname'
+insertpackage 'unstable' 'newname' 'all' '2' 'Conflicts: oldname (<< 2)
+Replaces: oldname (<< 2)
+Provides: oldname (= 2)
+Recommends: instrec, unsatrec, newrec'
+insertpackage 'unstable' 'oldrec' 'all' '2'
+insertpackage 'unstable' 'instrec' 'all' '2'
+insertpackage 'unstable' 'unsatrec' 'all' '2'
+insertpackage 'unstable' 'newrec' 'all' '2'
+
+setupaptarchive
+
+testsuccess aptmark auto oldrec
+
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following package was automatically installed and is no longer required:
+  oldrec
+Use 'apt autoremove' to remove it.
+The following packages will be REMOVED:
+  oldname
+The following NEW packages will be installed:
+  newname newrec
+The following packages will be upgraded:
+  instrec meta oldrec
+3 upgraded, 2 newly installed, 1 to remove and 0 not upgraded.
+Inst meta [1] (2 unstable [all]) []
+Remv oldname [1] []
+Inst newname (2 unstable [all])
+Inst instrec [1] (2 unstable [all])
+Inst newrec (2 unstable [all])
+Inst oldrec [1] (2 unstable [all])
+Conf meta (2 unstable [all])
+Conf newname (2 unstable [all])
+Conf instrec (2 unstable [all])
+Conf newrec (2 unstable [all])
+Conf oldrec (2 unstable [all])" aptget full-upgrade -s

@@ -35,6 +35,7 @@
 #include <iterator>
 #include <list>
 #include <memory>
+#include <optional>
 #include <random>
 #include <set>
 #include <sstream>
@@ -1550,10 +1551,45 @@ static bool MarkInstall_UpgradeOtherBinaries(pkgDepCache &Cache, bool const Debu
    return true;
 }
 									/*}}}*/
+static pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg)/*{{{*/
+{
+   if (Pkg->CurrentVer != 0)
+      return Pkg.CurrentVer();
+   else
+   {
+      auto const NewVer = Cache[Pkg].InstVerIter(Cache);
+      for (auto Prv = NewVer.ProvidesList(); not Prv.end(); ++Prv)
+      {
+	 if (Prv->ProvideVersion == 0)
+	    continue;
+	 auto const Tar = Prv.ParentPkg();
+	 if (Tar->CurrentVer == 0 || Tar->VersionList == 0 || (Cache[Tar].InstallVer != 0 && Tar.CurrentVer() != Cache[Tar].InstallVer))
+	    continue;
+	 if (Cache.VS().CmpVersion(Tar.CurrentVer().VerStr(), Prv.ProvideVersion()) >= 0)
+	    continue;
+	 bool found_conflict = false;
+	 bool found_replaces = false;
+	 for (auto Dep = NewVer.DependsList(); not Dep.end() && (not found_conflict || not found_replaces); ++Dep)
+	 {
+	    if ((Dep->Type == pkgCache::Dep::Conflicts || Dep->Type == pkgCache::Dep::DpkgBreaks) &&
+		  Dep->Version != 0 && Dep.TargetPkg() == Tar)
+	       found_conflict = true;
+	    // The Replaces should be versioned, too, but wasn't in t64 transition
+	    if (Dep->Type == pkgCache::Dep::Replaces && Dep.TargetPkg() == Tar)
+	       found_replaces = true;
+	 }
+	 if (found_conflict && found_replaces)
+	    return Tar.CurrentVer();
+      }
+   }
+   return pkgCache::VerIterator();
+}
+									/*}}}*/
 static bool MarkInstall_InstallDependencies(pkgDepCache &Cache, bool const DebugAutoInstall, bool const DebugMarker, pkgCache::PkgIterator const &Pkg, unsigned long Depth, bool const ForceImportantDeps, std::vector<pkgCache::DepIterator> &toInstall, APT::PackageVector *const toMoveAuto, bool const propagateProtected, bool const FromUser) /*{{{*/
 {
    auto const IsSatisfiedByInstalled = [&](auto &D) { return (Cache[pkgCache::DepIterator{Cache, &D}] & pkgDepCache::DepInstall) == pkgDepCache::DepInstall; };
    bool failedToInstallSomething = false;
+   std::optional<pkgCache::VerIterator> PkgOldVer;
    for (auto &&Dep : toInstall)
    {
       auto const Copy = Dep;
@@ -1587,47 +1623,53 @@ static bool MarkInstall_InstallDependencies(pkgDepCache &Cache, bool const Debug
        * package should follow that Recommends rather than causing the
        * dependency to be removed. (bug #470115)
        */
-      if (Pkg->CurrentVer != 0 && not ForceImportantDeps && not IsCriticalDep)
+      if (not ForceImportantDeps && not IsCriticalDep)
       {
-	 bool isNewImportantDep = true;
-	 bool isPreviouslySatisfiedImportantDep = false;
-	 for (pkgCache::DepIterator D = Pkg.CurrentVer().DependsList(); D.end() != true; ++D)
+	 if (not PkgOldVer.has_value())
+	    PkgOldVer = FindOldVersionForImportantDepCompare(Cache, Pkg);
+
+	 if (not PkgOldVer->end())
 	 {
-	    //FIXME: Should we handle or-group better here?
-	    // We do not check if the package we look for is part of the same or-group
-	    // we might find while searching, but could that really be a problem?
-	    if (D.IsCritical() || not Cache.IsImportantDep(D) ||
-		Start.TargetPkg() != D.TargetPkg())
+	    bool isNewImportantDep = true;
+	    bool isPreviouslySatisfiedImportantDep = false;
+	    for (auto D = PkgOldVer->DependsList(); not D.end(); ++D)
+	    {
+	       // FIXME: Should we handle or-group better here?
+	       //  We do not check if the package we look for is part of the same or-group
+	       //  we might find while searching, but could that really be a problem?
+	       if (D.IsCritical() || not Cache.IsImportantDep(D) ||
+		   Start.TargetPkg() != D.TargetPkg())
+		  continue;
+
+	       isNewImportantDep = false;
+
+	       while ((D->CompareOp & pkgCache::Dep::Or) != 0)
+		  ++D;
+
+	       isPreviouslySatisfiedImportantDep = ((Cache[D] & pkgDepCache::DepGNow) != 0);
+	       if (isPreviouslySatisfiedImportantDep)
+		  break;
+	    }
+
+	    if (isNewImportantDep)
+	    {
+	       if (DebugAutoInstall)
+		  std::clog << OutputInDepth(Depth) << "new important dependency: "
+			    << Start.TargetPkg().FullName() << '\n';
+	    }
+	    else if (isPreviouslySatisfiedImportantDep)
+	    {
+	       if (DebugAutoInstall)
+		  std::clog << OutputInDepth(Depth) << "previously satisfied important dependency on "
+			    << Start.TargetPkg().FullName() << '\n';
+	    }
+	    else
+	    {
+	       if (DebugAutoInstall)
+		  std::clog << OutputInDepth(Depth) << "ignore old unsatisfied important dependency on "
+			    << Start.TargetPkg().FullName() << '\n';
 	       continue;
-
-	    isNewImportantDep = false;
-
-	    while ((D->CompareOp & pkgCache::Dep::Or) != 0)
-	       ++D;
-
-	    isPreviouslySatisfiedImportantDep = ((Cache[D] & pkgDepCache::DepGNow) != 0);
-	    if (isPreviouslySatisfiedImportantDep)
-	       break;
-	 }
-
-	 if (isNewImportantDep)
-	 {
-	    if (DebugAutoInstall)
-	       std::clog << OutputInDepth(Depth) << "new important dependency: "
-			 << Start.TargetPkg().FullName() << '\n';
-	 }
-	 else if (isPreviouslySatisfiedImportantDep)
-	 {
-	    if (DebugAutoInstall)
-	       std::clog << OutputInDepth(Depth) << "previously satisfied important dependency on "
-			 << Start.TargetPkg().FullName() << '\n';
-	 }
-	 else
-	 {
-	    if (DebugAutoInstall)
-	       std::clog << OutputInDepth(Depth) << "ignore old unsatisfied important dependency on "
-			 << Start.TargetPkg().FullName() << '\n';
-	    continue;
+	    }
 	 }
       }
 
