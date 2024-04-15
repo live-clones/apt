@@ -38,6 +38,8 @@ APT_PUBLIC void ShowBroken(std::ostream &out, pkgCacheFile &Cache, bool const No
 
 APT_PUBLIC void ShowWithColumns(std::ostream &out, const std::vector<std::string> &List, size_t Indent, size_t ScreenWidth);
 
+template<class T0, class... Ts> constexpr bool is_same_as_one_of = std::disjunction_v<std::is_same<T0, Ts>...>;
+template<class T> constexpr bool is_a_string_type = is_same_as_one_of<T, std::string, char const*>;
 template<class Container, class PredicateC, class DisplayP, class DisplayV> bool ShowList(std::ostream &out, std::string const &Title,
       Container const &cont,
       PredicateC Predicate,
@@ -46,8 +48,9 @@ template<class Container, class PredicateC, class DisplayP, class DisplayV> bool
       std::string colorName = "APT::Color::Neutral")
 {
    size_t const ScreenWidth = (::ScreenWidth > 3) ? ::ScreenWidth - 3 : 0;
-   int ScreenUsed = 0;
+   size_t ScreenUsed = 0;
    bool const ShowVersions = _config->FindB("APT::Get::Show-Versions", false);
+   bool const ShowDetails = ShowVersions || not is_a_string_type<std::decay_t<decltype(VerboseDisplay({}))>>;
    bool const ListColumns = _config->FindB("APT::Get::List-Columns", _config->FindI("APT::Output-Version") >= 30);
    bool printedTitle = false;
    std::vector<std::string> PackageList;
@@ -66,12 +69,30 @@ template<class Container, class PredicateC, class DisplayP, class DisplayV> bool
 	 printedTitle = true;
       }
 
-      if (ShowVersions == true)
+      std::string details;
+      if (ShowDetails)
+      {
+	 auto const verbose = VerboseDisplay(Pkg);
+	 if constexpr (is_a_string_type<std::decay_t<decltype(VerboseDisplay({}))>>)
+	    details = std::move(verbose);
+	 else
+	 {
+	    if (ShowVersions && not verbose.first.empty())
+	       details = verbose.first;
+	    if (not verbose.second.empty())
+	    {
+	       if (details.empty())
+		  details = verbose.second;
+	       else
+		  details.append(", ").append(verbose.second);
+	    }
+	 }
+      }
+      if (ShowVersions)
       {
 	 out << std::endl << "   " << setColor << PkgDisplay(Pkg) << resetColor;
-	 std::string const verbose = VerboseDisplay(Pkg);
-	 if (verbose.empty() == false)
-	    out << " (" << verbose << ")";
+	 if (not details.empty())
+	    out << " (" << details << ')';
       }
       else
       {
@@ -80,7 +101,10 @@ template<class Container, class PredicateC, class DisplayP, class DisplayV> bool
 	    PackageList.push_back(PkgName);
 	 else
 	 {
-	    if (ScreenUsed == 0 || (ScreenUsed + PkgName.length()) >= ScreenWidth)
+	    auto infoLen = PkgName.length();
+	    if (not details.empty())
+	       infoLen += details.length() + 3;
+	    if (ScreenUsed == 0 || (ScreenUsed + infoLen) >= ScreenWidth)
 	    {
 	       out << std::endl
 		   << "  ";
@@ -92,7 +116,9 @@ template<class Container, class PredicateC, class DisplayP, class DisplayV> bool
 	       ++ScreenUsed;
 	    }
 	    out << setColor << PkgName << resetColor;
-	    ScreenUsed += PkgName.length();
+	    if (not details.empty())
+	       out << " (" << details << ')';
+	    ScreenUsed += infoLen;
 	 }
       }
    }
@@ -127,7 +153,9 @@ struct RenameDelNewData
 
    RenameDelNewData(CacheFile &Cache, bool ShowRenames);
 };
+void ShowAutoRemove(std::ostream &out, CacheFile &Cache, unsigned long autoRemoveCount);
 void ShowNew(std::ostream &out, CacheFile &Cache, RenameDelNewData const &data);
+void ShowExtraPackages(std::ostream &out, CacheFile &Cache, APT::VersionVector const &explicitInst);
 void ShowDel(std::ostream &out, CacheFile &Cache, RenameDelNewData const &data);
 void ShowRenames(std::ostream &out, CacheFile &Cache, RenameDelNewData const &data);
 void ShowKept(std::ostream &out,CacheFile &Cache, APT::PackageVector const &HeldBackPackages);
@@ -146,9 +174,7 @@ bool YnPrompt(char const * const Question, bool const Default, bool const ShowGl
 
 APT_PUBLIC std::string PrettyFullName(pkgCache::PkgIterator const &Pkg);
 std::string CandidateVersion(pkgCacheFile * const Cache, pkgCache::PkgIterator const &Pkg);
-std::function<std::string(pkgCache::PkgIterator const &)> CandidateVersion(pkgCacheFile * const Cache);
 std::string CurrentToCandidateVersion(pkgCacheFile * const Cache, pkgCache::PkgIterator const &Pkg);
-std::function<std::string(pkgCache::PkgIterator const &)> CurrentToCandidateVersion(pkgCacheFile * const Cache);
 std::string EmptyString(pkgCache::PkgIterator const &);
 bool AlwaysTrue(pkgCache::PkgIterator const &);
 

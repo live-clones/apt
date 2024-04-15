@@ -1,0 +1,69 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+insertinstalledpackage 'meta' 'all' '2' 'Depends: newname'
+insertinstalledpackage 'libsame1' 'amd64' '1' 'Source: samelib
+Multi-Arch: same'
+insertinstalledpackage 'oldname' 'all' '2' 'Depends: newname' '' '' 'oldlibs'
+insertinstalledpackage 'libsame2' 'amd64' '2' 'Source: samelib
+Multi-Arch: same'
+insertinstalledpackage 'newname' 'all' '2' 'Depends: libsame2
+Conflicts: oldname (<< 2)
+Replaces: oldname (<< 2)
+Provides: oldname (= 2)'
+
+testsuccess aptmark auto '.*'
+testsuccess aptmark manual meta
+
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following packages were automatically installed and are no longer required:
+   libsame1 (1, replaced by libsame2)
+   oldname (2, replaced by newname)
+Use 'apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded." apt upgrade -sV
+
+testsuccessequal 'Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be REMOVED:
+   libsame1 (1)
+   oldname (2)
+0 upgraded, 0 newly installed, 2 to remove and 0 not upgraded.
+Remv libsame1 [1]
+Remv oldname [2]' aptget autoremove -sV
+
+testsuccessequal 'Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be REMOVED:
+  libsame1 oldname
+0 upgraded, 0 newly installed, 2 to remove and 0 not upgraded.
+Remv libsame1 [1]
+Remv oldname [2]' aptget autoremove -s
+
+testsuccessequal 'Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be REMOVED:
+  libsame1 (replaced by libsame2) oldname (replaced by newname)
+0 upgraded, 0 newly installed, 2 to remove and 0 not upgraded.
+Remv libsame1 [1]
+Remv oldname [2]' apt autoremove -s
+
+testsuccessequal 'Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be REMOVED:
+   libsame1 (1, replaced by libsame2)
+   oldname (2, replaced by newname)
+0 upgraded, 0 newly installed, 2 to remove and 0 not upgraded.
+Remv libsame1 [1]
+Remv oldname [2]' apt autoremove -sV

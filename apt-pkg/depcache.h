@@ -535,6 +535,17 @@ class APT_PUBLIC pkgDepCache : protected pkgCache::Namespace
  * @param AllowSonameBump try finding an old libfoo1 for a new libfoo2
  */
 APT_PUBLIC pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg, bool const AllowTransitional, bool const AllowSonameBump);
+/** find new version across renames, transitional pkgs and soname bumps
+ *
+ *  Same reasons and logic as for #FindOldVersionForImportantDepCompare,
+ *  just that we are looking from the other side of the change here
+ *
+ * @param Cache we are working with
+ * @param Pkg to be replaced/removed (the old version comes from it)
+ * @param AllowTransitional the old pkg can remain, but the upgrade includes a new dependency on new pkg
+ * @param AllowSonameBump try finding an old libfoo1 for a new libfoo2
+ */
+APT_PUBLIC pkgCache::VerIterator FindNewVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg, bool const AllowTransitional, bool const AllowSonameBump);
 #endif
 
 #endif

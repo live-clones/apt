@@ -33,14 +33,14 @@ insertpackage 'experimental' 'oldname' 'all' '2' 'Depends: newname' '' 'oldlibs'
 
 setupaptarchive
 
-testsuccess aptmark auto oldrec libsame1
+testsuccess aptmark auto oldrec libsame1 oldname
 
 testsuccessequal "Reading package lists...
 Building dependency tree...
 Reading state information...
 Calculating upgrade...
 The following packages were automatically installed and are no longer required:
-  libsame1 oldrec
+  libsame1 (replaced by libsame2) oldname (replaced by newname) oldrec
 Use 'apt autoremove' to remove them.
 The following NEW packages will be installed:
   libsame2 newname newrec
@@ -95,7 +95,7 @@ Building dependency tree...
 Reading state information...
 Calculating upgrade...
 The following packages were automatically installed and are no longer required:
-  libsame1 oldrec
+  libsame1 (replaced by libsame2) oldrec
 Use 'apt autoremove' to remove them.
 The following new packages will completely REPLACE old packages:
   newname (replaces oldname)

@@ -704,12 +704,7 @@ bool DoAutomaticRemove(CacheFile &Cache)
       {
 	 // trigger marking now so that the package list is correct
 	 Cache->MarkAndSweep();
-	 SortedPackageUniverse Universe(Cache);
-	 ShowList(c1out, P_("The following package was automatically installed and is no longer required:",
-	          "The following packages were automatically installed and are no longer required:",
-	          autoRemoveCount), Universe,
-	       [&Cache](pkgCache::PkgIterator const &Pkg) { return (*Cache)[Pkg].Garbage == true && (*Cache)[Pkg].Delete() == false; },
-	       &PrettyFullName, CandidateVersion(&Cache));
+	 ShowAutoRemove(c1out, Cache, autoRemoveCount);
       }
       else
 	 ioprintf(c1out, P_("%lu package was automatically installed and is no longer required.\n",
@@ -979,22 +974,7 @@ std::vector<PseudoPkg> GetPseudoPackages(pkgSourceList *const SL, CommandLine &C
    return VolatileCmdL;
 }
 									/*}}}*/
-// DoInstall - Install packages from the command line			/*{{{*/
-// ---------------------------------------------------------------------
-/* Install named packages */
-struct PkgIsExtraInstalled {
-   pkgCacheFile * const Cache;
-   APT::VersionVector const * const verset;
-   PkgIsExtraInstalled(pkgCacheFile * const Cache, APT::VersionVector const * const Container) : Cache(Cache), verset(Container) {}
-   bool operator() (pkgCache::PkgIterator const &Pkg)
-   {
-        if ((*Cache)[Pkg].Install() == false)
-           return false;
-        pkgCache::VerIterator const Cand = (*Cache)[Pkg].CandidateVerIter(*Cache);
-	return std::find(verset->begin(), verset->end(), Cand) == verset->end();
-   }
-};
-/* Print out a list of suggested and recommended packages */
+// ShowWeakDependencies - Print out a list of suggested and recommended packages /*{{{*/
 static void ShowWeakDependencies(CacheFile &Cache)
 {
    std::list<std::string> Recommends, Suggests, SingleRecommends, SingleSuggests;
@@ -1086,7 +1066,9 @@ static void ShowWeakDependencies(CacheFile &Cache)
    ShowList(c1out,_("Recommended packages:"), Recommends,
 	 always_true, string_ident, verbose_show_candidate);
 }
+									/*}}}*/
 
+// DoInstall - Install packages from the command line			/*{{{*/
 bool DoInstall(CommandLine &CmdL)
 {
    CacheFile Cache;
@@ -1118,9 +1100,7 @@ bool DoInstall(CommandLine &CmdL)
       to what the user asked */
    SortedPackageUniverse Universe(Cache);
    if (_config->FindI("APT::Output-Version") < 30 && Cache->InstCount() != verset[MOD_INSTALL].size())
-      ShowList(c1out, _("The following additional packages will be installed:"), Universe,
-	    PkgIsExtraInstalled(&Cache, &verset[MOD_INSTALL]),
-	    &PrettyFullName, CandidateVersion(&Cache), "APT::Color::Green");
+      ShowExtraPackages(c1out, Cache, verset[MOD_INSTALL]);
 
    /* Print out a list of suggested and recommended packages */
    if (_config->FindI("APT::Output-Version") < 30)

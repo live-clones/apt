@@ -1571,91 +1571,145 @@ static size_t WeightedLevenshteinDistance(APT::StringView const A, APT::StringVi
 }
 									/*}}}*/
 // FindOldVersionForImportantDepCompare - find old version across renames and soname bumps /*{{{*/
-pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg, bool const AllowTransitional, bool const AllowSonameBump)
+static bool HasNewDependsOnNewName(pkgDepCache &Cache, pkgCache::PkgIterator const &OldPkg, pkgCache::VerIterator const &NewVer)
 {
-   if (Pkg->CurrentVer != 0)
-      return Pkg.CurrentVer();
-   else
+   // Check that the package has a new dependency on the new name
+   if (Cache[OldPkg].CandidateVer != 0 && Cache[OldPkg].CandidateVer != OldPkg.CurrentVer())
    {
-      auto const NewVer = Cache[Pkg].InstVerIter(Cache);
-      for (auto Prv = NewVer.ProvidesList(); not Prv.end(); ++Prv)
+      bool found_dep = false;
+      auto const NewPkg = NewVer.ParentPkg();
+      for (auto Dep = OldPkg.CurrentVer().DependsList(); not Dep.end(); ++Dep)
+	 if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.TargetPkg() == NewPkg)
+	 {
+	    found_dep = true;
+	    break;
+	 }
+      if (found_dep)
+	 return false;
+      for (auto Dep = Cache[OldPkg].CandidateVerIter(Cache).DependsList(); not Dep.end(); ++Dep)
+	 if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.IsSatisfied(NewVer))
+	 {
+	    found_dep = true;
+	    break;
+	 }
+      if (not found_dep)
+	 return false;
+   }
+   return true;
+}
+static bool HasVersionedConflictsReplaces(pkgCache::VerIterator const &NewVer, pkgCache::PkgIterator const &OldPkg)
+{
+   bool found_conflict = false;
+   bool found_replaces = false;
+   for (auto Dep = NewVer.DependsList(); not Dep.end() && (not found_conflict || not found_replaces); ++Dep)
+   {
+      if ((Dep->Type == pkgCache::Dep::Conflicts || Dep->Type == pkgCache::Dep::DpkgBreaks) &&
+	    Dep->Version != 0 && Dep.TargetPkg() == OldPkg)
+	 found_conflict = true;
+      // The Replaces should be versioned, too, but wasn't in t64 transition
+      if (Dep->Type == pkgCache::Dep::Replaces && Dep.TargetPkg() == OldPkg)
+	 found_replaces = true;
+   }
+   return found_conflict && found_replaces;
+}
+static pkgCache::VerIterator FindSonameBumpComparedTo(pkgDepCache &Cache, bool LookForOld, pkgCache::VerIterator const &Ver)
+{
+   auto SrcGrp = Cache.FindGrp(Ver.SourcePkgName());
+   std::map<char const*, APT::VersionSet> allOptions;
+   for (auto OtherVer = SrcGrp.VersionsInSource(); not OtherVer.end(); OtherVer = OtherVer.NextInSource())
+   {
+      if ((OtherVer->MultiArch & pkgCache::Version::Same) != pkgCache::Version::Same || strcmp(OtherVer.Arch(), Ver.Arch()) != 0)
+	 continue;
+      if (LookForOld)
+      {
+	 if (OtherVer.ParentPkg().CurrentVer() != OtherVer)
+	    continue;
+	 if (Cache.VS().CmpVersion(OtherVer.SourceVerStr(), Ver.SourceVerStr()) >= 0)
+	    continue;
+      }
+      else
+      {
+	 if (Cache[OtherVer.ParentPkg()].InstVerIter(Cache) != OtherVer)
+	    continue;
+	 if (Cache.VS().CmpVersion(OtherVer.SourceVerStr(), Ver.SourceVerStr()) <= 0)
+	    continue;
+      }
+      allOptions[OtherVer.SourceVerStr()].insert(OtherVer);
+   }
+   auto const Pkg = Ver.ParentPkg();
+   auto newestOptions = std::max_element(allOptions.begin(), allOptions.end(), [&](auto const &A, auto const &B) { return Cache.VS().CmpVersion(A.first, B.first) < 0; });
+   if (newestOptions != allOptions.end())
+   {
+      auto const stripVersion = [](std::string str) {
+	 str.erase(std::remove_if(str.begin(), str.end(), [](unsigned char const c) { return isdigit(c) != 0 || c == '.' || c == '-'; }), str.end());
+	 return str;
+      };
+      auto const P = stripVersion(Pkg.Name());
+      return std::min_element(newestOptions->second.begin(), newestOptions->second.end(), [&](auto const &AV, auto const &BV) {
+	 auto const A = stripVersion(AV.ParentPkg().Name());
+	 auto const B = stripVersion(BV.ParentPkg().Name());
+	 return WeightedLevenshteinDistance(A, P) < WeightedLevenshteinDistance(P, B);
+      });
+   }
+   return pkgCache::VerIterator{};
+}
+pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &NewPkg, bool const AllowTransitional, bool const AllowSonameBump)
+{
+   if (NewPkg->CurrentVer != 0)
+      return NewPkg.CurrentVer();
+
+   auto const NewVer = Cache[NewPkg].InstVerIter(Cache);
+   for (auto Prv = NewVer.ProvidesList(); not Prv.end(); ++Prv)
+   {
+      if (Prv->ProvideVersion == 0)
+	 continue;
+      auto const OldPkg = Prv.ParentPkg();
+      if (OldPkg->CurrentVer == 0 || OldPkg->VersionList == 0)
+	 continue;
+      // Note that depending on when you call this function, OldPkg might not be marked for removal yet
+      if (not Cache[OldPkg].Delete() && (not AllowTransitional || not HasNewDependsOnNewName(Cache, OldPkg, NewVer)))
+	 continue;
+      if (Cache.VS().CmpVersion(OldPkg.CurrentVer().VerStr(), Prv.ProvideVersion()) >= 0)
+	 continue;
+      if (HasVersionedConflictsReplaces(NewVer, OldPkg))
+	 return OldPkg.CurrentVer();
+   }
+   if (AllowSonameBump && (NewVer->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
+      if (auto const V = FindSonameBumpComparedTo(Cache, true, NewVer); not V.end())
+	 return V;
+   return pkgCache::VerIterator();
+}
+									/*}}}*/
+// FindNewVersionForImportantDepCompare - find new version across renames and soname bumps /*{{{*/
+pkgCache::VerIterator FindNewVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &OldPkg, bool const AllowTransitional, bool const AllowSonameBump)
+{
+   auto const OldVer = OldPkg.CurrentVer();
+   if (OldVer.end())
+      return pkgCache::VerIterator();
+
+   if (AllowTransitional || Cache[OldPkg].Delete())
+   {
+      for (auto Prv = OldVer.ParentPkg().ProvidesList(); not Prv.end(); ++Prv)
       {
 	 if (Prv->ProvideVersion == 0)
 	    continue;
-	 auto const Tar = Prv.ParentPkg();
-	 if (Tar->CurrentVer == 0 || Tar->VersionList == 0)
+	 auto const NewPkg = Prv.OwnerPkg();
+	 if (NewPkg->VersionList == 0)
 	    continue;
-	 // Note that depending on when you call this function, Tar might not be marked for removal yet
-	 if (not Cache[Tar].Delete())
-	 {
-	    if (not AllowTransitional)
-	       continue;
-	    if (Cache[Tar].CandidateVer != 0 && Cache[Tar].CandidateVer != Tar.CurrentVer())
-	    {
-	       bool found_dep = false;
-	       for (auto Dep = Tar.CurrentVer().DependsList(); not Dep.end(); ++Dep)
-		  if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.TargetPkg() == Pkg)
-		  {
-		     found_dep = true;
-		     break;
-		  }
-	       if (found_dep)
-		  continue;
-	       for (auto Dep = Cache[Tar].CandidateVerIter(Cache).DependsList(); not Dep.end(); ++Dep)
-		  if ((Dep->Type == pkgCache::Dep::Depends || Dep->Type == pkgCache::Dep::PreDepends) && Dep.IsSatisfied(NewVer))
-		  {
-		     found_dep = true;
-		     break;
-		  }
-	       if (not found_dep)
-		  continue;
-	    }
-	 }
-	 if (Cache.VS().CmpVersion(Tar.CurrentVer().VerStr(), Prv.ProvideVersion()) >= 0)
+	 // Note that depending on when you call this function, NewPkg might not be marked for install yet
+	 auto const NewVer = Cache[NewPkg].InstVerIter(Cache);
+	 if (NewVer.end() || Prv.OwnerVer() != NewVer)
 	    continue;
-	 bool found_conflict = false;
-	 bool found_replaces = false;
-	 for (auto Dep = NewVer.DependsList(); not Dep.end() && (not found_conflict || not found_replaces); ++Dep)
-	 {
-	    if ((Dep->Type == pkgCache::Dep::Conflicts || Dep->Type == pkgCache::Dep::DpkgBreaks) &&
-		  Dep->Version != 0 && Dep.TargetPkg() == Tar)
-	       found_conflict = true;
-	    // The Replaces should be versioned, too, but wasn't in t64 transition
-	    if (Dep->Type == pkgCache::Dep::Replaces && Dep.TargetPkg() == Tar)
-	       found_replaces = true;
-	 }
-	 if (found_conflict && found_replaces)
-	    return Tar.CurrentVer();
-      }
-      if (AllowSonameBump && (NewVer->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
-      {
-	 auto SrcGrp = Cache.FindGrp(NewVer.SourcePkgName());
-	 std::map<char const*, APT::VersionSet> allOptions;
-	 for (auto OtherVer = SrcGrp.VersionsInSource(); not OtherVer.end(); OtherVer = OtherVer.NextInSource())
-	 {
-	    if (OtherVer.ParentPkg().CurrentVer() != OtherVer)
-	       continue;
-	    if ((OtherVer->MultiArch & pkgCache::Version::Same) != pkgCache::Version::Same || strcmp(OtherVer.Arch(), NewVer.Arch()) != 0)
-	       continue;
-	    if (Cache.VS().CmpVersion(OtherVer.SourceVerStr(), NewVer.SourceVerStr()) >= 0)
-	       continue;
-	    allOptions[OtherVer.SourceVerStr()].insert(OtherVer);
-	 }
-	 auto newestOptions = std::max_element(allOptions.begin(), allOptions.end(), [&](auto const &A, auto const &B) { return Cache.VS().CmpVersion(A.first, B.first) < 0; });
-	 if (newestOptions != allOptions.end())
-	    return std::min_element(newestOptions->second.begin(), newestOptions->second.end(), [&](auto const &AV, auto const &BV) {
-		  auto const stripVersion = [](std::string str) {
-		     str.erase(std::remove_if(str.begin(), str.end(), [](unsigned char const c) { return isdigit(c) != 0 || c == '.' || c == '-'; }), str.end());
-		     return str;
-		  };
-		  auto const A = stripVersion(AV.ParentPkg().Name());
-		  auto const B = stripVersion(BV.ParentPkg().Name());
-		  auto const P = stripVersion(Pkg.Name());
-		  return WeightedLevenshteinDistance(A, P) < WeightedLevenshteinDistance(P, B);
-	    });
+	 if (Cache.VS().CmpVersion(OldVer.VerStr(), Prv.ProvideVersion()) > 0)
+	    continue;
+	 if (HasVersionedConflictsReplaces(NewVer, OldPkg))
+	    return NewVer;
       }
    }
-   return pkgCache::VerIterator();
+   if (AllowSonameBump && (OldVer->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
+      if (auto const V = FindSonameBumpComparedTo(Cache, false, OldVer); not V.end())
+	 return V;
+   return Cache[OldPkg].InstVerIter(Cache);
 }
 									/*}}}*/
 static bool MarkInstall_InstallDependencies(pkgDepCache &Cache, bool const DebugAutoInstall, bool const DebugMarker, pkgCache::PkgIterator const &Pkg, unsigned long Depth, bool const ForceImportantDeps, std::vector<pkgCache::DepIterator> &toInstall, APT::PackageVector *const toMoveAuto, bool const propagateProtected, bool const FromUser) /*{{{*/
