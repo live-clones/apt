@@ -181,6 +181,7 @@ APT
      Pre-Invoke {"touch /var/lib/apt/pre-update-stamp"; };
      Post-Invoke {"touch /var/lib/apt/post-update-stamp"; };
      Error-Mode "<STRING>";
+     AfterSec "<INT>"; // Automatically update if last update was this many secs ago
   };
 
   /* define a new supported compressor on the fly
