@@ -20,6 +20,7 @@
 #include <apt-pkg/prettyprinters.h>
 #include <apt-pkg/strutl.h>
 #include <apt-pkg/upgrade.h>
+#include <apt-pkg/version.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -214,26 +215,31 @@ bool InstallPackages(CacheFile &Cache, APT::PackageVector &HeldBackPackages, boo
 	 return false;
    }
 
-   APT::PackageVector PhasingPackages;
-   APT::PackageVector NotPhasingHeldBackPackages;
-   for (auto const &Pkg : HeldBackPackages)
-   {
-      if (Cache->PhasingApplied(Pkg))
-	 PhasingPackages.push_back(Pkg);
-      else
-	 NotPhasingHeldBackPackages.push_back(Pkg);
-   }
-
+   auto const outputVersion = _config->FindI("APT::Output-Version");
    // Show all the various warning indicators
+   RenameDelNewData rdn{Cache, _config->FindB("APT::Get::Show-Renames", outputVersion >= 30)};
    if (_config->FindI("APT::Output-Version") < 30)
-      ShowDel(c1out,Cache);
-   ShowNew(c1out,Cache);
+   {
+      ShowDel(c1out, Cache, rdn);
+      ShowRenames(c1out, Cache, rdn);
+   }
+   ShowNew(c1out, Cache, rdn);
    if (_config->FindI("APT::Output-Version") >= 30)
       ShowWeakDependencies(Cache);
    if (_config->FindI("APT::Output-Version") >= 30 && _config->FindB("APT::Get::Show-Upgraded",true) == true)
       ShowUpgraded(c1out,Cache);
    if (ShwKept == true)
    {
+      APT::PackageVector PhasingPackages;
+      APT::PackageVector NotPhasingHeldBackPackages;
+      for (auto const &Pkg : HeldBackPackages)
+      {
+	 if (Cache->PhasingApplied(Pkg))
+	    PhasingPackages.push_back(Pkg);
+	 else
+	    NotPhasingHeldBackPackages.push_back(Pkg);
+      }
+
       ShowPhasing(c1out, Cache, PhasingPackages);
       ShowKept(c1out, Cache, NotPhasingHeldBackPackages);
       if (not PhasingPackages.empty() && not NotPhasingHeldBackPackages.empty())
@@ -246,7 +252,10 @@ bool InstallPackages(CacheFile &Cache, APT::PackageVector &HeldBackPackages, boo
 
    // Show removed packages last
    if (_config->FindI("APT::Output-Version") >= 30)
-      ShowDel(c1out,Cache);
+   {
+      ShowRenames(c1out,Cache, rdn);
+      ShowDel(c1out,Cache, rdn);
+   }
    bool Essential = false;
    if (_config->FindB("APT::Get::Download-Only",false) == false)
         Essential = !ShowEssential(c1out,Cache);
@@ -620,12 +629,14 @@ bool DoAutomaticRemove(CacheFile &Cache)
 	 for (APT::PackageSet::iterator Pkg = tooMuch.begin();
 	      Pkg != tooMuch.end(); ++Pkg)
 	 {
-	    APT::PackageSet too;
-	    too.insert(*Pkg);
-	    for (pkgCache::PrvIterator Prv = Cache[Pkg].CandidateVerIter(Cache).ProvidesList();
-		 Prv.end() == false; ++Prv)
-	       too.insert(Prv.ParentPkg());
-	    for (APT::PackageSet::const_iterator P = too.begin(); P != too.end(); ++P)
+	    auto const PkgCand = Cache[Pkg].CandidateVerIter(Cache);
+	    if (unlikely(PkgCand.end()))
+	       continue;
+	    std::vector<std::pair<pkgCache::PkgIterator, char const *>> too;
+	    too.emplace_back(*Pkg, PkgCand.VerStr());
+	    for (pkgCache::PrvIterator Prv = PkgCand.ProvidesList(); not Prv.end(); ++Prv)
+	       too.emplace_back(Prv.ParentPkg(), Prv.ProvideVersion());
+	    for (auto const &[P, PVerStr] : too)
 	    {
 	       for (pkgCache::DepIterator R = P.RevDependsList();
 		    R.end() == false; ++R)
@@ -650,6 +661,11 @@ bool DoAutomaticRemove(CacheFile &Cache)
 		 }
 		 else // ignore dependency from a non-candidate version
 		    continue;
+		 if (R->Version != 0)
+		 {
+		    if (not Cache->VS().CheckDep(PVerStr, R->CompareOp, R.TargetVer()))
+		       continue;
+		 }
 		 if (Debug == true)
 		    std::clog << "Save " << APT::PrettyPkg(Cache, Pkg) << " as another installed package depends on it: " << APT::PrettyPkg(Cache, RP) << std::endl;
 		 Cache->MarkInstall(Pkg, false, 0, false);
@@ -688,12 +704,7 @@ bool DoAutomaticRemove(CacheFile &Cache)
       {
 	 // trigger marking now so that the package list is correct
 	 Cache->MarkAndSweep();
-	 SortedPackageUniverse Universe(Cache);
-	 ShowList(c1out, P_("The following package was automatically installed and is no longer required:",
-	          "The following packages were automatically installed and are no longer required:",
-	          autoRemoveCount), Universe,
-	       [&Cache](pkgCache::PkgIterator const &Pkg) { return (*Cache)[Pkg].Garbage == true && (*Cache)[Pkg].Delete() == false; },
-	       &PrettyFullName, CandidateVersion(&Cache));
+	 ShowAutoRemove(c1out, Cache, autoRemoveCount);
       }
       else
 	 ioprintf(c1out, P_("%lu package was automatically installed and is no longer required.\n",
@@ -963,22 +974,7 @@ std::vector<PseudoPkg> GetPseudoPackages(pkgSourceList *const SL, CommandLine &C
    return VolatileCmdL;
 }
 									/*}}}*/
-// DoInstall - Install packages from the command line			/*{{{*/
-// ---------------------------------------------------------------------
-/* Install named packages */
-struct PkgIsExtraInstalled {
-   pkgCacheFile * const Cache;
-   APT::VersionVector const * const verset;
-   PkgIsExtraInstalled(pkgCacheFile * const Cache, APT::VersionVector const * const Container) : Cache(Cache), verset(Container) {}
-   bool operator() (pkgCache::PkgIterator const &Pkg)
-   {
-        if ((*Cache)[Pkg].Install() == false)
-           return false;
-        pkgCache::VerIterator const Cand = (*Cache)[Pkg].CandidateVerIter(*Cache);
-	return std::find(verset->begin(), verset->end(), Cand) == verset->end();
-   }
-};
-/* Print out a list of suggested and recommended packages */
+// ShowWeakDependencies - Print out a list of suggested and recommended packages /*{{{*/
 static void ShowWeakDependencies(CacheFile &Cache)
 {
    std::list<std::string> Recommends, Suggests, SingleRecommends, SingleSuggests;
@@ -1070,7 +1066,9 @@ static void ShowWeakDependencies(CacheFile &Cache)
    ShowList(c1out,_("Recommended packages:"), Recommends,
 	 always_true, string_ident, verbose_show_candidate);
 }
+									/*}}}*/
 
+// DoInstall - Install packages from the command line			/*{{{*/
 bool DoInstall(CommandLine &CmdL)
 {
    CacheFile Cache;
@@ -1102,9 +1100,7 @@ bool DoInstall(CommandLine &CmdL)
       to what the user asked */
    SortedPackageUniverse Universe(Cache);
    if (_config->FindI("APT::Output-Version") < 30 && Cache->InstCount() != verset[MOD_INSTALL].size())
-      ShowList(c1out, _("The following additional packages will be installed:"), Universe,
-	    PkgIsExtraInstalled(&Cache, &verset[MOD_INSTALL]),
-	    &PrettyFullName, CandidateVersion(&Cache), "APT::Color::Green");
+      ShowExtraPackages(c1out, Cache, verset[MOD_INSTALL]);
 
    /* Print out a list of suggested and recommended packages */
    if (_config->FindI("APT::Output-Version") < 30)

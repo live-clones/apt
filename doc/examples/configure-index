@@ -102,6 +102,8 @@ APT
      Print-URIs "<BOOL>";
      List-Cleanup "<BOOL>";
 
+     Show-Renames "<BOOL>";
+     Show-ReplacedBy "<BOOL>";
      Show-Upgraded "<BOOL>";
      Show-Versions "<BOOL>";
      List-Columns "<BOOL>";

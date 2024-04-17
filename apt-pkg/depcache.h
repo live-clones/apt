@@ -514,4 +514,38 @@ class APT_PUBLIC pkgDepCache : protected pkgCache::Namespace
    APT_HIDDEN void PerformDependencyPass(OpProgress * const Prog);
 };
 
+#ifdef APT_COMPILING_APT
+/** find old version across renames, transitional pkgs and soname bumps
+ *
+ * A some displays and especially for recommends handling we want to know the
+ * old (or, the "current") version of a package to reason about if an unsatisfied
+ * recommends is new or old. For straight upgrades that is easy, but if a package
+ * was renamed or if we deal with a soname bump the package looks like a new install
+ * and hence all recommends would be considered new as well and will be installed.
+ * So, we have to figure out the old package name and return that version for a proper
+ * comparison, which involves some heuristics specially in the soname bump case.
+ *
+ * The easy to detect standard case is a package conflicts+replaces+provides an old
+ * package, so that the new one is freshly installed and the old one removed. Other
+ * cases can be allowed by setting the respective boolean.
+ *
+ * @param Cache we are working with
+ * @param Pkg to be installed (the new version comes from it)
+ * @param AllowTransitional the old pkg can remain, but the upgrade includes a new dependency on new pkg
+ * @param AllowSonameBump try finding an old libfoo1 for a new libfoo2
+ */
+APT_PUBLIC pkgCache::VerIterator FindOldVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg, bool const AllowTransitional, bool const AllowSonameBump);
+/** find new version across renames, transitional pkgs and soname bumps
+ *
+ *  Same reasons and logic as for #FindOldVersionForImportantDepCompare,
+ *  just that we are looking from the other side of the change here
+ *
+ * @param Cache we are working with
+ * @param Pkg to be replaced/removed (the old version comes from it)
+ * @param AllowTransitional the old pkg can remain, but the upgrade includes a new dependency on new pkg
+ * @param AllowSonameBump try finding an old libfoo1 for a new libfoo2
+ */
+APT_PUBLIC pkgCache::VerIterator FindNewVersionForImportantDepCompare(pkgDepCache &Cache, pkgCache::PkgIterator const &Pkg, bool const AllowTransitional, bool const AllowSonameBump);
+#endif
+
 #endif
