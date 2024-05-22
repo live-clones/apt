@@ -1,0 +1,4 @@
+This was supposed to say 0644.
+
+Essentially /dev/null became only writable by root, and this
+blows up lots of stuff on the system. Oh noes!
