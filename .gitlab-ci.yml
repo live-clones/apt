@@ -57,3 +57,9 @@ Salsa-CI:
   stage: package
   trigger:
     include: debian/salsa-ci.yml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"  # run this job only for scheduled pipelines
+      when: always
+    - if: $CI_PIPELINE_SOURCE == "web"  # run for web/manual triggers
+      when: manual
+    - when: never  # never run this job for other pipeline sources
