@@ -3456,7 +3456,11 @@ int Inhibit(const char *what, const char *who, const char *why, const char *mode
 			  why,
 			  mode);
    if (r < 0)
+   {
+      if (_config->FindB("Debug::Systemd"))
+	 _error->Error("Could not inhibit %s: %s", what, error.message);
       goto out;
+   }
 
    r = sd_bus_message_read(m, "h", &fd);
    if (r < 0)
@@ -3465,6 +3469,46 @@ int Inhibit(const char *what, const char *who, const char *why, const char *mode
    // We received a file descriptor, return it - systemd will close the read fd
    // on free, so let's duplicate it here.
    r = dup(fd);
+out:
+   sd_bus_error_free(&error);
+   sd_bus_message_unref(m);
+   sd_bus_unref(bus);
+   return r;
+#else
+   return -ENOTSUP;
+#endif
+}
+									/*}}}*/
+
+int StartService(const char *service) /*{{{*/
+{
+#ifdef HAVE_SYSTEMD
+   sd_bus_error error = SD_BUS_ERROR_NULL;
+   sd_bus_message *m = NULL;
+   sd_bus *bus = NULL;
+   int r;
+
+   r = sd_bus_open_system(&bus);
+   if (r < 0)
+      goto out;
+
+   r = sd_bus_call_method(bus,
+			  "org.freedesktop.systemd1",
+			  "/org/freedesktop/systemd1",
+			  "org.freedesktop.systemd1.Manager",
+			  "StartUnit",
+			  &error,
+			  &m,
+			  "ss",
+			  service,
+			  "replace");
+   if (r < 0)
+   {
+      if (_config->FindB("Debug::Systemd"))
+	 _error->Error("Could not start service %s: %s", service, error.message);
+      goto out;
+   }
+
 out:
    sd_bus_error_free(&error);
    sd_bus_message_unref(m);

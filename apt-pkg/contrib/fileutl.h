@@ -283,5 +283,7 @@ APT_PUBLIC bool Popen(const char *Args[], FileFd &Fd, pid_t &Child, FileFd::Open
 APT_HIDDEN bool OpenConfigurationFileFd(std::string const &File, FileFd &Fd);
 
 APT_HIDDEN int Inhibit(const char *what, const char *who, const char *why, const char *mode);
-
+#ifdef APT_COMPILING_APT
+APT_PUBLIC int StartService(const char *service);
+#endif
 #endif
