@@ -540,6 +540,9 @@ bool InstallPackages(CacheFile &Cache, APT::PackageVector &HeldBackPackages, boo
    if (not RunScripts("APT::Install::Post-Invoke-Success"))
       return false;
 
+   if (auto apt = Cache->FindPkg("apt"); not apt.end() && (Cache[apt].Upgrade()))
+      StartService("apt-gencaches.service");
+
    return true;
 }
 									/*}}}*/

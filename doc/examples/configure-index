@@ -604,6 +604,7 @@ Debug
   Locking "<BOOL>";
   Phasing "<BOOL>";
   APT::Solver "<INT">;
+  Systemd "<BOOL>";
 };
 
 pkgCacheGen

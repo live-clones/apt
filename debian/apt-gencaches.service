@@ -1,0 +1,8 @@
+[Unit]
+Description=Regenerate the cache file after an upgrade of apt itself
+Documentation=man:apt-cache(8)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/apt-cache gencaches -o DPkg::Lock::Timeout=60
+
