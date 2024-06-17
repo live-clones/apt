@@ -73,14 +73,14 @@ static constexpr Digest Digests[] = {
    {Digest::State::Untrusted, "MD5"},
    {Digest::State::Untrusted, "SHA1"},
    {Digest::State::Untrusted, "RIPE-MD/160"},
-   {Digest::State::Trusted, "Reserved digest"},
-   {Digest::State::Trusted, "Reserved digest"},
-   {Digest::State::Trusted, "Reserved digest"},
-   {Digest::State::Trusted, "Reserved digest"},
+   {Digest::State::Untrusted, "Reserved digest"},
+   {Digest::State::Untrusted, "Reserved digest"},
+   {Digest::State::Untrusted, "Reserved digest"},
+   {Digest::State::Untrusted, "Reserved digest"},
    {Digest::State::Trusted, "SHA256"},
    {Digest::State::Trusted, "SHA384"},
    {Digest::State::Trusted, "SHA512"},
-   {Digest::State::Trusted, "SHA224"},
+   {Digest::State::Untrusted, "SHA224"},
 };
 
 static Digest FindDigest(std::string const & Digest)
