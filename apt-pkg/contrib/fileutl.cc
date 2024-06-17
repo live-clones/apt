@@ -1000,7 +1000,7 @@ bool StartsWithGPGClearTextSignature(string const &FileName)
    size_t n = 0;
    errno = 0;
    ssize_t const result = getline(&lineptr, &n, gpg);
-   if (errno != 0)
+   if (result < 0 && errno != 0)
    {
       _error->Errno("getline", "Could not read from %s", FileName.c_str());
       fclose(gpg);
