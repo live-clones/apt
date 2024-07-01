@@ -24,6 +24,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <fstream>
 
 #include <cstring>
 #include <sys/stat.h>
@@ -817,8 +818,60 @@ bool debReleaseIndex::SetSignedBy(std::string const &pSignedBy)
    else
    {
       auto const normalSignedBy = NormalizeSignedBy(pSignedBy, true);
-      if (normalSignedBy != SignedBy)
-	 return _error->Error(_("Conflicting values set for option %s regarding source %s %s: %s != %s"), "Signed-By", URI.c_str(), Dist.c_str(), SignedBy.c_str(), normalSignedBy.c_str());
+      if (normalSignedBy.length() == 0)
+         return true;
+      else
+      {
+         std::ifstream SignedByContent, normalSignedByContent;
+         bool SignedByIsFile = false, normalSignedByIsFile = false;
+         struct stat Buf;
+         if (stat(SignedBy.c_str(), &Buf) == 0)
+         {
+            SignedByContent = std::ifstream(SignedBy.c_str(), std::ios::binary);
+            if (SignedByContent.fail()) {
+               return _error->Error(_("Failed to open %s"), SignedBy.c_str());
+            }
+            SignedByIsFile = true;
+         }
+         if (stat(normalSignedBy.c_str(), &Buf) == 0)
+         {
+            normalSignedByContent = std::ifstream(normalSignedBy.c_str(), std::ios::binary);
+            if (normalSignedByContent.fail()) {
+               return _error->Error(_("Failed to open %s"), normalSignedBy.c_str());
+            }
+            normalSignedByIsFile = true;
+         }
+
+         if (SignedByIsFile && normalSignedByIsFile)
+         { // Assume both are files
+            if (SignedByContent.seekg(0, std::ifstream::end).tellg() !=
+                normalSignedByContent.seekg(0, std::ifstream::end).tellg()) {
+               return _error->Error(_("Conflicting values set for option %s regarding source %s %s: %s != %s"), "Signed-By", URI.c_str(), Dist.c_str(), SignedBy.c_str(), normalSignedBy.c_str());
+            }
+            SignedByContent.seekg(0, std::ifstream::beg);
+            normalSignedByContent.seekg(0, std::ifstream::beg);
+            if (std::equal(std::istreambuf_iterator<char>(SignedByContent.rdbuf()),
+                           std::istreambuf_iterator<char>(),
+                           std::istreambuf_iterator<char>(normalSignedByContent.rdbuf())))
+               return true;
+            else
+               return _error->Error(_("Conflicting values set for option %s regarding source %s %s: %s != %s"), "Signed-By", URI.c_str(), Dist.c_str(), SignedBy.c_str(), normalSignedBy.c_str());
+         }
+         else if (!SignedByIsFile && !normalSignedByIsFile)
+         { // Assume both are fingerprints
+            if (normalSignedBy != SignedBy)
+               return _error->Error(_("Conflicting values set for option %s regarding source %s %s: %s != %s"), "Signed-By", URI.c_str(), Dist.c_str(), SignedBy.c_str(), normalSignedBy.c_str());
+         }
+         else
+         { // Assume one is file, and the other is fingerprint
+            if (SignedByIsFile)
+            {
+            }
+            else if (normalSignedByIsFile)
+            {
+            }
+         }
+      }
    }
    return true;
 }
