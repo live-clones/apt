@@ -132,6 +132,9 @@ bool pkgInitConfig(Configuration &Cnf)
    Cnf.CndSet("APT::Install-Recommends", true);
    Cnf.CndSet("APT::Install-Suggests", false);
    Cnf.CndSet("APT::Key::Assert-Pubkey-Algo", ">=rsa2048,ed25519,ed448");
+   Cnf.CndSet("APT::Key::RSA::Safe-Size", "2048");
+   Cnf.CndSet("APT::Key::EdDSA::Safe-Curves::", "Ed25519");
+   Cnf.CndSet("APT::Key::ECDH::Safe-Curves::", "Curve25519");
    Cnf.CndSet("Dir","/");
    
    // State

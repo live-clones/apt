@@ -9,12 +9,13 @@
 
 #include <apt-pkg/acquire-item.h>
 #include <apt-pkg/acquire.h>
-#include <apt-pkg/cmndline.h>
 #include <apt-pkg/cachefilter-patterns.h>
+#include <apt-pkg/cmndline.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/init.h>
+#include <apt-pkg/openpgp.h>
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/proxy.h>
 #include <apt-pkg/strutl.h>
@@ -295,6 +296,66 @@ static bool DoQuoteString(CommandLine &CmdL)				/*{{{*/
    return true;
 }
 									/*}}}*/
+/*{{{*/
+static std::ostream &operator<<(std::ostream &out, APT::OpenPGP::PublicKey key)
+{
+   return out << key.fingerprint << " algorithm=" << key.algorithm << (key.safe ? " safe=yes" : " safe=no") << (key.revoked ? " revoked=yes" : " revoked=no");
+}
+static bool DoListKeys(CommandLine &CmdL)
+{
+   FileFd fd;
+
+   for (size_t i = 1; CmdL.FileList[i] != NULL; ++i)
+   {
+      std::string const name = CmdL.FileList[i];
+
+      if (name != "-")
+      {
+	 if (fd.Open(name, FileFd::ReadOnly, FileFd::Extension) == false)
+	    return false;
+      }
+      else
+      {
+	 if (fd.OpenDescriptor(STDIN_FILENO, FileFd::ReadOnly) == false)
+	    return false;
+      }
+
+      std::vector<char> key;
+      std::array<char, 4096> buf;
+      unsigned long long l;
+      while (fd.Read(buf.data(), buf.size(), &l) && l != 0)
+      {
+	 std::copy(buf.data(), buf.data() + l, std::back_inserter(key));
+      }
+      APT::OpenPGP::Keyring keyring;
+
+      if (!keyring.AddKeyFile(name.c_str(), APT::StringView(key.data(), key.size())))
+	 return false;
+
+      for (auto &key : keyring)
+      {
+	 std::cout << "Key:" << key << "\n";
+	 std::cout << "Keyring: " << name << "\n";
+	 if (not key.uids.empty())
+	 {
+	    std::cout << "UIDs:\n";
+	    for (auto &uid : key.uids)
+	       std::cout << " " << uid << "\n";
+	 }
+	 if (not key.subkeys.empty())
+	 {
+	    std::cout << "Subkeys:\n";
+	    for (auto &subkey : key.subkeys)
+	       std::cout << " " << subkey << "\n";
+	 }
+	 std::cout << "\n";
+      }
+      if (_error->PendingError())
+	 return false;
+   }
+   return true;
+}
+									/*}}}*/
 static bool ShowHelp(CommandLine &)					/*{{{*/
 {
    std::cout <<
@@ -319,6 +380,7 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
        {"analyze-pattern", &AnalyzePattern, _("analyse a pattern")},
        {"analyse-pattern", &AnalyzePattern, nullptr},
        {"quote-string", &DoQuoteString, nullptr},
+       {"list-keys", &DoListKeys, nullptr},
        {nullptr, nullptr, nullptr}};
 }
 									/*}}}*/
