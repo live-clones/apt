@@ -514,6 +514,49 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
    if (_config->FindB("version") == true || Binary == APT_CMD::APT_FTPARCHIVE)
       return true;
    ShowHelpListCommands(Cmds);
+   for (auto &b : binaries)
+   {
+      if (b.binary != Binary)
+	 continue;
+      // Width of long option
+      size_t width = 0;
+      for (auto &c : b.commands)
+	 for (auto &option : c.options)
+	    width = std::max(strlen(option.lng), width);
+      for (auto &option : b.options)
+	 width = std::max(strlen(option.lng), width);
+      for (auto &command : b.commands)
+      {
+	 for (auto &subcommand : command.commands)
+	    std::cout << "  " << subcommand << std::endl;
+
+	 for (auto &option : command.options)
+	 {
+	    if (not option.description)
+	       continue;
+	    if (option.shrt && option.lng)
+	       std::cout << "    -" << option.shrt << ", --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	    else if (option.lng)
+	       std::cout << "        --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	    else if (option.shrt)
+	       std::cout << "    -" << option.shrt << "  " << option.description << std::endl;
+	 }
+	 std::cout << std::endl;
+      }
+      std::cout << "  Common options:" << std::endl;
+      for (auto &option : b.options)
+      {
+	 if (not option.description)
+	    continue;
+	 if (option.shrt && option.lng)
+	    std::cout << "    -" << option.shrt << ", --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	 else if (option.lng)
+	    std::cout << "        --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	 else if (option.shrt)
+	    std::cout << "    -" << option.shrt << "  " << option.description << std::endl;
+      }
+   }
+
    std::cout << std::endl;
    char const * cmd = nullptr;
    switch (Binary)
@@ -533,6 +576,7 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
       case APT_CMD::APT_SORTPKG: cmd = "apt-sortpkgs(1)"; break;
       case APT_CMD::RRED: cmd = nullptr; break;
    }
+
    if (cmd != nullptr)
       ioprintf(std::cout, _("See %s for more information about the available commands."), cmd);
    if (Binary != APT_CMD::APT_DUMP_SOLVER && Binary != APT_CMD::APT_INTERNAL_SOLVER &&
