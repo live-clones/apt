@@ -96,6 +96,12 @@ constexpr std::initializer_list<binary> binaries{
 	    },
 	 },
 	 command{
+	    {"pkgnames"},
+	    {
+	       {0, "all-names", "APT::Cache::AllNames", "Show virtual packages and missing dependencies"},
+	    },
+	 },
+	 command{
 	    {"unmet"},
 	    {
 	       {'i', "important", "APT::Cache::Important", "Print only important dependencies"},
