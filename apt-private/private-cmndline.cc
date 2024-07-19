@@ -123,7 +123,26 @@ constexpr std::initializer_list<binary> binaries{
 	 {0, "with-source", "APT::Sources::With::", "Configure an ephemeral source file", CommandLine::HasArg},
       },
    },
-};
+   binary{
+      APT_CMD::APT_CDROM,
+      commands{
+	 {
+	    {"add", "ident"},
+	    {
+	       {0, "auto-detect", "Acquire::cdrom::AutoDetect", "Auto detect the CD", CommandLine::Boolean},
+	       {'d', "cdrom", "Acquire::cdrom::mount", "CD mount point", CommandLine::HasArg},
+	       {'r', "rename", "APT::CDROM::Rename", "Rename the CD"},
+	       {'m', "no-mount", "APT::CDROM::NoMount", "Do not mount automatically"},
+	       {'f', "fast", "APT::CDROM::Fast", "Do a fast operation"},
+	       {'n', "just-print", "APT::CDROM::NoAct", "Just print, do not act"},
+	       {'n', "recon", "APT::CDROM::NoAct", "Just print, do not act"},
+	       {'n', "no-act", "APT::CDROM::NoAct", "Just print, do not act"},
+	       {'a', "thorough", "APT::CDROM::Thorough", "Be thorough"},
+	    },
+	 },
+      },
+      options{},
+   }};
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
 {
@@ -156,24 +175,6 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
    }
 
    return false;
-}
-									/*}}}*/
-static bool addArgumentsAPTCDROM(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
-{
-   if (CmdMatches("add", "ident") == false)
-      return false;
-
-   // FIXME: move to the correct command(s)
-   addArg(0, "auto-detect", "Acquire::cdrom::AutoDetect", CommandLine::Boolean);
-   addArg('d', "cdrom", "Acquire::cdrom::mount", CommandLine::HasArg);
-   addArg('r', "rename", "APT::CDROM::Rename", 0);
-   addArg('m', "no-mount", "APT::CDROM::NoMount", 0);
-   addArg('f', "fast", "APT::CDROM::Fast", 0);
-   addArg('n', "just-print", "APT::CDROM::NoAct", 0);
-   addArg('n', "recon", "APT::CDROM::NoAct", 0);
-   addArg('n', "no-act", "APT::CDROM::NoAct", 0);
-   addArg('a', "thorough", "APT::CDROM::Thorough", 0);
-   return true;
 }
 									/*}}}*/
 static bool addArgumentsAPTConfig(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
@@ -458,9 +459,9 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT: addArgumentsAPT(Args, Cmd); break;
 	 case APT_CMD::APT_GET: addArgumentsAPTGet(Args, Cmd); break;
 	 case APT_CMD::APT_CACHE:
+	 case APT_CMD::APT_CDROM:
 	    addArguments(Program, Args, Cmd);
 	    break;
-	 case APT_CMD::APT_CDROM: addArgumentsAPTCDROM(Args, Cmd); break;
 	 case APT_CMD::APT_CONFIG: addArgumentsAPTConfig(Args, Cmd); break;
 	 case APT_CMD::APT_DUMP_SOLVER: addArgumentsAPTDumpSolver(Args, Cmd); break;
 	 case APT_CMD::APT_EXTRACTTEMPLATES: addArgumentsAPTExtractTemplates(Args, Cmd); break;
