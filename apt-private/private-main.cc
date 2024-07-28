@@ -85,7 +85,7 @@ void CheckIfCalledByScript(int argc, const char *argv[])		/*{{{*/
       // intentional to make it easier to read.
       std::cerr << std::endl
                 << "WARNING: " << flNotDir(argv[0]) << " "
-                << "does not have a stable CLI interface. "
+                << "does not have a stable command line interface. "
                 << "Use with caution in scripts."
                 << std::endl
                 << std::endl;
