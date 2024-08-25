@@ -22,6 +22,7 @@
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/macros.h>
 #include <apt-pkg/mmap.h>
+#include <valgrind/memcheck.h>
 
 #include <cerrno>
 #include <cstdint>
@@ -103,6 +104,8 @@ bool MMap::Map(FileFd &Fd)
 	 {
 	    // for readonly, we don't need sync, so make it simple
 	    Base = malloc(iSize);
+	    VALGRIND_MAKE_MEM_UNDEFINED(Base, iSize);
+	    VALGRIND_CREATE_BLOCK(Base, iSize, "malloc()ed cache file");
 	    if (unlikely(Base == nullptr))
 	       return _error->Errno("MMap-malloc", _("Couldn't make mmap of %llu bytes"), iSize);
 	    SyncToFd = new FileFd();
@@ -114,6 +117,8 @@ bool MMap::Map(FileFd &Fd)
 	    return _error->Errno("mmap", _("Couldn't duplicate file descriptor %i"), Fd.Fd());
 
 	 Base = calloc(iSize, 1);
+	 VALGRIND_MAKE_MEM_UNDEFINED(Base, iSize);
+	 VALGRIND_CREATE_BLOCK(Base, iSize, "calloc()ed cache file");
 	 if (unlikely(Base == nullptr))
 	    return _error->Errno("MMap-calloc", _("Couldn't make mmap of %llu bytes"), iSize);
 	 SyncToFd = new FileFd (dupped_fd);
@@ -287,6 +292,8 @@ DynamicMMap::DynamicMMap(unsigned long Flags,unsigned long const &WorkSpace,
 		if(Base == MAP_FAILED)
 			_error->Errno("DynamicMMap",_("Couldn't make mmap of %lu bytes"),WorkSpace);
 
+		VALGRIND_MAKE_MEM_UNDEFINED(Base, WorkSpace);
+		VALGRIND_CREATE_BLOCK(Base, WorkSpace, "mmaped()ed dynamic cache file");
 		iSize = 0;
 		return;
 	}
@@ -294,6 +301,9 @@ DynamicMMap::DynamicMMap(unsigned long Flags,unsigned long const &WorkSpace,
 	// fallback to a static allocated space
 	Base = calloc(WorkSpace, 1);
 	iSize = 0;
+
+	VALGRIND_MAKE_MEM_UNDEFINED(Base, WorkSpace);
+	VALGRIND_CREATE_BLOCK(Base, WorkSpace, "calloc()ed dynamic cache file");
 }
 									/*}}}*/
 // DynamicMMap::~DynamicMMap - Destructor				/*{{{*/
@@ -496,6 +506,9 @@ bool DynamicMMap::Grow() {
 			/* Set new memory to 0 */
 			memset((char*)Base + WorkSpace, 0, newSize - WorkSpace);
 	}
+
+	VALGRIND_MAKE_MEM_UNDEFINED((char*)Base + WorkSpace, newSize - WorkSpace);
+	VALGRIND_CREATE_BLOCK(Base, WorkSpace, "resized dynamic cache file");
 
 	Pools =(Pool*) Base + poolOffset;
 	WorkSpace = newSize;
