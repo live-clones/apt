@@ -780,6 +780,7 @@ pkgAcquire::Worker *pkgAcquire::WorkerStep(Worker *I)
 // ---------------------------------------------------------------------
 /* This is a bit simplistic, it looks at every file in the dir and sees
    if it is part of the download set. */
+__attribute__((optimize("no-optimize-strlen"))) // strcmp() below reads too much
 bool pkgAcquire::Clean(string Dir)
 {
    // non-existing directories are by definition clean…
