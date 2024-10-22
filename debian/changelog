@@ -1,3 +1,24 @@
+apt (2.8.3) noble; urgency=medium
+
+  * Revert increased key size requirements from 2.8.0-2.8.2 (LP: #2073126)
+    - Revert "Only install 00-temporary-rsa1024 for >=2.7.6 and improve comment"
+    - Revert "Only warn about <rsa2048 when upgrading from 2.7.x to 2.8.x"
+    - Revert rsa1024 to warnings again
+    This leaves the mechanisms in place and no longer warns about NIST curves.
+  * Fix keeping back removals of obsolete packages; and return an error if
+    ResolveByKeep() is unsuccessful (LP: #2078720)
+  * Fix buffer overflow, stack overflow, exponential complexity in
+    apt-ftparchive Contents generation (LP: #2083697)
+    - ftparchive: Mystrdup: Add safety check and bump buffer size
+    - ftparchive: contents: Avoid exponential complexity and overflows
+    - test framework: Improve valgrind support
+    - test: Check that apt-ftparchive handles deep paths
+    - Workaround valgrind "invalid read" in ExtractTar::Go by moving large
+      buffer from stack to heap. The large buffer triggered some bugs in
+      valgrind stack clash protection handling.
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Tue, 22 Oct 2024 15:02:22 +0200
+
 apt (2.8.2) noble; urgency=medium
 
   * Only install 00-temporary-rsa1024 for >=2.7.6 and improve comment
