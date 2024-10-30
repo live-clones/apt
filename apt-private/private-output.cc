@@ -89,7 +89,7 @@ bool InitOutput(std::basic_streambuf<char> * const out)			/*{{{*/
       SigWinch(0);
    }
 
-   if (isatty(STDOUT_FILENO) == 0 || not _config->FindB("APT::Color", true) || getenv("NO_COLOR") != nullptr || getenv("APT_NO_COLOR") != nullptr)
+   if (isatty(STDOUT_FILENO) == 0 || not _config->FindB("APT::Color", true) || _config->FindB("APT::Output-Machine", false) || getenv("NO_COLOR") != nullptr || getenv("APT_NO_COLOR") != nullptr)
    {
       _config->Set("APT::Color", false);
       _config->Set("APT::Color::Highlight", "");
