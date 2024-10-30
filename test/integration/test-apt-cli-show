@@ -59,6 +59,25 @@ APT-Release: a=unstable,n=sid,c=main,b=all
 Description: Some description
  That has multiple lines
 " apt show foo --full
+testsuccessequal "Package: foo
+Architecture: all
+Version: 1.0
+Priority: optional
+Section: other
+Maintainer: Joe Sixpack <joe@example.org>
+Installed-Size: 42
+Filename: pool/main/foo/foo_1.0_all.deb
+Size: 42
+SHA256: 0000000000000000000000000000000000000000000000000000000000000000
+Description-md5: 0e18deb9d379022e64e9835c8bece2ce
+APT-Manual-Installed: yes
+APT-Sources: file:$APTARCHIVE unstable/main all Packages
+APT-Pin: 500
+APT-Candidate: yes
+APT-Release: a=unstable,n=sid,c=main,b=all
+Description: Some description
+ That has multiple lines
+" apt show foo --machine
 testsuccessequal "Package: bar
 Version: 1
 Priority: optional
