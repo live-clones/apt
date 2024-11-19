@@ -647,9 +647,11 @@ void pkgAcquire::Worker::HandleFailure(std::vector<pkgAcquire::Item *> const &It
 	 auto SavedDesc = Owner->GetItemDesc();
 	 if (_config->FindB("Acquire::Retries::Delay", true))
 	 {
+		URI uri{SavedDesc.URI};
 	    auto Iter = _config->FindI("Acquire::Retries", 3) - Owner->Retries - 1;
 	    auto const MaxDur = _config->FindI("Acquire::Retries::Delay::Maximum", 30);
-	    auto const handleRetryAfter = _config->FindB("Acquire::Retries::HandleRetryAfter", true);
+	    auto handleRetryAfter = _config->FindB("Acquire::Retries::HandleRetryAfter", false);
+		handleRetryAfter = _config->FindB("Acquire::" + uri.Access + "::" + uri.Host + "::Retries::HandleRetryAfter", handleRetryAfter);
 	    auto Dur = std::chrono::seconds(1 << Iter);
 	    auto const retryAfterStr = LookupTag(Message, "Retry-After");
 	    auto const failReason = LookupTag(Message, "FailReason");
