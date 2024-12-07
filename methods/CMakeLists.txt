@@ -8,6 +8,7 @@ add_executable(file file.cc)
 add_executable(copy copy.cc)
 add_executable(store store.cc)
 add_executable(gpgv gpgv.cc)
+add_executable(sqv sqv.cc)
 add_executable(cdrom cdrom.cc)
 add_executable(http http.cc basehttp.cc $<TARGET_OBJECTS:connectlib>)
 add_executable(mirror mirror.cc)
@@ -25,7 +26,7 @@ target_link_libraries(http $<$<BOOL:${GNUTLS_FOUND}>:${GNUTLS_LIBRARIES}> $<$<BO
 target_link_libraries(rred apt-private)
 
 # Install the library
-install(TARGETS file copy store gpgv cdrom http rred mirror
+install(TARGETS file copy store gpgv sqv cdrom http rred mirror
         RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/apt/methods)
 
 add_links(${CMAKE_INSTALL_LIBEXECDIR}/apt/methods mirror mirror+http mirror+https mirror+file mirror+copy)
