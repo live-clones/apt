@@ -1423,7 +1423,11 @@ string pkgAcqMetaBase::Custom600Headers() const
 void pkgAcqMetaBase::QueueForSignatureVerify(pkgAcqTransactionItem * const I, std::string const &File, std::string const &Signature)
 {
    AuthPass = true;
+#ifdef SQV_EXECUTABLE
+   I->Desc.URI = "sqv:" + pkgAcquire::URIEncode(Signature);
+#else
    I->Desc.URI = "gpgv:" + pkgAcquire::URIEncode(Signature);
+#endif
    I->DestFile = File;
    QueueURI(I->Desc);
    I->SetActiveSubprocess("gpgv");
