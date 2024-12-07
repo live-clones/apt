@@ -138,6 +138,8 @@ bool AcquireUpdate(pkgAcquire &Fetcher, int const PulseInterval,
    else if (Failed == true)
       Res = _error->Error(_("Some index files failed to download. They have been ignored, or old ones used instead."));
 
+   if (not AllFailed)
+      utimes(_config->FindDir("Dir::State::lists").c_str(), nullptr);
    // Run the success scripts if all was fine
    if (RunUpdateScripts == true)
    {
