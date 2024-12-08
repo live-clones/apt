@@ -177,6 +177,37 @@
    enabled) in your scripts as they keep backward compatibility as much as possible.
    </para>
  </refsect1>
+ <refsect1><title>Machine interfaces</title>
+
+     <para>
+     The machine readable output format can be enabled by speciying the
+         <option>-M</option> (<option>--machine</option>) option.</para>
+
+     <para>
+     This produces a deb822 structured output consisting of multiple paragraphs.
+     In addition to command specific blocks, such as package information for
+     the <option>show</option> command, there can also be global logging messages.
+     Each logging message contains a single field, which must be one of the following.
+     </para>
+
+   <variablelist>
+     <varlistentry><term>Error:</term>
+       <listitem><para>A human readable error message. Must be surfaced.</para></listitem>
+     </varlistentry>
+     <varlistentry><term>Warning:</term>
+       <listitem><para>A human readable warning message. Must be surfaced.</para></listitem>
+     </varlistentry>
+     <varlistentry><term>Notice:</term>
+       <listitem><para>A human readable notice message. Should be surfaced to interactive users.</para></listitem>
+     </varlistentry>
+     <varlistentry><term>Audit:</term>
+       <listitem><para>A human readable message indicating future deprecations or non-best-practices. Will only be issued when --audit is passed.</para></listitem>
+   </varlistentry>
+
+   <para>For the <option>show</option> command, the option enables <option>--full</option> and disables human-readable size fields in favor of the standard ones.</para>
+
+ </variablelist>
+ </refsect1>
 
  <refsect1><title>See Also</title>
    <para>&apt-get;, &apt-cache;, &sources-list;,

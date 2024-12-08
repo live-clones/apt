@@ -257,7 +257,8 @@ APT_HIDDEN std::ostream &operator<<(std::ostream &out, GlobalError::Item i)
    static constexpr auto COLOR_WARN = "\033[1;33m";  // bold yellow
    static constexpr auto COLOR_ERROR = "\033[1;31m"; // bold red
 
-   bool use_color = _config->FindB("APT::Color", false);
+   bool machine = _config->FindB("APT::Output-Machine");
+   bool use_color = not machine && _config->FindB("APT::Color");
    auto out_ver = _config->FindI("APT::Output-Version");
 
    if (use_color)
@@ -280,27 +281,30 @@ APT_HIDDEN std::ostream &operator<<(std::ostream &out, GlobalError::Item i)
       }
    }
 
+   if (machine)
+      out << std::endl;
+
    switch (i.Type)
    {
    case GlobalError::FATAL:
    case GlobalError::ERROR:
       // TRANSLATOR: This is a warning level displayed before the message
-      out << (out_ver < 30 ? "E:" : _("Error:"));
+      out << (machine ? "Error:" : (out_ver < 30 ? "E:" : _("Error:")));
       break;
    case GlobalError::WARNING:
       // TRANSLATOR: This is a warning level displayed before the message
-      out << (out_ver < 30 ? "W:" : _("Warning:"));
+      out << (machine ? "Warning:" : (out_ver < 30 ? "W:" : _("Warning:")));
       break;
    case GlobalError::NOTICE:
       // TRANSLATOR: This is a warning level displayed before the message
-      out << (out_ver < 30 ? "N:" : _("Notice:"));
+      out << (machine ? "Notice:" : (out_ver < 30 ? "N:" : _("Notice:")));
       break;
    case GlobalError::AUDIT:
-      out << (out_ver < 30 ? "A:" : _("Audit:"));
+      out << (machine ? "Audit:" : _(out_ver < 30 ? "A:" : _("Audit:")));
       break;
    case GlobalError::DEBUG:
       // TRANSLATOR: This is a warning level displayed before the message
-      out << _("Debug:");
+      out << (machine ? "Debug:" : _("Debug:"));
       break;
    }
    out << " ";
@@ -345,6 +349,9 @@ APT_HIDDEN std::ostream &operator<<(std::ostream &out, GlobalError::Item i)
 
    if (use_color)
       out << COLOR_RESET;
+
+   if (machine)
+      out << std::endl;
 
    return out;
 }

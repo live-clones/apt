@@ -362,6 +362,7 @@ static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * c
    {
       addArg('a', "all-versions", "APT::Cache::AllVersions", 0);
       addArg('f', "full", "APT::Cache::ShowFull", 0);
+      addArg('M', "machine", "APT::Output-Machine", 0);
       addArg('S', "snapshot", "APT::Snapshot", CommandLine::HasArg);
    }
    else if (addArgumentsAPTGet(Args, Cmd) || addArgumentsAPTCache(Args, Cmd))

@@ -79,7 +79,8 @@ void CheckIfCalledByScript(int argc, const char *argv[])		/*{{{*/
    if (unlikely(argc < 1)) return;
 
    if(!isatty(STDOUT_FILENO) &&
-      _config->FindB("Apt::Cmd::Disable-Script-Warning", false) == false)
+      _config->FindB("Apt::Cmd::Disable-Script-Warning", false) == false
+      && not _config->FindB("APT::Output-Machine", false))
    {
       // NOTE: CLI interface is redundant on the I/interface, this is
       // intentional to make it easier to read.
