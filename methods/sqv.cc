@@ -44,6 +44,9 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
       }
    }
 
+   if (keyFiles.empty())
+      return _error->Error("The signatures couldn't be verified because no keyring is specified");
+
    for (auto const &keyring : keyFiles)
    {
       args.push_back("--keyring");
