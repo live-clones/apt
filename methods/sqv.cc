@@ -174,7 +174,11 @@ bool SQVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
    }
    else
    {
-      keyFiles = VectorizeString(SignedBy, ',');
+      for (auto &&key : VectorizeString(SignedBy, ','))
+	 if (key.empty() == false && key[0] == '/')
+	    keyFiles.emplace_back(std::move(key));
+	 else
+	    keyFpts.emplace_back(std::move(key));
    }
 
    // Run apt-key on file, extract contents and get the key ID of the signer
@@ -194,6 +198,25 @@ bool SQVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
 		_("Key is stored in legacy trusted.gpg keyring (%s). Use Signed-By instead. See the USER CONFIGURATION section in apt-secure(8) for details."),
 		trusted.c_str());
       Warning(std::move(warning));
+   }
+
+   if (Signers.empty())
+      return _error->Error("No good signature");
+
+   if (not keyFpts.empty())
+   {
+      Signers.erase(std::remove_if(Signers.begin(), Signers.end(), [&](std::string const &signer) {
+	 bool allowedSigner = std::find(keyFpts.begin(), keyFpts.end(), signer) != keyFpts.end();
+	 if (not allowedSigner && DebugEnabled())
+	       std::cerr << "NoPubKey: GOODSIG " << signer << "\n";
+	 return not allowedSigner;
+      }), Signers.end());
+
+      if (Signers.empty()) {
+	 if (keyFpts.size() > 1)
+	    return _error->Error(_("No good signature from required signers: %s"), APT::String::Join(keyFpts, ", ").c_str());
+	 return _error->Error(_("No good signature from required signer: %s"), APT::String::Join(keyFpts, ", ").c_str());
+      }
    }
    std::unordered_map<std::string, std::string> fields;
    fields.emplace("URI", Itm->Uri);
