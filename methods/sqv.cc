@@ -14,7 +14,7 @@ class SQVMethod : public aptMethod
 {
    private:
    bool VerifyGetSigners(const char *file, const char *outfile,
-			 vector<string> const &keyFiles,
+			 vector<string> keyFiles,
 			 vector<string> &signers);
 
    protected:
@@ -25,7 +25,7 @@ class SQVMethod : public aptMethod
 };
 
 bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
-				 vector<string> const &keyFiles,
+				 vector<string> keyFiles,
 				 vector<string> &signers)
 {
    bool const Debug = DebugEnabled();
@@ -33,11 +33,6 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
    std::vector<std::string> args;
 
    args.push_back(SQV_EXECUTABLE);
-   for (auto const &keyring : keyFiles)
-   {
-      args.push_back("--keyring");
-      args.push_back(keyring);
-   }
    if (keyFiles.empty())
    {
       auto Parts = GetListOfFilesInDir(_config->FindDir("Dir::Etc::TrustedParts"), std::vector<std::string>{"gpg", "asc"}, true);
@@ -45,9 +40,14 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
       {
 	 if (Debug)
 	    std::clog << "Trying TrustedPart: " << Part << std::endl;
-	 args.push_back("--keyring");
-	 args.push_back(Part);
+	 keyFiles.push_back(Part);
       }
+   }
+
+   for (auto const &keyring : keyFiles)
+   {
+      args.push_back("--keyring");
+      args.push_back(keyring);
    }
 
    FileFd signatureFd;
