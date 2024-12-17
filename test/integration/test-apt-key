@@ -259,8 +259,9 @@ gpg:              unchanged: 1' aptkey --fakeroot update
 	testfailure --nomsg aptkey --quiet --readonly --keyring "${KEYDIR}/testcase-multikey.pub.${EXT}" verify "${SIGNATURE}" "${SIGNATURE}2"
 
 	for GPGV in '' 'gpgv' 'gpgv1' 'gpgv2' 'gpgv-sq' 'gpgv-g10code'; do
+		msggroup "gpgv=$GPGV"
+		msgtest "Test using gpgv forced to '$GPGV'"
 		echo "APT::Key::GPGVCommand \"$GPGV\";" > "${ROOTDIR}/etc/apt/apt.conf.d/00gpgvcmd"
-		if [ -n "$GPGV" ] && ! command dpkg -l gnupg1 2>&1 | grep -q '^ii'; then continue; fi
 
 		msgtest 'Test verify a file' 'with all keys'
 		${TESTSTATE} --nomsg aptkey --quiet --readonly verify "${SIGNATURE}.gpg" "${SIGNATURE}"
@@ -281,7 +282,6 @@ gpg:              unchanged: 1' aptkey --fakeroot update
 
 		msgtest 'Test verify a file' 'with good keyring'
 		testsuccess --nomsg aptkey --quiet --readonly --keyring "${KEYDIR}/testcase-multikey.pub.${EXT}" verify "${SIGNATURE}.gpg" "${SIGNATURE}"
-
 		msgtest 'Test verify a file' 'with good keyrings 1'
 		testsuccess --nomsg aptkey --quiet --readonly --keyring "${KEYDIR}/joesixpack.pub.${EXT}" \
 			--keyring "${KEYDIR}/marvinparanoid.pub.${EXT}" verify "${SIGNATURE}.gpg" "${SIGNATURE}"
@@ -313,6 +313,8 @@ gpg:              unchanged: 1' aptkey --fakeroot update
 		# try to perform an entire update with this gpgv
 		rm -rf "${ROOTDIR}/var/lib/apt/lists"
 		${TESTSTATE} apt update -o Test::Dir="${ROOTDIR}"
+
+		msggroup
 	done
 	rm -f "${ROOTDIR}/etc/apt/apt.conf.d/00gpgvcmd"
 
@@ -331,8 +333,9 @@ gpg:              unchanged: 1' aptkey --fakeroot update
 	testsuccess test -s "${SIGNATURE}.gpg" -a -s "${SIGNATURE}"
 
 	for GPGV in '' 'gpgv' 'gpgv1' 'gpgv2' 'gpgv-sq' 'gpgv-g10code'; do
+		msggroup "gpgv=$GPGV"
+		msgtest "Test using gpgv forced to '$GPGV'"
 		echo "APT::Key::GPGVCommand \"$GPGV\";" > "${ROOTDIR}/etc/apt/apt.conf.d/00gpgvcmd"
-		if [ -n "$GPGV" ] && ! command dpkg -l gnupg1 2>&1 | grep -q '^ii'; then continue; fi
 
 		msgtest 'Test verify a doublesigned file' 'with all keys'
 		${TESTSTATE} --nomsg aptkey --quiet --readonly verify "${SIGNATURE}.gpg" "${SIGNATURE}"
@@ -362,6 +365,7 @@ gpg:              unchanged: 1' aptkey --fakeroot update
 
 		msgtest 'Test verify fails on' 'bad doublesigned file'
 		testfailure --nomsg aptkey --quiet --readonly verify "${SIGNATURE}.gpg" "${SIGNATURE}2"
+		msggroup
 	done
 	rm -f "${ROOTDIR}/etc/apt/apt.conf.d/00gpgvcmd"
 }
