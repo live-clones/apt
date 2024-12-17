@@ -64,9 +64,12 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
       if (GetTempFile("apt.data", false, &messageFd) == nullptr)
 	 return false;
 
+      // FIXME: The test suite only expects the final message.
+      _error->PushToStack();
       if (signatureFd.Failed() || messageFd.Failed() ||
 	  not SplitClearSignedFile(file, &messageFd, nullptr, &signatureFd))
-	 return _error->Error("Splitting up %s into data and signature failed", file);
+	 return _error->RevertToStack(), _error->Error("Splitting up %s into data and signature failed", file);
+      _error->RevertToStack();
 
       args.push_back(signatureFd.Name());
       args.push_back(messageFd.Name());
