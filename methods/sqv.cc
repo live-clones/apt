@@ -33,6 +33,50 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
    std::vector<std::string> args;
 
    args.push_back(SQV_EXECUTABLE);
+   auto dearmorKeyOrCheckFormat = [&](std::string const &k) -> bool
+   {
+      _error->PushToStack();
+      FileFd keyFd(k, FileFd::ReadOnly);
+      _error->RevertToStack();
+      if (not keyFd.IsOpen())
+	 return _error->Warning("The key(s) in the keyring %s are ignored as the file is not readable by user executing gpgv.\n", k.c_str());
+      else if (APT::String::Endswith(k, ".asc"))
+      {
+	 std::string b64msg;
+	 int state = 0;
+	 for (std::string line; keyFd.ReadLine(line);)
+	 {
+	    line = APT::String::Strip(line);
+	    if (APT::String::Startswith(line, "-----BEGIN PGP PUBLIC KEY BLOCK-----"))
+	       state = 1;
+	    else if (state == 1 && line == "")
+	       state = 2;
+	    else if (state == 2 && line != "" && line[0] != '=' && line[0] != '-')
+	       b64msg += line;
+	    else if (APT::String::Startswith(line, "-----END"))
+	       state = 3;
+	 }
+	 if (state != 3)
+	    goto err;
+
+	 return true;
+      }
+      else
+      {
+	 unsigned char c;
+	 if (not keyFd.Read(&c, sizeof(c)))
+	    goto err;
+	 // Identify the leading byte of an OpenPGP public key packet
+	 // 0x98 -- old-format OpenPGP public key packet, up to 255 octets
+	 // 0x99 -- old-format OpenPGP public key packet, 256-65535 octets
+	 // 0xc6 -- new-format OpenPGP public key packet, any length
+	 if (c != 0x98 && c != 0x99 && c != 0xc6)
+	    goto err;
+	 return true;
+      }
+   err:
+      return _error->Warning("The key(s) in the keyring %s are ignored as the file has an unsupported filetype.", k.c_str());
+   };
    if (keyFiles.empty())
    {
       auto Parts = GetListOfFilesInDir(_config->FindDir("Dir::Etc::TrustedParts"), std::vector<std::string>{"gpg", "asc"}, true);
@@ -40,6 +84,15 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
       {
 	 if (Debug)
 	    std::clog << "Trying TrustedPart: " << Part << std::endl;
+	 if (struct stat st; stat(Part.c_str(), &st) != 0 || st.st_size == 0)
+	    continue;
+	 if (not dearmorKeyOrCheckFormat(Part)) {
+	    std::string msg;
+	    _error->PopMessage(msg);
+	    if (not msg.empty())
+	       Warning(std::move(msg));
+	    continue;
+	 }
 	 keyFiles.push_back(Part);
       }
    }
