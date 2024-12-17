@@ -1424,7 +1424,11 @@ void pkgAcqMetaBase::QueueForSignatureVerify(pkgAcqTransactionItem * const I, st
 {
    AuthPass = true;
 #ifdef SQV_EXECUTABLE
-   I->Desc.URI = "sqv:" + pkgAcquire::URIEncode(Signature);
+   if (not _config->Find("APT::Key::GPGVCommand").empty())
+      I->Desc.URI = "gpgv:" + pkgAcquire::URIEncode(Signature);
+   else {
+      I->Desc.URI = "sqv:" + pkgAcquire::URIEncode(Signature);
+   }
 #else
    I->Desc.URI = "gpgv:" + pkgAcquire::URIEncode(Signature);
 #endif
