@@ -79,6 +79,8 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
    }
    else
    {
+      if (not VerifyDetachedSignatureFile(file))
+	 return false;
       args.push_back(file);
       args.push_back(outfile);
    }
