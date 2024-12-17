@@ -180,8 +180,21 @@ bool SQVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
    // Run apt-key on file, extract contents and get the key ID of the signer
    VerifyGetSigners(Path.c_str(), Itm->DestFile.c_str(), keyFiles, Signers);
    if (_error->PendingError())
-      return false;
-
+   {
+      // Legacy fallback to trusted.gpg
+      auto trusted = _config->FindFile("Dir::Etc::Trusted");
+      _error->PushToStack();
+      VerifyGetSigners(Path.c_str(), Itm->DestFile.c_str(), {trusted}, Signers);
+      bool error = _error->PendingError();
+      _error->RevertToStack();
+      if (error)
+	 return false;
+      std::string warning;
+      strprintf(warning,
+		_("Key is stored in legacy trusted.gpg keyring (%s). Use Signed-By instead. See the USER CONFIGURATION section in apt-secure(8) for details."),
+		trusted.c_str());
+      Warning(std::move(warning));
+   }
    std::unordered_map<std::string, std::string> fields;
    fields.emplace("URI", Itm->Uri);
    fields.emplace("Filename", Itm->DestFile);
