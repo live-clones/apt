@@ -131,7 +131,11 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
    }
 
    for (std::string signer; sqvout.ReadLine(signer);)
+   {
+      if (Debug)
+	 std::clog << "Got GOODSIG " << signer << std::endl;
       signers.push_back(signer);
+   }
 
    return true;
 }
