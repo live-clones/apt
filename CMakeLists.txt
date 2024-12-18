@@ -12,6 +12,7 @@ enable_testing()
 
 option(REQUIRE_MERGED_USR "Require merged-usr." ON)
 option(WITH_DOC "Build all documentation." ON)
+option(WITH_OPENSSL "Build all documentation." OFF)
 include(CMakeDependentOption)
 cmake_dependent_option(WITH_DOC_MANPAGES "Force building manpages." OFF "NOT WITH_DOC" OFF)
 cmake_dependent_option(WITH_DOC_GUIDES "Force building guides." OFF "NOT WITH_DOC" OFF)
@@ -90,6 +91,10 @@ add_optional_compile_options(Wp,-D_GLIBCXX_ASSERTIONS)
 find_package(Berkeley REQUIRED)
 if (BERKELEY_FOUND)
   set(HAVE_BDB 1)
+endif()
+
+if (WITH_OPENSSL)
+    find_package(OpenSSL REQUIRED)
 endif()
 
 find_package(GnuTLS)
