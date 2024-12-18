@@ -6,7 +6,30 @@
 
    This was originally authored by Jason Gunthorpe <jgg@debian.org>
    and is placed in the Public Domain, do with it what you will.
-      
+
+   The OpenSSL CRL file idea is taken from curl:
+
+   Copyright (c) 1996 - 2023, Daniel Stenberg, <daniel@haxx.se>, and many
+   contributors, see the THANKS file.
+
+   All rights reserved.
+
+   Permission to use, copy, modify, and distribute this software for any purpose
+   with or without fee is hereby granted, provided that the above copyright
+   notice and this permission notice appear in all copies.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN
+   NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+   OR OTHER DEALINGS IN THE SOFTWARE.
+
+   Except as contained in this notice, the name of a copyright holder shall not
+   be used in advertising or otherwise to promote the sale, use or other dealings
+   in this Software without prior written authorization of the copyright holder.
+
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
@@ -966,9 +989,21 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    std::string const crlfile = OwnerConf->ConfigFind("CrlFile", "");
    if (crlfile.empty() == false)
    {
-      _error->Error("Could not load custom certificate revocation list %s (CrlFile option): %s", crlfile.c_str(), _("Not supported"));
+      // tell OpenSSL where to find CRL file that is used to check certificate  revocation.
+      auto lookup = X509_STORE_add_lookup(SSL_CTX_get_cert_store(tlsFd->ctx),
+					  X509_LOOKUP_file());
+      if (not lookup || not X509_load_crl_file(lookup, crlfile.c_str(), X509_FILETYPE_PEM))
+      {
+	 _error->Error("Could not load custom certificate revocation list %s (CrlFile option): %s", crlfile.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+	 return ResultState::FATAL_ERROR;
+      }
+      /* Everything is fine. */
+      X509_STORE_set_flags(SSL_CTX_get_cert_store(tlsFd->ctx),
+			   X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+
       return ResultState::FATAL_ERROR;
    }
+
    if (OwnerConf->ConfigFindB("Verify-Peer", true))
    {
       SSL_set_verify(tlsFd->ssl, SSL_VERIFY_PEER, nullptr);
