@@ -930,19 +930,36 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    }
    else
    {
-      _error->Error("Only direct fd fds are supported with OpenSSL");
-      return ResultState::FATAL_ERROR;
-#if 0
-      gnutls_transport_set_ptr(tlsFd->session, Fd.get());
-      gnutls_transport_set_pull_function(tlsFd->session,
-					 [](gnutls_transport_ptr_t p, void *buf, size_t size) -> ssize_t {
-					    return reinterpret_cast<MethodFd *>(p)->Read(buf, size);
-					 });
-      gnutls_transport_set_push_function(tlsFd->session,
-					 [](gnutls_transport_ptr_t p, const void *buf, size_t size) -> ssize_t {
-					    return reinterpret_cast<MethodFd *>(p)->Write((void *)buf, size);
-					 });
-#endif
+      BIO_METHOD *m = BIO_meth_new(BIO_TYPE_MEM, "OpenSSL APT BIO method");
+      if (not m)
+      {
+	 _error->Error("SSL connection failed: %s - %s", ERR_error_string(ERR_get_error(), nullptr), strerror(errno));
+	 return ResultState::TRANSIENT_ERROR;
+      }
+
+      BIO_meth_set_ctrl(m, [](BIO *, int, long, void *) -> long
+			{ return 1; });
+      BIO_meth_set_write(m, [](BIO *bio, const char *buf, int size) -> int
+			 {
+	 auto p = BIO_get_data(bio);
+	 auto res = reinterpret_cast<MethodFd *>(p)->Write((void*)buf, size);
+	 if (errno == EAGAIN)
+	    BIO_set_retry_write(bio);
+	 return res; });
+      BIO_meth_set_read(m, [](BIO *bio, char *buf, int size) -> int
+			{
+	 auto p = BIO_get_data(bio);
+	 auto res = reinterpret_cast<MethodFd *>(p)->Read(buf, size);
+	 if (errno == EAGAIN)
+	    BIO_set_retry_write(bio);
+	 return res; });
+
+      auto bio = BIO_new(m);
+      if (!bio)
+	 return ResultState::FATAL_ERROR;
+
+      BIO_set_data(bio, Fd.get());
+      SSL_set_bio(tlsFd->ssl, bio, bio);
    }
    // Credential setup
    std::string fileinfo = OwnerConf->ConfigFind("CaInfo", "");
