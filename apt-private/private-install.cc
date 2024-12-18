@@ -1104,8 +1104,24 @@ bool DoInstall(CommandLine &CmdL)
 {
    CacheFile Cache;
 
-   if (_config->FindB("APT::Update") && not DoUpdate())
+   if (_config->Find("APT::Update").empty() && _config->FindI("APT::Update::AfterSec"))
+   {
+      struct stat st;
+      struct timeval tv;
+      if (stat(_config->FindDir("Dir::State::lists").c_str(), &st) == 0 &&
+	  gettimeofday(&tv, nullptr) == 0)
+      {
+	 if (tv.tv_sec - st.st_mtime > _config->FindI("APT::Update::AfterSec"))
+	 {
+	    if (not DoUpdate())
+	       return false;
+	 }
+      }
+   }
+   else if (_config->FindB("APT::Update") && not DoUpdate())
+   {
       return false;
+   }
 
    Cache.InhibitActionGroups(true);
    if (Cache.BuildSourceList() == false)
