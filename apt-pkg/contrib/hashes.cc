@@ -13,6 +13,7 @@
 #include <config.h>
 
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/macros.h>
@@ -29,19 +30,19 @@
 #include <string>
 #include <unistd.h>
 
-#include <gcrypt.h>
+#include <openssl/evp.h>
 									/*}}}*/
 
 static const constexpr struct HashAlgo
 {
    const char *name;
-   int gcryAlgo;
+   const EVP_MD *(*evpLink)(void);
    Hashes::SupportedHashes ourAlgo;
 } Algorithms[] = {
-   {"MD5Sum", GCRY_MD_MD5, Hashes::MD5SUM},
-   {"SHA1", GCRY_MD_SHA1, Hashes::SHA1SUM},
-   {"SHA256", GCRY_MD_SHA256, Hashes::SHA256SUM},
-   {"SHA512", GCRY_MD_SHA512, Hashes::SHA512SUM},
+   {"MD5Sum", EVP_md5, Hashes::MD5SUM},
+   {"SHA1", EVP_sha1, Hashes::SHA1SUM},
+   {"SHA256", EVP_sha256, Hashes::SHA256SUM},
+   {"SHA512", EVP_sha512, Hashes::SHA512SUM},
 };
 
 const char * HashString::_SupportedHashes[] =
@@ -316,52 +317,41 @@ bool HashStringList::operator!=(HashStringList const &other) const
 class PrivateHashes {
 public:
    unsigned long long FileSize;
-   gcry_md_hd_t hd;
-
-   void maybeInit()
-   {
-
-      // Yikes, we got to initialize libgcrypt, or we get warnings. But we
-      // abstract away libgcrypt in Hashes from our users - they are not
-      // supposed to know what the hashing backend is, so we can't force
-      // them to init themselves as libgcrypt folks want us to. So this
-      // only leaves us with this option...
-      if (!gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P))
-      {
-	 if (!gcry_check_version(nullptr))
-	 {
-	    fprintf(stderr, "libgcrypt is too old (need %s, have %s)\n",
-		    "nullptr", gcry_check_version(NULL));
-	    exit(2);
-	 }
-
-	 gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
-      }
-   }
+   std::array<EVP_MD_CTX *, APT_ARRAY_SIZE(Algorithms)> contexts{};
 
    explicit PrivateHashes(unsigned int const CalcHashes) : FileSize(0)
    {
-      maybeInit();
-      gcry_md_open(&hd, 0, 0);
-      for (auto & Algo : Algorithms)
+      for (size_t i = 0; i < APT_ARRAY_SIZE(Algorithms); ++i)
       {
-	 if ((CalcHashes & Algo.ourAlgo) == Algo.ourAlgo)
-	    gcry_md_enable(hd, Algo.gcryAlgo);
+	 if ((CalcHashes & Algorithms[i].ourAlgo) == Algorithms[i].ourAlgo)
+	 {
+	    contexts[i] = EVP_MD_CTX_new();
+	    if (contexts[i] == nullptr)
+	       continue;
+	    if (not EVP_DigestInit_ex(contexts[i], Algorithms[i].evpLink(), NULL))
+	       EVP_MD_CTX_destroy(contexts[i]), contexts[i] = nullptr;
+	 }
       }
    }
 
    explicit PrivateHashes(HashStringList const &Hashes) : FileSize(0) {
-      maybeInit();
-      gcry_md_open(&hd, 0, 0);
-      for (auto & Algo : Algorithms)
+      for (size_t i = 0; i < APT_ARRAY_SIZE(Algorithms); ++i)
       {
-	 if (not Hashes.usable() || Hashes.find(Algo.name) != NULL)
-	    gcry_md_enable(hd, Algo.gcryAlgo);
+	 if (not Hashes.usable() || Hashes.find(Algorithms[i].name) != NULL)
+	 {
+	    contexts[i] = EVP_MD_CTX_new();
+	    if (contexts[i] == nullptr)
+	       continue;
+	    if (not EVP_DigestInit_ex(contexts[i], Algorithms[i].evpLink(), NULL))
+	       EVP_MD_CTX_destroy(contexts[i]), contexts[i] = nullptr;
+	 }
       }
    }
    ~PrivateHashes()
    {
-      gcry_md_close(hd);
+      for (auto ctx : contexts)
+	 if (ctx != nullptr)
+	    EVP_MD_CTX_free(ctx);
    }
 };
 									/*}}}*/
@@ -370,7 +360,10 @@ bool Hashes::Add(const unsigned char * const Data, unsigned long long const Size
 {
    if (Size != 0)
    {
-      gcry_md_write(d->hd, Data, Size);
+      for (size_t i = 0; i < APT_ARRAY_SIZE(Algorithms); ++i)
+	 if (d->contexts[i] && not EVP_DigestUpdate(d->contexts[i], Data, Size))
+	    return _error->Error("Could not update digest %s", Algorithms[i].name);
+
       d->FileSize += Size;
    }
    return true;
@@ -420,18 +413,23 @@ bool Hashes::AddFD(FileFd &Fd,unsigned long long Size)
 }
 									/*}}}*/
 
-static APT_PURE std::string HexDigest(gcry_md_hd_t hd, int algo)
+static APT_PURE std::string HexDigest(EVP_MD_CTX *context, size_t algo)
 {
    char Conv[16] =
       {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b',
        'c', 'd', 'e', 'f'};
 
-   auto Size = gcry_md_get_algo_dlen(algo);
+   int Size = EVP_MD_size(Algorithms[algo].evpLink());
    assert(Size <= 512/8);
    char Result[((Size)*2) + 1];
+   unsigned char Sum[Size];
    Result[(Size)*2] = 0;
 
-   auto Sum = gcry_md_read(hd, algo);
+   // We need to work on a copy, as we update the hash after creating a digest...
+   auto tmpContext = EVP_MD_CTX_create();
+   EVP_MD_CTX_copy(tmpContext, context);
+   EVP_DigestFinal_ex(tmpContext, Sum, nullptr);
+   EVP_MD_CTX_destroy(tmpContext);
 
    // Convert each char into two letters
    size_t J = 0;
@@ -447,9 +445,9 @@ static APT_PURE std::string HexDigest(gcry_md_hd_t hd, int algo)
 HashStringList Hashes::GetHashStringList()
 {
    HashStringList hashes;
-   for (auto & Algo : Algorithms)
-      if (gcry_md_is_enabled(d->hd, Algo.gcryAlgo))
-	 hashes.push_back(HashString(Algo.name, HexDigest(d->hd, Algo.gcryAlgo)));
+   for (size_t i = 0; i < d->contexts.size(); ++i)
+      if (d->contexts[i])
+	 hashes.push_back(HashString(Algorithms[i].name, HexDigest(d->contexts[i], i)));
    hashes.FileSize(d->FileSize);
 
    return hashes;
@@ -457,9 +455,9 @@ HashStringList Hashes::GetHashStringList()
 
 HashString Hashes::GetHashString(SupportedHashes hash)
 {
-   for (auto & Algo : Algorithms)
-      if (hash == Algo.ourAlgo)
-	 return HashString(Algo.name, HexDigest(d->hd, Algo.gcryAlgo));
+   for (size_t i = 0; i < d->contexts.size(); ++i)
+      if (hash == Algorithms[i].ourAlgo && d->contexts[i])
+	 return HashString(Algorithms[i].name, HexDigest(d->contexts[i], i));
 
    abort();
 }

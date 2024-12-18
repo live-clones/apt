@@ -42,7 +42,7 @@ include(TestBigEndian)
 find_package(Threads REQUIRED)
 find_package(LFS REQUIRED)
 find_package(Iconv REQUIRED)
-
+find_package(OpenSSL REQUIRED)
 find_package(Perl REQUIRED)
 
 find_program(TRIEHASH_EXECUTABLE NAMES triehash)
@@ -141,7 +141,6 @@ if (SECCOMP_FOUND)
   set(HAVE_SECCOMP 1)
 endif()
 
-find_package(GCRYPT REQUIRED)
 find_package(XXHASH REQUIRED)
 
 # Mount()ing and stat()ing and friends
