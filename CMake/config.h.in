@@ -85,3 +85,6 @@
 
 /* Whether to check for and require merged usr if a usrmerge package is available. */
 #cmakedefine REQUIRE_MERGED_USR
+
+/* Define the arch name string */
+#cmakedefine SQV_EXECUTABLE "${SQV_EXECUTABLE}"

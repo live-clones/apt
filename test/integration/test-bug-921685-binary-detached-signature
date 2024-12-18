@@ -17,6 +17,6 @@ for RELEASE in $(find aptarchive -name 'Release'); do
 done
 
 testfailure apt show foo
-testfailure aptget update
-testsuccess grep 'W: .* Detached signature file .* is in unsupported binary format' rootdir/tmp/testfailure.output
+testfailure aptget update -o Dir::Bin::Methods::sqv=gpgv
+testsuccess grep '[EW]: .* Detached signature file .* is in unsupported binary format' rootdir/tmp/testfailure.output
 testfailure apt show foo
