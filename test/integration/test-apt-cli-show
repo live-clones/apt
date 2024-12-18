@@ -52,14 +52,87 @@ Priority: optional
 Section: other
 Maintainer: Joe Sixpack <joe@example.org>
 Installed-Size: 43.0 kB
-Filename: pool/main/foo/foo_1.0_all.deb
-SHA256: 0000000000000000000000000000000000000000000000000000000000000000
 Download-Size: 42 B
 APT-Manual-Installed: yes
 APT-Sources: file:$APTARCHIVE unstable/main all Packages
 Description: Some description
  That has multiple lines
+
+N: Unable to locate package doesnotexist
+N: Unable to locate package doesnotexist" apt show foo doesnotexist
+testsuccessequal "Package: foo
+Version: 1.0
+Priority: optional
+Section: other
+Maintainer: Joe Sixpack <joe@example.org>
+Installed-Size: 43.0 kB
+Download-Size: 42 B
+APT-Manual-Installed: yes
+APT-Sources: file:$APTARCHIVE unstable/main all Packages
+Description: Some description
+ That has multiple lines
+" apt show foo
+testsuccessequal "Package: foo
+Version: 1.0
+Priority: optional
+Section: other
+Maintainer: Joe Sixpack <joe@example.org>
+Installed-Size: 43.0 kB
+Filename: pool/main/foo/foo_1.0_all.deb
+SHA256: 0000000000000000000000000000000000000000000000000000000000000000
+Download-Size: 42 B
+APT-Manual-Installed: yes
+APT-Sources: file:$APTARCHIVE unstable/main all Packages
+APT-Pin: 500
+APT-Candidate: yes
+APT-Release: a=unstable,n=sid,c=main,b=all
+Description: Some description
+ That has multiple lines
 " apt show foo --full
+testsuccessequal "Package: foo
+Architecture: all
+Version: 1.0
+Priority: optional
+Section: other
+Maintainer: Joe Sixpack <joe@example.org>
+Installed-Size: 42
+Filename: pool/main/foo/foo_1.0_all.deb
+Size: 42
+SHA256: 0000000000000000000000000000000000000000000000000000000000000000
+Description-md5: 0e18deb9d379022e64e9835c8bece2ce
+APT-Manual-Installed: yes
+APT-Sources: file:$APTARCHIVE unstable/main all Packages
+APT-Pin: 500
+APT-Candidate: yes
+APT-Release: a=unstable,n=sid,c=main,b=all
+Description: Some description
+ That has multiple lines
+" apt show foo --machine
+testsuccessequal "Package: foo
+Architecture: all
+Version: 1.0
+Priority: optional
+Section: other
+Maintainer: Joe Sixpack <joe@example.org>
+Installed-Size: 42
+Filename: pool/main/foo/foo_1.0_all.deb
+Size: 42
+SHA256: 0000000000000000000000000000000000000000000000000000000000000000
+Description-md5: 0e18deb9d379022e64e9835c8bece2ce
+APT-Manual-Installed: yes
+APT-Sources: file:$APTARCHIVE unstable/main all Packages
+APT-Pin: 500
+APT-Candidate: yes
+APT-Release: a=unstable,n=sid,c=main,b=all
+Description: Some description
+ That has multiple lines
+
+
+Notice: Unable to locate package doesnotexist
+
+
+Notice: Unable to locate package doesnotexist
+" apt show foo doesnotexist --machine
 testsuccessequal "Package: bar
 Version: 1
 Priority: optional

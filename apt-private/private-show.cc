@@ -221,6 +221,10 @@ static bool DisplayRecordV2(pkgCacheFile &CacheFile, pkgRecords &Recs, /*{{{*/
    // Check and load the package list file
    pkgCache::PkgFileIterator I = Vf.File();
 
+   // Extract the policy object for use later
+   pkgDepCache::Policy *Policy = CacheFile.GetPolicy();
+   if (Policy == nullptr)
+      return false;
    // find matching sources.list metaindex
    pkgSourceList *SrcList = CacheFile.GetSourceList();
    pkgIndexFile *Index;
@@ -261,28 +265,44 @@ static bool DisplayRecordV2(pkgCacheFile &CacheFile, pkgRecords &Recs, /*{{{*/
 
    std::vector<pkgTagSection::Tag> RW;
    // delete, apt-cache show has this info and most users do not care
-   if (not _config->FindB("APT::Cache::ShowFull", false))
+   if (not _config->FindB("APT::Output-Machine", false))
    {
-      for (char const * const * type = HashString::SupportedHashes(); *type != nullptr; ++type)
-	 RW.push_back(pkgTagSection::Tag::Remove(*type));
-      RW.push_back(pkgTagSection::Tag::Remove("Filename"));
-      RW.push_back(pkgTagSection::Tag::Remove("Multi-Arch"));
-      RW.push_back(pkgTagSection::Tag::Remove("Conffiles"));
-   }
-   RW.push_back(pkgTagSection::Tag::Remove("Architecture"));
-   // we use the translated description
-   RW.push_back(pkgTagSection::Tag::Remove("Description"));
-   RW.push_back(pkgTagSection::Tag::Remove("Description-md5"));
-   // improve
-   RW.push_back(pkgTagSection::Tag::Rewrite("Package", color("Show::Package", V.ParentPkg().FullName(true))));
+      if (not _config->FindB("APT::Cache::ShowFull", false))
+      {
+	 for (char const *const *type = HashString::SupportedHashes(); *type != nullptr; ++type)
+	    RW.push_back(pkgTagSection::Tag::Remove(*type));
+	 RW.push_back(pkgTagSection::Tag::Remove("Filename"));
+	 RW.push_back(pkgTagSection::Tag::Remove("Multi-Arch"));
+	 RW.push_back(pkgTagSection::Tag::Remove("Conffiles"));
+      }
+      RW.push_back(pkgTagSection::Tag::Remove("Architecture"));
+      // we use the translated description
+      RW.push_back(pkgTagSection::Tag::Remove("Description"));
+      RW.push_back(pkgTagSection::Tag::Remove("Description-md5"));
+      // improve
+      RW.push_back(pkgTagSection::Tag::Rewrite("Package", color("Show::Package", V.ParentPkg().FullName(true))));
 
-   RW.push_back(pkgTagSection::Tag::Rewrite("Installed-Size", installed_size));
-   RW.push_back(pkgTagSection::Tag::Remove("Size"));
-   RW.push_back(pkgTagSection::Tag::Rewrite("Download-Size", package_size));
+      RW.push_back(pkgTagSection::Tag::Rewrite("Installed-Size", installed_size));
+      RW.push_back(pkgTagSection::Tag::Remove("Size"));
+      RW.push_back(pkgTagSection::Tag::Rewrite("Download-Size", package_size));
+   }
+   else
+   {
+      // we use the translated description
+      RW.push_back(pkgTagSection::Tag::Remove("Description"));
+   }
    // add
    if (manual_installed != nullptr)
       RW.push_back(pkgTagSection::Tag::Rewrite("APT-Manual-Installed", manual_installed));
    RW.push_back(pkgTagSection::Tag::Rewrite("APT-Sources", source_index_file));
+   if (_config->FindB("APT::Cache::ShowFull", _config->FindB("APT::Output-Machine", false)))
+   {
+      RW.push_back(pkgTagSection::Tag::Rewrite("APT-Pin", std::to_string(Policy->GetPriority(V))));
+      if (Policy->GetCandidateVer(V.ParentPkg()) == V)
+	 RW.push_back(pkgTagSection::Tag::Rewrite("APT-Candidate", "yes"));
+      if (auto Release = I.RelStr(); not I.Flagged(pkgCache::Flag::NotSource) && not Release.empty())
+	 RW.push_back(pkgTagSection::Tag::Rewrite("APT-Release", Release));
+   }
 
    FileFd stdoutfd;
    if (stdoutfd.OpenDescriptor(STDOUT_FILENO, FileFd::WriteOnly, false) == false ||

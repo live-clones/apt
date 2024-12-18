@@ -737,6 +737,7 @@ apt::color::highlight "<STRING>";
 apt::color::bold "<STRING>";
 apt::color::neutral "<STRING>";
 apt::output-version "<INT>";
+apt::output-machine "<BOOL>";   // internal option equivalent to -M, --machine
 
 dpkgpm::reporting-steps "<INT>";
 
