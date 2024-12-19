@@ -643,11 +643,7 @@ bool debReleaseIndex::Load(std::string const &Filename, std::string * const Erro
       does not effect the current, but the "next" Release file */
    auto Sign = Section.FindS("Signed-By");
    if (Sign.empty() == false)
-   {
-      SignedBy = NormalizeSignedBy(Sign, false);
-      if (SignedBy.empty() && ErrorText != NULL)
-	 strprintf(*ErrorText, _("Invalid '%s' entry in Release file %s"), "Signed-By", Filename.c_str());
-   }
+      _error->Warning(_("Ignoring no-longer-supported '%s' entry in Release file %s"), "Signed-By", Filename.c_str());
 
    if (AuthPossible)
       LoadedSuccessfully = TRI_YES;

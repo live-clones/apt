@@ -298,23 +298,12 @@ deb-src [ option1=value1 option2=value2 ] uri suite [component1] [component2] [.
 		with a certain set of keys rather than all trusted keys apt has configured.
 		It is specified as a list of absolute paths to keyring files (have to be
 		accessible and readable for the <literal>_apt</literal> system user,
-		so ensure everyone has read-permissions on the file) and fingerprints
-		of keys to select from these keyrings. The recommended locations for keyrings
+		so ensure everyone has read-permissions on the file).
+		The recommended locations for keyrings
 		are <filename>/usr/share/keyrings</filename> for keyrings managed by packages,
 		and <filename>/etc/apt/keyrings</filename> for keyrings managed by the system operator.
 		If no keyring files are specified
 		the default is all keyrings in the <filename>trusted.gpg.d/</filename> directory.
-		If no fingerprint is
-		specified all keys in the keyrings are selected. A fingerprint will
-		accept also all signatures by a subkey of this key, if this isn't
-		desired an exclamation mark (<literal>!</literal>) can be appended to
-		the fingerprint to disable this behaviour.
-		The option defaults to the value of the option with the same name
-		if set in the previously acquired <filename>Release</filename> file
-		of this repository (only fingerprints can be specified there through).
-		Otherwise all keys in the trusted keyrings are considered valid
-		signers for this repository.
-
 		The option may also be set directly to an embedded GPG public key block. Special
 		care is needed to encode the empty line with leading spaces and ".":
    <literallayout>Types: deb

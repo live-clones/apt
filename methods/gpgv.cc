@@ -121,7 +121,6 @@ class GPGVMethod : public aptMethod
 {
    private:
    string VerifyGetSigners(const char *file, const char *outfile,
-				vector<string> const &keyFpts,
 				vector<string> const &keyFiles,
 				SignersStorage &Signers);
    protected:
@@ -176,7 +175,6 @@ static void implodeVector(std::vector<std::string> const &vec, std::ostream &out
    return;
 }
 string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
-					 vector<string> const &keyFpts,
 					 vector<string> const &keyFiles,
 					 SignersStorage &Signers)
 {
@@ -334,82 +332,21 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
    for (auto errSigner : ErrSigners)
       Signers.Worthless.push_back({errSigner, ""});
 
-   // apt-key has a --keyid parameter, but this requires gpg, so we call it without it
-   // and instead check after the fact which keyids where used for verification
-   if (keyFpts.empty() == false)
-   {
-      if (Debug == true)
-      {
-	 std::clog << "GoodSigs needs to be limited to keyid(s): ";
-	 implodeVector(keyFpts, std::clog, ", ");
-	 std::clog << "\n";
-      }
-      std::vector<std::string> filteredGood;
-      for (auto &&good: Signers.Good)
-      {
-	 if (Debug == true)
-	    std::clog << "Key " << good << " is good sig, is it also a valid and allowed one? ";
-	 bool found = false;
-	 for (auto l : keyFpts)
-	 {
-	    bool exactKey = false;
-	    if (APT::String::Endswith(l, "!"))
-	    {
-	       exactKey = true;
-	       l.erase(l.length() - 1);
-	    }
-	    if (IsTheSameKey(l, good))
-	    {
-	       // GOODSIG might be "just" a longid, so we check VALIDSIG which is always a fingerprint
-	       if (std::find(Signers.Valid.cbegin(), Signers.Valid.cend(), l) == Signers.Valid.cend())
-		  continue;
-	       found = true;
-	       Signers.SignedBy.push_back(l + "!");
-	       break;
-	    }
-	    else if (exactKey == false)
-	    {
-	       auto const primary = SubKeyMapping.find(l);
-	       if (primary == SubKeyMapping.end())
-		  continue;
-	       auto const validsubkeysig = std::find_if(primary->second.cbegin(), primary->second.cend(), [&](auto const subkey) {
-		  return IsTheSameKey(subkey, good) && std::find(Signers.Valid.cbegin(), Signers.Valid.cend(), subkey) != Signers.Valid.cend();
-	       });
-	       if (validsubkeysig != primary->second.cend())
-	       {
-		  found = true;
-		  Signers.SignedBy.push_back(l);
-		  Signers.SignedBy.push_back(*validsubkeysig + "!");
-		  break;
-	       }
-	    }
-	 }
-	 if (Debug)
-	    std::clog << (found ? "yes" : "no") << "\n";
-	 if (found)
-	    filteredGood.emplace_back(std::move(good));
-	 else
-	    Signers.NoPubKey.emplace_back(std::move(good));
-      }
-      Signers.Good= std::move(filteredGood);
-   }
-   else
-   {
-      // for gpg an expired key is valid, too, but we want only the valid & good ones
-      for (auto const &v : Signers.Valid)
-		if (std::any_of(Signers.Good.begin(), Signers.Good.end(),
-					 [&v](std::string const &g) { return IsTheSameKey(v, g); }))
-		   Signers.SignedBy.push_back(v + "!");
-      for (auto sub : SubKeyMapping)
-	 if (std::any_of(sub.second.begin(), sub.second.end(),
-			 [&](std::string const &s) {
-			    if (std::find(Signers.Valid.begin(), Signers.Valid.end(), s) == Signers.Valid.end())
-			       return false;
-			    return std::any_of(Signers.Good.begin(), Signers.Good.end(),
-					       [&s](std::string const &g) { return IsTheSameKey(s, g); });
-			 }))
-	    Signers.SignedBy.push_back(sub.first);
-   }
+   // for gpg an expired key is valid, too, but we want only the valid & good ones
+   for (auto const &v : Signers.Valid)
+	     if (std::any_of(Signers.Good.begin(), Signers.Good.end(),
+				      [&v](std::string const &g) { return IsTheSameKey(v, g); }))
+		Signers.SignedBy.push_back(v + "!");
+   for (auto sub : SubKeyMapping)
+      if (std::any_of(sub.second.begin(), sub.second.end(),
+		      [&](std::string const &s) {
+			 if (std::find(Signers.Valid.begin(), Signers.Valid.end(), s) == Signers.Valid.end())
+			    return false;
+			 return std::any_of(Signers.Good.begin(), Signers.Good.end(),
+					    [&s](std::string const &g) { return IsTheSameKey(s, g); });
+		      }))
+	 Signers.SignedBy.push_back(sub.first);
+
    std::sort(Signers.SignedBy.begin(), Signers.SignedBy.end());
 
    int status;
@@ -458,18 +395,8 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
    }
    else if (WEXITSTATUS(status) == 0)
    {
-      if (keyFpts.empty() == false)
-      {
-	 // gpgv will report success, but we want to enforce a certain keyring
-	 // so if we haven't found the key the valid we found is in fact invalid
-	 if (Signers.Good.empty())
-	    return _("At least one invalid signature was encountered.");
-      }
-      else
-      {
-	 if (Signers.Good.empty())
-	    return _("Internal error: Good signature, but could not determine key fingerprint?!");
-      }
+      if (Signers.Good.empty())
+	 return _("Internal error: Good signature, but could not determine key fingerprint?!");
       return "";
    }
    else if (WEXITSTATUS(status) == 1)
@@ -493,7 +420,7 @@ bool GPGVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
    std::string const Path = DecodeSendURI(Get.Host + Get.Path); // To account for relative paths
    SignersStorage Signers;
 
-   std::vector<std::string> keyFpts, keyFiles;
+   std::vector<std::string> keyFiles;
    struct TemporaryFile
    {
       std::string name = "";
@@ -513,11 +440,11 @@ bool GPGVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
 	 if (key.empty() == false && key[0] == '/')
 	    keyFiles.emplace_back(std::move(key));
 	 else
-	    keyFpts.emplace_back(std::move(key));
+	    return _error->Error("Invalid to a key file in Signed-By: %s", key.c_str());
    }
 
    // Run apt-key on file, extract contents and get the key ID of the signer
-   string const msg = VerifyGetSigners(Path.c_str(), Itm->DestFile.c_str(), keyFpts, keyFiles, Signers);
+   string const msg = VerifyGetSigners(Path.c_str(), Itm->DestFile.c_str(), keyFiles, Signers);
    if (_error->PendingError())
       return false;
 

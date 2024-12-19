@@ -374,19 +374,11 @@ void ExecGPGV(std::string const &File, std::string const &FileGPG,
    {
       if (unlikely(k.empty()))
 	 continue;
-      if (k[0] == '/')
-      {
-	 if (Debug)
-	    std::clog << "Trying Signed-By: " << k << std::endl;
+      if (Debug)
+	 std::clog << "Trying Signed-By: " << k << std::endl;
 
-	 maybeAddKeyring(k);
-	 FoundKeyring = true;
-      }
-      else
-      {
-	 Args.push_back("--keyid");
-	 Args.push_back(k);
-      }
+      maybeAddKeyring(k);
+      FoundKeyring = true;
    }
 
    std::vector<std::string> Parts;
