@@ -6,7 +6,30 @@
 
    This was originally authored by Jason Gunthorpe <jgg@debian.org>
    and is placed in the Public Domain, do with it what you will.
-      
+
+   The OpenSSL CRL file idea is taken from curl:
+
+   Copyright (c) 1996 - 2023, Daniel Stenberg, <daniel@haxx.se>, and many
+   contributors, see the THANKS file.
+
+   All rights reserved.
+
+   Permission to use, copy, modify, and distribute this software for any purpose
+   with or without fee is hereby granted, provided that the above copyright
+   notice and this permission notice appear in all copies.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN
+   NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+   OR OTHER DEALINGS IN THE SOFTWARE.
+
+   Except as contained in this notice, the name of a copyright holder shall not
+   be used in advertising or otherwise to promote the sale, use or other dealings
+   in this Software without prior written authorization of the copyright holder.
+
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
@@ -19,7 +42,10 @@
 #include <apt-pkg/srvrec.h>
 #include <apt-pkg/strutl.h>
 
-#ifdef HAVE_GNUTLS
+#ifdef WITH_OPENSSL
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#elif defined(HAVE_GNUTLS)
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 #endif
@@ -801,7 +827,259 @@ ResultState UnwrapSocks(std::string Host, int Port, URI Proxy, std::unique_ptr<M
    return ResultState::SUCCESSFUL;
 }
 
-#ifdef HAVE_GNUTLS									/*}}}*/
+#if defined(WITH_OPENSSL)
+// UnwrapTLS - Handle TLS connections 					/*{{{*/
+// ---------------------------------------------------------------------
+/* Performs a TLS handshake on the socket */
+struct TlsFd final : public MethodFd
+{
+   std::unique_ptr<MethodFd> UnderlyingFd;
+
+   SSL_CTX *ctx;
+   SSL *ssl;
+
+   std::string hostname;
+   unsigned long Timeout;
+   bool broken{false};
+
+   int Fd() APT_OVERRIDE { return UnderlyingFd->Fd(); }
+
+   ssize_t Read(void *buf, size_t count) APT_OVERRIDE
+   {
+      return HandleError(SSL_read(ssl, buf, count));
+   }
+   ssize_t Write(void *buf, size_t count) APT_OVERRIDE
+   {
+      return HandleError(SSL_write(ssl, buf, count));
+   }
+
+   ssize_t HandleError(ssize_t r)
+   {
+      if (r > 0)
+	 return r;
+
+      auto err = SSL_get_error(ssl, r);
+      switch (err)
+      {
+      case SSL_ERROR_WANT_READ:
+      case SSL_ERROR_WANT_WRITE:
+	 errno = EAGAIN;
+	 break;
+      case SSL_ERROR_ZERO_RETURN:
+	 errno = EAGAIN;
+	 break;
+      case SSL_ERROR_SYSCALL:
+	 std::cerr << "Syscall error: " << err;
+	 broken = true;
+	 break;
+      case SSL_ERROR_SSL:
+	 std::cerr << "Unrecoverable error:" << ERR_error_string(ERR_get_error(), nullptr) << "\n";
+	 broken = true;
+	 errno = EIO;
+	 break;
+      }
+      return r;
+   }
+
+   int Close() APT_OVERRIDE
+   {
+      SSL_set_shutdown(ssl, SSL_RECEIVED_SHUTDOWN | SSL_SENT_SHUTDOWN);
+      int res = broken ? 1 : SSL_shutdown(ssl);
+      SSL_free(ssl);
+      SSL_CTX_free(ctx);
+      auto lower = UnderlyingFd->Close();
+      return res <= 0 ? HandleError(res) : lower;
+   }
+
+   bool HasPending() APT_OVERRIDE
+   {
+      return SSL_has_pending(ssl);
+   }
+};
+
+ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
+		      unsigned long const Timeout, aptMethod *const Owner,
+		      aptConfigWrapperForMethods const *const OwnerConf)
+{
+   if (_config->FindB("Acquire::AllowTLS", true) == false)
+   {
+      _error->Error("TLS support has been disabled: Acquire::AllowTLS is false.");
+      return ResultState::FATAL_ERROR;
+   }
+
+   int err;
+   TlsFd *tlsFd = new TlsFd();
+
+   tlsFd->hostname = Host;
+   tlsFd->UnderlyingFd = MethodFd::FromFd(-1); // For now
+   tlsFd->Timeout = Timeout;
+   OpenSSL_add_all_algorithms();
+   SSL_load_error_strings();
+   tlsFd->ctx = SSL_CTX_new(TLS_client_method());
+   if (tlsFd->ctx == nullptr)
+   {
+      _error->Errno("SSL_CTX_new", "Could not create SSL context");
+      return ResultState::FATAL_ERROR;
+   }
+   tlsFd->ssl = SSL_new(tlsFd->ctx);
+
+   FdFd *fdfd = dynamic_cast<FdFd *>(Fd.get());
+   if (fdfd != nullptr)
+   {
+      SSL_set_fd(tlsFd->ssl, fdfd->fd);
+   }
+   else
+   {
+      BIO_METHOD *m = BIO_meth_new(BIO_TYPE_MEM, "OpenSSL APT BIO method");
+      if (not m)
+      {
+	 _error->Error("SSL connection failed: %s - %s", ERR_error_string(ERR_get_error(), nullptr), strerror(errno));
+	 return ResultState::TRANSIENT_ERROR;
+      }
+
+      BIO_meth_set_ctrl(m, [](BIO *, int, long, void *) -> long
+			{ return 1; });
+      BIO_meth_set_write(m, [](BIO *bio, const char *buf, int size) -> int
+			 {
+	 auto p = BIO_get_data(bio);
+	 auto res = reinterpret_cast<MethodFd *>(p)->Write((void*)buf, size);
+	 if (errno == EAGAIN)
+	    BIO_set_retry_write(bio);
+	 return res; });
+      BIO_meth_set_read(m, [](BIO *bio, char *buf, int size) -> int
+			{
+	 auto p = BIO_get_data(bio);
+	 auto res = reinterpret_cast<MethodFd *>(p)->Read(buf, size);
+	 if (errno == EAGAIN)
+	    BIO_set_retry_write(bio);
+	 return res; });
+
+      auto bio = BIO_new(m);
+      if (!bio)
+	 return ResultState::FATAL_ERROR;
+
+      BIO_set_data(bio, Fd.get());
+      SSL_set_bio(tlsFd->ssl, bio, bio);
+   }
+   // Credential setup
+   std::string fileinfo = OwnerConf->ConfigFind("CaInfo", "");
+   // CA location has been set, use the specified one instead
+   err = fileinfo.empty() ? SSL_CTX_set_default_verify_paths(tlsFd->ctx) : SSL_CTX_load_verify_file(tlsFd->ctx, fileinfo.c_str());
+   if (err <= 0)
+   {
+      if (fileinfo.empty())
+	 _error->Error("Could not load certificates: %s", ERR_error_string(ERR_get_error(), nullptr));
+      else
+	 _error->Error("Could not load certificates from %s (CaInfo option): %s", fileinfo.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+      return ResultState::FATAL_ERROR;
+   }
+
+   if (not OwnerConf->ConfigFind("IssuerCert", "").empty())
+   {
+      _error->Error("The option '%s' is not supported anymore", "IssuerCert");
+      return ResultState::FATAL_ERROR;
+   }
+   if (not OwnerConf->ConfigFind("SslForceVersion", "").empty())
+   {
+      _error->Error("The option '%s' is not supported anymore", "SslForceVersion");
+      return ResultState::FATAL_ERROR;
+   }
+
+   // For client authentication, certificate file ...
+   std::string const cert = OwnerConf->ConfigFind("SslCert", "");
+   std::string const key = OwnerConf->ConfigFind("SslKey", "");
+   if (cert.empty() == false)
+   {
+      if (err = SSL_use_certificate_file(tlsFd->ssl, cert.c_str(), SSL_FILETYPE_PEM); err != 1)
+      {
+	 _error->Error("Could not load client certificate (%s, SslCert option): %s", cert.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+	 return ResultState::FATAL_ERROR;
+      }
+      if (err = SSL_use_PrivateKey_file(tlsFd->ssl, key.c_str(), SSL_FILETYPE_PEM); err != 1)
+      {
+	 _error->Error("Could not load client or key (%s, SslKey option): %s", key.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+	 return ResultState::FATAL_ERROR;
+      }
+   }
+
+   // CRL file
+   std::string const crlfile = OwnerConf->ConfigFind("CrlFile", "");
+   if (crlfile.empty() == false)
+   {
+      // tell OpenSSL where to find CRL file that is used to check certificate  revocation.
+      auto lookup = X509_STORE_add_lookup(SSL_CTX_get_cert_store(tlsFd->ctx),
+					  X509_LOOKUP_file());
+      if (not lookup || not X509_load_crl_file(lookup, crlfile.c_str(), X509_FILETYPE_PEM))
+      {
+	 _error->Error("Could not load custom certificate revocation list %s (CrlFile option): %s", crlfile.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+	 return ResultState::FATAL_ERROR;
+      }
+      /* Everything is fine. */
+      X509_STORE_set_flags(SSL_CTX_get_cert_store(tlsFd->ctx),
+			   X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+
+      return ResultState::FATAL_ERROR;
+   }
+
+   if (OwnerConf->ConfigFindB("Verify-Peer", true))
+   {
+      SSL_set_verify(tlsFd->ssl, SSL_VERIFY_PEER, nullptr);
+      if (err = SSL_set1_host(tlsFd->ssl, OwnerConf->ConfigFindB("Verify-Host", true) ? tlsFd->hostname.c_str() : nullptr); err != 1)
+      {
+	 _error->Error("Could not load client or key (%s, SslKey option): %s", key.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+	 return ResultState::FATAL_ERROR;
+      }
+   }
+
+   // set SNI only if the hostname is really a name and not an address
+   {
+      struct in_addr addr4;
+      struct in6_addr addr6;
+
+      if (inet_pton(AF_INET, tlsFd->hostname.c_str(), &addr4) == 1 ||
+	  inet_pton(AF_INET6, tlsFd->hostname.c_str(), &addr6) == 1)
+	 /* not a host name */;
+      else if (err = SSL_set_tlsext_host_name(tlsFd->ssl, tlsFd->hostname.c_str()); err == 0)
+      {
+	 _error->Error("Could not set host name %s to indicate to server: %d", tlsFd->hostname.c_str(), SSL_get_error(tlsFd->ssl, err));
+	 return ResultState::FATAL_ERROR;
+      }
+   }
+
+   while (true)
+   {
+      err = SSL_connect(tlsFd->ssl);
+      if (err == 1)
+	 break;
+      switch (auto Err = SSL_get_error(tlsFd->ssl, err))
+      {
+      case SSL_ERROR_WANT_READ:
+	 if (not WaitFd(Fd->Fd(), false, Timeout))
+	 {
+	    _error->Errno("select", "Could not wait for server fd");
+	    return ResultState::TRANSIENT_ERROR;
+	 }
+	 break;
+      case SSL_ERROR_WANT_WRITE:
+	 if (not WaitFd(Fd->Fd(), true, Timeout))
+	 {
+	    _error->Errno("select", "Could not wait for server fd");
+	    return ResultState::TRANSIENT_ERROR;
+	 }
+	 break;
+      default:
+	 _error->Error("SSL connection failed: %s - %s", ERR_error_string(ERR_get_error(), nullptr), strerror(errno));
+	 return ResultState::TRANSIENT_ERROR;
+      }
+   }
+
+   // Set the FD now, so closing it works reliably.
+   tlsFd->UnderlyingFd = std::move(Fd);
+   Fd.reset(tlsFd);
+
+   return ResultState::SUCCESSFUL;
+}
+#elif defined(HAVE_GNUTLS						/*}}}*/
 // UnwrapTLS - Handle TLS connections 					/*{{{*/
 // ---------------------------------------------------------------------
 /* Performs a TLS handshake on the socket */
