@@ -259,13 +259,6 @@ runtest() {
 " aptcache show apt
 	installaptold
 	sed -i "s# \[signed-by=[^]]\+\] # #" rootdir/etc/apt/sources.list.d/*
-
-	msgmsg 'Key id does not work'
-	rm -rf rootdir/var/lib/apt/lists
-	signreleasefiles 'Joe Sixpack'
-	sed -i "s#^\(deb\(-src\)\?\) #\1 [signed-by=DE66AECA9151AFA1877EC31DE8525D47528144E2] #" rootdir/etc/apt/sources.list.d/*
-	updatewithwarnings '^W.*Not a path to a key file in Signed-By: DE66AECA9151AFA1877EC31DE8525D47528144E2'
-	sed -i "s# \[signed-by=[^]]\+\] # #" rootdir/etc/apt/sources.list.d/*
 }
 
 runtest2() {

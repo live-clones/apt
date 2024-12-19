@@ -439,8 +439,6 @@ bool GPGVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
       for (auto &&key : VectorizeString(SignedBy, ','))
 	 if (key.empty() == false && key[0] == '/')
 	    keyFiles.emplace_back(std::move(key));
-	 else
-	    return _error->Error("Invalid to a key file in Signed-By: %s", key.c_str());
    }
 
    // Run apt-key on file, extract contents and get the key ID of the signer

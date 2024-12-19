@@ -30,37 +30,12 @@
 
 #include <apti18n.h>
 
-static std::string transformFingergrpints(std::string finger) /*{{{*/
-{
-   std::transform(finger.begin(), finger.end(), finger.begin(), ::toupper);
-   if (finger.length() == 40)
-   {
-      if (finger.find_first_not_of("0123456789ABCDEF") == std::string::npos)
-	 return finger;
-   }
-   else if (finger.length() == 41)
-   {
-      auto bang = finger.find_first_not_of("0123456789ABCDEF");
-      if (bang == 40 && finger[bang] == '!')
-	 return finger;
-   }
-   return "";
-}
-									/*}}}*/
-static std::string transformFingergrpintsWithFilenames(std::string const &finger) /*{{{*/
-{
-   // no check for existence as we could be chrooting later or such things
-   if (finger.empty() == false && finger[0] == '/')
-      return finger;
-   return transformFingergrpints(finger);
-}
-									/*}}}*/
 // Introducer is set if additional keys may be introduced, for example	/*{{{*/
 // by setting it to a filename or a complete key
-static std::string NormalizeSignedBy(std::string SignedBy, bool const Introducer)
+static std::string NormalizeSignedBy(std::string SignedBy)
 {
    // This is an embedded public pgp key, normalize spaces inside it and empty "." lines
-   if (Introducer && SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos) {
+   if (SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos) {
       std::istringstream is(SignedBy);
       std::ostringstream os;
       std::string line;
@@ -75,27 +50,23 @@ static std::string NormalizeSignedBy(std::string SignedBy, bool const Introducer
       return os.str();
    }
 
-   // we could go all fancy and allow short/long/string matches as gpgv/apt-key does,
-   // but fingerprints are harder to fake than the others and this option is set once,
-   // not interactively all the time so easy to type is not really a concern.
-   std::transform(SignedBy.begin(), SignedBy.end(), SignedBy.begin(), [](char const c) {
-      return (isspace_ascii(c) == 0) ? c : ',';
+   std::transform(SignedBy.begin(), SignedBy.end(), SignedBy.begin(), [](char c) -> char {
+	 return c == ',' ? ' ' : c;
    });
-   auto fingers = VectorizeString(SignedBy, ',');
-   auto const isAnEmptyString = [](std::string const &s) { return s.empty(); };
-   fingers.erase(std::remove_if(fingers.begin(), fingers.end(), isAnEmptyString), fingers.end());
-   if (unlikely(fingers.empty()))
-      return "";
-   if (Introducer)
-      std::transform(fingers.begin(), fingers.end(), fingers.begin(), transformFingergrpintsWithFilenames);
-   else
-      std::transform(fingers.begin(), fingers.end(), fingers.begin(), transformFingergrpints);
-   if (std::any_of(fingers.begin(), fingers.end(), isAnEmptyString))
-      return "";
-   std::stringstream os;
-   std::copy(fingers.begin(), fingers.end() - 1, std::ostream_iterator<std::string>(os, ","));
-   os << *fingers.rbegin();
-   return os.str();
+   auto certificates = VectorizeString(SignedBy, ' ');
+   std::sort(certificates.begin(), certificates.end());
+   // Strip the options and remove empty ones
+   certificates.erase(std::remove_if(certificates.begin(), certificates.end(), [](auto &cert) -> bool {
+      cert = APT::String::Strip(cert);
+      return cert.empty();
+   }), certificates.end());
+
+   for (auto & cert : certificates)
+   {
+      if (cert[0] != '/')
+	 return "";
+   }
+   return APT::String::Join(certificates, ",");
 }
 									/*}}}*/
 
@@ -806,13 +777,13 @@ bool debReleaseIndex::SetSignedBy(std::string const &pSignedBy)
 {
    if (SignedBy.empty() == true && pSignedBy.empty() == false)
    {
-      SignedBy = NormalizeSignedBy(pSignedBy, true);
+      SignedBy = NormalizeSignedBy(pSignedBy);
       if (SignedBy.empty())
-	 _error->Error(_("Invalid value set for option %s regarding source %s %s (%s)"), "Signed-By", URI.c_str(), Dist.c_str(), "not a fingerprint");
+	 _error->Error(_("Invalid value set for option %s regarding source %s %s (%s)"), "Signed-By", URI.c_str(), Dist.c_str(), _("not a certificate or certificate file"));
    }
    else
    {
-      auto const normalSignedBy = NormalizeSignedBy(pSignedBy, true);
+      auto const normalSignedBy = NormalizeSignedBy(pSignedBy);
       if (normalSignedBy.empty() == true)
          return true;
       if (normalSignedBy != SignedBy)
