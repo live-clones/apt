@@ -166,11 +166,6 @@ or further configured by the <option>APT::Color</option> configuration option an
 ">
 
 <!ENTITY file-trustedgpg "
-     <varlistentry><term><filename>/etc/apt/trusted.gpg</filename></term>
-     <listitem><para>Keyring of local trusted keys, new keys will be added here.
-     Configuration Item: <literal>Dir::Etc::Trusted</literal>.</para></listitem>
-     </varlistentry>
-
      <varlistentry><term><filename>/etc/apt/trusted.gpg.d/</filename></term>
      <listitem><para>File fragments for the trusted keys, additional keyrings can
      be stored here (by other packages or the administrator).

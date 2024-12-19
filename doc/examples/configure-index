@@ -449,7 +449,6 @@ Dir "<DIR>"
      PreferencesParts "<DIR>";
      SourceList "<FILE>";
      SourceParts "<DIR>";
-     Trusted "<FILE>";
      TrustedParts "<DIR>";
      Machine-ID "<FILE>";   // by default points to ../machine-id effectively
   };
