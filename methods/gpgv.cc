@@ -121,14 +121,8 @@ class GPGVMethod : public aptMethod
 {
    private:
    string VerifyGetSigners(const char *file, const char *outfile,
-				vector<string> const &keyFpts,
 				vector<string> const &keyFiles,
 				SignersStorage &Signers);
-   string VerifyGetSignersWithLegacy(const char *file, const char *outfile,
-				     vector<string> const &keyFpts,
-				     vector<string> const &keyFiles,
-				     SignersStorage &Signers);
-
    protected:
    virtual bool URIAcquire(std::string const &Message, FetchItem *Itm) APT_OVERRIDE;
    public:
@@ -181,7 +175,6 @@ static void implodeVector(std::vector<std::string> const &vec, std::ostream &out
    return;
 }
 string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
-					 vector<string> const &keyFpts,
 					 vector<string> const &keyFiles,
 					 SignersStorage &Signers)
 {
@@ -207,7 +200,6 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
    else if (pid == 0)
    {
       std::ostringstream keys;
-      setenv("APT_KEY_NO_LEGACY_KEYRING", "1", true);
       ExecGPGV(outfile, file, 3, fd, keyFiles);
    }
    close(fd[1]);
@@ -340,82 +332,21 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
    for (auto errSigner : ErrSigners)
       Signers.Worthless.push_back({errSigner, ""});
 
-   // apt-key has a --keyid parameter, but this requires gpg, so we call it without it
-   // and instead check after the fact which keyids where used for verification
-   if (keyFpts.empty() == false)
-   {
-      if (Debug == true)
-      {
-	 std::clog << "GoodSigs needs to be limited to keyid(s): ";
-	 implodeVector(keyFpts, std::clog, ", ");
-	 std::clog << "\n";
-      }
-      std::vector<std::string> filteredGood;
-      for (auto &&good: Signers.Good)
-      {
-	 if (Debug == true)
-	    std::clog << "Key " << good << " is good sig, is it also a valid and allowed one? ";
-	 bool found = false;
-	 for (auto l : keyFpts)
-	 {
-	    bool exactKey = false;
-	    if (APT::String::Endswith(l, "!"))
-	    {
-	       exactKey = true;
-	       l.erase(l.length() - 1);
-	    }
-	    if (IsTheSameKey(l, good))
-	    {
-	       // GOODSIG might be "just" a longid, so we check VALIDSIG which is always a fingerprint
-	       if (std::find(Signers.Valid.cbegin(), Signers.Valid.cend(), l) == Signers.Valid.cend())
-		  continue;
-	       found = true;
-	       Signers.SignedBy.push_back(l + "!");
-	       break;
-	    }
-	    else if (exactKey == false)
-	    {
-	       auto const primary = SubKeyMapping.find(l);
-	       if (primary == SubKeyMapping.end())
-		  continue;
-	       auto const validsubkeysig = std::find_if(primary->second.cbegin(), primary->second.cend(), [&](auto const subkey) {
-		  return IsTheSameKey(subkey, good) && std::find(Signers.Valid.cbegin(), Signers.Valid.cend(), subkey) != Signers.Valid.cend();
-	       });
-	       if (validsubkeysig != primary->second.cend())
-	       {
-		  found = true;
-		  Signers.SignedBy.push_back(l);
-		  Signers.SignedBy.push_back(*validsubkeysig + "!");
-		  break;
-	       }
-	    }
-	 }
-	 if (Debug)
-	    std::clog << (found ? "yes" : "no") << "\n";
-	 if (found)
-	    filteredGood.emplace_back(std::move(good));
-	 else
-	    Signers.NoPubKey.emplace_back(std::move(good));
-      }
-      Signers.Good= std::move(filteredGood);
-   }
-   else
-   {
-      // for gpg an expired key is valid, too, but we want only the valid & good ones
-      for (auto const &v : Signers.Valid)
-		if (std::any_of(Signers.Good.begin(), Signers.Good.end(),
-					 [&v](std::string const &g) { return IsTheSameKey(v, g); }))
-		   Signers.SignedBy.push_back(v + "!");
-      for (auto sub : SubKeyMapping)
-	 if (std::any_of(sub.second.begin(), sub.second.end(),
-			 [&](std::string const &s) {
-			    if (std::find(Signers.Valid.begin(), Signers.Valid.end(), s) == Signers.Valid.end())
-			       return false;
-			    return std::any_of(Signers.Good.begin(), Signers.Good.end(),
-					       [&s](std::string const &g) { return IsTheSameKey(s, g); });
-			 }))
-	    Signers.SignedBy.push_back(sub.first);
-   }
+   // for gpg an expired key is valid, too, but we want only the valid & good ones
+   for (auto const &v : Signers.Valid)
+	     if (std::any_of(Signers.Good.begin(), Signers.Good.end(),
+				      [&v](std::string const &g) { return IsTheSameKey(v, g); }))
+		Signers.SignedBy.push_back(v + "!");
+   for (auto sub : SubKeyMapping)
+      if (std::any_of(sub.second.begin(), sub.second.end(),
+		      [&](std::string const &s) {
+			 if (std::find(Signers.Valid.begin(), Signers.Valid.end(), s) == Signers.Valid.end())
+			    return false;
+			 return std::any_of(Signers.Good.begin(), Signers.Good.end(),
+					    [&s](std::string const &g) { return IsTheSameKey(s, g); });
+		      }))
+	 Signers.SignedBy.push_back(sub.first);
+
    std::sort(Signers.SignedBy.begin(), Signers.SignedBy.end());
 
    int status;
@@ -464,18 +395,8 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
    }
    else if (WEXITSTATUS(status) == 0)
    {
-      if (keyFpts.empty() == false)
-      {
-	 // gpgv will report success, but we want to enforce a certain keyring
-	 // so if we haven't found the key the valid we found is in fact invalid
-	 if (Signers.Good.empty())
-	    return _("At least one invalid signature was encountered.");
-      }
-      else
-      {
-	 if (Signers.Good.empty())
-	    return _("Internal error: Good signature, but could not determine key fingerprint?!");
-      }
+      if (Signers.Good.empty())
+	 return _("Internal error: Good signature, but could not determine key fingerprint?!");
       return "";
    }
    else if (WEXITSTATUS(status) == 1)
@@ -484,49 +405,6 @@ string GPGVMethod::VerifyGetSigners(const char *file, const char *outfile,
       return _("Could not execute 'gpgv' to verify signature (is gnupg installed?)");
    else
       return _("Unknown error executing gpgv");
-}
-string GPGVMethod::VerifyGetSignersWithLegacy(const char *file, const char *outfile,
-					      vector<string> const &keyFpts,
-					      vector<string> const &keyFiles,
-					      SignersStorage &Signers)
-{
-   string const msg = VerifyGetSigners(file, outfile, keyFpts, keyFiles, Signers);
-   if (_error->PendingError())
-      return msg;
-
-   // Bad signature always remains bad, no need to retry against trusted.gpg
-   if (!Signers.Bad.empty())
-      return msg;
-
-   // We do not have a key file pinned, did not find a good signature, but found
-   // missing keys - let's retry with trusted.gpg
-   if (keyFiles.empty() && Signers.Valid.empty() && !Signers.NoPubKey.empty())
-   {
-      std::vector<std::string> legacyKeyFiles{_config->FindFile("Dir::Etc::trusted")};
-      if (legacyKeyFiles[0].empty())
-	 return msg;
-      if (DebugEnabled())
-	 std::clog << "Retrying against " << legacyKeyFiles[0] << "\n";
-
-      SignersStorage legacySigners;
-
-      string const legacyMsg = VerifyGetSigners(file, outfile, keyFpts, legacyKeyFiles, legacySigners);
-      if (_error->PendingError())
-	 return legacyMsg;
-      // Hooray, we found a key apparently, something verified as good or bad
-      if (!legacySigners.Valid.empty() || !legacySigners.Bad.empty())
-      {
-	 std::string warning;
-	 strprintf(warning,
-		   _("Key is stored in legacy trusted.gpg keyring (%s). Use Signed-By instead. See the USER CONFIGURATION section in apt-secure(8) for details."),
-		   legacyKeyFiles[0].c_str());
-	 Warning(std::move(warning));
-	 Signers = std::move(legacySigners);
-	 return legacyMsg;
-      }
-
-   }
-   return msg;
 }
 static std::string GenerateKeyFile(std::string const key)
 {
@@ -542,7 +420,7 @@ bool GPGVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
    std::string const Path = DecodeSendURI(Get.Host + Get.Path); // To account for relative paths
    SignersStorage Signers;
 
-   std::vector<std::string> keyFpts, keyFiles;
+   std::vector<std::string> keyFiles;
    struct TemporaryFile
    {
       std::string name = "";
@@ -561,12 +439,10 @@ bool GPGVMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
       for (auto &&key : VectorizeString(SignedBy, ','))
 	 if (key.empty() == false && key[0] == '/')
 	    keyFiles.emplace_back(std::move(key));
-	 else
-	    keyFpts.emplace_back(std::move(key));
    }
 
    // Run apt-key on file, extract contents and get the key ID of the signer
-   string const msg = VerifyGetSignersWithLegacy(Path.c_str(), Itm->DestFile.c_str(), keyFpts, keyFiles, Signers);
+   string const msg = VerifyGetSigners(Path.c_str(), Itm->DestFile.c_str(), keyFiles, Signers);
    if (_error->PendingError())
       return false;
 
