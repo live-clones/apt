@@ -5,6 +5,7 @@
 #include <apt-pkg/strutl.h>
 #include <iterator>
 #include <ostream>
+#include <optional>
 #include <sstream>
 
 using std::string;
@@ -13,6 +14,8 @@ using std::vector;
 class SQVMethod : public aptMethod
 {
    private:
+   std::optional<std::string> policy{};
+   void SetPolicy();
    bool VerifyGetSigners(const char *file, const char *outfile,
 			 vector<string> keyFiles,
 			 vector<string> &signers);
@@ -21,9 +24,58 @@ class SQVMethod : public aptMethod
    virtual bool URIAcquire(std::string const &Message, FetchItem *Itm) APT_OVERRIDE;
 
    public:
-   SQVMethod() : aptMethod("sqv", "1.1", SingleInstance | SendConfig | SendURIEncoded) {};
+   SQVMethod();
 };
 
+SQVMethod::SQVMethod() : aptMethod("sqv", "1.1", SingleInstance | SendConfig | SendURIEncoded)
+{
+}
+
+void SQVMethod::SetPolicy()
+{
+   constexpr const char *policies[] = {
+      // APT overrides
+      "APT_SEQUOIA_CRYPTO_POLICY",
+      "/etc/crypto-policies/back-ends/apt-sequoia.config",
+      "/var/lib/crypto-config/profiles/current/apt-sequoia.config",
+      // Sequoia overrides
+      "SEQUOIA_CRYPTO_POLICY",
+      "/etc/crypto-policies/back-ends/sequoia.config",
+      "/var/lib/crypto-config/profiles/current/sequoia.config",
+      // Fallback APT defaults
+      "/usr/share/apt/default-sequoia.config",
+   };
+
+   if (policy)
+      return;
+
+   policy = "";
+
+   for (auto policy : policies)
+   {
+      if (not strchr(policy, '/'))
+      {
+	 if (auto value = getenv(policy))
+	 {
+	    this->policy = value;
+	    break;
+	 }
+      }
+      else if (FileExists(policy))
+      {
+	 this->policy = policy;
+	 break;
+      }
+   }
+
+   if (not policy->empty())
+   {
+      if (DebugEnabled())
+	 std::clog << "Setting SEQUOIA_CRYPTO_POLICY=" << *policy << std::endl;
+      setenv("SEQUOIA_CRYPTO_POLICY", policy->c_str(), 1);
+   }
+
+}
 bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
 				 vector<string> keyFiles,
 				 vector<string> &signers)
@@ -31,6 +83,8 @@ bool SQVMethod::VerifyGetSigners(const char *file, const char *outfile,
    bool const Debug = DebugEnabled();
 
    std::vector<std::string> args;
+
+   SetPolicy();
 
    args.push_back(SQV_EXECUTABLE);
    auto dearmorKeyOrCheckFormat = [&](std::string const &k) -> bool
