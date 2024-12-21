@@ -50,6 +50,7 @@
 #include <gnutls/x509.h>
 #endif
 
+#include <cassert>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -833,28 +834,31 @@ ResultState UnwrapSocks(std::string Host, int Port, URI Proxy, std::unique_ptr<M
 /* Performs a TLS handshake on the socket */
 struct TlsFd final : public MethodFd
 {
-   std::unique_ptr<MethodFd> UnderlyingFd;
+   std::unique_ptr<MethodFd> UnderlyingFd{};
 
-   SSL_CTX *ctx;
-   SSL *ssl;
+   SSL_CTX *ctx{};
+   SSL *ssl{};
 
-   std::string hostname;
-   unsigned long Timeout;
+   std::string hostname{};
+   unsigned long Timeout{};
    bool broken{false};
 
-   int Fd() APT_OVERRIDE { return UnderlyingFd->Fd(); }
+   int Fd() override { return UnderlyingFd->Fd(); }
 
-   ssize_t Read(void *buf, size_t count) APT_OVERRIDE
+   ssize_t Read(void *buf, size_t count) override
    {
+      assert(ssl);
       return HandleError(SSL_read(ssl, buf, count));
    }
-   ssize_t Write(void *buf, size_t count) APT_OVERRIDE
+   ssize_t Write(void *buf, size_t count) override
    {
+      assert(ssl);
       return HandleError(SSL_write(ssl, buf, count));
    }
 
    ssize_t HandleError(ssize_t r)
    {
+      assert(ssl);
       if (r > 0)
 	 return r;
 
@@ -881,17 +885,27 @@ struct TlsFd final : public MethodFd
       return r;
    }
 
-   int Close() APT_OVERRIDE
+   int Close() override
    {
-      SSL_set_shutdown(ssl, SSL_RECEIVED_SHUTDOWN | SSL_SENT_SHUTDOWN);
-      int res = broken ? 1 : SSL_shutdown(ssl);
-      SSL_free(ssl);
-      SSL_CTX_free(ctx);
+      int res = 1;
+      if (ssl && not broken)
+      {
+	 SSL_set_shutdown(ssl, SSL_RECEIVED_SHUTDOWN | SSL_SENT_SHUTDOWN);
+	 res = SSL_shutdown(ssl);
+      }
+      if (ssl)
+	 SSL_free(ssl);
+      if (ctx)
+	 SSL_CTX_free(ctx);
+
+      ssl = nullptr;
+      ctx = nullptr;
+
       auto lower = UnderlyingFd->Close();
       return res <= 0 ? HandleError(res) : lower;
    }
 
-   bool HasPending() APT_OVERRIDE
+   bool HasPending() override
    {
       return SSL_has_pending(ssl);
    }
