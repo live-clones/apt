@@ -73,7 +73,7 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
 
       // system wide stuff
       {"update", &DoUpdate, _("update list of available packages")},
-      {"upgrade", &DoUpgrade, _("upgrade the system by installing/upgrading packages")},
+      {"upgrade", &DoUpgrade, _("upgrade all packages without installing new packages or removing old packages")},
       {"full-upgrade", &DoDistUpgrade, _("upgrade the system by removing/installing/upgrading packages")},
 
       // misc
