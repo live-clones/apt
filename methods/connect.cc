@@ -6,7 +6,30 @@
 
    This was originally authored by Jason Gunthorpe <jgg@debian.org>
    and is placed in the Public Domain, do with it what you will.
-      
+
+   The OpenSSL CRL file idea is taken from curl:
+
+   Copyright (c) 1996 - 2023, Daniel Stenberg, <daniel@haxx.se>, and many
+   contributors, see the THANKS file.
+
+   All rights reserved.
+
+   Permission to use, copy, modify, and distribute this software for any purpose
+   with or without fee is hereby granted, provided that the above copyright
+   notice and this permission notice appear in all copies.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN
+   NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+   OR OTHER DEALINGS IN THE SOFTWARE.
+
+   Except as contained in this notice, the name of a copyright holder shall not
+   be used in advertising or otherwise to promote the sale, use or other dealings
+   in this Software without prior written authorization of the copyright holder.
+
    ##################################################################### */
 									/*}}}*/
 // Include Files							/*{{{*/
@@ -19,11 +42,10 @@
 #include <apt-pkg/srvrec.h>
 #include <apt-pkg/strutl.h>
 
-#ifdef HAVE_GNUTLS
-#include <gnutls/gnutls.h>
-#include <gnutls/x509.h>
-#endif
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
+#include <cassert>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -801,104 +823,91 @@ ResultState UnwrapSocks(std::string Host, int Port, URI Proxy, std::unique_ptr<M
    return ResultState::SUCCESSFUL;
 }
 
-#ifdef HAVE_GNUTLS									/*}}}*/
 // UnwrapTLS - Handle TLS connections 					/*{{{*/
 // ---------------------------------------------------------------------
 /* Performs a TLS handshake on the socket */
 struct TlsFd final : public MethodFd
 {
-   std::unique_ptr<MethodFd> UnderlyingFd;
-   gnutls_session_t session;
-   gnutls_certificate_credentials_t credentials;
-   std::string hostname;
-   unsigned long Timeout;
+   std::unique_ptr<MethodFd> UnderlyingFd{};
 
-   int Fd() APT_OVERRIDE { return UnderlyingFd->Fd(); }
+   SSL_CTX *ctx{};
+   SSL *ssl{};
 
-   ssize_t Read(void *buf, size_t count) APT_OVERRIDE
+   std::string hostname{};
+   unsigned long Timeout{};
+   bool broken{false};
+
+   int Fd() override { return UnderlyingFd->Fd(); }
+
+   ssize_t Read(void *buf, size_t count) override
    {
-      return HandleError(gnutls_record_recv(session, buf, count));
+      assert(ssl);
+      return HandleError(SSL_read(ssl, buf, count));
    }
-   ssize_t Write(void *buf, size_t count) APT_OVERRIDE
+   ssize_t Write(void *buf, size_t count) override
    {
-      return HandleError(gnutls_record_send(session, buf, count));
-   }
-
-   ssize_t DoTLSHandshake()
-   {
-      int err;
-      // Do the handshake. Our socket is non-blocking, so we need to call WaitFd()
-      // accordingly.
-      do
-      {
-         err = gnutls_handshake(session);
-         if ((err == GNUTLS_E_INTERRUPTED || err == GNUTLS_E_AGAIN) &&
-             WaitFd(this->Fd(), gnutls_record_get_direction(session) == 1, Timeout) == false)
-         {
-            _error->Errno("select", "Could not wait for server fd");
-            return err;
-         }
-      } while (err < 0 && gnutls_error_is_fatal(err) == 0);
-
-      if (err < 0)
-      {
-         // Print reason why validation failed.
-         if (err == GNUTLS_E_CERTIFICATE_VERIFICATION_ERROR)
-         {
-            gnutls_datum_t txt;
-            auto type = gnutls_certificate_type_get(session);
-            auto status = gnutls_session_get_verify_cert_status(session);
-            if (gnutls_certificate_verification_status_print(status, type, &txt, 0) == 0)
-            {
-               _error->Error("Certificate verification failed: %s", txt.data);
-            }
-            gnutls_free(txt.data);
-         }
-         _error->Error("Could not handshake: %s", gnutls_strerror(err));
-      }
-      return err;
+      assert(ssl);
+      return HandleError(SSL_write(ssl, buf, count));
    }
 
-   template <typename T>
-   T HandleError(T err)
+   ssize_t HandleError(ssize_t r)
    {
-      // Server may request re-handshake if client certificates need to be provided
-      // based on resource requested
-      if (err == GNUTLS_E_REHANDSHAKE)
-      {
-        int rc = DoTLSHandshake();
-	// Only reset err if DoTLSHandshake() fails.
-        // Otherwise, we want to follow the original error path and set errno to EAGAIN
-        // so that the request is retried.
-        if (rc < 0)
-          err = rc;
-      }
+      assert(ssl);
+      if (r > 0)
+	 return r;
 
-      if (err < 0 && gnutls_error_is_fatal(err))
-	 errno = EIO;
-      else if (err < 0)
+      auto err = SSL_get_error(ssl, r);
+      switch (err)
+      {
+      case SSL_ERROR_WANT_READ:
+      case SSL_ERROR_WANT_WRITE:
 	 errno = EAGAIN;
-      else
-	 errno = 0;
-      return err;
+	 break;
+      case SSL_ERROR_ZERO_RETURN:
+	 errno = EAGAIN;
+	 break;
+      case SSL_ERROR_SYSCALL:
+	 std::cerr << "Syscall error: " << err;
+	 broken = true;
+	 break;
+      case SSL_ERROR_SSL:
+	 std::cerr << "Unrecoverable error:" << ERR_error_string(ERR_get_error(), nullptr) << "\n";
+	 broken = true;
+	 errno = EIO;
+	 break;
+      }
+      return r;
    }
 
-   int Close() APT_OVERRIDE
+   int Close() override
    {
-      auto err = HandleError(gnutls_bye(session, GNUTLS_SHUT_RDWR));
+      int res = 1;
+      if (ssl && not broken)
+      {
+	 SSL_set_shutdown(ssl, SSL_RECEIVED_SHUTDOWN | SSL_SENT_SHUTDOWN);
+	 res = SSL_shutdown(ssl);
+      }
+      if (ssl)
+	 SSL_free(ssl);
+      if (ctx)
+	 SSL_CTX_free(ctx);
+
+      ssl = nullptr;
+      ctx = nullptr;
+
       auto lower = UnderlyingFd->Close();
-      return err < 0 ? HandleError(err) : lower;
+      return res <= 0 ? HandleError(res) : lower;
    }
 
-   bool HasPending() APT_OVERRIDE
+   bool HasPending() override
    {
-      return gnutls_record_check_pending(session) > 0;
+      return SSL_has_pending(ssl);
    }
 };
 
 ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
-		      unsigned long const Timeout, aptMethod * const Owner,
-		      aptConfigWrapperForMethods const * const OwnerConf)
+		      unsigned long const Timeout, aptMethod *const Owner,
+		      aptConfigWrapperForMethods const *const OwnerConf)
 {
    if (_config->FindB("Acquire::AllowTLS", true) == false)
    {
@@ -912,61 +921,65 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    tlsFd->hostname = Host;
    tlsFd->UnderlyingFd = MethodFd::FromFd(-1); // For now
    tlsFd->Timeout = Timeout;
-
-   if ((err = gnutls_init(&tlsFd->session, GNUTLS_CLIENT | GNUTLS_NONBLOCK)) < 0)
+   OpenSSL_add_all_algorithms();
+   SSL_load_error_strings();
+   tlsFd->ctx = SSL_CTX_new(TLS_client_method());
+   if (tlsFd->ctx == nullptr)
    {
-      _error->Error("Internal error: could not allocate credentials: %s", gnutls_strerror(err));
+      _error->Errno("SSL_CTX_new", "Could not create SSL context");
       return ResultState::FATAL_ERROR;
    }
+   tlsFd->ssl = SSL_new(tlsFd->ctx);
 
    FdFd *fdfd = dynamic_cast<FdFd *>(Fd.get());
    if (fdfd != nullptr)
    {
-      gnutls_transport_set_int(tlsFd->session, fdfd->fd);
+      SSL_set_fd(tlsFd->ssl, fdfd->fd);
    }
    else
    {
-      gnutls_transport_set_ptr(tlsFd->session, Fd.get());
-      gnutls_transport_set_pull_function(tlsFd->session,
-					 [](gnutls_transport_ptr_t p, void *buf, size_t size) -> ssize_t {
-					    return reinterpret_cast<MethodFd *>(p)->Read(buf, size);
-					 });
-      gnutls_transport_set_push_function(tlsFd->session,
-					 [](gnutls_transport_ptr_t p, const void *buf, size_t size) -> ssize_t {
-					    return reinterpret_cast<MethodFd *>(p)->Write((void *)buf, size);
-					 });
-   }
+      BIO_METHOD *m = BIO_meth_new(BIO_TYPE_MEM, "OpenSSL APT BIO method");
+      if (not m)
+      {
+	 _error->Error("SSL connection failed: %s - %s", ERR_error_string(ERR_get_error(), nullptr), strerror(errno));
+	 return ResultState::TRANSIENT_ERROR;
+      }
 
-   if ((err = gnutls_certificate_allocate_credentials(&tlsFd->credentials)) < 0)
-   {
-      _error->Error("Internal error: could not allocate credentials: %s", gnutls_strerror(err));
-      return ResultState::FATAL_ERROR;
-   }
+      BIO_meth_set_ctrl(m, [](BIO *, int, long, void *) -> long
+			{ return 1; });
+      BIO_meth_set_write(m, [](BIO *bio, const char *buf, int size) -> int
+			 {
+	 auto p = BIO_get_data(bio);
+	 auto res = reinterpret_cast<MethodFd *>(p)->Write((void*)buf, size);
+	 if (errno == EAGAIN)
+	    BIO_set_retry_write(bio);
+	 return res; });
+      BIO_meth_set_read(m, [](BIO *bio, char *buf, int size) -> int
+			{
+	 auto p = BIO_get_data(bio);
+	 auto res = reinterpret_cast<MethodFd *>(p)->Read(buf, size);
+	 if (errno == EAGAIN)
+	    BIO_set_retry_write(bio);
+	 return res; });
 
+      auto bio = BIO_new(m);
+      if (!bio)
+	 return ResultState::FATAL_ERROR;
+
+      BIO_set_data(bio, Fd.get());
+      SSL_set_bio(tlsFd->ssl, bio, bio);
+   }
    // Credential setup
    std::string fileinfo = OwnerConf->ConfigFind("CaInfo", "");
-   if (fileinfo.empty())
+   // CA location has been set, use the specified one instead
+   err = fileinfo.empty() ? SSL_CTX_set_default_verify_paths(tlsFd->ctx) : SSL_CTX_load_verify_file(tlsFd->ctx, fileinfo.c_str());
+   if (err <= 0)
    {
-      // No CaInfo specified, use system trust store.
-      err = gnutls_certificate_set_x509_system_trust(tlsFd->credentials);
-      if (err == 0)
-	 Owner->Warning("No system certificates available. Try installing ca-certificates.");
-      else if (err < 0)
-      {
-	 _error->Error("Could not load system TLS certificates: %s", gnutls_strerror(err));
-	 return ResultState::FATAL_ERROR;
-      }
-   }
-   else
-   {
-      // CA location has been set, use the specified one instead
-      gnutls_certificate_set_verify_flags(tlsFd->credentials, GNUTLS_VERIFY_ALLOW_X509_V1_CA_CRT);
-      err = gnutls_certificate_set_x509_trust_file(tlsFd->credentials, fileinfo.c_str(), GNUTLS_X509_FMT_PEM);
-      if (err < 0)
-      {
-	 _error->Error("Could not load certificates from %s (CaInfo option): %s", fileinfo.c_str(), gnutls_strerror(err));
-	 return ResultState::FATAL_ERROR;
-      }
+      if (fileinfo.empty())
+	 _error->Error("Could not load certificates: %s", ERR_error_string(ERR_get_error(), nullptr));
+      else
+	 _error->Error("Could not load certificates from %s (CaInfo option): %s", fileinfo.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+      return ResultState::FATAL_ERROR;
    }
 
    if (not OwnerConf->ConfigFind("IssuerCert", "").empty())
@@ -985,13 +998,14 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    std::string const key = OwnerConf->ConfigFind("SslKey", "");
    if (cert.empty() == false)
    {
-      if ((err = gnutls_certificate_set_x509_key_file(
-	       tlsFd->credentials,
-	       cert.c_str(),
-	       key.empty() ? cert.c_str() : key.c_str(),
-	       GNUTLS_X509_FMT_PEM)) < 0)
+      if (err = SSL_use_certificate_file(tlsFd->ssl, cert.c_str(), SSL_FILETYPE_PEM); err != 1)
       {
-	 _error->Error("Could not load client certificate (%s, SslCert option) or key (%s, SslKey option): %s", cert.c_str(), key.c_str(), gnutls_strerror(err));
+	 _error->Error("Could not load client certificate (%s, SslCert option): %s", cert.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+	 return ResultState::FATAL_ERROR;
+      }
+      if (err = SSL_use_PrivateKey_file(tlsFd->ssl, key.c_str(), SSL_FILETYPE_PEM); err != 1)
+      {
+	 _error->Error("Could not load client or key (%s, SslKey option): %s", key.c_str(), ERR_error_string(ERR_get_error(), nullptr));
 	 return ResultState::FATAL_ERROR;
       }
    }
@@ -1000,30 +1014,29 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    std::string const crlfile = OwnerConf->ConfigFind("CrlFile", "");
    if (crlfile.empty() == false)
    {
-      if ((err = gnutls_certificate_set_x509_crl_file(tlsFd->credentials,
-						      crlfile.c_str(),
-						      GNUTLS_X509_FMT_PEM)) < 0)
+      // tell OpenSSL where to find CRL file that is used to check certificate  revocation.
+      auto lookup = X509_STORE_add_lookup(SSL_CTX_get_cert_store(tlsFd->ctx),
+					  X509_LOOKUP_file());
+      if (not lookup || not X509_load_crl_file(lookup, crlfile.c_str(), X509_FILETYPE_PEM))
       {
-	 _error->Error("Could not load custom certificate revocation list %s (CrlFile option): %s", crlfile.c_str(), gnutls_strerror(err));
+	 _error->Error("Could not load custom certificate revocation list %s (CrlFile option): %s", crlfile.c_str(), ERR_error_string(ERR_get_error(), nullptr));
 	 return ResultState::FATAL_ERROR;
       }
-   }
+      /* Everything is fine. */
+      X509_STORE_set_flags(SSL_CTX_get_cert_store(tlsFd->ctx),
+			   X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 
-   if ((err = gnutls_credentials_set(tlsFd->session, GNUTLS_CRD_CERTIFICATE, tlsFd->credentials)) < 0)
-   {
-      _error->Error("Internal error: Could not add certificates to session: %s", gnutls_strerror(err));
-      return ResultState::FATAL_ERROR;
-   }
-
-   if ((err = gnutls_set_default_priority(tlsFd->session)) < 0)
-   {
-      _error->Error("Internal error: Could not set algorithm preferences: %s", gnutls_strerror(err));
       return ResultState::FATAL_ERROR;
    }
 
    if (OwnerConf->ConfigFindB("Verify-Peer", true))
    {
-      gnutls_session_set_verify_cert(tlsFd->session, OwnerConf->ConfigFindB("Verify-Host", true) ? tlsFd->hostname.c_str() : nullptr, 0);
+      SSL_set_verify(tlsFd->ssl, SSL_VERIFY_PEER, nullptr);
+      if (err = SSL_set1_host(tlsFd->ssl, OwnerConf->ConfigFindB("Verify-Host", true) ? tlsFd->hostname.c_str() : nullptr); err != 1)
+      {
+	 _error->Error("Could not load client or key (%s, SslKey option): %s", key.c_str(), ERR_error_string(ERR_get_error(), nullptr));
+	 return ResultState::FATAL_ERROR;
+      }
    }
 
    // set SNI only if the hostname is really a name and not an address
@@ -1034,10 +1047,37 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
       if (inet_pton(AF_INET, tlsFd->hostname.c_str(), &addr4) == 1 ||
 	  inet_pton(AF_INET6, tlsFd->hostname.c_str(), &addr6) == 1)
 	 /* not a host name */;
-      else if ((err = gnutls_server_name_set(tlsFd->session, GNUTLS_NAME_DNS, tlsFd->hostname.c_str(), tlsFd->hostname.length())) < 0)
+      else if (err = SSL_set_tlsext_host_name(tlsFd->ssl, tlsFd->hostname.c_str()); err == 0)
       {
-	 _error->Error("Could not set host name %s to indicate to server: %s", tlsFd->hostname.c_str(), gnutls_strerror(err));
+	 _error->Error("Could not set host name %s to indicate to server: %d", tlsFd->hostname.c_str(), SSL_get_error(tlsFd->ssl, err));
 	 return ResultState::FATAL_ERROR;
+      }
+   }
+
+   while (true)
+   {
+      err = SSL_connect(tlsFd->ssl);
+      if (err == 1)
+	 break;
+      switch (auto Err = SSL_get_error(tlsFd->ssl, err))
+      {
+      case SSL_ERROR_WANT_READ:
+	 if (not WaitFd(Fd->Fd(), false, Timeout))
+	 {
+	    _error->Errno("select", "Could not wait for server fd");
+	    return ResultState::TRANSIENT_ERROR;
+	 }
+	 break;
+      case SSL_ERROR_WANT_WRITE:
+	 if (not WaitFd(Fd->Fd(), true, Timeout))
+	 {
+	    _error->Errno("select", "Could not wait for server fd");
+	    return ResultState::TRANSIENT_ERROR;
+	 }
+	 break;
+      default:
+	 _error->Error("SSL connection failed: %s - %s", ERR_error_string(ERR_get_error(), nullptr), strerror(errno));
+	 return ResultState::TRANSIENT_ERROR;
       }
    }
 
@@ -1045,12 +1085,5 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    tlsFd->UnderlyingFd = std::move(Fd);
    Fd.reset(tlsFd);
 
-   // Do the handshake.
-   err = tlsFd->DoTLSHandshake();
-
-   if (err < 0)
-      return ResultState::TRANSIENT_ERROR;
-
    return ResultState::SUCCESSFUL;
 }
-#endif									/*}}}*/
