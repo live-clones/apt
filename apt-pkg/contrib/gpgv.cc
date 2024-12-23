@@ -370,27 +370,17 @@ void ExecGPGV(std::string const &File, std::string const &FileGPG,
    {
       if (unlikely(k.empty()))
 	 continue;
-      if (k[0] == '/')
-      {
-	 if (Debug)
-	    std::clog << "Trying Signed-By: " << k << std::endl;
+      if (Debug)
+	 std::clog << "Trying Signed-By: " << k << std::endl;
 
-	 maybeAddKeyring(k);
-	 FoundKeyring = true;
-      }
-      else
-      {
-	 Args.push_back("--keyid");
-	 Args.push_back(k);
-      }
+      maybeAddKeyring(k);
+      FoundKeyring = true;
    }
 
    std::vector<std::string> Parts;
    if (not FoundKeyring)
    {
       Parts = GetListOfFilesInDir(_config->FindDir("Dir::Etc::TrustedParts"), std::vector<std::string>{"gpg", "asc"}, true);
-      if (char *env = getenv("APT_KEY_NO_LEGACY_KEYRING"); env == nullptr || not StringToBool(env, false))
-	 Parts.insert(Parts.begin(), _config->FindFile("Dir::Etc::Trusted"));
       for (auto &Part : Parts)
       {
 	 if (Debug)

@@ -10,28 +10,29 @@ configarchitecture 'amd64'
 export TMPDIR="${TMPWORKINGDIRECTORY}/tmp"
 mkdir "${TMPDIR}"
 
+msgtest 'Check that a repository with' 'signed-by fingerprint fails'
+echo 'deb [signed-by=34A8E9D18DB320F367E8EAA05A90D141DBAC8DAE] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
+testfailureequal --nomsg "E: Invalid value set for option Signed-By regarding source https://people.debian.org/~jak/debian/ stable (not a certificate or certificate file)
+E: Invalid value set for option Signed-By regarding source https://people.debian.org/~jak/debian/ stable (not a certificate or certificate file)
+E: The list of sources could not be read." aptcache policy
+
 msgtest 'Check that a repository with' 'signed-by and two components works'
-echo 'deb [signed-by=CDE5618B8805FD6E202CE9C2D73C39E56580B386] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
+echo 'deb [signed-by=/etc/apt/trusted.gpg.d/joesixpack.gpg] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
 testsuccess --nomsg aptcache policy
 
-msgtest 'Check that a repository with' 'two fingerprints work'
-echo 'deb [signed-by=CDE5618B8805FD6E202CE9C2D73C39E56580B386,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
+msgtest 'Check that a repository with' 'two keyfiles work'
+echo 'deb [signed-by=/etc/apt/trusted.gpg.d/joesixpack.gpg,/dev/null] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
 testsuccess --nomsg aptcache policy
 
-msgtest 'Check that a repository with' 'exact fingerprint works'
-echo 'deb [signed-by=CDE5618B8805FD6E202CE9C2D73C39E56580B386!] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
-testsuccess --nomsg aptcache policy
-
-msgtest 'Check that a repository with' 'whitespaced fingerprints work'
-echo 'deb [signed-by=CDE5618B8805FD6E202CE9C2D73C39E56580B386!,,,,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
+msgtest 'Check that a repository with' 'whitespace work'
+echo 'deb [signed-by=/etc/apt/trusted.gpg.d/joesixpack.gpg,,,,/dev/null] https://people.debian.org/~jak/debian/ stable main contrib # Äffchen' > rootdir/etc/apt/sources.list
 cat > rootdir/etc/apt/sources.list.d/people.sources <<EOF
 Types: deb
 URIs: mirror+file:/var/lib/apt/mirror.lst
 Suites: stable testing
 Components: main contrib
 Architectures: amd64 i386
-Signed-By: CDE5618B8805FD6E202CE9C2D73C39E56580B386!       AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    ,  , BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+Signed-By: /etc/apt/trusted.gpg.d/joesixpack.gpg   /dev/null
 EOF
 testsuccess --nomsg aptcache policy
 
@@ -85,7 +86,7 @@ Types: deb
 URIs: http://example.org/
 Suites: suite
 Components: component2
-Signed-By: 34A8E9D18DB320F367E8EAA05A90D141DBAC8DAE
+Signed-By: /etc/apt/trusted.gpg.d/joesixpack.gpg
 EOF
 testsuccess --nomsg aptcache policy
 
@@ -95,7 +96,7 @@ Types: deb
 URIs: http://example.org/
 Suites: suite
 Components: component
-Signed-By: 34A8E9D18DB320F367E8EAA05A90D141DBAC8DAE
+Signed-By: /etc/apt/trusted.gpg.d/joesixpack.gpg
 
 Types: deb
 URIs: http://example.org/
@@ -109,13 +110,13 @@ Types: deb
 URIs: http://example.org/
 Suites: suite
 Components: component
-Signed-By: 34A8E9D18DB320F367E8EAA05A90D141DBAC8DAE
+Signed-By: /etc/apt/trusted.gpg.d/joesixpack.gpg
 
 Types: deb
 URIs: http://example.org/
 Suites: suite
 Components: component2
-Signed-By: DE66AECA9151AFA1877EC31DE8525D47528144E2
+Signed-By: /etc/apt/trusted.gpg.d/marvinparanoid.gpg
 EOF
-testfailuremsg 'E: Conflicting values set for option Signed-By regarding source http://example.org/ suite: 34A8E9D18DB320F367E8EAA05A90D141DBAC8DAE != DE66AECA9151AFA1877EC31DE8525D47528144E2
+testfailuremsg 'E: Conflicting values set for option Signed-By regarding source http://example.org/ suite: /etc/apt/trusted.gpg.d/joesixpack.gpg != /etc/apt/trusted.gpg.d/marvinparanoid.gpg
 E: The list of sources could not be read.' aptget update --print-uris

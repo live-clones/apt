@@ -25,13 +25,21 @@ rm rootdir/etc/apt/trusted.gpg.d/*.gpg
 
 testwarningequal "Get:1 file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease [$(inrelease_size) B]
 Get:1 file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease [$(inrelease_size) B]
+Err:1 file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease
+  The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 5A90D141DBAC8DAE
 Reading package lists...
-W: file:${TMPWORKINGDIRECTORY}/aptarchive/dists/unstable/InRelease: Key is stored in legacy trusted.gpg keyring (${TMPWORKINGDIRECTORY}/rootdir/etc/apt/trusted.gpg). Use Signed-By instead. See the USER CONFIGURATION section in apt-secure(8) for details." aptget update -q
+W: An error occurred during the signature verification. The repository is not updated and the previous index files will be used. GPG error: file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 5A90D141DBAC8DAE
+W: Failed to fetch file:${TMPWORKINGDIRECTORY}/aptarchive/dists/unstable/InRelease  The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 5A90D141DBAC8DAE
+W: Some index files failed to download. They have been ignored, or old ones used instead." aptget update -q
 
 # 2.4.0 regression: If the InRelease file was signed with two keys, fallback to trusted.gpg did not
 # work: It ran the fallback, but then ignored the result, as keys were still missing.
 signreleasefiles 'Joe Sixpack,Marvin Paranoid'
 testwarningequal "Get:1 file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease [$(inrelease_size) B]
 Get:1 file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease [$(inrelease_size) B]
+Err:1 file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease
+  The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 5A90D141DBAC8DAE NO_PUBKEY E8525D47528144E2
 Reading package lists...
-W: file:${TMPWORKINGDIRECTORY}/aptarchive/dists/unstable/InRelease: Key is stored in legacy trusted.gpg keyring (${TMPWORKINGDIRECTORY}/rootdir/etc/apt/trusted.gpg). Use Signed-By instead. See the USER CONFIGURATION section in apt-secure(8) for details." aptget update -q -omsg=with-two-signatures
+W: An error occurred during the signature verification. The repository is not updated and the previous index files will be used. GPG error: file:${TMPWORKINGDIRECTORY}/aptarchive unstable InRelease: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 5A90D141DBAC8DAE NO_PUBKEY E8525D47528144E2
+W: Failed to fetch file:${TMPWORKINGDIRECTORY}/aptarchive/dists/unstable/InRelease  The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 5A90D141DBAC8DAE NO_PUBKEY E8525D47528144E2
+W: Some index files failed to download. They have been ignored, or old ones used instead." aptget update -q -omsg=with-two-signatures
