@@ -221,9 +221,29 @@ static pkgSrcRecords::Parser *FindSrc(const char *Name,
 	 {
 	    if (strcmp(Ver.SourcePkgName(),Ver.ParentPkg().Name()) != 0)
 	       Src = Ver.SourcePkgName();
-	    if (VerTag.empty() == true && strcmp(Ver.SourceVerStr(),Ver.VerStr()) != 0)
+	    if (VerTag.empty() == true && RelTag.empty())
 	       VerTag = Ver.SourceVerStr();
 	 }
+      }
+   }
+
+   if (Src.empty() && VerTag.empty() && RelTag.empty())
+   {
+      // if we don't have found a fitting package yet so we will
+      // choose a good candidate and proceed with that.
+      // Maybe we will find a source later on with the right VerTag
+      //
+      // FIXME: We should be able to combine VerTag and RelTag, but this
+      // breaks the tests.
+      if (Cache.BuildPolicy() == false)
+	 return nullptr;
+      pkgPolicy *const Policy = Cache.GetPolicy();
+      pkgCache::GrpIterator const SrcGrp = Cache.GetPkgCache()->FindGrp(TmpSrc);
+      if (not SrcGrp.end())
+      {
+	 pkgCache::VerIterator const Ver = Policy->GetCandidateVerBySource(SrcGrp);
+	 if (not Ver.end())
+	    VerTag = Ver.SourceVerStr();
       }
    }
 

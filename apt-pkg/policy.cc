@@ -139,7 +139,7 @@ bool pkgPolicy::InitDefaults()
 // Policy::GetCandidateVer - Get the candidate install version		/*{{{*/
 // ---------------------------------------------------------------------
 /* Evaluate the package pins and the default list to determine what the
-   best package is. */
+   best package is. You might want to update GetCandidateVer() when updating this */
 pkgCache::VerIterator pkgPolicy::GetCandidateVer(pkgCache::PkgIterator const &Pkg)
 {
    pkgCache::VerIterator cand;
@@ -156,6 +156,45 @@ pkgCache::VerIterator pkgPolicy::GetCandidateVer(pkgCache::PkgIterator const &Pk
       // TODO: Maybe optimize to not compare versions
       if (!cur.end() && priority < 1000
 	  && (vs->CmpVersion(ver.VerStr(), cur.VerStr()) < 0))
+	 continue;
+
+      candPriority = priority;
+      cand = ver;
+   }
+
+   return cand;
+}
+
+									/*}}}*/
+// Policy::GetCandidateVer - Get the candidate install version		/*{{{*/
+// ---------------------------------------------------------------------
+// Get the candidate for a source package. The loop is mostly a copy of GetCandidateVer()
+pkgCache::VerIterator pkgPolicy::GetCandidateVerBySource(pkgCache::GrpIterator const &SrcGrp)
+{
+   pkgCache::VerIterator cand;
+   pkgCache::VerIterator cur;
+   int candPriority = -1;
+   pkgVersioningSystem *vs = Cache->VS;
+
+   // Find highest installed version
+   for (pkgCache::VerIterator ver = SrcGrp.VersionsInSource(); ver.end() == false; ver = ver.NextInSource())
+   {
+      if (ver.ParentPkg().CurrentVer() == ver && (cur.end() || vs->CmpVersion(ver.VerStr(), cur.VerStr()) > 0))
+      {
+	 cur = ver;
+      }
+   }
+
+   // Find highest version of any installed package
+   for (pkgCache::VerIterator ver = SrcGrp.VersionsInSource(); ver.end() == false; ver = ver.NextInSource())
+   {
+      int priority = GetPriority(ver, true);
+
+      if (priority == 0 || priority <= candPriority)
+	 continue;
+
+      // TODO: Maybe optimize to not compare versions
+      if (!cur.end() && priority < 1000 && (vs->CmpVersion(ver.VerStr(), cur.VerStr()) < 0))
 	 continue;
 
       candPriority = priority;
