@@ -723,6 +723,7 @@ dpkg::progress-fancy "<BOOL>";
 dpkg::selection::remove::approved "<BOOL>";
 dpkg::remove::crossgrade::implicit "<BOOL>";
 dpkg::selection::current::saveandrestore "<BOOL>";
+dpkg::attach "<BOOL>";
 dpkg::use-pty "<BOOL>";
 dpkg::lock::timeout "<INT>";
 
