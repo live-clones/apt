@@ -29,6 +29,7 @@
    and the syntax of configuration files and commandline options!
 */
 
+verbose "<INT>"; // Render verbose download information
 quiet "<INT>" {
   NoUpdate "<BOOL>"; // never update progress information - included in -q=1
   NoProgress "<BOOL>"; // disables the 0% → 100% progress on cache generation and stuff
