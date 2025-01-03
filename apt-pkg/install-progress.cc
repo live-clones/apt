@@ -350,19 +350,13 @@ PackageManagerFancy::GetTextProgressStr(float Percent, int OutputSize)
    if (unlikely(OutputSize < 3))
       return output;
 
-   int const BarSize = OutputSize - 2; // bar without the leading "[" and trailing "]"
+   int const BarSize = OutputSize; // bar without the leading "[" and trailing "]"
    int const BarDone = std::max(0, std::min(BarSize, static_cast<int>(std::floor(Percent * BarSize))));
-   double dummy;
-   double const BarDoneFractional = std::modf(Percent * BarSize, &dummy);
-   const char *const BarDoneFractionalChar = (const char *[]){
-      " ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"}[static_cast<int>(std::floor(BarDoneFractional * 8))];
-   output.append("[");
    for (int i = 0; i < BarDone; i++)
-      output.append(Unicode ? "█" : "#");
-   if (BarDone + 1 <= BarSize)
-      output.append(Unicode ? BarDoneFractionalChar : ".");
-   std::fill_n(std::back_inserter(output), BarSize - BarDone - 1, Unicode ? ' ' : '.');
-   output.append("]");
+      output.append(Unicode ? "∎" : "#");
+   for (int i = BarDone; i < BarSize; i++)
+      output.append(Unicode ? "—" : "-");
+
    return output;
 }
 
