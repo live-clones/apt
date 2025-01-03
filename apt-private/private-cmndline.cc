@@ -416,6 +416,7 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
    // general options
    addArg(0, "color", "APT::Color", 0);
    addArg('q', "quiet", "quiet", CommandLine::IntLevel);
+   addArg(0, "verbose", "verbose", CommandLine::IntLevel);
    addArg(0, "audit", "APT::Audit", 0);
    addArg('q', "silent", "quiet", CommandLine::IntLevel);
    addArg('c', "config-file", 0, CommandLine::ConfigFile);

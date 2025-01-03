@@ -68,10 +68,13 @@ void AcqTextStatus::AssignItemID(pkgAcquire::ItemDesc &Itm)		/*{{{*/
 /* */
 void AcqTextStatus::IMSHit(pkgAcquire::ItemDesc &Itm)
 {
+   AssignItemID(Itm);
+
    if (Quiet > 1)
       return;
+   if (_config->FindI("APT::Output-Version") >= 30 && not _config->FindB("verbose", false))
+      return;
 
-   AssignItemID(Itm);
    clearLastLine();
 
    // TRANSLATOR: Very short word to be displayed before unchanged files in 'apt-get update'
@@ -93,6 +96,9 @@ void AcqTextStatus::Fetch(pkgAcquire::ItemDesc &Itm)
    if (Quiet > 1)
       return;
 
+   // We don't show items starting fetching in 3.0
+   if (_config->FindI("APT::Output-Version") >= 30 && not _config->FindB("verbose", false))
+      return;
    clearLastLine();
 
    // TRANSLATOR: Very short word to be displayed for files processed in 'apt-get update'
