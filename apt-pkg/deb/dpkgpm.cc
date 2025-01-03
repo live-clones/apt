@@ -65,6 +65,10 @@ extern char **environ;
 
 using namespace std;
 
+// d->master is set to DPKG_DETACHED if output is to be redirected to a terminal
+// file and stdin is to be a closed pipe.
+constexpr int DPKG_DETACHED = -2;
+
 APT_PURE static string AptHistoryRequestingUser()			/*{{{*/
 {
    const char* EnvKeys[]{"SUDO_UID", "PKEXEC_UID", "PACKAGEKIT_CALLER_UID"};
@@ -1035,6 +1039,7 @@ bool pkgDPkgPM::OpenLog()
       if (chmod(logfile_name.c_str(), 0640) != 0)
 	 _error->WarningE("OpenLog", "chmod 0640 of file %s failed", logfile_name.c_str());
       fprintf(d->term_out, "\nLog started: %s\n", timestr);
+      fflush(d->term_out);
    }
 
    // write your history
@@ -1220,6 +1225,14 @@ void pkgDPkgPM::BuildPackagesProgressMap()
                                                                         /*}}}*/
 void pkgDPkgPM::StartPtyMagic()						/*{{{*/
 {
+   if (_config->FindB("Dpkg::Attach", true) == false)
+   {
+      d->master = DPKG_DETACHED;
+      if (d->slave != NULL)
+	 free(d->slave);
+      d->slave = NULL;
+      return;
+   }
    if (_config->FindB("Dpkg::Use-Pty", true) == false)
    {
       d->master = -1;
@@ -1319,6 +1332,18 @@ void pkgDPkgPM::StartPtyMagic()						/*{{{*/
 									/*}}}*/
 void pkgDPkgPM::SetupSlavePtyMagic()					/*{{{*/
 {
+   if (d->master == DPKG_DETACHED) {
+      // Make stdin EOF
+      int nullpipe[2] = {-1, -1};
+      if (pipe(nullpipe))
+	 abort();
+      close(nullpipe[1]);
+      dup2(nullpipe[0], STDIN_FILENO);
+      close(nullpipe[0]);
+      dup2(fileno(d->term_out), STDOUT_FILENO);
+      dup2(fileno(d->term_out), STDERR_FILENO);
+      return;
+   }
    if(d->master == -1 || d->slave == NULL)
       return;
 
