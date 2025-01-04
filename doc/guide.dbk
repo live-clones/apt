@@ -224,6 +224,7 @@ use packages on your CD-ROM before downloading from the Internet.
  For example:
       file:/mnt/debian,
       ftp://ftp.example.org/debian,
+      https://deb.debian.org/debian,
       http://deb.debian.org/debian,
 
 
