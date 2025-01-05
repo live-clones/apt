@@ -14,12 +14,13 @@
 #include <apt-pkg/debfile.h>
 #include <apt-pkg/hashes.h>
 
-#include <db.h>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <map>
 #include <string>
+#include <sqlite3.h>
 
 #include "contents.h"
 #include "sources.h"
@@ -32,54 +33,12 @@ class CacheDB
    protected:
       
    // Database state/access
-   DBT Key;
-   DBT Data;
-   std::string TmpKey;
-   DB *Dbp;
+   sqlite3 *DB;
+   sqlite3_stmt *DBSelectStmt;
    bool DBLoaded;
    bool ReadOnly;
-   std::string DBFile;
 
-   // Generate a key for the DB of a given type
-   void _InitQuery(const char *Type)
-   {
-      memset(&Key,0,sizeof(Key));
-      memset(&Data,0,sizeof(Data));
-      TmpKey.assign(FileName).append(":").append(Type);
-      Key.data = TmpKey.data();
-      Key.size = TmpKey.size();
-   }
-   
-   void InitQueryStats() {
-      _InitQuery("st");
-   }
-   void InitQuerySource() {
-      _InitQuery("cs");
-   }
-   void InitQueryControl() {
-      _InitQuery("cl");
-   }
-   void InitQueryContent() {
-      _InitQuery("cn");
-   }
 
-   inline bool Get() 
-   {
-      return Dbp->get(Dbp,0,&Key,&Data,0) == 0;
-   };
-   inline bool Put(const void *In,unsigned long const &Length) 
-   {
-      if (ReadOnly == true)
-	 return true;
-      Data.size = Length;
-      Data.data = (void *)In;
-      if (DBLoaded == true && (errno = Dbp->put(Dbp,0,&Key,&Data,0)) != 0)
-      {
-	 DBLoaded = false;
-	 return false;
-      }
-      return true;
-   }
    bool OpenFile();
    void CloseFile();
 
@@ -87,9 +46,8 @@ class CacheDB
    void CloseDebFile();
 
    // GetCurStat needs some compat code, see lp #1274466)
-   bool GetCurStatCompatOldFormat();
-   bool GetCurStatCompatNewFormat();
    bool GetCurStat();
+   bool PutCurStat();
 
    bool GetFileStat(bool const &doStat = false);
    bool LoadControl();
@@ -97,43 +55,45 @@ class CacheDB
    bool LoadSource();
    bool GetHashes(bool const GenOnly, unsigned int const DoHashes);
 
-   // Stat info stored in the DB, Fixed types since it is written to disk.
-   enum FlagList {FlControl = (1<<0),FlMD5=(1<<1),FlContents=(1<<2),
-                  FlSize=(1<<3), FlSHA1=(1<<4), FlSHA256=(1<<5),
-                  FlSHA512=(1<<6), FlSource=(1<<7)
-   };
-
-   // the on-disk format changed (FileSize increased to 64bit) in 
-   // commit 650faab0 which will lead to corruption with old caches
-   struct StatStoreOldFormat
-   {
-      uint32_t Flags;
-      uint32_t mtime;
-      uint32_t FileSize;
-      uint8_t  MD5[16];
-      uint8_t  SHA1[20];
-      uint8_t  SHA256[32];
-   } CurStatOldFormat;
-
-   // WARNING: this struct is read/written to the DB so do not change the
-   //          layout of the fields (see lp #1274466), only append to it
-   struct StatStore
-   {
-      uint32_t Flags;
-      uint32_t mtime;          
-      uint64_t FileSize;
-      uint8_t  MD5[16];
-      uint8_t  SHA1[20];
-      uint8_t  SHA256[32];
-      uint8_t  SHA512[64];
-   } CurStat;
-   struct StatStore OldStat;
-   
    // 'set' state
    std::string FileName;
    FileFd *Fd;
    debDebFile *DebFile;
-   
+
+   bool CurrFileChanged;
+   bool CurrFileLoaded;
+   long CurrFileMtime;
+   long CurrFileSize;
+   long PrevFileMtime;
+   std::map<std::string, std::string> CurrFileFields;
+
+   inline void FieldInitText(sqlite3_stmt *stmt, int colindex, const char *fieldname)
+   {
+      const unsigned char *value = sqlite3_column_text(stmt, colindex);
+      if(value)
+         CurrFileFields[fieldname]= std::string(reinterpret_cast<char const*>(value));
+   }
+
+   inline void FieldInitBlob(sqlite3_stmt *stmt, int colindex, const char *fieldname)
+   {
+      const void *value = sqlite3_column_blob(stmt, colindex);
+      int size = sqlite3_column_bytes(stmt, colindex);
+      if(value)
+         CurrFileFields[fieldname]= std::string(reinterpret_cast<char const*>(value), size);
+   }
+
+   inline void FieldBindText(sqlite3_stmt *stmt, int colindex, const char *fieldname)
+   {
+      if (CurrFileFields.count(fieldname))
+      {
+         std::string value = CurrFileFields[fieldname];
+         sqlite3_bind_text(stmt, colindex, value.c_str(), value.length(), SQLITE_TRANSIENT);
+      } else
+      {
+         sqlite3_bind_null(stmt, colindex);
+      }
+   }
+
    public:
 
    // Data collection helpers
@@ -169,10 +129,11 @@ class CacheDB
    } Stats;
    
    bool ReadyDB(std::string const &DB = "");
-   inline bool DBFailed() {return Dbp != 0 && DBLoaded == false;};
+   bool CloseDB();
+   inline bool DBFailed() {return DB != NULL && DBLoaded == false;};
    inline bool Loaded() {return DBLoaded == true;};
    
-   inline unsigned long long GetFileSize(void) {return CurStat.FileSize;}
+   inline unsigned long long GetFileSize(void) {return CurrFileSize;}
    
    bool SetFile(std::string const &FileName,struct stat St,FileFd *Fd);
 
