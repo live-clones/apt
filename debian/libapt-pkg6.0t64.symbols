@@ -1167,6 +1167,7 @@ libapt-pkg.so.6.0 libapt-pkg6.0t64 #MINVER#
  (c++)"pkgSourceList::AddVolatileFile(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@APTPKG_6.0" 1.1~exp15
  (c++)"pkgVersionMatch::VersionMatches(pkgCache::VerIterator)@APTPKG_6.0" 1.1~exp9
  (c++)"GetSrvRecords(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int, std::vector<SrvRec, std::allocator<SrvRec> >&)@APTPKG_6.0" 1.1~exp15
+ (c++)"GetSrvRecords(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::vector<SrvRec, std::allocator<SrvRec> >&)@APTPKG_6.0" 2.9.22~
  (c++)"GetSrvRecords(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::vector<SrvRec, std::allocator<SrvRec> >&)@APTPKG_6.0" 1.1~exp15
  (c++)"PopFromSrvRecs(std::vector<SrvRec, std::allocator<SrvRec> >&)@APTPKG_6.0" 1.1~exp15
  (c++)"SrvRec::operator==(SrvRec const&) const@APTPKG_6.0" 1.1~exp15
