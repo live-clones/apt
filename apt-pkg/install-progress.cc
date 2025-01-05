@@ -7,6 +7,7 @@
 #include <apt-pkg/strutl.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <csignal>
 #include <cstdio>
@@ -223,6 +224,7 @@ bool PackageManagerProgressDeb822Fd::StatusChanged(std::string PackageName,
 struct PackageManagerFancy::Private
 {
    time_t started{0};
+   std::string HumanReadableAction{};
 };
 
 PackageManagerFancy::PackageManagerFancy()
@@ -266,6 +268,7 @@ void PackageManagerFancy::CheckSIGWINCH()
 void PackageManagerFancy::Pulse()
 {
    CheckSIGWINCH();
+   DrawStatusLine();
 }
 
 PackageManagerFancy::TermSize
@@ -302,8 +305,8 @@ void PackageManagerFancy::SetupTerminalScrollArea(int nr_rows)
      std::cout << "\0337";
          
      // set scroll region (this will place the cursor in the top left)
-     std::cout << "\033[0;" << std::to_string(nr_rows - 1) << "r";
-            
+     std::cout << "\033[0;" << std::to_string(nr_rows - 2) << "r";
+
      // restore cursor but ensure its inside the scrolling area
      std::cout << "\0338";
      static const char *move_cursor_up = "\033[1A";
@@ -360,7 +363,7 @@ PackageManagerFancy::GetTextProgressStr(float Percent, int OutputSize)
    if (unlikely(OutputSize < 3))
       return output;
 
-   int const BarSize = OutputSize; // bar without the leading "[" and trailing "]"
+   int const BarSize = std::min(100, OutputSize); // bar without the leading "[" and trailing "]"
    int const BarDone = std::max(0, std::min(BarSize, static_cast<int>(std::floor(Percent * BarSize))));
    for (int i = 0; i < BarDone; i++)
       output.append(Unicode ? "∎" : "#");
@@ -378,6 +381,8 @@ bool PackageManagerFancy::StatusChanged(std::string PackageName,
    if (!PackageManager::StatusChanged(PackageName, StepsDone, TotalSteps,
           HumanReadableAction))
       return false;
+
+   d->HumanReadableAction = HumanReadableAction;
 
    return DrawStatusLine();
 }
@@ -401,9 +406,9 @@ bool PackageManagerFancy::DrawStatusLine()
    static std::string restore_fg = "\033[39m";
 
    std::cout << save_cursor
-      // move cursor position to last row
-             << "\033[" << std::to_string(size.rows) << ";0f"
-             << progress_str;
+	     // move cursor position to last row
+	     << "\033[" << std::to_string(size.rows - 1) << ";0f"
+	     << progress_str;
    std::flush(std::cout);
 
    auto elapsed = time(nullptr) - d->started;
@@ -421,6 +426,17 @@ bool PackageManagerFancy::DrawStatusLine()
                 << elapsedStr;
       std::flush(std::cout);
    }
+   std::cout << "\n";
+   // Clear line
+   for (int i = 0; i < size.columns; ++i)
+      std::cout << " ";
+   std::array<const char *, 4> spinners = {"⠲", "⠴", "⠦", "⠖"};
+   static int spinner;
+
+   spinner = (spinner + 1) % spinners.size();
+
+   std::cout << "\r";
+   std::cout << "└─ " << d->HumanReadableAction << " " << spinners[spinner] << std::flush;
 
    // restore
    std::cout << restore_cursor;
