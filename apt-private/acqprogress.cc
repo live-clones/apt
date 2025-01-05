@@ -15,6 +15,7 @@
 #include <apt-pkg/aptconfiguration.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/error.h>
+#include <apt-pkg/fileutl.h>
 #include <apt-pkg/install-progress.h>
 #include <apt-pkg/strutl.h>
 
@@ -236,6 +237,9 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
       sigaddset(&Sigs, SIGWINCH);
       sigprocmask(SIG_BLOCK, &Sigs, &OldSigs);
 
+      static const char *clear_screen_below_cursor = "\033[J";
+      out << clear_screen_below_cursor;
+
       std::string prefix;
       if (CurrentCPS != 0)
 	 strprintf(prefix, "%2.0f%% Downloading (%4sB/s)...", std::min(Percent, 99.0), SizeToStr(CurrentCPS).c_str());
@@ -266,6 +270,42 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
 	 out << '\r';
       LastLineLength = Line.length();
       out << Line << std::flush;
+      int lines_printed = 0;
+
+      for (pkgAcquire::Worker *I = Owner->WorkersBegin(); I != 0;
+	   I = Owner->WorkerStep(I))
+      {
+	 if (I->CurrentItem == 0)
+	 {
+	    if (not I->Status.empty())
+	    {
+	       ioprintf(out, "\n├─     %s", I->Status.c_str());
+	       lines_printed++;
+	    }
+	    continue;
+	 }
+	 URI uri(I->CurrentItem->Owner->DescURI());
+	 if (I->CurrentItem->TotalSize > 0)
+	 {
+
+	    ioprintf(out, "\n├─ %2.0f%% %s: Downloading from %s (%sB/%sB)", (I->CurrentItem->CurrentSize * 100.0) / I->CurrentItem->TotalSize, I->CurrentItem->ShortDesc.c_str(), uri.Host.substr(0, 10).c_str(), SizeToStr(I->CurrentItem->CurrentSize).c_str(), SizeToStr(I->CurrentItem->TotalSize).c_str());
+	    lines_printed++;
+	 }
+	 else
+	 {
+
+	    ioprintf(out, "\n├─     %s (%sB)", I->CurrentItem->ShortDesc.c_str(), SizeToStr(I->CurrentItem->CurrentSize).c_str());
+	    lines_printed++;
+	 }
+      }
+      if (lines_printed)
+	 ioprintf(out, "\r└");
+      static const char *move_cursor_up = "\033[1A";
+      for (int i = 0; i < lines_printed; ++i)
+	 out << move_cursor_up;
+      // Move cursor to the top right
+      out << "\r" << "\033[" << ScreenWidth << "C";
+      std::flush(out);
       return true;
    }
 
