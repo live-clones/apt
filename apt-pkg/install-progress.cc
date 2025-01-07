@@ -268,7 +268,6 @@ void PackageManagerFancy::CheckSIGWINCH()
 void PackageManagerFancy::Pulse()
 {
    CheckSIGWINCH();
-   DrawStatusLine();
 }
 
 PackageManagerFancy::TermSize
