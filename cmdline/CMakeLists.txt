@@ -37,6 +37,8 @@ set_target_properties(apt-internal-planner
                                  RUNTIME_OUTPUT_NAME apt)
 
 # Install the executables
+install(PROGRAMS apt-debconf-communicate
+        DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/apt)
 install(TARGETS apt apt-cache apt-get apt-config apt-cdrom apt-mark apt-sortpkgs
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

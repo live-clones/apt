@@ -37,6 +37,7 @@
 #include <pwd.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -2031,10 +2032,31 @@ bool pkgDPkgPM::Go(APT::Progress::PackageManager *progress)
       // ignore SIGHUP as well (debian #463030)
       sighandler_t old_SIGHUP = signal(SIGHUP,SIG_IGN);
 
+      int debconfSockets[2] = {-1, -1};
+      std::string_view frontend = getenv("DEBIAN_FRONTEND") ?: "";
+      if (not _config->FindB("Dpkg::Attach", true) && frontend != "passthrough")
+      {
+	 socketpair(PF_LOCAL, SOCK_STREAM, 0, debconfSockets);
+
+	 // spawn debconf helper
+	 pid_t debconfChild = ExecFork({debconfSockets[0]});
+	 if (debconfChild == 0)
+	 {
+	    dup2(debconfSockets[0], STDIN_FILENO);
+	    dup2(debconfSockets[0], STDOUT_FILENO);
+	    setenv("DEBCONF_DB_REPLACE", "configdb", 1);
+	    setenv("DEBCONF_DB_OVERRIDE", "Pipe{infd:none outfd:none}", 1);
+	    char *argv[] = {(char *)LIBEXEC_DIR "/apt-debconf-communicate", nullptr};
+	    execv(argv[0], argv);
+	    _exit(1);
+	 }
+      }
+
       // now run dpkg
       d->progress->StartDpkg();
       std::set<int> KeepFDs;
       KeepFDs.insert(fd[1]);
+      KeepFDs.insert(debconfSockets[1]);
       MergeKeepFdsFromConfiguration(KeepFDs);
       pid_t Child = ExecFork(KeepFDs);
       if (Child == 0)
@@ -2042,6 +2064,12 @@ bool pkgDPkgPM::Go(APT::Progress::PackageManager *progress)
 	 // This is the child
 	 SetupSlavePtyMagic();
 	 close(fd[0]); // close the read end of the pipe
+	 if (debconfSockets[1] != -1)
+	 {
+	    setenv("DEBIAN_FRONTEND", "passthrough", 1);
+	    setenv("DEBCONF_READFD", std::to_string(debconfSockets[1]).c_str(), 0);
+	    setenv("DEBCONF_WRITEFD", std::to_string(debconfSockets[1]).c_str(), 0);
+	 }
 
 	 debSystem::DpkgChrootDirectory();
 
