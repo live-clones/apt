@@ -55,6 +55,23 @@ bool GetSrvRecords(std::string host, int port, std::vector<SrvRec> &Result)
       return false;
 
    strprintf(target, "_%s._tcp.%s", s_ent->s_name, host.c_str());
+
+   return GetSrvRecords(target, Result);
+}
+
+bool GetSrvRecords(std::string host, std::string service, std::vector<SrvRec> &Result)
+{
+   // try SRV only for hostnames, not for IP addresses
+   {
+      struct in_addr addr4;
+      struct in6_addr addr6;
+      if (inet_pton(AF_INET, host.c_str(), &addr4) == 1 ||
+	  inet_pton(AF_INET6, host.c_str(), &addr6) == 1)
+	 return true;
+   }
+
+   std::string target;
+   strprintf(target, "_%s._tcp.%s", service.c_str(), host.c_str());
    return GetSrvRecords(target, Result);
 }
 
