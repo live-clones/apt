@@ -1,0 +1,32 @@
+# Debian apt-config(8) completion                             -*- shell-script -*-
+
+# Complete APT’s configuration options after the `-o` and `--option`
+# parameters.
+#
+# You need to call _init_completion() with `-n :` to be able to use this
+# function.
+#
+# Options:
+#   -e  Append an `=` to each suggested configuration option
+_comp_cmd_apt_config_options()
+{
+    local append_equals
+    local opt OPTIND=1
+    while getopts 'e' opt "$@"; do
+        case $opt in
+            e) append_equals='-S=' ;;
+        esac
+    done
+
+    compopt -o nospace
+
+    if [[ $cur == *[^:]: ]]; then
+        COMPREPLY=( : )
+    else
+        COMPREPLY=( $(compgen ${append_equals-} -W "$(apt-config --empty \
+            --format '%f%n' dump)" -- "$cur") )
+        __ltrim_colon_completions "$cur"
+    fi
+}
+
+# ex: ts=4 sw=4 et filetype=sh
