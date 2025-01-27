@@ -47,7 +47,8 @@ bool MaybeAddAuth(FileFd &NetRCFile, URI &Uri)
       MACHINE,
       GOOD_MACHINE,
       LOGIN,
-      PASSWORD
+      PASSWORD,
+      BEARER,
    } active_token = NO;
    std::string line;
    while (NetRCFile.Eof() == false || line.empty() == false)
@@ -124,10 +125,12 @@ bool MaybeAddAuth(FileFd &NetRCFile, URI &Uri)
 	    active_token = LOGIN;
 	 else if (token == "password")
 	    active_token = PASSWORD;
+	 else if (token == "bearer")
+	    active_token = BEARER;
 	 else if (token == "machine")
 	 {
 	    if (Debug)
-	       std::clog << "MaybeAddAuth: Found matching host adding '" << Uri.User << "' and '" << Uri.Password << "' for "
+	       std::clog << "MaybeAddAuth: Found matching host adding '" << Uri.User << "' and '" << Uri.Password << "' and Bearer '" << Uri.Bearer << "' for "
 			 << (std::string)Uri << " from " << NetRCFile.Name() << std::endl;
 	    return true;
 	 }
@@ -138,6 +141,10 @@ bool MaybeAddAuth(FileFd &NetRCFile, URI &Uri)
 	 break;
       case PASSWORD:
 	 std::swap(Uri.Password, token);
+	 active_token = GOOD_MACHINE;
+	 break;
+      case BEARER:
+	 std::swap(Uri.Bearer, token);
 	 active_token = GOOD_MACHINE;
 	 break;
       }
