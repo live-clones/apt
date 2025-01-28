@@ -181,13 +181,13 @@ APT_PUBLIC bool RunScripts(const char *Cnf);
 APT_PUBLIC bool CopyFile(FileFd &From,FileFd &To);
 APT_PUBLIC bool RemoveFile(char const * const Function, std::string const &FileName);
 APT_PUBLIC bool RemoveFileAt(char const * const Function, int const dirfd, std::string const &FileName);
-APT_PUBLIC int GetLock(std::string File,bool Errors = true);
-APT_PUBLIC bool FileExists(std::string File);
-APT_PUBLIC bool RealFileExists(std::string File);
+APT_PUBLIC int GetLock(std::string const &File,bool Errors = true);
+APT_PUBLIC bool FileExists(std::string const &File);
+APT_PUBLIC bool RealFileExists(std::string const &File);
 APT_PUBLIC bool DirectoryExists(std::string const &Path);
 APT_PUBLIC bool CreateDirectory(std::string const &Parent, std::string const &Path);
 APT_PUBLIC time_t GetModificationTime(std::string const &Path);
-APT_PUBLIC bool Rename(std::string From, std::string To);
+APT_PUBLIC bool Rename(std::string const &From, std::string const &To);
 
 APT_PUBLIC std::string GetTempDir();
 APT_PUBLIC std::string GetTempDir(std::string const &User);
@@ -252,10 +252,10 @@ APT_PUBLIC bool ChangeOwnerAndPermissionOfFile(char const * const requester, cha
 APT_PUBLIC bool DropPrivileges();
 
 // File string manipulators
-APT_PUBLIC std::string flNotDir(std::string File);
-APT_PUBLIC std::string flNotFile(std::string File);
+APT_PUBLIC std::string_view flNotDir(std::string_view File);
+APT_PUBLIC std::string flNotFile(std::string const &File); // XXX: this should take a string_view, but right now that causes more type problems than it solves
 APT_PUBLIC std::string flNoLink(std::string File);
-APT_PUBLIC std::string flExtension(std::string File);
+APT_PUBLIC std::string_view flExtension(std::string_view File);
 APT_PUBLIC std::string flCombine(std::string Dir,std::string File);
 
 /** \brief Takes a file path and returns the absolute path
