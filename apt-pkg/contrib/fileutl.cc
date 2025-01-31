@@ -247,7 +247,7 @@ static std::string GetProcessName(int pid)
    }
    return "";
 }
-int GetLock(string File,bool Errors)
+int GetLock(string const &File,bool Errors)
 {
    // GetLock() is used in aptitude on directories with public-write access
    // Use O_NOFOLLOW here to prevent symlink traversal attacks
@@ -330,7 +330,7 @@ int GetLock(string File,bool Errors)
 // FileExists - Check if a file exists					/*{{{*/
 // ---------------------------------------------------------------------
 /* Beware: Directories are also files! */
-bool FileExists(string File)
+bool FileExists(string const &File)
 {
    struct stat Buf;
    if (stat(File.c_str(),&Buf) != 0)
@@ -341,7 +341,7 @@ bool FileExists(string File)
 // RealFileExists - Check if a file exists and if it is really a file	/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-bool RealFileExists(string File)
+bool RealFileExists(string const &File)
 {
    struct stat Buf;
    if (stat(File.c_str(),&Buf) != 0)
@@ -485,7 +485,7 @@ std::vector<string> GetListOfFilesInDir(string const &Dir, std::vector<string> c
       {
 	 if (RealFileExists(File) == false)
 	 {
-	    string d_ext = flExtension(Ent->d_name);
+	    auto d_ext = flExtension(Ent->d_name);
 	    // do not show ignoration warnings for directories
 	    if ((
 #ifdef _DIRENT_HAVE_D_TYPE
@@ -505,7 +505,7 @@ std::vector<string> GetListOfFilesInDir(string const &Dir, std::vector<string> c
       // extensions given -> "" extension allows no extension
       if (Ext.empty() == false)
       {
-	 string d_ext = flExtension(Ent->d_name);
+	 auto d_ext = flExtension(Ent->d_name);
 	 if (d_ext == Ent->d_name) // no extension
 	 {
 	    if (std::find(Ext.begin(), Ext.end(), "") == Ext.end())
@@ -670,19 +670,19 @@ time_t GetModificationTime(string const &Path)
 // flNotDir - Strip the directory from the filename			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-string flNotDir(string File)
+string_view flNotDir(string_view File)
 {
-   string::size_type Res = File.rfind('/');
-   if (Res == string::npos)
+   string_view::size_type Res = File.rfind('/');
+   if (Res == string_view::npos)
       return File;
    Res++;
-   return string(File,Res,Res - File.length());
+   return File.substr(Res,Res - File.length());
 }
 									/*}}}*/
 // flNotFile - Strip the file from the directory name			/*{{{*/
 // ---------------------------------------------------------------------
 /* Result ends in a / */
-string flNotFile(string File)
+string flNotFile(string const &File)
 {
    string::size_type Res = File.rfind('/');
    if (Res == string::npos)
@@ -694,13 +694,13 @@ string flNotFile(string File)
 // flExtension - Return the extension for the file			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-string flExtension(string File)
+string_view flExtension(string_view File)
 {
-   string::size_type Res = File.rfind('.');
-   if (Res == string::npos)
+   string_view::size_type Res = File.rfind('.');
+   if (Res == string_view::npos)
       return File;
-   Res++;
-   return string(File,Res);
+   File.remove_prefix(Res + 1);
+   return File;
 }
 									/*}}}*/
 // flNoLink - If file is a symlink then deref it			/*{{{*/
@@ -773,9 +773,9 @@ string flAbsPath(string File)
       _error->Errno("realpath", "flAbsPath on %s failed", File.c_str());
       return "";
    }
-   std::string AbsPath(p);
+   File = p;
    free(p);
-   return AbsPath;
+   return File;
 }
 									/*}}}*/
 std::string flNormalize(std::string file)				/*{{{*/
@@ -1010,7 +1010,7 @@ bool StartsWithGPGClearTextSignature(string const &FileName)
    }
 
    _strrstrip(lineptr);
-   static const char* SIGMSG = "-----BEGIN PGP SIGNED MESSAGE-----";
+   const char* SIGMSG = "-----BEGIN PGP SIGNED MESSAGE-----";
    if (result == -1 || strcmp(lineptr, SIGMSG) != 0)
       return false;
    return true;
@@ -3182,7 +3182,7 @@ FileFd* GetTempFile(std::string const &Prefix, bool ImmediateUnlink, FileFd * co
    return Fd;
 }
 									/*}}}*/
-bool Rename(std::string From, std::string To)				/*{{{*/
+bool Rename(std::string const &From, std::string const &To)				/*{{{*/
 {
    if (rename(From.c_str(),To.c_str()) != 0)
    {

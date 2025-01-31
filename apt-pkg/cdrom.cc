@@ -129,7 +129,7 @@ bool pkgCdrom::FindPackages(string CD,
 	 for (std::vector<APT::Configuration::Compressor>::const_iterator c = compressor.begin();
 	      c != compressor.end(); ++c)
 	 {
-	    string fileext = flExtension(file);
+	    string fileext{flExtension(file)};
 	    if (file == fileext)
 	       fileext.clear();
 	    else if (fileext.empty() == false)
@@ -490,7 +490,7 @@ bool pkgCdrom::WriteSourceList(string Name,vector<string> &List,bool Source)
    while (F.ReadLine(Buffer))
    {
       ++CurLine;
-      auto const Cleaned = APT::String::Strip(SubstVar(Buffer, "\t", "        "));
+      std::string const Cleaned{APT::String::Strip(SubstVar(Buffer, "\t", "        "))};
 
       // Comment or blank
       if (Cleaned.empty() || Cleaned[0] == '#')

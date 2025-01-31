@@ -600,7 +600,7 @@ void pkgDPkgPM::ProcessDpkgStatusLine(char *line)
 
    // build the (prefix, pkgname, action) tuple, position of this
    // is different for "processing" or "status" messages
-   std::string prefix = APT::String::Strip(list[0]);
+   auto prefix = APT::String::Strip(list[0]);
    std::string pkgname;
    std::string action;
 
@@ -1876,7 +1876,7 @@ bool pkgDPkgPM::Go(APT::Progress::PackageManager *progress)
 	    {
 	       if (I->File[0] != '/')
 		  return _error->Error("Internal Error, Pathname to install is not absolute '%s'",I->File.c_str());
-	       auto file = flNotDir(I->File);
+	       std::string file{flNotDir(I->File)};
 	       if (flExtension(file) != "deb")
 		  file.append(".deb");
 	       std::string linkpath;

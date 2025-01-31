@@ -147,7 +147,7 @@ static void addFileHeaders(std::list<std::string> &headers, FileFd &data)/*{{{*/
        contentTypeSet(headers) == false)
    {
       std::string const name = data.Name();
-      std::string ext = flExtension(name);
+      std::string ext{flExtension(name)};
       if (name.empty() == false && ext.empty() == false && name != ext)
       {
 	 std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
@@ -755,7 +755,7 @@ static void * handleClient(int const client, size_t const id)		/*{{{*/
 	       }
 	       if (regexec(pattern, filename.c_str(), 0, 0, 0) == 0)
 	       {
-		  filename = _config->Find("aptwebserver::overwrite::" + I->Tag + "::filename", flNotDir(filename));
+		  filename = _config->Find("aptwebserver::overwrite::" + I->Tag + "::filename", std::string{flNotDir(filename)});
 		  if (filename.find("/") == std::string::npos)
 		  {
 		     auto directory = _config->Find("aptwebserver::overwrite::" + I->Tag + "::directory", flNotFile(filename));
