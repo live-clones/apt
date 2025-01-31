@@ -125,7 +125,7 @@ static bool Modernize(std::string const &filename) /*{{{*/
    auto isMain = filename == _config->FindFile("Dir::Etc::SourceList");
    auto simulate = _config->FindB("APT::Get::Simulate");
 
-   std::cerr << "Modernizing " << filename << "...\n";
+   ioprintf(std::cerr, _("Modernizing %s...\n"), filename.c_str());
    pkgSourceList list;
    if (not list.Read(filename))
       return false;
@@ -239,12 +239,12 @@ static bool Modernize(std::string const &filename) /*{{{*/
       if (auto it = streams.find(outname); it == streams.end())
       {
 	 if (not simulate)
-	    std::cerr << "- Writing " << outname << "\n";
+	    ioprintf(std::cerr, _("- Writing %s\n"), filename.c_str());
 	 streams[outname].open(simulate ? "/dev/stdout" : outname, std::ios::app);
       }
       auto &out = streams[outname];
       if (not out)
-	 _error->Warning("Cannot open %s for writing.", outname.c_str());
+	 _error->Warning(_("Cannot open %s for writing."), outname.c_str());
       if (e.merged)
 	 continue;
 
@@ -266,11 +266,11 @@ static bool Modernize(std::string const &filename) /*{{{*/
       for (auto const &[key, value] : e.options)
 	 out << key << ": " << value << "\n";
       if (e.signedBy.empty())
-	 _error->Warning("Could not determine Signed-By for URIs: %s, Suites: %s", APT::String::Join(e.uris, " ").c_str(), APT::String::Join(e.suites, " ").c_str());
+	 _error->Warning(_("Could not determine Signed-By for URIs: %s, Suites: %s"), APT::String::Join(e.uris, " ").c_str(), APT::String::Join(e.suites, " ").c_str());
    }
 
    if (not simulate && rename(filename.c_str(), (filename + ".bak").c_str()) != 0)
-      _error->WarningE("rename", "Could not rename %s", filename.c_str());
+      _error->WarningE("rename", _("Could not rename %s"), filename.c_str());
 
    _error->DumpErrors();
    std::cerr << "\n";
@@ -289,33 +289,35 @@ bool ModernizeSources(CommandLine &) /*{{{*/
 	 files.push_back(I);
    if (files.empty())
    {
-      std::cout << "All sources are modern.\n";
+      std::cout << _("All sources are modern.\n");
       return true;
    }
 
    // TRANSLATOR: "No" answer printed for a yes/no question if --assume-no is set
    auto no = _("N");
 
-   std::cout << "The following files need modernizing:\n";
+   std::cout << P_("The following file need modernizing:\n",
+                   "The following files need modernizing:\n", files.size());
    for (auto const &I : files)
       std::cout << "  - " << I << "\n";
-   std::cout << "\n"
-             << "Modernizing will replace .list files with the new .sources format,\n"
-             << "add Signed-By values where they can be determined automatically,\n"
-             << "and save the old files into .list.bak files.\n"
-             << "\n"
-             << "This command supports the 'signed-by' and 'trusted' options. If you\n"
-             << "have specified other options inside [] brackets, please transfer them\n"
-             << "manually to the output files; see sources.list(5) for a mapping.\n"
-             << "\n"
-             << "For a simulation, respond " << no << " in the following prompt.\n";
+   std::cout << "\n";
+   ioprintf(std::cout,
+            _( "Modernizing will replace .list files with the new .sources format,\n"
+               "add Signed-By values where they can be determined automatically,\n"
+               "and save the old files into .list.bak files.\n"
+               "\n"
+               "This command supports the 'signed-by' and 'trusted' options. If you\n"
+               "have specified other options inside [] brackets, please transfer them\n"
+               "manually to the output files; see sources.list(5) for a mapping.\n"
+               "\n"
+               "For a simulation, respond \"%s\" in the following prompt.\n"), no);
 
    std::string prompt;
-   strprintf(prompt, _("Rewrite %zu sources?"), files.size());
+   strprintf(prompt, P_("Rewrite %zu source?", "Rewrite %zu sources", files.size()), files.size());
    if (YnPrompt(prompt.c_str(), true) == false)
    {
       _config->Set("APT::Get::Simulate", true);
-      std::cout << "Simulating only..." << std::endl;
+      std::cout << _("Simulating only...") << std::endl;
       // Make it visible.
       usleep(100 * 1000);
    }
