@@ -1141,19 +1141,15 @@ bool DoInstall(CommandLine &CmdL)
 
    RunJsonHook("AptCli::Hooks::Install", "org.debian.apt.hooks.install.pre-prompt", CmdL.FileList, Cache);
 
-   bool result;
    // See if we need to prompt
    // FIXME: check if really the packages in the set are going to be installed
-   if (Cache->InstCount() == verset[MOD_INSTALL].size() && Cache->DelCount() == 0)
-      result = InstallPackages(Cache, HeldBackPackages, false, false, true, "AptCli::Hooks::Install", CmdL);
-   else
-      result = InstallPackages(Cache, HeldBackPackages, false, true, true, "AptCli::Hooks::Install", CmdL);
+   bool ask = Cache->InstCount() != verset[MOD_INSTALL].size() || Cache->DelCount() != 0;
+   bool result = InstallPackages(Cache, HeldBackPackages, false, ask, true, "AptCli::Hooks::Install", CmdL);
 
    if (result)
-      result = RunJsonHook("AptCli::Hooks::Install", "org.debian.apt.hooks.install.post", CmdL.FileList, Cache);
-   else
-      /* not a result */ RunJsonHook("AptCli::Hooks::Install", "org.debian.apt.hooks.install.fail", CmdL.FileList, Cache);
+     return RunJsonHook("AptCli::Hooks::Install", "org.debian.apt.hooks.install.post", CmdL.FileList, Cache);
 
+   RunJsonHook("AptCli::Hooks::Install", "org.debian.apt.hooks.install.fail", CmdL.FileList, Cache);
    return result;
 }
 									/*}}}*/
