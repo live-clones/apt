@@ -46,26 +46,35 @@ static bool UpgradeHelper(CommandLine &CmdL, int UpgradeFlags)
       return RunJsonHook("AptCli::Hooks::Upgrade", "org.debian.apt.hooks.install.fail", CmdL.FileList, Cache);
 }
 
-// DoDistUpgrade - Automatic smart upgrader				/*{{{*/
+// DoDistUpgrade - Upgrade all packages				/*{{{*/
 // ---------------------------------------------------------------------
-/* Intelligent upgrader that will install and remove packages at will */
+/* Upgrade all packages and install and remove packages as needed */
 bool DoDistUpgrade(CommandLine &CmdL)
 {
    return UpgradeHelper(CmdL, APT::Upgrade::ALLOW_EVERYTHING);
 }
-									/*}}}*/
+
+// Upgrade - Upgrade all packages, safely				/*}}}*/
+// ---------------------------------------------------------------------
+/* Upgrade all packages, disallowing installation and/or removal per user-
+   specified parameters */
 bool DoUpgrade(CommandLine &CmdL)					/*{{{*/
 {
    if (_config->FindB("APT::Get::Upgrade-Allow-New", false) == true)
+      // If APT::Get::Upgrade-Allow-New is set to `true', then use the
+      // DoUpgradeWithAllowNewPackages() method (only installation of new
+      // packages is allowed during upgrade).
       return DoUpgradeWithAllowNewPackages(CmdL);
    else
+      // Otherwise, use the DoUpgradeNoNewPackages() method (no installation
+      // of new packages, nor removal of old packages during upgrade).
       return DoUpgradeNoNewPackages(CmdL);
 }
 									/*}}}*/
 // DoUpgradeNoNewPackages - Upgrade all packages			/*{{{*/
 // ---------------------------------------------------------------------
-/* Upgrade all packages without installing new packages or erasing old
-   packages */
+/* Upgrade all packages without installing new packages or removing old
+   packages. This is the default method behind `apt/apt-get upgrade'. */
 bool DoUpgradeNoNewPackages(CommandLine &CmdL)
 {
    // Do the upgrade
@@ -74,7 +83,8 @@ bool DoUpgradeNoNewPackages(CommandLine &CmdL)
                         APT::Upgrade::FORBID_INSTALL_NEW_PACKAGES);
 }
 									/*}}}*/
-// DoSafeUpgrade - Upgrade all packages with install but not remove	/*{{{*/
+// DoUpgradeWithAllowNewPackages - Upgrade all packages, allow only	/*{{{*/
+// install but not remove						/*{{{*/
 bool DoUpgradeWithAllowNewPackages(CommandLine &CmdL)
 {
    return UpgradeHelper(CmdL, APT::Upgrade::FORBID_REMOVE_PACKAGES);
