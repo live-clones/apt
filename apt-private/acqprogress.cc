@@ -9,12 +9,14 @@
 // Include files							/*{{{*/
 #include <config.h>
 
-#include <apt-pkg/aptconfiguration.h>
 #include <apt-pkg/acquire-item.h>
 #include <apt-pkg/acquire-worker.h>
 #include <apt-pkg/acquire.h>
+#include <apt-pkg/aptconfiguration.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/error.h>
+#include <apt-pkg/fileutl.h>
+#include <apt-pkg/install-progress.h>
 #include <apt-pkg/strutl.h>
 
 #include <apt-private/acqprogress.h>
@@ -68,10 +70,13 @@ void AcqTextStatus::AssignItemID(pkgAcquire::ItemDesc &Itm)		/*{{{*/
 /* */
 void AcqTextStatus::IMSHit(pkgAcquire::ItemDesc &Itm)
 {
+   AssignItemID(Itm);
+
    if (Quiet > 1)
       return;
+   if (_config->FindI("APT::Output-Version") >= 30 && not _config->FindB("verbose", false))
+      return;
 
-   AssignItemID(Itm);
    clearLastLine();
 
    // TRANSLATOR: Very short word to be displayed before unchanged files in 'apt-get update'
@@ -93,6 +98,9 @@ void AcqTextStatus::Fetch(pkgAcquire::ItemDesc &Itm)
    if (Quiet > 1)
       return;
 
+   // We don't show items starting fetching in 3.0
+   if (_config->FindI("APT::Output-Version") >= 30 && not _config->FindB("verbose", false))
+      return;
    clearLastLine();
 
    // TRANSLATOR: Very short word to be displayed for files processed in 'apt-get update'
@@ -200,10 +208,13 @@ void AcqTextStatus::Stop()
       return;
 
    if (FetchedBytes != 0 && _error->PendingError() == false)
-      ioprintf(out,_("Fetched %sB in %s (%sB/s)\n"),
+   {
+      out << _config->Find("APT::Color::Green") << "✓" << _config->Find("APT::Color::Neutral") << " ";
+      ioprintf(out, _config->FindI("APT::Output-Version") >= 30 ? _("Downloaded %sB in %s (%sB/s)\n") : _("Fetched %sB in %s (%sB/s)\n"),
 	       SizeToStr(FetchedBytes).c_str(),
 	       TimeToStr(ElapsedTime).c_str(),
 	       SizeToStr(CurrentCPS).c_str());
+   }
 }
 									/*}}}*/
 // AcqTextStatus::Pulse - Regular event pulse				/*{{{*/
@@ -217,6 +228,86 @@ bool AcqTextStatus::Pulse(pkgAcquire *Owner)
 
    if (Quiet > 0)
       return true;
+   if (_config->FindI("APT::Output-Version") >= 30)
+   {
+      /* Put in the ETA and cps meter, block off signals to prevent strangeness
+	 during resizing */
+      sigset_t Sigs, OldSigs;
+      sigemptyset(&Sigs);
+      sigaddset(&Sigs, SIGWINCH);
+      sigprocmask(SIG_BLOCK, &Sigs, &OldSigs);
+
+      static const char *clear_screen_below_cursor = "\033[J";
+      out << clear_screen_below_cursor;
+
+      std::string prefix;
+      if (CurrentCPS != 0)
+	 strprintf(prefix, "%2.0f%% Downloading (%4sB/s)...", std::min(Percent, 99.0), SizeToStr(CurrentCPS).c_str());
+      else
+	 strprintf(prefix, "%2.0f%% Downloading...", std::min(Percent, 99.0));
+
+      std::string suffix;
+      if (CurrentCPS != 0)
+      {
+	 auto elapsed = (TotalBytes - CurrentBytes) / CurrentCPS;
+	 int elapsedSec = elapsed % 60;
+	 int elapsedMin = (elapsed / 60) % 60;
+	 int elapsedHour = (elapsed / 60 / 60);
+
+	 if (elapsedHour)
+	    strprintf(suffix, "%02d:%02d:%02d", elapsedHour, elapsedMin, elapsedSec);
+	 else
+	    strprintf(suffix, "%02d:%02d", elapsedMin, elapsedSec);
+      }
+      sigprocmask(SIG_SETMASK, &OldSigs, 0);
+
+      auto Line = prefix + " " + APT::Progress::PackageManagerFancy::GetTextProgressStr(Percent / 100.0, ScreenWidth - prefix.size() - suffix.size() - 2) + " " + suffix;
+
+      Update = false;
+      if (LastLineLength > Line.length())
+	 clearLastLine();
+      else
+	 out << '\r';
+      LastLineLength = Line.length();
+      out << Line << std::flush;
+      int lines_printed = 0;
+
+      for (pkgAcquire::Worker *I = Owner->WorkersBegin(); I != 0;
+	   I = Owner->WorkerStep(I))
+      {
+	 if (I->CurrentItem == 0)
+	 {
+	    if (not I->Status.empty())
+	    {
+	       ioprintf(out, "\n├─     %s", I->Status.c_str());
+	       lines_printed++;
+	    }
+	    continue;
+	 }
+	 URI uri(I->CurrentItem->Owner->DescURI());
+	 if (I->CurrentItem->TotalSize > 0)
+	 {
+
+	    ioprintf(out, "\n├─ %2.0f%% %s: Downloading from %s (%sB/%sB)", (I->CurrentItem->CurrentSize * 100.0) / I->CurrentItem->TotalSize, I->CurrentItem->ShortDesc.c_str(), uri.Host.substr(0, 10).c_str(), SizeToStr(I->CurrentItem->CurrentSize).c_str(), SizeToStr(I->CurrentItem->TotalSize).c_str());
+	    lines_printed++;
+	 }
+	 else
+	 {
+
+	    ioprintf(out, "\n├─     %s (%sB)", I->CurrentItem->ShortDesc.c_str(), SizeToStr(I->CurrentItem->CurrentSize).c_str());
+	    lines_printed++;
+	 }
+      }
+      if (lines_printed)
+	 ioprintf(out, "\r└");
+      static const char *move_cursor_up = "\033[1A";
+      for (int i = 0; i < lines_printed; ++i)
+	 out << move_cursor_up;
+      // Move cursor to the top right
+      out << "\r" << "\033[" << ScreenWidth << "C";
+      std::flush(out);
+      return true;
+   }
 
    std::string Line;
    {
