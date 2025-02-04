@@ -20,6 +20,11 @@
 
 #define APT_COMPILING_APT
 
+// Bounds checking is too expensive for the solver.
+#undef _GLIBCXX_ASSERTIONS
+#include <vector>
+#define _GLIBCXX_ASSERTIONS
+
 #include <config.h>
 
 #include <apt-pkg/algorithms.h>
@@ -43,11 +48,19 @@ struct APT::Solver::CompareProviders3 /*{{{*/
    pkgDepCache::Policy &Policy;
    pkgCache::PkgIterator const Pkg;
    APT::Solver &Solver;
-   bool upgrade{_config->FindB("APT::Solver::Upgrade", false)};
 
    bool operator()(pkgCache::Version *AV, pkgCache::Version *BV)
    {
       return (*this)(pkgCache::VerIterator(Cache, AV), pkgCache::VerIterator(Cache, BV));
+   }
+   bool operator()(Var a, Var b)
+   {
+      if (auto va = a.Ver(Cache))
+      {
+	 if (auto vb = b.Ver(Cache))
+	    return (*this)(va, vb);
+      }
+      abort();
    }
    bool operator()(pkgCache::VerIterator const &AV, pkgCache::VerIterator const &BV)
    {
@@ -60,9 +73,9 @@ struct APT::Solver::CompareProviders3 /*{{{*/
 	    return false;
 
 	 // Candidate wins in upgrade scenario
-	 if (upgrade)
+	 if (Solver.IsUpgrade)
 	 {
-	    auto Cand = Policy.GetCandidateVer(A);
+	    auto Cand = Solver.GetCandidateVer(A);
 	    if (AV == Cand || BV == Cand)
 	       return (AV == Cand);
 	 }
@@ -72,7 +85,7 @@ struct APT::Solver::CompareProviders3 /*{{{*/
 	    return (A.CurrentVer() == AV);
 
 	 // Rest is ordered list, first by priority
-	 if (auto pinA = Policy.GetPriority(AV), pinB = Policy.GetPriority(BV); pinA != pinB)
+	 if (auto pinA = Solver.GetPriority(AV), pinB = Solver.GetPriority(BV); pinA != pinB)
 	    return pinA > pinB;
 
 	 // Then by version
@@ -81,7 +94,7 @@ struct APT::Solver::CompareProviders3 /*{{{*/
       // Try obsolete choices only after exhausting non-obsolete choices such that we install
       // packages replacing them and don't keep back upgrades depending on the replacement to
       // keep the obsolete package installed.
-      if (upgrade)
+      if (Solver.IsUpgrade)
 	 if (auto obsoleteA = Solver.Obsolete(A), obsoleteB = Solver.Obsolete(B); obsoleteA != obsoleteB)
 	    return obsoleteB;
       // Prefer MA:same packages if other architectures for it are installed
@@ -184,7 +197,9 @@ APT::Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy)
       policy(policy),
       pkgStates(cache.Head().PackageCount),
       verStates(cache.Head().VersionCount),
-      pkgObsolete(cache.Head().PackageCount)
+      pkgObsolete(cache.Head().PackageCount),
+      priorities(cache.Head().VersionCount),
+      candidates(cache.Head().PackageCount)
 {
    static_assert(sizeof(APT::Solver::State) == 3 * sizeof(int));
    static_assert(sizeof(APT::Solver::Var) == sizeof(map_pointer<pkgCache::Package>));
@@ -194,45 +209,35 @@ APT::Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy)
 // This function determines if a work item is less important than another.
 bool APT::Solver::Work::operator<(APT::Solver::Work const &b) const
 {
-   if ((not optional && size < 2) != (not b.optional && b.size < 2))
-      return not b.optional && b.size < 2;
-   if (group != b.group)
-      return group > b.group;
-   if (optional && b.optional)
-   {
-      if ((size < 2) != (b.size < 2))
-	 return b.size < 2;
-      if (reason.empty() != b.reason.empty())
-	 return reason.empty();
-   }
-   // An optional item is less important than a required one.
-   if (optional != b.optional)
-      return optional;
-   // We enqueue common dependencies at the package level to avoid choosing versions, so let's solve package items first,
-   // this improves the implication graph as it now tells you that common dependencies were installed by the package.
-   if (reason.Pkg() != b.reason.Pkg())
-      return reason.Pkg() == 0;
+   if ((not clause.optional && size < 2) != (not b.clause.optional && b.size < 2))
+      return not b.clause.optional && b.size < 2;
+   if (clause.optional != b.clause.optional)
+      return clause.optional;
+   if (clause.group != b.clause.group)
+      return clause.group > b.clause.group;
+   if ((size < 2) != (b.size < 2))
+      return b.size < 2;
 
    return false;
 }
-
-void APT::Solver::Work::Dump(pkgCache &cache)
+void APT::Solver::Clause::Dump(pkgCache &cache)
 {
-   if (erased)
-      std::cerr << "Erased ";
-   if (optional)
-      std::cerr << "Optional ";
-   std::cerr << "Item (" << ssize_t(size <= solutions.size() ? size : -1) << "@" << depth << (upgrade ? "u" : "") << ") ";
    if (auto Pkg = reason.Pkg(cache); not Pkg.end())
       std::cerr << Pkg.FullName();
    if (auto Ver = reason.Ver(cache); not Ver.end())
       std::cerr << Ver.ParentPkg().FullName() << "=" << Ver.VerStr();
    std::cerr << " -> ";
    for (auto sol : solutions)
-   {
-      auto Ver = pkgCache::VerIterator(cache, sol);
-      std::cerr << " | " << Ver.ParentPkg().FullName() << "=" << Ver.VerStr();
-   }
+      std::cerr << " | " << sol.toString(cache);
+}
+void APT::Solver::Work::Dump(pkgCache &cache)
+{
+   if (erased)
+      std::cerr << "Erased ";
+   if (clause.optional)
+      std::cerr << "Optional ";
+   std::cerr << "Item (" << ssize_t(size <= clause.solutions.size() ? size : -1) << "@" << depth << ") ";
+   clause.Dump(cache);
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
@@ -242,22 +247,11 @@ std::string APT::Solver::WhyStr(Var reason)
 
    while (not reason.empty())
    {
-      if (auto Pkg = reason.Pkg(cache); not Pkg.end())
-      {
-	 if ((*this)[Pkg].decision == Decision::MUSTNOT)
-	    out.push_back(std::string("not ") + Pkg.FullName());
-	 else
-	    out.push_back(Pkg.FullName());
-	 reason = (*this)[Pkg].reason;
-      }
-      if (auto Ver = reason.Ver(cache); not Ver.end())
-      {
-	 if ((*this)[Ver].decision == Decision::MUSTNOT)
-	    out.push_back(std::string("not ") + Ver.ParentPkg().FullName() + "=" + Ver.VerStr());
-	 else
-	    out.push_back(Ver.ParentPkg().FullName() + "=" + Ver.VerStr());
-	 reason = (*this)[Ver].reason;
-      }
+      if ((*this)[reason].decision == Decision::MUSTNOT)
+	 out.push_back(std::string("not ") + reason.toString(cache));
+      else
+	 out.push_back(reason.toString(cache));
+      reason = (*this)[reason].reason;
    }
 
    std::string outstr;
@@ -274,7 +268,7 @@ std::string APT::Solver::WhyStr(Var reason)
 bool APT::Solver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
 {
    const auto pkg = cand.ParentPkg();
-   const int candPriority = policy.GetPriority(cand);
+   const int candPriority = GetPriority(cand);
 
    for (auto ver = cand.Cache()->FindGrp(cand.SourcePkgName()).VersionsInSource(); not ver.end(); ver = ver.NextInSource())
    {
@@ -283,7 +277,7 @@ bool APT::Solver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) cons
 	 continue;
 
       // We also take equal priority here, given that we have a higher version
-      const int priority = policy.GetPriority(ver, true);
+      const int priority = GetPriority(ver);
       if (priority == 0 || priority < candPriority)
 	 continue;
 
@@ -301,7 +295,7 @@ bool APT::Solver::Obsolete(pkgCache::PkgIterator pkg) const
    if (pkgObsolete[pkg->ID] != 0)
       return pkgObsolete[pkg->ID] == 2;
 
-   auto ver = policy.GetCandidateVer(pkg);
+   auto ver = GetCandidateVer(pkg);
 
    if (ver.end() && not StrictPinning)
       ver = pkg.VersionList();
@@ -382,15 +376,19 @@ bool APT::Solver::PropagateInstall(Var var)
       bool anyInstallable = false;
       bool anyMust = false;
       // Insert the work item.
-      Work workItem{Var(Pkg), depth(), Group::SelectVersion};
+      Clause clause{Var(Pkg), Group::SelectVersion};
       for (auto ver = Pkg.VersionList(); not ver.end(); ver++)
       {
-	 workItem.solutions.push_back(ver);
+	 clause.solutions.push_back(Var(ver));
 	 if ((*this)[ver].decision != Decision::MUSTNOT)
 	    anyInstallable = true;
 	 if ((*this)[ver].decision == Decision::MUST)
 	    anyMust = true;
       }
+
+      // One is already marked for install, nothing to propagate
+      if (anyMust)
+	 return true;
 
       if (not anyInstallable)
       {
@@ -401,18 +399,13 @@ bool APT::Solver::PropagateInstall(Var var)
 	 return false;
       }
 
-      std::stable_sort(workItem.solutions.begin(), workItem.solutions.end(), CompareProviders3{cache, policy, Pkg, *this});
-      assert(workItem.solutions.size() > 0);
+      std::stable_sort(clause.solutions.begin(), clause.solutions.end(), CompareProviders3{cache, policy, Pkg, *this});
+      assert(clause.solutions.size() > 0);
 
-      if (workItem.solutions.size() > 1 || workItem.optional)
-	 AddWork(std::move(workItem));
-      else if (not Enqueue(Var(pkgCache::VerIterator(cache, workItem.solutions[0])), true, workItem.reason))
+      if (not AddWork(Work{clause, depth()}))
 	 return false;
 
-      // FIXME: We skip enqueuing duplicate common dependencies if we already selected a version, but
-      // we should not have common dependencies duplicated in the version objects anyway.
-      if (not anyMust && not EnqueueCommonDependencies(Pkg))
-	 return false;
+      return EnqueueCommonDependencies(Pkg);
    }
    else if (auto Ver = var.Ver(cache); not Ver.end())
    {
@@ -479,8 +472,6 @@ bool APT::Solver::PropagateReject(Var var)
 
 bool APT::Solver::EnqueueCommonDependencies(pkgCache::PkgIterator Pkg)
 {
-   if (not _config->FindB("APT::Solver::Enqueue-Common-Dependencies", true))
-      return false;
    for (auto dep = Pkg.VersionList().DependsList(); not dep.end();)
    {
       pkgCache::DepIterator start;
@@ -507,70 +498,82 @@ bool APT::Solver::EnqueueCommonDependencies(pkgCache::PkgIterator Pkg)
 
 bool APT::Solver::EnqueueOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
 {
+   auto clause = TranslateOrGroup(start, end, reason);
+   if (clause.negative)
+   {
+      for (auto var : clause.solutions)
+	 if (not Enqueue(var, false, clause.reason))
+	    return false;
+   }
+   else if (not clause.solutions.empty())
+   {
+      if (unlikely(debug >= 3 && clause.optional))
+      {
+	 std::cerr << "Enqueuing Recommends ";
+	 clause.Dump(cache);
+	 std::cerr << "\n";
+      }
+      return AddWork(Work{std::move(clause), depth()});
+   }
+   else if (not clause.optional)
+      return _error->Error("Unsatisfiable dependency group %s -> %s", reason.toString(cache).c_str(), start.TargetPkg().FullName().c_str());
+
+   return true;
+}
+
+APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
+{
    auto TgtPkg = start.TargetPkg();
    auto Ver = start.ParentVer();
-   auto fixPolicy = _config->FindB("APT::Get::Fix-Policy-Broken");
 
    // Non-important dependencies can only be installed if they are currently satisfied, see the check further
    // below once we have calculated all possible solutions.
    if (start.ParentPkg()->CurrentVer == 0 && not policy.IsImportantDep(start))
-      return true;
+      return Clause{reason, Group::Satisfy, true};
    // Replaces and Enhances are not a real dependency.
    if (start->Type == pkgCache::Dep::Replaces || start->Type == pkgCache::Dep::Enhances)
-      return true;
+      return Clause{reason, Group::Satisfy, true};
    if (unlikely(debug >= 3))
       std::cerr << "Found dependency critical " << Ver.ParentPkg().FullName() << "=" << Ver.VerStr() << " -> " << start.TargetPkg().FullName() << "\n";
 
-   Work workItem{reason, depth(), Group::Satisfy, not start.IsCritical() /* optional */};
+   Clause clause{reason, Group::Satisfy, not start.IsCritical() /* optional */, start.IsNegative()};
 
    do
    {
-      auto begin = workItem.solutions.size();
+      auto begin = clause.solutions.size();
       auto all = start.AllTargets();
 
       for (auto tgt = all; *tgt; ++tgt)
       {
 	 pkgCache::VerIterator tgti(cache, *tgt);
-
-	 if (start.IsNegative())
-	 {
-	    if (unlikely(debug >= 3))
-	       std::cerr << "Reject: " << Ver.ParentPkg().FullName() << "=" << Ver.VerStr() << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << "\n";
-	    // FIXME: We should be collecting these and marking the heap only once.
-	    if (not Enqueue(Var(pkgCache::VerIterator(cache, *tgt)), false, Var(Ver)))
-	       return false;
-	 }
-	 else
-	 {
-	    if (unlikely(debug >= 3))
-	       std::cerr << "Adding work to  item " << Ver.ParentPkg().FullName() << "=" << Ver.VerStr() << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << "\n";
-	    workItem.solutions.push_back(*tgt);
-	 }
+	 if (unlikely(debug >= 3))
+	    std::cerr << "Adding work to  item " << reason.toString(cache) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
+	 clause.solutions.push_back(Var(pkgCache::VerIterator(cache, *tgt)));
       }
       delete[] all;
 
       // If we are fixing the policy, we need to sort each alternative in an or group separately
       // FIXME: This is not really true, though, we should fix the CompareProviders to ignore the
       // installed state
-      if (fixPolicy)
-	 std::stable_sort(workItem.solutions.begin() + begin, workItem.solutions.end(), CompareProviders3{cache, policy, TgtPkg, *this});
+      if (FixPolicyBroken)
+	 std::stable_sort(clause.solutions.begin() + begin, clause.solutions.end(), CompareProviders3{cache, policy, TgtPkg, *this});
 
       if (start == end)
 	 break;
       ++start;
    } while (1);
 
-   if (not fixPolicy)
-      std::stable_sort(workItem.solutions.begin(), workItem.solutions.end(), CompareProviders3{cache, policy, TgtPkg, *this});
+   if (not FixPolicyBroken)
+      std::stable_sort(clause.solutions.begin(), clause.solutions.end(), CompareProviders3{cache, policy, TgtPkg, *this});
 
-   if (std::all_of(workItem.solutions.begin(), workItem.solutions.end(), [this](auto V) -> auto
-		   { return pkgCache::VerIterator(cache, V).ParentPkg()->CurrentVer == 0; }))
-      workItem.group = Group::SatisfyNew;
-   if (std::any_of(workItem.solutions.begin(), workItem.solutions.end(), [this](auto V) -> auto
-		   { return Obsolete(pkgCache::VerIterator(cache, V).ParentPkg()); }))
-      workItem.group = Group::SatisfyObsolete;
+   if (std::all_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var) -> auto
+		   { return var.CastPkg(cache)->CurrentVer == 0; }))
+      clause.group = Group::SatisfyNew;
+   if (std::any_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var) -> auto
+		   { return Obsolete(var.CastPkg(cache)); }))
+      clause.group = Group::SatisfyObsolete;
    // Try to perserve satisfied Recommends. FIXME: We should check if the Recommends was there in the installed version?
-   if (workItem.optional && start.ParentPkg()->CurrentVer)
+   if (clause.optional && start.ParentPkg()->CurrentVer)
    {
       bool important = policy.IsImportantDep(start);
       bool newOptional = true;
@@ -579,60 +582,42 @@ bool APT::Solver::EnqueueOrGroup(pkgCache::DepIterator start, pkgCache::DepItera
 	 if (not D.IsCritical() && not D.IsNegative() && D.TargetPkg() == start.TargetPkg())
 	    newOptional = false, wasImportant = policy.IsImportantDep(D);
 
-      bool satisfied = std::any_of(workItem.solutions.begin(), workItem.solutions.end(), [this](auto ver)
-				   { return pkgCache::VerIterator(cache, ver).ParentPkg().CurrentVer() == ver; });
+      bool satisfied = std::any_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
+				   { return Var(var.CastPkg(cache).CurrentVer()) == var; });
 
       if (important && wasImportant && not newOptional && not satisfied)
       {
 	 if (unlikely(debug >= 3))
 	 {
 	    std::cerr << "Ignoring unsatisfied Recommends ";
-	    workItem.Dump(cache);
+	    clause.Dump(cache);
 	    std::cerr << "\n";
 	 }
-	 return true;
+	 clause.solutions.clear();
       }
-      if (not important && not wasImportant && not newOptional && satisfied)
+      else if (not important && not wasImportant && not newOptional && satisfied)
       {
 	 if (unlikely(debug >= 3))
 	 {
 	    std::cerr << "Promoting satisfied Suggests to Recommends: ";
-	    workItem.Dump(cache);
+	    clause.Dump(cache);
 	    std::cerr << "\n";
 	 }
 	 important = true;
       }
-      if (not important)
+      else if (not important)
       {
 	 if (unlikely(debug >= 3))
 	 {
 	    std::cerr << "Ignoring Suggests ";
-	    workItem.Dump(cache);
+	    clause.Dump(cache);
 	    std::cerr << "\n";
 	 }
-	 return true;
+	 return Clause{reason, Group::Satisfy, true};
       }
    }
 
-   if (not workItem.solutions.empty())
-   {
-      // std::stable_sort(workItem.solutions.begin(), workItem.solutions.end(), CompareProviders3{cache, TgtPkg});
-      if (unlikely(debug >= 3 && workItem.optional))
-      {
-	 std::cerr << "Enqueuing Recommends ";
-	 workItem.Dump(cache);
-	 std::cerr << "\n";
-      }
-      if (workItem.optional || workItem.solutions.size() > 1)
-	 AddWork(std::move(workItem));
-      else if (not Enqueue(Var(pkgCache::VerIterator(cache, workItem.solutions[0])), true, reason))
-	 return false;
-   }
-   else if (start.IsCritical() && not start.IsNegative())
-   {
-      return _error->Error("Unsatisfiable dependency group %s=%s -> %s", Ver.ParentPkg().FullName().c_str(), Ver.VerStr(), TgtPkg.FullName().c_str());
-   }
-   return true;
+   return clause;
 }
 
 // \brief Find the or group containing the given dependency.
@@ -748,7 +733,8 @@ void APT::Solver::UndoOne()
 	 std::cerr << "\n";
       }
 
-      AddWork(std::move(*work));
+      if (not AddWork(std::move(*work)))
+	 abort();
    }
 
    solved.pop_back();
@@ -769,7 +755,7 @@ bool APT::Solver::Pop()
 
    assert(choices.back() < solved.size());
    int itemsToUndo = solved.size() - choices.back();
-   pkgCache::VerIterator choice(cache, solved[choices.back()].work->choice);
+   auto choice = solved[choices.back()].work->choice;
 
    for (; itemsToUndo; --itemsToUndo)
       UndoOne();
@@ -784,24 +770,28 @@ bool APT::Solver::Pop()
    std::make_heap(work.begin(), work.end());
 
    if (unlikely(debug >= 2))
-      std::cerr << "Backtracking to choice " << choice.ParentPkg().FullName() << "=" << choice.VerStr() << "\n";
+      std::cerr << "Backtracking to choice " << choice.toString(cache) << "\n";
 
    // FIXME: There should be a reason!
-   if (not Enqueue(Var(choice), false, {}))
+   if (not Enqueue(choice, false, {}))
       return false;
 
    if (unlikely(debug >= 2))
-      std::cerr << "Backtracked to choice " << choice.ParentPkg().FullName() << "=" << choice.VerStr() << "\n";
+      std::cerr << "Backtracked to choice " << choice.toString(cache) << "\n";
 
    return true;
 }
 
-void APT::Solver::AddWork(Work &&w)
+bool APT::Solver::AddWork(Work &&w)
 {
-   w.size = std::count_if(w.solutions.begin(), w.solutions.end(), [this](auto V)
+   if (w.clause.solutions.size() == 1 && not w.clause.optional)
+      return Enqueue(w.clause.solutions[0], true, w.clause.reason);
+
+   w.size = std::count_if(w.clause.solutions.begin(), w.clause.solutions.end(), [this](auto V)
 			  { return (*this)[V].decision != Decision::MUSTNOT; });
    work.push_back(std::move(w));
    std::push_heap(work.begin(), work.end());
+   return true;
 }
 
 void APT::Solver::RescoreWorkIfNeeded()
@@ -815,7 +805,7 @@ void APT::Solver::RescoreWorkIfNeeded()
    {
       if (w.erased)
 	 continue;
-      size_t newSize = std::count_if(w.solutions.begin(), w.solutions.end(), [this](auto V)
+      size_t newSize = std::count_if(w.clause.solutions.begin(), w.clause.solutions.end(), [this](auto V)
 				     { return (*this)[V].decision != Decision::MUSTNOT; });
 
       // Notably we only insert the work into the queue if it got smaller. Work that got larger
@@ -864,7 +854,7 @@ bool APT::Solver::Solve()
       }
 
       // If our size increased, queue again.
-      size_t newSize = std::count_if(work.back().solutions.begin(), work.back().solutions.end(), [this](auto V)
+      size_t newSize = std::count_if(work.back().clause.solutions.begin(), work.back().clause.solutions.end(), [this](auto V)
 				     { return (*this)[V].decision != Decision::MUSTNOT; });
 
       if (newSize > work.back().size)
@@ -879,7 +869,7 @@ bool APT::Solver::Solve()
       work.pop_back();
       solved.push_back(Solved{Var(), item});
 
-      if (std::any_of(item.solutions.begin(), item.solutions.end(), [this](auto ver)
+      if (std::any_of(item.clause.solutions.begin(), item.clause.solutions.end(), [this](auto ver)
 		      { return (*this)[ver].decision == Decision::MUST; }))
       {
 	 if (unlikely(debug >= 2))
@@ -897,42 +887,40 @@ bool APT::Solver::Solve()
 	 std::cerr << "\n";
       }
 
-      assert(item.solutions.size() > 1 || item.optional);
+      assert(item.clause.solutions.size() > 1 || item.clause.optional);
 
       bool foundSolution = false;
-      for (auto &sol : item.solutions)
+      for (auto &sol : item.clause.solutions)
       {
-	 pkgCache::VerIterator ver(cache, sol);
-	 if ((*this)[ver].decision == Decision::MUSTNOT)
+	 if ((*this)[sol].decision == Decision::MUSTNOT)
 	 {
 	    if (unlikely(debug >= 3))
-	       std::cerr << "(existing conflict: " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << ")\n";
+	       std::cerr << "(existing conflict: " << sol.toString(cache) << ")\n";
 	    continue;
 	 }
-	 if (item.size > 1 || item.optional)
+	 if (item.size > 1 || item.clause.optional)
 	 {
-	    item.choice = ver;
+	    item.choice = sol;
 	    Push(item);
 	 }
 	 if (unlikely(debug >= 3))
-	    std::cerr << "(try it: " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << ")\n";
-	 if (not Enqueue(Var(ver), true, item.reason) && not Pop())
+	    std::cerr << "(try it: " << sol.toString(cache) << ")\n";
+	 if (not Enqueue(sol, true, item.clause.reason) && not Pop())
 	    return false;
 	 foundSolution = true;
 	 break;
       }
-      if (not foundSolution && not item.optional)
+      if (not foundSolution && not item.clause.optional)
       {
 	 std::ostringstream dep;
-	 assert(item.solutions.size() > 0);
-	 for (auto &sol : item.solutions)
-	    dep << (dep.tellp() == 0 ? "" : " | ") << pkgCache::VerIterator(cache, sol).ParentPkg().FullName() << "=" << pkgCache::VerIterator(cache, sol).VerStr();
-	 _error->Error("Unsatisfiable dependency: %s -> %s", WhyStr(item.reason).c_str(), dep.str().c_str());
-	 for (auto &sol : item.solutions)
+	 assert(item.clause.solutions.size() > 0);
+	 for (auto &sol : item.clause.solutions)
+	    dep << (dep.tellp() == 0 ? "" : " | ") << sol.toString(cache);
+	 _error->Error("Unsatisfiable dependency: %s -> %s", WhyStr(item.clause.reason).c_str(), dep.str().c_str());
+	 for (auto &sol : item.clause.solutions)
 	    if ((*this)[sol].decision == Decision::MUSTNOT)
-	       _error->Error("Not considered: %s=%s: %s", pkgCache::VerIterator(cache, sol).ParentPkg().FullName().c_str(),
-			     pkgCache::VerIterator(cache, sol).VerStr(),
-			     WhyStr(Var(pkgCache::VerIterator(cache, sol))).c_str());
+	       _error->Error("Not considered: %s: %s", sol.toString(cache).c_str(),
+			     WhyStr(sol).c_str());
 	 if (not Pop())
 	    return false;
       }
@@ -944,7 +932,6 @@ bool APT::Solver::Solve()
 // \brief Apply the selections from the dep cache to the solver
 bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 {
-   bool AllowRemoveManual = AllowRemove && _config->FindB("APT::Solver::RemoveManual", false);
    DefaultRootSetFunc2 rootSet(&cache);
 
    // Enforce strict pinning rules by rejecting all forbidden versions.
@@ -1011,11 +998,12 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	 }
 	 else
 	 {
-	    Work w{Var(), depth(), Group, isOptional, Upgrade};
+	    Clause w{Var(), Group, isOptional};
 	    for (auto V = P.VersionList(); not V.end(); ++V)
-	       w.solutions.push_back(V);
+	       w.solutions.push_back(Var(V));
 	    std::stable_sort(w.solutions.begin(), w.solutions.end(), CompareProviders3{cache, policy, P, *this});
-	    AddWork(std::move(w));
+	    if (not AddWork(Work{std::move(w), depth()}))
+	       return false;
 	 }
       }
    }
