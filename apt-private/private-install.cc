@@ -853,50 +853,105 @@ bool DoCacheManipulationFromCommandLine(CommandLine &CmdL, std::vector<PseudoPkg
 	 helper.PackageFrom(APT::CacheSetHelper::PATTERN, &UpgradablePackages, Cache, "?upgradable");
       }
 
-      if (Fix != NULL && _config->FindB("APT::Get::AutoSolving", true) == true)
+      // Record the state before we call the solver.
+      pkgDepCache::Transaction transaction(Cache, pkgDepCache::Transaction::Behavior::COMMIT);
+      auto runTheSolver = [&](bool doOutput) -> bool
       {
-	 InstallAction.propagateReleaseCandidateSwitching(helper.selectedByRelease, c0out);
-	 InstallAction.doAutoInstall();
-      }
+	 if (Fix != NULL && _config->FindB("APT::Get::AutoSolving", true) == true)
+	 {
+	    InstallAction.propagateReleaseCandidateSwitching(helper.selectedByRelease, c0out);
+	    InstallAction.doAutoInstall();
+	 }
 
-      if (_error->PendingError() == true)
-      {
-	 return false;
-      }
-
-      /* If we are in the Broken fixing mode we do not attempt to fix the
-	 problems. This is if the user invoked install without -f and gave
-	 packages */
-      if (BrokenFix == true && Cache->BrokenCount() != 0)
-      {
-	 c1out << _("You might want to run 'apt --fix-broken install' to correct these.") << std::endl;
-	 ShowBroken(c1out,Cache,false);
-	 return _error->Error(_("Unmet dependencies. Try 'apt --fix-broken install' with no packages (or specify a solution)."));
-      }
-
-      if (Fix != NULL)
-      {
-	 // Call the scored problem resolver
-	 OpTextProgress Progress(*_config);
-	 bool const distUpgradeMode = strcmp(CmdL.FileList[0], "dist-upgrade") == 0 || strcmp(CmdL.FileList[0], "full-upgrade") == 0;
-
-	 if (distUpgradeMode && _config->Find("Binary") == "apt")
-	    _config->CndSet("APT::Get::AutomaticRemove::Kernels", _config->FindB("APT::Get::AutomaticRemove", true));
-
-	 bool resolver_fail = false;
-	 if (distUpgradeMode == true || UpgradeMode != APT::Upgrade::ALLOW_EVERYTHING)
-	    resolver_fail = APT::Upgrade::Upgrade(Cache, UpgradeMode, &Progress);
-	 else
-	    resolver_fail = Fix->Resolve(true, &Progress);
-
-	 if (resolver_fail == false && Cache->BrokenCount() == 0)
+	 if (_error->PendingError() == true)
+	 {
 	    return false;
-      }
+	 }
 
-      if (CheckNothingBroken(Cache) == false)
+	 /* If we are in the Broken fixing mode we do not attempt to fix the
+	    problems. This is if the user invoked install without -f and gave
+	    packages */
+	 if (BrokenFix == true && Cache->BrokenCount() != 0)
+	 {
+	    if (doOutput)
+	    {
+	       c1out << _("You might want to run 'apt --fix-broken install' to correct these.") << std::endl;
+	       ShowBroken(c1out, Cache, false);
+	    }
+	    return _error->Error(_("Unmet dependencies. Try 'apt --fix-broken install' with no packages (or specify a solution)."));
+	 }
+
+	 if (Fix != NULL)
+	 {
+	    // Call the scored problem resolver
+	    OpTextProgress Progress(*_config);
+	    bool const distUpgradeMode = strcmp(CmdL.FileList[0], "dist-upgrade") == 0 || strcmp(CmdL.FileList[0], "full-upgrade") == 0;
+
+	    if (distUpgradeMode && _config->Find("Binary") == "apt")
+	       _config->CndSet("APT::Get::AutomaticRemove::Kernels", _config->FindB("APT::Get::AutomaticRemove", true));
+
+	    bool resolver_fail = false;
+	    if (distUpgradeMode == true || UpgradeMode != APT::Upgrade::ALLOW_EVERYTHING)
+	       resolver_fail = APT::Upgrade::Upgrade(Cache, UpgradeMode, &Progress);
+	    else
+	       resolver_fail = Fix->Resolve(true, &Progress);
+
+	    if (resolver_fail == false && Cache->BrokenCount() == 0)
+	       return false;
+	 }
+
+	 if (doOutput && CheckNothingBroken(Cache) == false)
+	    return false;
+
+	 return true;
+      };
+
+      if (not runTheSolver(true))
 	 return false;
+
+      //  Fallback to solver3
+      if (_config->Find("APT::Solver", "internal") == "internal" && _config->FindB("APT::Audit"))
+      {
+	 pkgDepCache::Transaction solver3(Cache, pkgDepCache::Transaction::Behavior::ROLLBACK);
+	 transaction.temporaryRollback();
+
+	 std::vector<std::string> errors;
+	 {
+	    _error->PushToStack();
+	    _config->Set("APT::Solver", "3.0");
+	    DEFER([&]
+		  { _config->Set("APT::Solver", "internal"); _error->RevertToStack(); });
+	    runTheSolver(false);
+	    while (not _error->empty())
+	    {
+	       std::string msg;
+	       bool isErr = _error->PopMessage(msg);
+	       if (isErr)
+		  errors.push_back(std::string{_("Error from '3.0' solver: ")} + msg);
+	       else
+		  errors.push_back(std::string{_("Message from '3.0' solver: ")} + msg);
+	    }
+	 }
+
+	 auto solver3Broken = Cache->BrokenCount();
+	 auto solver3Del = Cache->DelCount();
+	 auto solver3Inst = Cache->InstCount();
+	 solver3.rollback();
+
+	 if (solver3Broken)
+	    _error->Audit("The new '3.0' solver did not find a solution");
+	 else
+	 {
+	    if (solver3Del > Cache->DelCount())
+	       _error->Audit("The new '3.0' solver deletes more packages: %lu instead of %lu\n", solver3Del, Cache->DelCount());
+	    if (solver3Inst > Cache->InstCount())
+	       _error->Audit("The new '3.0' solver installs or upgrades more packages: %lu instead of %lu\n", solver3Inst, Cache->InstCount());
+	 }
+	 for (auto msg : errors)
+	    _error->Audit("%s", msg.c_str());
+      }
    }
-   if (!DoAutomaticRemove(Cache)) 
+   if (!DoAutomaticRemove(Cache))
       return false;
 
    // if nothing changed in the cache, but only the automark information
