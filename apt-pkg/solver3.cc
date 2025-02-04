@@ -20,6 +20,11 @@
 
 #define APT_COMPILING_APT
 
+// Bounds checking is too expensive for the solver.
+#undef _GLIBCXX_ASSERTIONS
+#include <vector>
+#define _GLIBCXX_ASSERTIONS
+
 #include <config.h>
 
 #include <apt-pkg/algorithms.h>
