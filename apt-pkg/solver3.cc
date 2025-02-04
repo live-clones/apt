@@ -48,7 +48,6 @@ struct APT::Solver::CompareProviders3 /*{{{*/
    pkgDepCache::Policy &Policy;
    pkgCache::PkgIterator const Pkg;
    APT::Solver &Solver;
-   bool upgrade{_config->FindB("APT::Solver::Upgrade", false)};
 
    bool operator()(pkgCache::Version *AV, pkgCache::Version *BV)
    {
@@ -74,7 +73,7 @@ struct APT::Solver::CompareProviders3 /*{{{*/
 	    return false;
 
 	 // Candidate wins in upgrade scenario
-	 if (upgrade)
+	 if (Solver.IsUpgrade)
 	 {
 	    auto Cand = Solver.GetCandidateVer(A);
 	    if (AV == Cand || BV == Cand)
@@ -95,7 +94,7 @@ struct APT::Solver::CompareProviders3 /*{{{*/
       // Try obsolete choices only after exhausting non-obsolete choices such that we install
       // packages replacing them and don't keep back upgrades depending on the replacement to
       // keep the obsolete package installed.
-      if (upgrade)
+      if (Solver.IsUpgrade)
 	 if (auto obsoleteA = Solver.Obsolete(A), obsoleteB = Solver.Obsolete(B); obsoleteA != obsoleteB)
 	    return obsoleteB;
       // Prefer MA:same packages if other architectures for it are installed
@@ -481,8 +480,6 @@ bool APT::Solver::PropagateReject(Var var)
 
 bool APT::Solver::EnqueueCommonDependencies(pkgCache::PkgIterator Pkg)
 {
-   if (not _config->FindB("APT::Solver::Enqueue-Common-Dependencies", true))
-      return false;
    for (auto dep = Pkg.VersionList().DependsList(); not dep.end();)
    {
       pkgCache::DepIterator start;
@@ -511,7 +508,6 @@ bool APT::Solver::EnqueueOrGroup(pkgCache::DepIterator start, pkgCache::DepItera
 {
    auto TgtPkg = start.TargetPkg();
    auto Ver = start.ParentVer();
-   auto fixPolicy = _config->FindB("APT::Get::Fix-Policy-Broken");
 
    // Non-important dependencies can only be installed if they are currently satisfied, see the check further
    // below once we have calculated all possible solutions.
@@ -554,7 +550,7 @@ bool APT::Solver::EnqueueOrGroup(pkgCache::DepIterator start, pkgCache::DepItera
       // If we are fixing the policy, we need to sort each alternative in an or group separately
       // FIXME: This is not really true, though, we should fix the CompareProviders to ignore the
       // installed state
-      if (fixPolicy)
+      if (FixPolicyBroken)
 	 std::stable_sort(workItem.solutions.begin() + begin, workItem.solutions.end(), CompareProviders3{cache, policy, TgtPkg, *this});
 
       if (start == end)
@@ -562,7 +558,7 @@ bool APT::Solver::EnqueueOrGroup(pkgCache::DepIterator start, pkgCache::DepItera
       ++start;
    } while (1);
 
-   if (not fixPolicy)
+   if (not FixPolicyBroken)
       std::stable_sort(workItem.solutions.begin(), workItem.solutions.end(), CompareProviders3{cache, policy, TgtPkg, *this});
 
    if (std::all_of(workItem.solutions.begin(), workItem.solutions.end(), [this](auto var) -> auto
@@ -947,7 +943,6 @@ bool APT::Solver::Solve()
 // \brief Apply the selections from the dep cache to the solver
 bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 {
-   bool AllowRemoveManual = AllowRemove && _config->FindB("APT::Solver::RemoveManual", false);
    DefaultRootSetFunc2 rootSet(&cache);
 
    // Enforce strict pinning rules by rejecting all forbidden versions.
