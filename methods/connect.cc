@@ -494,7 +494,7 @@ ResultState Connect(std::string Host, int Port, const char *Service,
       SrvRecords.clear();
       if (_config->FindB("Acquire::EnableSrvRecords", true) == true)
       {
-         GetSrvRecords(Host, DefPort, SrvRecords);
+	 GetSrvRecords(Host, Service, SrvRecords);
 	 // RFC2782 defines that a lonely '.' target is an abort reason
 	 if (SrvRecords.size() == 1 && SrvRecords[0].target.empty())
 	 {
