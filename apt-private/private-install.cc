@@ -906,8 +906,21 @@ bool DoCacheManipulationFromCommandLine(CommandLine &CmdL, std::vector<PseudoPkg
 	 return true;
       };
 
-      if (not runTheSolver(true))
-	 return false;
+      if (not _config->Find("APT::Solver").empty() && not runTheSolver(true))
+      {
+	 transaction.rollback();
+
+	 pkgDepCache::Transaction solver3(Cache, pkgDepCache::Transaction::Behavior::AUTO);
+	 _error->PushToStack();
+	 _config->Set("APT::Solver", "3.0");
+	 DEFER([&]
+	       { _config->Set("APT::Solver", "internal"); _error->MergeWithStack(); });
+	 c1out << std::endl << _("The internal apt solver failed, retrying with the new '3.0' solver...") << std::endl;
+	 if (not runTheSolver(false) || Cache->BrokenCount() > 0)
+	    return false;
+
+	 _error->Notice("The new APT solver succeeded, disregard previous solver errors");
+      }
 
       //  Fallback to solver3
       if (_config->Find("APT::Solver", "internal") == "internal" && _config->FindB("APT::Audit"))

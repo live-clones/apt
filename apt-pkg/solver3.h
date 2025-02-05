@@ -170,7 +170,7 @@ class Solver
    // \brief If set, installs are allowed.
    bool AllowInstall{_config->FindB("APT::Solver::Install", true)};
    // \brief If set, we use strict pinning.
-   bool StrictPinning{_config->FindB("APT::Solver::Strict-Pinning", true)};
+   bool StrictPinning{_config->FindB("APT::Solver::Strict-Pinning", false)};
    // \brief If set, we install missing recommends and pick new best packages.
    bool FixPolicyBroken{_config->FindB("APT::Get::Fix-Policy-Broken")};
 
