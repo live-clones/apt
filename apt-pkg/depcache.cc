@@ -2684,3 +2684,60 @@ unsigned long long pkgDepCache::BootSize(bool initrdOnly)
    return std::accumulate(sizes, sizes + MAX_ARTEFACT, off_t{0}) * BootCount * 110 / 100;
 }
 									/*}}}*/
+// pkgDepCache::Transaction						/*{{{*/
+pkgDepCache::Transaction::Transaction(pkgDepCache &cache, Behavior behavior) : cache(cache), behavior(behavior)
+{
+   PkgState = std::make_unique<StateCache[]>(cache.GetCache().Head().PackageCount);
+   DepState = std::make_unique<unsigned char[]>(cache.GetCache().Head().DependsCount);
+
+   memcpy(&PkgState[0], &cache.PkgState[0], sizeof(PkgState[0]) * cache.GetCache().Head().PackageCount);
+   memcpy(&DepState[0], &cache.DepState[0], sizeof(DepState[0]) * cache.GetCache().Head().DependsCount);
+
+   iUsrSize = cache.iUsrSize;
+   iDownloadSize = cache.iDownloadSize;
+   iInstCount = cache.iInstCount;
+   iDelCount = cache.iDelCount;
+   iKeepCount = cache.iKeepCount;
+   iBrokenCount = cache.iBrokenCount;
+   iPolicyBrokenCount = cache.iPolicyBrokenCount;
+   iBadCount = cache.iBadCount;
+}
+void pkgDepCache::Transaction::temporaryRollback()
+{
+   memcpy(&cache.PkgState[0], &PkgState[0], sizeof(PkgState[0]) * cache.GetCache().Head().PackageCount);
+   memcpy(&cache.DepState[0], &DepState[0], sizeof(DepState[0]) * cache.GetCache().Head().DependsCount);
+
+   cache.iUsrSize = iUsrSize;
+   cache.iDownloadSize = iDownloadSize;
+   cache.iInstCount = iInstCount;
+   cache.iDelCount = iDelCount;
+   cache.iKeepCount = iKeepCount;
+   cache.iBrokenCount = iBrokenCount;
+   cache.iPolicyBrokenCount = iPolicyBrokenCount;
+   cache.iBadCount = iBadCount;
+}
+
+void pkgDepCache::Transaction::commit()
+{
+   PkgState.reset();
+   DepState.reset();
+}
+
+void pkgDepCache::Transaction::rollback()
+{
+   if (PkgState == nullptr)
+      return;
+
+   temporaryRollback();
+   PkgState.reset();
+   DepState.reset();
+}
+
+pkgDepCache::Transaction::~Transaction()
+{
+   if (behavior == Behavior::ROLLBACK || (behavior == Behavior::AUTO && cache.iBrokenCount > iBrokenCount))
+      rollback();
+   else
+      commit();
+}
+									/*}}}*/

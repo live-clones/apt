@@ -109,8 +109,15 @@ class APT_PUBLIC pkgDepCache : protected pkgCache::Namespace
                        DepCandPolicy = (1 << 4), DepCandMin = (1 << 5)};
    
    // These flags are used in StateCache::iFlags
-   enum InternalFlags {AutoKept = (1 << 0), Purge = (1 << 1), ReInstall = (1 << 2), Protected = (1 << 3)};
-      
+   enum InternalFlags
+   {
+      AutoKept = (1 << 0),
+      Purge = (1 << 1),
+      ReInstall = (1 << 2),
+      Protected = (1 << 3),
+      FromUser = (1 << 4)
+   };
+
    enum VersionTypes {NowVersion, InstallVersion, CandidateVersion};
    enum ModeList {ModeDelete = 0, ModeKeep = 1, ModeInstall = 2, ModeGarbage = 3};
 
@@ -266,6 +273,59 @@ class APT_PUBLIC pkgDepCache : protected pkgCache::Namespace
       bool InstallSuggests;
    };
 
+   /**
+    * \brief Perform changes to the depcache atomically.
+    *
+    * The default policy for a transaction is to rollback if the number of broken packages
+    * increased, otherwise to commit. Call commit() or rollback() to override the default
+    * policy.
+    */
+   class APT_PUBLIC Transaction final
+   {
+      public:
+      enum class Behavior
+      {
+	 COMMIT,
+	 ROLLBACK,
+	 AUTO,
+      };
+
+      private:
+      // State information
+      pkgDepCache &cache;
+      Behavior behavior;
+      std::unique_ptr<StateCache[]> PkgState;
+      std::unique_ptr<unsigned char[]> DepState;
+
+      signed long long iUsrSize;
+      unsigned long long iDownloadSize;
+      unsigned long iInstCount;
+      unsigned long iDelCount;
+      unsigned long iKeepCount;
+      unsigned long iBrokenCount;
+      unsigned long iPolicyBrokenCount;
+      unsigned long iBadCount;
+
+      Transaction &operator=(Transaction &) = delete;
+      Transaction(Transaction &) = delete;
+
+      public:
+      explicit Transaction(pkgDepCache &cache, Behavior behavior);
+      /** \brief Commit the transaction immediately */
+      void commit();
+      /** \brief Rollback the transaction immediately */
+      void rollback();
+      /** \brief Like rollback, but can be called multiple times.
+       *
+       * You can for example create a new transaction, then temporarily
+       * rollback to the state before the previous transaction in that
+       * transaction.
+       */
+      void temporaryRollback();
+      /** \brief Commit or rollback the transaction based on default policy */
+      ~Transaction();
+   };
+
    private:
    /** The number of open "action groups"; certain post-action
     *  operations are suppressed if this number is > 0.
@@ -273,6 +333,8 @@ class APT_PUBLIC pkgDepCache : protected pkgCache::Namespace
    int group_level;
 
    friend class ActionGroup;
+   friend class Transaction;
+
    public:
    int IncreaseActionGroupLevel();
    int DecreaseActionGroupLevel();

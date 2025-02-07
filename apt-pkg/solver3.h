@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0+
  */
 
+#include <cassert>
 #include <optional>
 #include <queue>
 #include <vector>
@@ -36,6 +37,7 @@ class Solver
    struct Var;
    struct CompareProviders3;
    struct State;
+   struct Clause;
    struct Work;
    struct Solved;
 
@@ -113,6 +115,20 @@ class Solver
    mutable std::vector<char> pkgObsolete;
    bool Obsolete(pkgCache::PkgIterator pkg) const;
    bool ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const;
+   mutable std::vector<short> priorities;
+   short GetPriority(pkgCache::VerIterator ver) const
+   {
+      if (priorities[ver->ID] == 0)
+	 priorities[ver->ID] = policy.GetPriority(ver);
+      return priorities[ver->ID];
+   }
+   mutable std::vector<pkgCache::VerIterator> candidates;
+   pkgCache::VerIterator GetCandidateVer(pkgCache::PkgIterator pkg) const
+   {
+      if (candidates[pkg->ID].end())
+	 candidates[pkg->ID] = policy.GetCandidateVer(pkg);
+      return candidates[pkg->ID];
+   }
 
    // \brief Heap of the remaining work.
    //
@@ -145,25 +161,33 @@ class Solver
    int debug{_config->FindI("Debug::APT::Solver")};
    // \brief If set, we try to keep automatically installed packages installed.
    bool KeepAuto{not _config->FindB("APT::Get::AutomaticRemove")};
+   // \brief Determines if we are in upgrade mode.
+   bool IsUpgrade{_config->FindB("APT::Solver::Upgrade", false)};
    // \brief If set, removals are allowed.
    bool AllowRemove{_config->FindB("APT::Solver::Remove", true)};
+   // \brief If set, removal of manual packages is allowed.
+   bool AllowRemoveManual{AllowRemove && _config->FindB("APT::Solver::RemoveManual", false)};
    // \brief If set, installs are allowed.
    bool AllowInstall{_config->FindB("APT::Solver::Install", true)};
    // \brief If set, we use strict pinning.
-   bool StrictPinning{_config->FindB("APT::Solver::Strict-Pinning", true)};
+   bool StrictPinning{_config->FindB("APT::Solver::Strict-Pinning", false)};
+   // \brief If set, we install missing recommends and pick new best packages.
+   bool FixPolicyBroken{_config->FindB("APT::Get::Fix-Policy-Broken")};
 
    // \brief Enqueue dependencies shared by all versions of the package.
-   bool EnqueueCommonDependencies(pkgCache::PkgIterator Pkg);
+   [[nodiscard]] bool EnqueueCommonDependencies(pkgCache::PkgIterator Pkg);
    // \brief Reject reverse dependencies. Must call std::make_heap() after.
-   bool RejectReverseDependencies(pkgCache::VerIterator Ver);
+   [[nodiscard]] bool RejectReverseDependencies(pkgCache::VerIterator Ver);
+   // \brief Translate an or group into a clause object
+   [[nodiscard]] Clause TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
    // \brief Enqueue a single or group
-   bool EnqueueOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
+   [[nodiscard]] bool EnqueueOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
    // \brief Propagate all pending propagations
-   bool Propagate();
+   [[nodiscard]] bool Propagate();
    // \brief Propagate a "true" value of a variable
-   bool PropagateInstall(Var var);
+   [[nodiscard]] bool PropagateInstall(Var var);
    // \brief Propagate a rejection of a variable
-   bool PropagateReject(Var var);
+   [[nodiscard]] bool PropagateReject(Var var);
 
    // \brief Return the current depth (choices.size() with casting)
    depth_type depth()
@@ -175,11 +199,11 @@ class Solver
    // \brief Create a new decision level.
    void Push(Work work);
    // \brief Revert to the previous decision level.
-   bool Pop();
+   [[nodiscard]] bool Pop();
    // \brief Undo a single assignment / solved work item
    void UndoOne();
    // \brief Add work to our work queue.
-   void AddWork(Work &&work);
+   [[nodiscard]] bool AddWork(Work &&work);
    // \brief Rescore the work after a reject or a pop
    void RescoreWorkIfNeeded();
 
@@ -187,17 +211,17 @@ class Solver
    Solver(pkgCache &Cache, pkgDepCache::Policy &Policy);
 
    // Assume that the variable is decided as specified.
-   bool Assume(Var var, bool decision, Var reason);
+   [[nodiscard]] bool Assume(Var var, bool decision, Var reason);
    // Enqueue a decision fact
-   bool Enqueue(Var var, bool decision, Var reason);
+   [[nodiscard]] bool Enqueue(Var var, bool decision, Var reason);
 
    // \brief Apply the selections from the dep cache to the solver
-   bool FromDepCache(pkgDepCache &depcache);
+   [[nodiscard]] bool FromDepCache(pkgDepCache &depcache);
    // \brief Apply the solver result to the depCache
-   bool ToDepCache(pkgDepCache &depcache);
+   [[nodiscard]] bool ToDepCache(pkgDepCache &depcache);
 
    // \brief Solve the dependencies
-   bool Solve();
+   [[nodiscard]] bool Solve();
 
    // Print dependency chain
    std::string WhyStr(Var reason);
@@ -242,10 +266,20 @@ struct APT::Solver::Var
    {
       return IsVersion ? pkgCache::VerIterator(cache, cache.VerP + Ver()) : pkgCache::VerIterator();
    }
+   // \brief Return a package, cast from version if needed
+   pkgCache::PkgIterator CastPkg(pkgCache &cache) const
+   {
+      assert(MapPtr != 0);
+      return IsVersion ? Ver(cache).ParentPkg() : Pkg(cache);
+   }
    // \brief Check if there is no reason.
    bool empty() const
    {
       return IsVersion == 0 && MapPtr == 0;
+   }
+   bool operator==(Var const other)
+   {
+      return IsVersion == other.IsVersion && MapPtr == other.MapPtr;
    }
 
    std::string toString(pkgCache &cache) const
@@ -256,6 +290,32 @@ struct APT::Solver::Var
 	 return V.ParentPkg().FullName() + "=" + V.VerStr();
       return "(root)";
    }
+};
+
+/**
+ * \brief A single clause
+ *
+ * A clause is a normalized, expanded dependency, translated into an implication
+ * in terms of Var objects, that is, `reason -> solutions[0] | ... | solutions[n]`
+ */
+struct APT::Solver::Clause
+{
+   // \brief Var for the work
+   Var reason;
+   // \brief The group we are in
+   Group group;
+   // \brief Possible solutions to this task, ordered in order of preference.
+   std::vector<Var> solutions{};
+   // \brief An optional clause does not need to be satisfied
+   bool optional;
+
+   // \brief A negative clause negates the solutions, that is X->A|B you get X->!(A|B), aka X->!A&!B
+   bool negative;
+
+   inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative) {}
+
+   // \brief Dump the clause to std::cerr
+   void Dump(pkgCache &cache);
 };
 
 /**
@@ -270,37 +330,28 @@ struct APT::Solver::Var
  */
 struct APT::Solver::Work
 {
-   // \brief Var for the work
-   Var reason;
+   Clause clause;
+
    // \brief The depth at which the item has been added
    depth_type depth;
-   // \brief The group we are in
-   Group group;
-   // \brief Possible solutions to this task, ordered in order of preference.
-   std::vector<pkgCache::Version *> solutions{};
 
    // This is a union because we only need to store the choice we made when adding
    // to the choice vector, and we don't need the size of valid choices in there.
    union
    {
       // The choice we took
-      pkgCache::Version *choice;
+      Var choice;
       // Number of valid choices
-      size_t size;
+      size_t size{0};
    };
 
-   // \brief Whether this is an optional work item, they will be processed last
-   bool optional;
-   // \brief Whether this is an ugprade
-   bool upgrade;
    // \brief This item should be removed from the queue.
-   bool erased;
+   bool erased{false};
 
    bool operator<(APT::Solver::Work const &b) const;
    // \brief Dump the work item to std::cerr
    void Dump(pkgCache &cache);
-
-   inline Work(Var reason, depth_type depth, Group group, bool optional = false, bool upgrade = false) : reason(reason), depth(depth), group(group), size(0), optional(optional), upgrade(upgrade), erased(false) {}
+   inline Work(Clause clause, depth_type depth) : clause(std::move(clause)), depth(depth) {}
 };
 
 // \brief This essentially describes the install state in RFC2119 terms.
