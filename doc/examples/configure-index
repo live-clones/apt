@@ -305,6 +305,8 @@ Acquire
     User-Agent "Debian APT-HTTP/1.3";
     User-Agent-Non-Interactive "false"; // include non-interactive if run in systemd service (true on Ubuntu)
     Referer "<STRING>"; // Set the HTTP Referer [sic!] header to given value
+    localhost::Retries::HandleRetryAfter "<BOOL>"; // Specific per-host setting
+    snapshot.debian.org::Retries::HandleRetryAfter "true"; // Specific per-host setting
   };
 
   // HTTPS method configuration: uses the http
@@ -331,6 +333,9 @@ Acquire
 	Dl-Limit "<INT>"; // Kb/sec maximum download rate
 
 	User-Agent "Debian APT-CURL/1.0";
+
+    localhost::Retries::HandleRetryAfter "<BOOL>"; // Specific per-host setting
+    snapshot.debian.org::Retries::HandleRetryAfter "true"; // Specific per-host setting
   };
 
   cdrom
