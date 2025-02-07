@@ -122,8 +122,19 @@ static bool DoSrvLookup(CommandLine &CmdL)				/*{{{*/
       {
 	 std::string const host = name.substr(0, found);
 	 size_t const port = atoi(name.c_str() + found + 1);
-	 if(GetSrvRecords(host, port, srv_records) == false)
-	    _error->Error(_("GetSrvRec failed for %s"), name.c_str());
+	 if (port)
+	 {
+	    _error->Warning("Ports are deprecated, specify service name instead");
+	    APT_IGNORE_DEPRECATED_PUSH
+	    if (GetSrvRecords(host, port, srv_records) == false)
+	       _error->Error(_("GetSrvRec failed for %s"), name.c_str());
+	    APT_IGNORE_DEPRECATED_POP
+	 }
+	 else
+	 {
+	    if (GetSrvRecords(host, name.c_str() + found + 1, srv_records) == false)
+	       _error->Error(_("GetSrvRec failed for %s"), name.c_str());
+	 }
       }
       else if(GetSrvRecords(name, srv_records) == false)
 	 _error->Error(_("GetSrvRec failed for %s"), name.c_str());
