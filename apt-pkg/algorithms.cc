@@ -61,8 +61,8 @@ pkgSimulate::pkgSimulate(pkgDepCache *Cache) : pkgPackageManager(Cache),
 {
    Sim.Init(0);
    auto PackageCount = Cache->Head().PackageCount;
-   Flags = new unsigned char[PackageCount];
-   memset(Flags,0,sizeof(*Flags)*PackageCount);
+   Flags = std::make_unique<unsigned char[]>(PackageCount);
+   memset(&Flags[0],0,sizeof(Flags[0])*PackageCount);
 
    // Fake a filename so as not to activate the media swapping
    string Jnk = "SIMULATE";
@@ -73,11 +73,7 @@ pkgSimulate::pkgSimulate(pkgDepCache *Cache) : pkgPackageManager(Cache),
 }
 									/*}}}*/
 // Simulate::~Simulate - Destructor					/*{{{*/
-pkgSimulate::~pkgSimulate()
-{
-   delete[] Flags;
-   delete d;
-}
+pkgSimulate::~pkgSimulate() = default;
 									/*}}}*/
 // Simulate::Describe - Describe a package				/*{{{*/
 // ---------------------------------------------------------------------
@@ -411,9 +407,9 @@ pkgProblemResolver::pkgProblemResolver(pkgDepCache *pCache) : d(NULL), Cache(*pC
 {
    // Allocate memory
    auto const Size = Cache.Head().PackageCount;
-   Scores = new int[Size];
-   Flags = new unsigned char[Size];
-   memset(Flags,0,sizeof(*Flags)*Size);
+   Scores = std::make_unique<int[]>(Size);
+   Flags = std::make_unique<unsigned char[]>(Size);
+   memset(&Flags[0],0,sizeof(Flags[0])*Size);
    
    // Set debug to true to see its decision logic
    Debug = _config->FindB("Debug::pkgProblemResolver",false);
@@ -422,11 +418,7 @@ pkgProblemResolver::pkgProblemResolver(pkgDepCache *pCache) : d(NULL), Cache(*pC
 // ProblemResolver::~pkgProblemResolver - Destructor			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
-pkgProblemResolver::~pkgProblemResolver()
-{
-   delete [] Scores;
-   delete [] Flags;
-}
+pkgProblemResolver::~pkgProblemResolver() = default;
 									/*}}}*/
 // ProblemResolver::ScoreSort - Sort the list by score			/*{{{*/
 // ---------------------------------------------------------------------
@@ -446,7 +438,7 @@ int pkgProblemResolver::ScoreSort(Package const *A,Package const *B)
 void pkgProblemResolver::MakeScores()
 {
    auto const Size = Cache.Head().PackageCount;
-   memset(Scores,0,sizeof(*Scores)*Size);
+   memset(&Scores[0],0,sizeof(Scores[0])*Size);
 
    // maps to pkgCache::State::VerPriority: 
    //    Required Important Standard Optional Extra
@@ -563,7 +555,7 @@ void pkgProblemResolver::MakeScores()
 
    // Copy the scores to advoid additive looping
    std::unique_ptr<int[]> OldScores(new int[Size]);
-   memcpy(OldScores.get(),Scores,sizeof(*Scores)*Size);
+   memcpy(&OldScores[0],&Scores[0],sizeof(Scores[0])*Size);
       
    /* Now we cause 1 level of dependency inheritance, that is we add the 
       score of the packages that depend on the target Package. This 
@@ -806,16 +798,16 @@ bool pkgProblemResolver::ResolveInternal(bool const BrokenFix)
       high score packages cause the removal of lower score packages that
       would cause the removal of even lower score packages. */
    std::unique_ptr<pkgCache::Package *[]> PList(new pkgCache::Package *[Size]);
-   pkgCache::Package **PEnd = PList.get();
+   pkgCache::Package **PEnd = &PList[0];
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
       *PEnd++ = I;
 
-   std::sort(PList.get(), PEnd, [this](Package *a, Package *b) { return ScoreSort(a, b) < 0; });
+   std::sort(&PList[0], PEnd, [this](Package *a, Package *b) { return ScoreSort(a, b) < 0; });
 
    if (_config->FindB("Debug::pkgProblemResolver::ShowScores",false) == true)
    {
       clog << "Show Scores" << endl;
-      for (pkgCache::Package **K = PList.get(); K != PEnd; K++)
+      for (pkgCache::Package **K = &PList[0]; K != PEnd; K++)
          if (Scores[(*K)->ID] != 0)
          {
            pkgCache::PkgIterator Pkg(Cache,*K);
@@ -839,7 +831,7 @@ bool pkgProblemResolver::ResolveInternal(bool const BrokenFix)
    for (int Counter = 0; Counter < MaxCounter && Change; ++Counter)
    {
       Change = false;
-      for (pkgCache::Package **K = PList.get(); K != PEnd; K++)
+      for (pkgCache::Package **K = &PList[0]; K != PEnd; K++)
       {
 	 pkgCache::PkgIterator I(Cache,*K);
 
@@ -968,7 +960,7 @@ bool pkgProblemResolver::ResolveInternal(bool const BrokenFix)
 	    }
 	    
 	    bool Done = false;
-	    for (pkgCache::Version **V = VList.get(); *V != 0; V++)
+	    for (pkgCache::Version **V = &VList[0]; *V != 0; V++)
 	    {
 	       pkgCache::VerIterator Ver(Cache,*V);
 	       pkgCache::PkgIterator Pkg = Ver.ParentPkg();
@@ -1299,18 +1291,18 @@ bool pkgProblemResolver::ResolveByKeepInternal()
       high score packages cause the removal of lower score packages that
       would cause the removal of even lower score packages. */
    auto Size = Cache.Head().PackageCount;
-   pkgCache::Package **PList = new pkgCache::Package *[Size];
-   pkgCache::Package **PEnd = PList;
+   std::unique_ptr<pkgCache::Package *[]> PList{new pkgCache::Package *[Size]};
+   pkgCache::Package **PEnd = &PList[0];
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
       *PEnd++ = I;
 
-   std::sort(PList,PEnd,[this](Package *a, Package *b) { return ScoreSort(a, b) < 0; });
+   std::sort(&PList[0],PEnd,[this](Package *a, Package *b) { return ScoreSort(a, b) < 0; });
 
 
    if (_config->FindB("Debug::pkgProblemResolver::ShowScores",false) == true)
    {
       clog << "Show Scores" << endl;
-      for (pkgCache::Package **K = PList; K != PEnd; K++)
+      for (pkgCache::Package **K = &PList[0]; K != PEnd; K++)
          if (Scores[(*K)->ID] != 0)
          {
            pkgCache::PkgIterator Pkg(Cache,*K);
@@ -1323,7 +1315,8 @@ bool pkgProblemResolver::ResolveByKeepInternal()
 
    // Consider each broken package 
    pkgCache::Package **LastStop = 0;
-   for (pkgCache::Package **K = PList; K != PEnd; K++)
+restart:
+   for (pkgCache::Package **K = &PList[0]; K != PEnd; K++)
    {
       pkgCache::PkgIterator I(Cache,*K);
 
@@ -1341,10 +1334,7 @@ bool pkgProblemResolver::ResolveByKeepInternal()
 	    clog << "Keeping package " << I.FullName(false) << endl;
 	 Cache.MarkKeep(I, false, false);
 	 if (InstOrNewPolicyBroken(I) == false)
-	 {
-	    K = PList - 1;
-	    continue;
-	 }
+	    goto restart;
       }
       
       // Isolate the problem dependencies
@@ -1373,7 +1363,7 @@ bool pkgProblemResolver::ResolveByKeepInternal()
 
 	    // Look at all the possible provides on this package
 	    std::unique_ptr<pkgCache::Version *[]> VList(Start.AllTargets());
-	    for (pkgCache::Version **V = VList.get(); *V != 0; V++)
+	    for (pkgCache::Version **V = &VList[0]; *V != 0; V++)
 	    {
 	       pkgCache::VerIterator Ver(Cache,*V);
 	       pkgCache::PkgIterator Pkg = Ver.ParentPkg();
@@ -1413,14 +1403,11 @@ bool pkgProblemResolver::ResolveByKeepInternal()
           // I is an iterator based off our temporary package list,
           // so copy the name we need before deleting the temporary list
           std::string const LoopingPackage = I.FullName(false);
-          delete[] PList;
           return _error->Error("Internal Error, pkgProblemResolver::ResolveByKeep is looping on package %s.", LoopingPackage.c_str());
       }
       LastStop = K;
-      K = PList - 1;
+      goto restart;
    }
-
-   delete[] PList;
 
    if (Cache.BrokenCount() != 0)
       return _error->Error(_("Unable to correct problems, you have held broken packages."));
