@@ -1,0 +1,141 @@
+# Debian apt-mark(8) completion                             -*- shell-script -*-
+
+_comp_cmd_apt_mark()
+{
+    local cur cword prev split words
+    _init_completion -s || return
+
+    case $prev in
+        --config-file | --file | -!(-*)[cf])
+            _filedir
+            return
+            ;;
+        --help | --version | -!(-*)[hv])
+            return
+            ;;
+        --option | -!(-*)o)
+            # This would be the right place to complete on APT's configuration
+            # options :-)
+            return
+            ;;
+        --with-source)
+            _filedir '@(deb|dsc|changes)'
+            COMPREPLY+=( $(
+                compgen -f -o plusdirs -X '!?(*/)@(Sources|Packages)' -- "$cur"
+            ) )
+            return
+            ;;
+    esac
+
+    $split && return
+
+    local commands=(
+        auto
+        manual
+        minimize-manual
+        hold
+        unhold
+        showauto
+        showmanual
+        showhold
+
+        # dpkg selection commands:
+        install
+        remove deinstall
+        purge
+        showinstall
+        showremove
+        showpurge
+    )
+
+    local command i
+    for ((i = 1; i < ${#words[@]}; ++i)); do
+        if [[ " ${commands[*]} " == *" ${words[i]} "* ]]; then
+            command=${words[i]}
+            break
+        fi
+    done
+
+    # When the cursor (cword) is before the command word (i), only suggest
+    # options but not package names:
+    if [[ $cur == -* || ( -v command && $cword -le $i ) ]]; then
+        COMPREPLY=( $(compgen -W '
+            --with-source
+
+            --config-file
+            --help
+            --option
+            --version
+        ' -- "$cur") )
+
+        case ${command-} in
+            auto | manual | hold | unhold | minimize-manual | showauto | \
+                showmanual)
+                COMPREPLY+=( $(compgen -W '--file' -- "$cur") )
+                ;;&
+            minimize-manual)
+                COMPREPLY+=( $(compgen -W '
+                    --yes
+                    --assume-yes
+                    --assume-no
+                ' -- "$cur") )
+                ;;&
+            minimize-manual | !(|show*))
+                COMPREPLY+=( $(compgen -W '
+                    --simulate
+                    --just-print
+                    --recon
+                    --dry-run
+                    --no-act
+                ' -- "$cur") )
+                ;;
+        esac
+
+        return
+    fi
+
+    if [[ -v command ]]; then
+        case $command in
+            auto)
+                COMPREPLY=( $(compgen -W "$("$1" showmanual)" -- "$cur") )
+                return
+                ;;
+            manual)
+                COMPREPLY=( $(compgen -W "$("$1" showauto)" -- "$cur") )
+                return
+                ;;
+            hold)
+                # There is probably not a huge number of packages on hold. It
+                # takes an acceptable amount of time to filter them out here:
+                COMPREPLY=( $(_xfunc apt-cache _apt_cache_packages |
+                    command grep -vxf <("$1" showhold)) )
+                return
+                ;;
+            unhold)
+                COMPREPLY=( $(compgen -W "$("$1" showhold)" -- "$cur") )
+                return
+                ;;
+            showauto | showmanual | remove | deinstall)
+                COMPREPLY=( $(_xfunc dpkg _comp_dpkg_installed_packages "$cur") )
+                return
+                ;;
+            showhold | install | showinstall)
+                # Filtering out the already installed packages for
+                # install/showinstall with e.g.
+                # `... | grep -vxf <(apt-mark showinstall)` takes unbearably long
+                # on a typical system:
+                COMPREPLY=( $(_xfunc apt-cache _apt_cache_packages) )
+                return
+                ;;
+            purge | showremove | showpurge)
+                COMPREPLY=( $(_xfunc dpkg _comp_dpkg_purgeable_packages "$cur") )
+                return
+                ;;
+        esac
+    else
+        COMPREPLY=( $(compgen -W "${commands[*]}" -- "$cur") )
+    fi
+} &&
+    complete -F _comp_cmd_apt_mark apt-mark
+
+# ex: ts=4 sw=4 et filetype=sh
