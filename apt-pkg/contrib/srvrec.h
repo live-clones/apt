@@ -47,7 +47,11 @@ APT_PUBLIC bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result);
 
 /** \brief Get SRV records for query string like: _http._tcp.example.com
  */
-APT_PUBLIC bool GetSrvRecords(std::string host, int port, std::vector<SrvRec> &Result);
+APT_PUBLIC bool GetSrvRecords(std::string host, int port, std::vector<SrvRec> &Result) APT_DEPRECATED_MSG("Specify name instead");
+
+/** \brief Get SRV records for query string like: _http._tcp.example.com
+ */
+APT_PUBLIC bool GetSrvRecords(std::string host, std::string service, std::vector<SrvRec> &Result);
 
 /** \brief Pop a single SRV record from the vector of SrvRec taking
  *         priority and weight into account
