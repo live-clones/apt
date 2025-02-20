@@ -87,6 +87,10 @@
 #if __gnu_linux__
 #include <sys/prctl.h>
 #endif
+#ifdef __linux__
+#include <linux/fs.h> /* Definition of FICLONE* constants */
+#include <sys/ioctl.h>
+#endif
 
 #include <apti18n.h>
 									/*}}}*/
@@ -174,6 +178,14 @@ bool CopyFile(FileFd &From,FileFd &To)
    if (From.IsOpen() == false || To.IsOpen() == false ||
 	 From.Failed() == true || To.Failed() == true)
       return false;
+
+#ifdef __linux__
+   if (not From.IsCompressed() && not To.IsCompressed() &&
+       From.Fd() > 0 && To.Fd() > 0 &&
+       From.Tell() == 0 && To.Tell() == 0 &&
+       ioctl(To.Fd(), FICLONE, From.Fd()) != -1)
+      return true;
+#endif
 
    // Buffered copy between fds
    std::array<unsigned char, APT_BUFFER_SIZE> Buf;
