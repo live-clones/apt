@@ -175,6 +175,24 @@ bool CopyFile(FileFd &From,FileFd &To)
 	 From.Failed() == true || To.Failed() == true)
       return false;
 
+#ifdef __linux__
+   struct stat fromStat;
+   if (not From.IsCompressed() && not To.IsCompressed() && From.Fd() > 0 && To.Fd() > 0 &&
+       fstat(From.Fd(), &fromStat) == 0 && fromStat.st_size > 0)
+   {
+      auto len = fromStat.st_size;
+      ssize_t res = 0;
+      do
+      {
+	 res = copy_file_range(From.Fd(), NULL, To.Fd(), NULL, len, 0);
+	 if (res == -1)
+	    return _error->Errno("copy_file_range", "Failed to copy file");
+	 len -= res;
+      } while (len > 0 && res > 0);
+      return true;
+   }
+#endif
+
    // Buffered copy between fds
    std::array<unsigned char, APT_BUFFER_SIZE> Buf;
    unsigned long long ToRead = 0;
