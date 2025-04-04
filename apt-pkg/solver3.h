@@ -19,6 +19,8 @@
 #include <apt-pkg/pkgcache.h>
 #include <apt-pkg/policy.h>
 
+template <typename T> struct always_false : std::false_type {};
+
 namespace APT
 {
 
@@ -49,7 +51,7 @@ class ContiguousCacheMap
       else if constexpr (std::is_same_v<K, pkgCache::Package>)
 	 size = cache.Head().PackageCount;
       else
-	 static_assert(false, "Cannot construct map for key type");
+	 static_assert(always_false<K>::value, "Cannot construct map for key type");
 
       data_ = new V[size]{};
    }
@@ -120,7 +122,10 @@ class Solver
       // allowing a simple implementation of an autoremoval code.
       UpgradeAuto,
       KeepAuto,
-      ObsoleteAuto
+      ObsoleteAuto,
+
+      // Satisfy optional dependencies that were previously satisfied but won't otherwise be installed
+      SatisfySuggests,
    };
 
    // \brief Type to record depth at. This may very well be a 16-bit

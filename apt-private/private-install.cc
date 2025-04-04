@@ -89,7 +89,7 @@ bool CheckNothingBroken(CacheFile &Cache)
 // ---------------------------------------------------------------------
 static void WriteApportReport(pkgCacheFile &Cache, std::string &title, std::vector<std::string> const &errors, int mode, bool distUpgrade)
 {
-   auto dumpfile = flCombine(_config->FindDir("Dir::Log"), "edsp.log");
+   auto dumpfile = flCombine(_config->FindDir("Dir::Log"), "edsp.log.zst");
    auto crashfile = flCombine(_config->FindDir("Dir::Apport", "/var/crash"), "apt-edsp." + std::to_string(getuid()) + ".crash");
    auto apt = Cache->FindPkg("apt");
    if (access(flNotFile(dumpfile).c_str(), W_OK) != 0 || access(flNotFile(crashfile).c_str(), W_OK) != 0)
@@ -97,7 +97,8 @@ static void WriteApportReport(pkgCacheFile &Cache, std::string &title, std::vect
    OpTextProgress Progress(*_config);
    Progress.OverallProgress(0, 100, 50, _("Writing error report"));
    FileFd edspDump(dumpfile,
-		   FileFd::Exclusive | FileFd::Create | FileFd::WriteOnly | FileFd::BufferedWrite);
+		   FileFd::Exclusive | FileFd::Create | FileFd::WriteOnly | FileFd::BufferedWrite,
+		   FileFd::Extension);
    int edspFlags = 0;
    if (mode || distUpgrade)
       edspFlags |= EDSP::Request::UPGRADE_ALL;
@@ -107,7 +108,7 @@ static void WriteApportReport(pkgCacheFile &Cache, std::string &title, std::vect
       edspFlags |= EDSP::Request::FORBID_NEW_INSTALL;
 
    EDSP::WriteRequest(Cache, edspDump, edspFlags, &Progress);
-   EDSP::WriteScenario(Cache, edspDump, &Progress);
+   EDSP::WriteLimitedScenario(Cache, edspDump, &Progress);
    edspDump.Close();
 
    Progress.OverallProgress(50, 100, 50, _("Writing error report"));
@@ -123,14 +124,27 @@ static void WriteApportReport(pkgCacheFile &Cache, std::string &title, std::vect
 	 << "Title: " << title << "\n"
 	 << "SourcePackage: apt\n";
 
-   crash << "ErrorMessage:\n";
-   for (auto &error : errors)
-      crash << " " << error << "\n";
+   if (not errors.empty())
+   {
+      crash << "ErrorMessage:\n";
+      for (auto &error : errors)
+      {
+	 crash << " " << SubstVar(SubstVar(APT::String::Strip(error), "\n\n", "\n.\n"), "\n", "\n ") << "\n";
+      }
+   }
 
-   crash << "AptSolverDump:\n";
    std::ifstream toCopy(edspDump.Name());
-   for (std::string line; std::getline(toCopy, line);)
-      crash << " " << line << "\n";
+   std::ostringstream readStream;
+   readStream << toCopy.rdbuf();
+   const auto base64 = Base64Encode(readStream.str());
+   if (not base64.empty())
+   {
+      crash << "AptSolverDump:\n";
+      // Print the base64, with line wrapping, indented by one space; substr(i, 76)
+      // returns at most 76 characters or as many as are left.
+      for (size_t i=0; i < base64.size(); i += 76)
+	 crash << " " << std::string_view{base64}.substr(i, 76) << "\n";
+   }
    crash.close();
 }
 
@@ -969,6 +983,7 @@ bool DoCacheManipulationFromCommandLine(CommandLine &CmdL, std::vector<PseudoPkg
      // Fallback to 3.0 if we don't get a result or apport is installed
      if (not invalidCombinations && _config->Find("APT::Solver", "internal") == "internal" && (not res || (not Cache->FindPkg("apport").end() && Cache->FindPkg("apport")->CurrentVer)))
      {
+	bool isUpgrade = distUpgradeMode || UpgradeMode != APT::Upgrade::ALLOW_EVERYTHING;
 	auto internalBroken = Cache->BrokenCount();
 	auto internalDel = Cache->DelCount();
 	auto internalInst = Cache->InstCount();
@@ -992,6 +1007,11 @@ bool DoCacheManipulationFromCommandLine(CommandLine &CmdL, std::vector<PseudoPkg
 	      errors.push_back(str);
 	_config->Set("APT::Solver", "internal");
 	_error->RevertToStack();
+
+	// Cost factors to compare two solutions
+	auto solver3Cost = std::make_tuple(Cache->DelCount(), isUpgrade  ? -Cache->UpgradeCount() : 0, Cache->InstCount() - Cache->UpgradeCount(), Cache->UpgradeCount());
+	auto internalCost = std::make_tuple(internalDel, isUpgrade ? -internalUpgrade : 0, internalInst - internalUpgrade, internalUpgrade);
+
 	// An error summary for apport.
 	std::string error;
 	if (solver3Res && Cache->BrokenCount())
@@ -1013,7 +1033,7 @@ bool DoCacheManipulationFromCommandLine(CommandLine &CmdL, std::vector<PseudoPkg
 	   solver3.commit();
 	   res = true;
 	}
-	else if (std::make_tuple(Cache->DelCount(), -Cache->UpgradeCount(), Cache->KeepCount(), Cache->InstCount()) > std::make_tuple(internalDel, -internalUpgrade, internalKeep, internalInst))
+	else if (solver3Cost > internalCost)
 	{
 	   error = "Failure: The 3.0 solver produced a worse result";
 	}

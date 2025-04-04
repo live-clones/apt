@@ -11,14 +11,16 @@ insertinstalledpackage 'apport' 'all' '3'
 insertpackage 'unstable' 'x' 'all' '3' 'Depends: a | b'
 insertpackage 'unstable' 'y' 'all' '3' 'Depends: b | a'
 insertpackage 'unstable' 'a' 'all' '3' 'Depends: c'
-insertpackage 'unstable' 'b' 'all' '3'
-insertpackage 'unstable' 'c' 'all' '3'
+insertpackage 'unstable' 'b' 'all' '3' 'Source: src'
+insertpackage 'unstable' 'c' 'all' '3' 'Source: src'
+insertpackage 'unstable' 'unrelated' 'all' '3'
 
 setupaptarchive
 
 rm rootdir/etc/apt/apt.conf.d/disable-solver3-context
 mkdir rootdir/var/log/apt
 
+msgmsg "Test 'worse  result'"
 testsuccess aptget install y x --solver internal -s -o Dir::Apport=var/crash
 
 testsuccess sed -i "s/^Date:.*/Date: Sun Mar  9 00:08:41 2025/" rootdir/var/crash/apt-edsp.$(id -u).crash
@@ -29,101 +31,8 @@ Date: Sun Mar  9 00:08:41 2025
 Package: apt 
 Title: Failure: The 3.0 solver produced a worse result
 SourcePackage: apt
-ErrorMessage:
 AptSolverDump:
- Request: EDSP 0.5
- Architecture: amd64
- Architectures: amd64
- Machine-ID: 912e43bd1c1d4ba481f9f8ccab25f9ee
- Install: x:amd64 y:amd64
- Solver: internal
- 
- Package: a
- Architecture: all
- Version: 3
- APT-ID: 2
- Source: a
- Source-Version: 3
- Priority: optional
- Section: other
- Size: 42
- APT-Release:
-  a=unstable,n=sid,c=main,b=all
- APT-Pin: 500
- APT-Candidate: yes
- Depends: c
- 
- Package: b
- Architecture: all
- Version: 3
- APT-ID: 3
- Source: b
- Source-Version: 3
- Priority: optional
- Section: other
- Size: 42
- APT-Release:
-  a=unstable,n=sid,c=main,b=all
- APT-Pin: 500
- APT-Candidate: yes
- 
- Package: c
- Architecture: all
- Version: 3
- APT-ID: 4
- Source: c
- Source-Version: 3
- Priority: optional
- Section: other
- Size: 42
- APT-Release:
-  a=unstable,n=sid,c=main,b=all
- APT-Pin: 500
- APT-Candidate: yes
- 
- Package: x
- Architecture: all
- Version: 3
- APT-ID: 0
- Source: x
- Source-Version: 3
- Priority: optional
- Section: other
- Size: 42
- APT-Release:
-  a=unstable,n=sid,c=main,b=all
- APT-Pin: 500
- APT-Candidate: yes
- Depends: a | b
- 
- Package: y
- Architecture: all
- Version: 3
- APT-ID: 1
- Source: y
- Source-Version: 3
- Priority: optional
- Section: other
- Size: 42
- APT-Release:
-  a=unstable,n=sid,c=main,b=all
- APT-Pin: 500
- APT-Candidate: yes
- Depends: b | a
- 
- Package: apport
- Architecture: all
- Version: 3
- APT-ID: 5
- Source: apport
- Source-Version: 3
- Priority: optional
- Section: other
- Installed: yes
- APT-Pin: 100
- APT-Candidate: yes
- " cat rootdir/var/crash/apt-edsp.$(id -u).crash
-
+$(cat rootdir/var/log/apt/edsp.log.zst | base64 | sed 's#^# #')" cat rootdir/var/crash/apt-edsp.$(id -u).crash
 
 testsuccessequal "Request: EDSP 0.5
 Architecture: amd64
@@ -151,7 +60,7 @@ Package: b
 Architecture: all
 Version: 3
 APT-ID: 3
-Source: b
+Source: src
 Source-Version: 3
 Priority: optional
 Section: other
@@ -165,7 +74,7 @@ Package: c
 Architecture: all
 Version: 3
 APT-ID: 4
-Source: c
+Source: src
 Source-Version: 3
 Priority: optional
 Section: other
@@ -208,7 +117,7 @@ Depends: b | a
 Package: apport
 Architecture: all
 Version: 3
-APT-ID: 5
+APT-ID: 6
 Source: apport
 Source-Version: 3
 Priority: optional
@@ -216,8 +125,9 @@ Section: other
 Installed: yes
 APT-Pin: 100
 APT-Candidate: yes
-" cat rootdir/var/log/apt/edsp.log
+" apthelper cat-file rootdir/var/log/apt/edsp.log.zst
 
+msgmsg "Test that solver 3.0 explanations are shown"
 testfailureequal "Reading package lists...
 Building dependency tree...
 Package 'c' is not installed, so not removed
@@ -237,3 +147,72 @@ E: The following information from --solver 3.0 may provide additional context:
    2. a:amd64 Depends c
       but none of the choices are installable:
       - c:amd64 is not selected for install" apt install -s a c- --solver internal
+
+
+msgmsg "Test for 'did not find a result'"
+
+rm rootdir/var/crash/apt-edsp.$(id -u).crash
+
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Solving dependencies...
+Writing error report...
+The following additional packages will be installed:
+  c
+The following NEW packages will be installed:
+  a c
+0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
+Inst c (3 unstable [all])
+Inst a (3 unstable [all])
+Conf c (3 unstable [all])
+Conf a (3 unstable [all])" aptget install a --solver internal -s -o Dir::Apport=var/crash -o APT::Solver::Install=false
+
+testsuccess sed -i "s/^Date:.*/Date: Sun Mar  9 00:08:41 2025/" rootdir/var/crash/apt-edsp.$(id -u).crash
+
+testsuccessequal "ProblemType: AptSolver
+Architecture: amd64
+Date: Sun Mar  9 00:08:41 2025
+Package: apt 
+Title: Failure: The 3.0 solver did not find a result
+SourcePackage: apt
+ErrorMessage:
+ Unable to satisfy dependencies. Reached two conflicting decisions:
+ 1. a:amd64=3 is selected for install
+ .
+ 2. a:amd64 Depends c
+    but none of the choices are installable:
+    - c:amd64 is not selected for install
+AptSolverDump:
+$(cat rootdir/var/log/apt/edsp.log.zst | base64 | sed 's#^# #')" cat rootdir/var/crash/apt-edsp.$(id -u).crash
+
+msgmsg "Test that more upgrades are not better in installs"
+# FIXME: This will fail once 3.0 solver tries upgrading by source package.
+insertinstalledpackage 'b' 'all' '2' 'Source: src'
+insertinstalledpackage  'c' 'all' '2' 'Source: src'
+
+# No "Writing error report..."
+testsuccess rm rootdir/var/crash/apt-edsp.$(id -u).crash
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Solving dependencies...
+The following additional packages will be installed:
+  c
+The following packages will be upgraded:
+  b c
+2 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+Inst b [2] (3 unstable [all])
+Inst c [2] (3 unstable [all])
+Conf b (3 unstable [all])
+Conf c (3 unstable [all])"  apt install --solver internal b  -s
+
+testfailure test -e rootdir/var/crash/apt-edsp.$(id -u).crash
+
+# Safety check to check that the 3.0 result actually looks worse
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Solving dependencies...
+The following packages will be upgraded:
+  b
+1 upgraded, 0 newly installed, 0 to remove and 1 not upgraded.
+Inst b [2] (3 unstable [all])
+Conf b (3 unstable [all])"  apt install --solver 3.0 b  -s
