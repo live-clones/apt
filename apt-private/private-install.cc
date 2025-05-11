@@ -860,10 +860,10 @@ bool DoCacheManipulationFromCommandLine(CommandLine &CmdL, std::vector<PseudoPkg
    Cache->MarkAndSweep();
 
    std::list<APT::VersionSet::Modifier> mods;
-   mods.push_back(APT::VersionSet::Modifier(MOD_INSTALL, "+",
-		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::CANDIDATE));
-   mods.push_back(APT::VersionSet::Modifier(MOD_REMOVE, "-",
-		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::NEWEST));
+   mods.emplace_back(MOD_INSTALL, "+",
+		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::CANDIDATE);
+   mods.emplace_back(MOD_REMOVE, "-",
+		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::NEWEST);
    CacheSetHelperAPTGet helper(c0out);
    verset = APT::VersionVector::GroupedFromCommandLine(Cache,
 		CmdL.FileList + 1, mods, fallback, helper);
@@ -1398,7 +1398,7 @@ bool TryToInstall::propagateReleaseCandidateSwitching(std::list<std::pair<pkgCac
    for (std::list<std::pair<pkgCache::VerIterator, std::string> >::const_iterator s = start.begin();
 	 s != start.end(); ++s)
    {
-      Changed.push_back(std::make_pair(s->first, pkgCache::VerIterator(*Cache)));
+      Changed.emplace_back(s->first, pkgCache::VerIterator(*Cache));
       // We continue here even if it failed to enhance the ShowBroken output
       Success &= Cache->GetDepCache()->SetCandidateRelease(s->first, s->second, Changed);
    }

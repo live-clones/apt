@@ -162,8 +162,7 @@ static bool FullTextSearch(CommandLine &CmdL)				/*{{{*/
 	 PkgsDone[P->ID] = true;
 	 std::stringstream outs;
 	 ListSingleVersion(CacheFile, records, V, outs, format);
-	 output_map.insert(std::make_pair<std::string, std::string>(
-		  PkgName, outs.str()));
+	 output_map.emplace(PkgName, outs.str());
       }
    }
    APT_FREE_PATTERNS();
