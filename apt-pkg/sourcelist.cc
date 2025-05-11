@@ -108,23 +108,23 @@ bool pkgSourceList::Type::ParseStanza(vector<metaIndex *> &List,	/*{{{*/
 
    std::map<char const * const, std::pair<char const * const, bool> > mapping;
 #define APT_PLUSMINUS(X, Y) \
-   mapping.insert(std::make_pair(X, std::make_pair(Y, true))); \
-   mapping.insert(std::make_pair(X "-Add", std::make_pair(Y "+", true))); \
-   mapping.insert(std::make_pair(X "-Remove", std::make_pair(Y "-", true)))
+   mapping.emplace(X, std::make_pair(Y, true)); \
+   mapping.emplace(X "-Add", std::make_pair(Y "+", true)); \
+   mapping.emplace(X "-Remove", std::make_pair(Y "-", true))
    APT_PLUSMINUS("Architectures", "arch");
    APT_PLUSMINUS("Languages", "lang");
    APT_PLUSMINUS("Targets", "target");
 #undef APT_PLUSMINUS
-   mapping.insert(std::make_pair("Trusted", std::make_pair("trusted", false)));
-   mapping.insert(std::make_pair("Check-Valid-Until", std::make_pair("check-valid-until", false)));
-   mapping.insert(std::make_pair("Valid-Until-Min", std::make_pair("valid-until-min", false)));
-   mapping.insert(std::make_pair("Valid-Until-Max", std::make_pair("valid-until-max", false)));
-   mapping.insert(std::make_pair("Check-Date", std::make_pair("check-date", false)));
-   mapping.insert(std::make_pair("Date-Max-Future", std::make_pair("date-max-future", false)));
-   mapping.insert(std::make_pair("Snapshot", std::make_pair("snapshot", false)));
-   mapping.insert(std::make_pair("Signed-By", std::make_pair("signed-by", false)));
-   mapping.insert(std::make_pair("PDiffs", std::make_pair("pdiffs", false)));
-   mapping.insert(std::make_pair("By-Hash", std::make_pair("by-hash", false)));
+   mapping.emplace("Trusted", std::make_pair("trusted", false));
+   mapping.emplace("Check-Valid-Until", std::make_pair("check-valid-until", false));
+   mapping.emplace("Valid-Until-Min", std::make_pair("valid-until-min", false));
+   mapping.emplace("Valid-Until-Max", std::make_pair("valid-until-max", false));
+   mapping.emplace("Check-Date", std::make_pair("check-date", false));
+   mapping.emplace("Date-Max-Future", std::make_pair("date-max-future", false));
+   mapping.emplace("Snapshot", std::make_pair("snapshot", false));
+   mapping.emplace("Signed-By", std::make_pair("signed-by", false));
+   mapping.emplace("PDiffs", std::make_pair("pdiffs", false));
+   mapping.emplace("By-Hash", std::make_pair("by-hash", false));
 
    for (std::map<char const * const, std::pair<char const * const, bool> >::const_iterator m = mapping.begin(); m != mapping.end(); ++m)
       if (Tags.Exists(m->first))

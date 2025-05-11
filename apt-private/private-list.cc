@@ -142,8 +142,7 @@ bool DoList(CommandLine &Cmd)
          ListAllVersions(CacheFile, records, V.ParentPkg(), outs, format);
       else
          ListSingleVersion(CacheFile, records, V, outs, format);
-      output_map.insert(std::make_pair<std::string, std::string>(
-	       V.ParentPkg().FullName(), outs.str()));
+      output_map.emplace(V.ParentPkg().FullName(), outs.str());
    }
 
    // FIXME: SORT! and make sorting flexible (alphabetic, by pkg status)

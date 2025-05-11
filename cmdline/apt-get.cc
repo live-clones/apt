@@ -262,13 +262,13 @@ static bool DoIndexTargets(CommandLine &CmdL)
       std::map<std::string, string> AddOptions;
       if (ReleaseInfo)
       {
-	 AddOptions.insert(std::make_pair("TRUSTED", ((*S)->IsTrusted() ? "yes" : "no")));
+	 AddOptions.emplace("TRUSTED", ((*S)->IsTrusted() ? "yes" : "no"));
 	 if (not (*S)->GetSignedBy().empty())
-	    AddOptions.insert(std::make_pair("SIGNED_BY", SubstVar(SubstVar(APT::String::Strip((*S)->GetSignedBy()), "\n\n", "\n.\n"), "\n", "\n ")));
+	    AddOptions.emplace("SIGNED_BY", SubstVar(SubstVar(APT::String::Strip((*S)->GetSignedBy()), "\n\n", "\n.\n"), "\n", "\n "));
 	 pkgCache::RlsFileIterator const RlsFile = (*S)->FindInCache(*Cache, false);
 	 if (RlsFile.end())
 	    continue;
-#define APT_RELEASE(X,Y) if (RlsFile.Y() != NULL) AddOptions.insert(std::make_pair(X, RlsFile.Y()))
+#define APT_RELEASE(X,Y) if (RlsFile.Y() != NULL) AddOptions.emplace(X, RlsFile.Y())
 	 APT_RELEASE("CODENAME", Codename);
 	 APT_RELEASE("SUITE", Archive);
 	 APT_RELEASE("VERSION", Version);

@@ -510,7 +510,7 @@ bool debSystem::MultiArchSupported() const					/*{{{*/
 bool debSystem::AssertFeature(std::string const &feature) /*{{{*/
 {
    std::vector<std::string> Args = GetDpkgBaseCommand();
-   Args.push_back("--assert-" + feature);
+   Args.emplace_back("--assert-" + feature);
    pid_t const dpkgAssertMultiArch = ExecDpkg(Args, nullptr, nullptr, true);
    if (dpkgAssertMultiArch > 0)
    {

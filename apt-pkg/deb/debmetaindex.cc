@@ -365,16 +365,16 @@ static void GetIndexTargetsFor(char const * const Type, std::string const &URI, 
 		  }
 
 		  // not available in templates, but in the indextarget
-		  Options.insert(std::make_pair("IDENTIFIER", Identifier));
-		  Options.insert(std::make_pair("TARGET_OF", Type));
-		  Options.insert(std::make_pair("CREATED_BY", *T));
-		  Options.insert(std::make_pair("FALLBACK_OF", FallbackOf));
-		  Options.insert(std::make_pair("PDIFFS", UsePDiffs ? "yes" : "no"));
-		  Options.insert(std::make_pair("BY_HASH", UseByHash));
-		  Options.insert(std::make_pair("DEFAULTENABLED", DefaultEnabled ? "yes" : "no"));
-		  Options.insert(std::make_pair("COMPRESSIONTYPES", CompressionTypes));
-		  Options.insert(std::make_pair("KEEPCOMPRESSEDAS", KeepCompressedAs));
-		  Options.insert(std::make_pair("SOURCESENTRY", E->sourcesEntry));
+		  Options.emplace("IDENTIFIER", Identifier);
+		  Options.emplace("TARGET_OF", Type);
+		  Options.emplace("CREATED_BY", *T);
+		  Options.emplace("FALLBACK_OF", FallbackOf);
+		  Options.emplace("PDIFFS", UsePDiffs ? "yes" : "no");
+		  Options.emplace("BY_HASH", UseByHash);
+		  Options.emplace("DEFAULTENABLED", DefaultEnabled ? "yes" : "no");
+		  Options.emplace("COMPRESSIONTYPES", CompressionTypes);
+		  Options.emplace("KEEPCOMPRESSEDAS", KeepCompressedAs);
+		  Options.emplace("SOURCESENTRY", E->sourcesEntry);
 
 		  bool IsOpt = IsOptional;
 		  {
