@@ -696,7 +696,7 @@ void APT::Solver::Discover(Var var)
       {
 	 Clause clause{Var(Pkg), Group::SelectVersion};
 	 for (auto ver = Pkg.VersionList(); not ver.end(); ver++)
-	    clause.solutions.push_back(Var(ver));
+	    clause.solutions.emplace_back(ver);
 
 	 std::stable_sort(clause.solutions.begin(), clause.solutions.end(), CompareProviders3{cache, policy, Pkg, *this});
 	 RegisterClause(std::move(clause));
@@ -797,7 +797,7 @@ APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, p
 
       if (DeferVersionSelection && not start.IsNegative() && start.TargetPkg().ProvidesList().end() && start.IsSatisfied(start.TargetPkg()))
       {
-	 clause.solutions.push_back(Var(start.TargetPkg()));
+	 clause.solutions.emplace_back(start.TargetPkg());
       }
       else
       {
@@ -809,7 +809,7 @@ APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, p
 
 	    if (unlikely(debug >= 3))
 	       std::cerr << "Adding work to  item " << reason.toString(cache) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
-	    clause.solutions.push_back(Var(pkgCache::VerIterator(cache, *tgt)));
+	    clause.solutions.emplace_back(pkgCache::VerIterator(cache, *tgt));
 	 }
 	 delete[] all;
 
@@ -1162,7 +1162,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	 else
 	 {
 	    Clause w{Var(), Group, isOptional};
-	    w.solutions.push_back(Var(P));
+	    w.solutions.emplace_back(P);
 	    auto insertedW = RegisterClause(std::move(w));
 	    if (not AddWork(Work{insertedW, depth()}))
 	       return false;
@@ -1191,7 +1191,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	 auto G = P.Group();
 	 for (auto P = G.PackageList(); not P.end(); P = G.NextPkg(P))
 	    if (P->Flags & pkgCache::Flag::Essential)
-	       w.solutions.push_back(Var(P));
+	       w.solutions.emplace_back(P);
 	 std::stable_sort(w.solutions.begin(), w.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Install essential package " << P << std::endl;
