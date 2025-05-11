@@ -432,7 +432,7 @@ void ExecGPGV(std::string const &File, std::string const &FileGPG,
    if (auto assertPubkeyAlgo = _config->Find("Apt::Key::assert-pubkey-algo"); not assertPubkeyAlgo.empty())
    {
       if (std::find(supportedOptions.begin(), supportedOptions.end(), "--assert-pubkey-algo") != supportedOptions.end())
-	 Args.push_back("--assert-pubkey-algo=" + assertPubkeyAlgo);
+	 Args.emplace_back("--assert-pubkey-algo=" + assertPubkeyAlgo);
    }
 
    Configuration::Item const *Opts;

@@ -314,7 +314,7 @@ void pkgTagFilePrivate::RemoveCommentsFromBuffer()
 	    size_t const goodLength = End - good_start;
 	    chunks.emplace_back(true, goodLength);
 	    if (good_start != Start)
-	       good_parts.push_back(std::make_pair(good_start, goodLength));
+	       good_parts.emplace_back(good_start, goodLength);
 	    break;
 	 }
 	 bad_start = current;
@@ -324,7 +324,7 @@ void pkgTagFilePrivate::RemoveCommentsFromBuffer()
 	 {
 	    size_t const goodLength = (current - good_start) + 1;
 	    chunks.emplace_back(true, goodLength);
-	    good_parts.push_back(std::make_pair(good_start, goodLength));
+	    good_parts.emplace_back(good_start, goodLength);
 	    good_start = nullptr;
 	    isCommentedLine = true;
 	 }

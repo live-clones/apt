@@ -1174,7 +1174,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	    // Compare test-bug-712116-dpkg-pre-install-pkgs-hook-multiarch
 	    Clause shortcircuit{Var(), Group, isOptional};
 	    for (auto V = P.VersionList(); not V.end(); ++V)
-	       shortcircuit.solutions.push_back(Var(V));
+	       shortcircuit.solutions.emplace_back(V);
 	    std::stable_sort(shortcircuit.solutions.begin(), shortcircuit.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	    auto insertedShort = RegisterClause(std::move(shortcircuit));
 	    if (not AddWork(Work{insertedShort, depth()}))

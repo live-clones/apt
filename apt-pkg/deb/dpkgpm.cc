@@ -2321,10 +2321,10 @@ void pkgDPkgPM::WriteApportReport(const char *pkgpath, const char *errormsg)
    // do not report dpkg I/O errors, this is a format string, so we compare
    // the prefix and the suffix of the error with the dpkg error message
    vector<string> io_errors;
-   io_errors.push_back(string("failed to read"));
-   io_errors.push_back(string("failed to write"));
-   io_errors.push_back(string("failed to seek"));
-   io_errors.push_back(string("unexpected end of file or stream"));
+   io_errors.emplace_back("failed to read");
+   io_errors.emplace_back("failed to write");
+   io_errors.emplace_back("failed to seek");
+   io_errors.emplace_back("unexpected end of file or stream");
 
    for (vector<string>::iterator I = io_errors.begin(); I != io_errors.end(); ++I)
    {
