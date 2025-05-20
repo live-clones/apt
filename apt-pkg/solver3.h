@@ -370,8 +370,6 @@ class Solver
    inline LiftedBool value(Lit lit) const;
 
    public:
-   // \brief Create a new decision level.
-   void Push(Var var, Work work);
    // \brief Revert to the previous decision level.
    [[nodiscard]] bool Pop();
    // \brief Undo a single assignment / trail work item

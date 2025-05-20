@@ -441,15 +441,6 @@ bool Solver::Propagate()
    return true;
 }
 
-void Solver::Push(Var var, Work work)
-{
-   if (unlikely(debug >= 2))
-      std::cerr << "Trying choice for " << work.toString(cache) << std::endl;
-
-   trailLim.push_back(trail.size());
-   trail.push_back(Trail{var, std::move(work)});
-}
-
 void Solver::UndoOne()
 {
    auto trailItem = trail.back();
@@ -473,8 +464,7 @@ void Solver::UndoOne()
       if (unlikely(debug >= 4))
 	 std::cerr << "Adding work item " << work->toString(cache) << std::endl;
 
-      if (not AddWork(std::move(*work)))
-	 abort();
+      must_succeed(AddWork(std::move(*work)));
    }
 
    trail.pop_back();
@@ -568,7 +558,7 @@ bool Solver::Solve()
    startTime = time(nullptr);
    while (true)
    {
-      while (not Propagate())
+      while (_error->PendingError() || not Propagate())
       {
 	 if (not Pop())
 	    return false;
@@ -577,59 +567,44 @@ bool Solver::Solve()
       if (work.empty())
 	 break;
 
-      // *NOW* we can pop the item.
+      auto item = work.front();
       std::pop_heap(work.begin(), work.end());
-
-      // This item has been replaced with a new one. Remove it.
-      if (work.back().erased)
-      {
-	 work.pop_back();
-	 continue;
-      }
-      auto item = std::move(work.back());
       work.pop_back();
-      trail.push_back(Trail{Var(), item});
+      // This item has been replaced with a new one. Remove it.
+      if (item.erased)
+	 continue;
 
       if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
 		      { return value(ver) == LiftedBool::True; }))
       {
 	 if (unlikely(debug >= 2))
 	    std::cerr << "ELIDED " << item.toString(cache) << std::endl;
-	 continue;
       }
-
-      if (unlikely(debug >= 1))
-	 std::cerr << item.toString(cache) << std::endl;
-
-      bool foundSolution = false;
-      for (auto &sol : item.clause->solutions)
+      else if (auto candidate = std::find_if(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
+					     { return value(ver) == LiftedBool::Undefined; });
+	       candidate != item.clause->solutions.end())
       {
-	 if (value(sol) == LiftedBool::False)
-	 {
-	    if (unlikely(debug >= 3))
-	       std::cerr << "(existing conflict: " << sol.toString(cache) << ")\n";
-	    continue;
-	 }
-	 if (item.size > 1 || item.clause->optional)
-	 {
-	    Push(sol, item);
-	 }
 	 if (unlikely(debug >= 3))
-	    std::cerr << "(try it: " << sol.toString(cache) << ")\n";
-	 if (not Enqueue(sol, item.clause) && not Pop())
-	    return false;
-	 foundSolution = true;
-	 break;
+	    std::cerr << item.toString(cache) << "\n"
+		      << "(try it: " << candidate->toString(cache) << ")\n";
+	 must_succeed(Assume(*candidate, item.clause));
       }
-      if (not foundSolution && not item.clause->optional)
+      else if (item.clause->optional)
       {
+	 if (unlikely(debug >= 1))
+	    std::cerr << item.toString(cache) << "\n";
+      }
+      else
+      {
+	 if (unlikely(debug >= 1))
+	    std::cerr << item.toString(cache) << "\n";
 	 // Enqueue produces the right error message for us here, given that reason has been assigned true already...
 	 assert(value(item.clause->reason) == LiftedBool::True);
-	 bool res = Enqueue(~item.clause->reason, item.clause);
-	 assert(not res);
-	 if (not Pop())
-	    return false;
+	 must_succeed(not Enqueue(~item.clause->reason, item.clause));
+	 assert(value(item.clause->reason) == LiftedBool::True);
       }
+      // Must push to trail after any Assume() above.
+      trail.push_back(Trail{Var(), item});
    }
 
    return true;
@@ -1323,8 +1298,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
    for (auto assumption : manualPackages)
    {
       if (not Assume(assumption, {}) || not Propagate())
-	 if (not Pop())
-	    abort();
+	 must_succeed(Pop());
    }
 
    return true;
