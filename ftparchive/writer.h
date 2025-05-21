@@ -41,8 +41,8 @@ class FTWScanner
    vector<string> Patterns;
    vector<std::pair<string, bool>> FilesToProcess;
    string Arch;
-   bool IncludeArchAll;
    const char *OriginalPath;
+   bool IncludeArchAll;
    bool ErrorPrinted;
 
    // Stuff for the delinker

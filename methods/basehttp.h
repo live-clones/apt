@@ -40,6 +40,9 @@ struct RequestState
    unsigned int Result = 0;
    char Code[360];
 
+   HaveContent haveContent = HaveContent::TRI_UNKNOWN;
+   time_t Date;
+
    // total size of the usable content (aka: the file)
    unsigned long long TotalFileSize = 0;
    // size we actually download (can be smaller than Size if we have partial content)
@@ -50,9 +53,6 @@ struct RequestState
    unsigned long long StartPos = 0;
 
    unsigned long long MaximumSize = 0;
-
-   time_t Date;
-   HaveContent haveContent = HaveContent::TRI_UNKNOWN;
 
    enum {Closes,Chunked,Stream} Encoding = Closes;
    enum {Header, Data} State = Header;
@@ -72,10 +72,10 @@ struct RequestState
 };
 struct ServerState
 {
+   unsigned long PipelineAnswersReceived;
    bool Persistent;
    bool PipelineAllowed;
    bool RangesAllowed;
-   unsigned long PipelineAnswersReceived;
 
    bool Pipeline;
    URI ServerName;
