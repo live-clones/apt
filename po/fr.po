@@ -2507,7 +2507,7 @@ msgstr "%lu mis à jour, %lu nouvellement installés, "
 #: apt-private/private-output.cc
 #, c-format
 msgid "Upgrading: %lu, Installing: %lu, "
-msgstr "Mise à niveau de : %lu. Installation de : %lu"
+msgstr "Mise à niveau de : %lu. Installation de : %lu. "
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2517,7 +2517,7 @@ msgstr "%lu réinstallés, "
 #: apt-private/private-output.cc
 #, c-format
 msgid "Reinstalling: %lu, "
-msgstr "Réinstallation de : %lu."
+msgstr "Réinstallation de : %lu. "
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2527,7 +2527,7 @@ msgstr "%lu remis à une version inférieure, "
 #: apt-private/private-output.cc
 #, c-format
 msgid "Downgrading: %lu, "
-msgstr "Rétrogradage de : %lu."
+msgstr "Rétrogradage de : %lu. "
 
 #: apt-private/private-output.cc
 #, c-format
