@@ -200,6 +200,7 @@ int main(int argc,const char *argv[])					/*{{{*/
 	if (failure.empty() == false) {
 		std::ostringstream broken;
 		ShowBroken(broken, CacheFile, false);
+		_error->DumpErrors(broken);
 		EDSP::WriteError(failure.c_str(), broken.str(), output);
 		return 0;
 	}
