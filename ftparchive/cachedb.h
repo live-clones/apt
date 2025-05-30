@@ -14,15 +14,25 @@
 #include <apt-pkg/debfile.h>
 #include <apt-pkg/hashes.h>
 
-#include <db.h>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <tkrzw_dbm_hash.h>
+#include <tkrzw_str_util.h>
 
 #include "contents.h"
 #include "sources.h"
+
+#define MAP_Flags    "Flags"
+#define MAP_MTime    "MTime"
+#define MAP_FileSize "FileSize"
+#define MAP_MD5      "MD5"
+#define MAP_SHA1     "SHA1"
+#define MAP_SHA256   "SHA256"
+#define MAP_SHA512   "SHA512"
+#define DBFILE_MAGIC "TkrzwHDB"
 
 class FileFd;
 
@@ -32,10 +42,9 @@ class CacheDB
    protected:
       
    // Database state/access
-   DBT Key;
-   DBT Data;
-   std::string TmpKey;
-   DB *Dbp;
+   std::string Key;
+   std::string Data;
+   tkrzw::HashDBM Dbm;
    bool DBLoaded;
    bool ReadOnly;
    std::string DBFile;
@@ -43,11 +52,9 @@ class CacheDB
    // Generate a key for the DB of a given type
    void _InitQuery(const char *Type)
    {
-      memset(&Key,0,sizeof(Key));
-      memset(&Data,0,sizeof(Data));
-      TmpKey.assign(FileName).append(":").append(Type);
-      Key.data = TmpKey.data();
-      Key.size = TmpKey.size();
+      Key.clear();
+      Data.clear();
+      Key = FileName + ":" + Type;
    }
    
    void InitQueryStats() {
@@ -65,15 +72,14 @@ class CacheDB
 
    inline bool Get() 
    {
-      return Dbp->get(Dbp,0,&Key,&Data,0) == 0;
+      return Dbm.Get(Key,&Data).IsOK();
    };
-   inline bool Put(const void *In,unsigned long const &Length) 
+   inline bool Put(std::string In)
    {
       if (ReadOnly == true)
 	 return true;
-      Data.size = Length;
-      Data.data = (void *)In;
-      if (DBLoaded == true && (errno = Dbp->put(Dbp,0,&Key,&Data,0)) != 0)
+      Data = In;
+      if (DBLoaded == true && (Dbm.Set(Key,Data,true,NULL)) != tkrzw::Status::SUCCESS)
       {
 	 DBLoaded = false;
 	 return false;
@@ -86,9 +92,7 @@ class CacheDB
    bool OpenDebFile();
    void CloseDebFile();
 
-   // GetCurStat needs some compat code, see lp #1274466)
-   bool GetCurStatCompatOldFormat();
-   bool GetCurStatCompatNewFormat();
+   bool GetCurStatNewFormat();
    bool GetCurStat();
 
    bool GetFileStat(bool const &doStat = false);
@@ -103,30 +107,18 @@ class CacheDB
                   FlSHA512=(1<<6), FlSource=(1<<7)
    };
 
-   // the on-disk format changed (FileSize increased to 64bit) in 
-   // commit 650faab0 which will lead to corruption with old caches
-   struct StatStoreOldFormat
-   {
-      uint32_t Flags;
-      uint32_t mtime;
-      uint32_t FileSize;
-      uint8_t  MD5[16];
-      uint8_t  SHA1[20];
-      uint8_t  SHA256[32];
-   } CurStatOldFormat;
 
-   // WARNING: this struct is read/written to the DB so do not change the
-   //          layout of the fields (see lp #1274466), only append to it
    struct StatStore
    {
       uint32_t Flags;
       uint32_t mtime;          
       uint64_t FileSize;
-      uint8_t  MD5[16];
-      uint8_t  SHA1[20];
-      uint8_t  SHA256[32];
-      uint8_t  SHA512[64];
+      std::string MD5;
+      std::string SHA1;
+      std::string SHA256;
+      std::string SHA512;
    } CurStat;
+   // OldStat only for Flags,mtime comparison
    struct StatStore OldStat;
    
    // 'set' state
@@ -169,7 +161,7 @@ class CacheDB
    } Stats;
    
    bool ReadyDB(std::string const &DB = "");
-   inline bool DBFailed() {return Dbp != 0 && DBLoaded == false;};
+   inline bool DBFailed() {return Dbm.IsOpen() && DBLoaded == false;};
    inline bool Loaded() {return DBLoaded == true;};
    
    inline unsigned long long GetFileSize(void) {return CurStat.FileSize;}
