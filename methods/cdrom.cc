@@ -34,11 +34,11 @@ class CDROMMethod : public aptMethod
    bool DatabaseLoaded;
    bool Debug;
 
+   bool MountedByApt;
    ::Configuration Database;
+   pkgUdevCdromDevices UdevCdroms;
    string CurrentID;
    string CDROM;
-   bool MountedByApt;
-   pkgUdevCdromDevices UdevCdroms;
  
    bool IsCorrectCD(URI want, string MountPath, string& NewID);
    bool AutoDetectAndMount(const URI, string &NewID);
