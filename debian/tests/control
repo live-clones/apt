@@ -4,7 +4,7 @@ Depends: libapt-pkg-dev, pkg-config, g++
 
 Tests: run-tests
 Restrictions: allow-stderr
-Depends: @, @builddeps@, dpkg (>= 1.20.8), expect, fakeroot, wget, stunnel4, lsof, db-util,
+Depends: @, @builddeps@, dpkg (>= 1.20.8), expect, fakeroot, wget, stunnel4, lsof, lmdb-utils,
          gpgv,
          gpgv-sq,
          sq (>= 0.40),

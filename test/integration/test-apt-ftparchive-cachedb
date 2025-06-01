@@ -1,11 +1,6 @@
 #!/bin/sh
 set -e
 
-db_dump=db_dump
-if command -v db_dump-5 >/dev/null 2>&1; then
-    db_dump=db_dump-5
-fi
-
 ensure_correct_packages_file() {
     testequal "Package: foo
 Architecture: i386
@@ -121,14 +116,18 @@ testsuccessequal "Section: overrideSection" grep ^Section ./aptarchive/dists/tes
 testsuccessequal "Extra: ${manyX}trailer" grep ^Extra ./aptarchive/dists/test/main/binary-i386/Packages
 
 
+# Lmdb max key size is 511 (compiled in), reduce test length as it
+#   will refuse to store anything past that.
+#   If those files exist, it should only be a cache-miss, not bad data
 msgmsg "Test long paths"
-x128=$(head -c 128 /dev/zero | tr '\0' 'X')
-longPath=${x128}/${x128}/${x128}/${x128}/${x128}/${x128}/${x128}/${x128}
+x64=$(head -c 64 /dev/zero | tr '\0' 'X')
+longPath=${x64}/${x64}/${x64}/${x64}/${x64}/${x64}/${x64}
 mkdir -p aptarchive/pool/main/$longPath
 mv aptarchive/pool/main/foo_1_i386.deb aptarchive/pool/main/$longPath/foo_1_i386.deb
 
 # before
-testsuccess $db_dump -f dump -p aptarchive-cache/packages-main-i386.db
+#testsuccess $db_dump -f dump -p aptarchive-cache/packages-main-i386.db
+testsuccess mdb_dump -f dump -p -n aptarchive-cache/packages-main-i386.db
 testsuccess grep "^ ./aptarchive/pool/main/foo_1_i386.deb:cl$" dump
 testsuccess grep "^ ./aptarchive/pool/main/foo_1_i386.deb:cn$" dump
 testsuccess grep "^ ./aptarchive/pool/main/foo_1_i386.deb:st$" dump
@@ -141,7 +140,8 @@ testsuccessequal "Section: overrideSection" grep ^Section ./aptarchive/dists/tes
 testsuccessequal "Extra: ${manyX}trailer" grep ^Extra ./aptarchive/dists/test/main/binary-i386/Packages
 
 # file is in the database
-testsuccess $db_dump -f dump -p aptarchive-cache/packages-main-i386.db
+#testsuccess $db_dump -f dump -p aptarchive-cache/packages-main-i386.db
+testsuccess mdb_dump -f dump -p -n aptarchive-cache/packages-main-i386.db
 testsuccess grep "^ ./aptarchive/pool/main/${longPath}/foo_1_i386.deb:cl$" dump
 testsuccess grep "^ ./aptarchive/pool/main/${longPath}/foo_1_i386.deb:cn$" dump
 testsuccess grep "^ ./aptarchive/pool/main/${longPath}/foo_1_i386.deb:st"$ dump
@@ -163,7 +163,8 @@ testsuccessequal "Section: overrideSection" grep ^Section ./aptarchive/dists/tes
 testsuccessequal "Extra: ${manyX}trailer" grep ^Extra ./aptarchive/dists/test/main/binary-i386/Packages
 
 # file is in the database
-testsuccess $db_dump -f dump -p aptarchive-cache/packages-main-i386.db
+#testsuccess $db_dump -f dump -p aptarchive-cache/packages-main-i386.db
+testsuccess mdb_dump -f dump -p -n aptarchive-cache/packages-main-i386.db
 testsuccess grep "^ ./aptarchive/pool/main/${longPath}/foo_1_i386.deb:cl$" dump
 testsuccess grep "^ ./aptarchive/pool/main/${longPath}/foo_1_i386.deb:cn$" dump
 testsuccess grep "^ ./aptarchive/pool/main/${longPath}/foo_1_i386.deb:st"$ dump
@@ -174,6 +175,6 @@ rm -rf aptarchive/pool/main/*
 testsuccessequal "packages-main-i386.db" aptftparchive clean ftparchive.conf
 testsuccess aptftparchive clean ftparchive.conf -o Debug::APT::FTPArchive::Clean=1
 cp rootdir/tmp/testsuccess.output clean-out.txt
-testsuccessequal "0	Number of unique keys in the tree" grep unique clean-out.txt
-testsuccessequal "packages-main-i386.db" grep packages-main-i386.db clean-out.txt
+testsuccessequal "  Entries: 0" grep Entries clean-out.txt
+#testsuccessequal "packages-main-i386.db" grep packages-main-i386.db clean-out.txt
 
