@@ -4023,6 +4023,8 @@ msgstr "Fichero no encontrado"
 #, c-format
 msgid "Direct connection to %s domains is blocked by default."
 msgstr ""
+"La conexión directa a los dominios %s está bloqueada "
+"de forma predeterminada."
 
 #: methods/connect.cc
 #, c-format
@@ -4105,12 +4107,12 @@ msgstr "URI inválido, los URIS locales no deben empezar por //"
 #: methods/gpgv.cc
 #, c-format
 msgid "untrusted public key algorithm: %s"
-msgstr ""
+msgstr "algoritmo de clave pública no confiable: %s"
 
 #: methods/gpgv.cc
 #, c-format
 msgid "%s will be deprecated in a future release"
-msgstr ""
+msgstr "%s quedará obsoleto en una versión futura"
 
 #. TRANSLATORS: %s is a single techy word like 'NODATA'
 #: methods/gpgv.cc
@@ -4129,8 +4131,7 @@ msgstr "Se encontró al menos una firma inválida."
 msgid ""
 "Internal error: Good signature, but could not determine key fingerprint?!"
 msgstr ""
-"Error interno: Firma correcta, ¡¿pero no se pudo determinar su huella "
-"digital?!"
+"Error interno: Firma correcta, ¡pero no se pudo determinar su huella digital!"
 
 #: methods/gpgv.cc
 #, fuzzy
@@ -4151,7 +4152,7 @@ msgstr "Error desconocido ejecutando «apt-key»"
 #: methods/gpgv.cc
 #, c-format
 msgid "Signature by key %s uses weak algorithm (%s)"
-msgstr ""
+msgstr "La firma con la clave %s utiliza un algoritmo débil (%s)"
 
 #: methods/gpgv.cc
 msgid "The following signatures were invalid:\n"
@@ -4850,7 +4851,7 @@ msgstr "Los ficheros vacíos no pueden ser archivos válidos"
 #~ msgstr "Mala sección del ConfFile en el archivo de estado. Desplazo %lu"
 
 #~ msgid "Error parsing MD5. Offset %lu"
-#~ msgstr "Error leyendo Md5. Desplazo %lu"
+#~ msgstr "Error leyendo MD5. Desplazo %lu"
 
 #~ msgid "Couldn't change to %s"
 #~ msgstr "No pude cambiar a %s"
