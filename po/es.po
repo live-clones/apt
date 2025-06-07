@@ -1246,7 +1246,7 @@ msgid ""
 "default dpkg."
 msgstr ""
 "Falta el ejecutable dpkg en Dir::Bin::dpkg. "
-"Se vuelve a usar el dpkg predeterminado".
+"Se vuelve a usar el dpkg predeterminado."
 
 #. we don't care for the difference
 #: apt-pkg/deb/dpkgpm.cc
