@@ -1033,7 +1033,7 @@ msgid ""
 "with %s:// to use."
 msgstr ""
 "%s: Las credenciales de %s coinciden, pero el protocolo no está cifrado. "
-"Anote "con %s:// para usarlo.""
+"Anote "con %s:// para usarlo."
 
 #: apt-pkg/contrib/progress.cc
 #, c-format
