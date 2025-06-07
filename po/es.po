@@ -2592,7 +2592,7 @@ msgstr "%lu para eliminar y %lu no actualizados.\n"
 #: apt-private/private-output.cc
 #, c-format
 msgid "Removing: %lu, Not Upgrading: %lu\n"
-msgstr ""Eliminando: %lu, No actualizado: %lu\n""
+msgstr "Eliminando: %lu, No actualizado: %lu\n"
 
 #: apt-private/private-output.cc
 #, c-format
