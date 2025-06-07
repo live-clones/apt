@@ -154,6 +154,8 @@ msgstr "La suma hash difiere"
 #: apt-pkg/acquire-item.cc
 msgid "Insufficient information available to perform this download securely"
 msgstr ""
+"No hay suficiente información disponible para realizar "
+"esta descarga de forma segura"
 
 #: apt-pkg/acquire-item.cc apt-pkg/contrib/fileutl.cc
 #, c-format
@@ -200,7 +202,7 @@ msgstr ""
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "OpenPGP signature verification failed: %s: %s"
-msgstr ""
+msgstr "Error en la verificación de la firma OpenPGP: %s: %s"
 
 #: apt-pkg/acquire-item.cc
 #, fuzzy, c-format
@@ -253,8 +255,8 @@ msgid ""
 "Release file for %s is expired (invalid since %s). Updates for this "
 "repository will not be applied."
 msgstr ""
-"El archivo «Release» para %s está caducado (inválido desde %s). No se "
-"aplicará ninguna actualización de este repositorio."
+"El archivo «Release» para %s está caducado (no es válido desde %s). "
+"No se aplicará ninguna actualización de este repositorio."
 
 #. TRANSLATOR: The first %s is the URL of the bad Release file, the second is
 #. the time until the file will be valid - formatted in the same way as in
@@ -268,8 +270,8 @@ msgid ""
 "Release file for %s is not valid yet (invalid for another %s). Updates for "
 "this repository will not be applied."
 msgstr ""
-"El archivo «Release» para %s está caducado (inválido desde %s). No se "
-"aplicará ninguna actualización de este repositorio."
+"El archivo «Release» para %s está caducado (no es válido desde %s). "
+"No se aplicará ninguna actualización de este repositorio."
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -279,12 +281,12 @@ msgstr "Distribución conflictiva: %s (se esperaba %s, pero se obtuvo %s)"
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "Repository '%s' changed its '%s' value from '%s' to '%s'"
-msgstr ""
+msgstr "El repositorio '%s' cambió su valor '%s' de '%s' a '%s'"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "Repository '%s' changed its default priority for %s from %hi to %hi."
-msgstr ""
+msgstr "El repositorio '%s' cambió su prioridad predeterminada para %s de %hi a %hi."
 
 #. TRANSLATOR: the "this" refers to changes in the repository like a new release or owner change
 #: apt-pkg/acquire-item.cc
@@ -292,6 +294,7 @@ msgstr ""
 msgid ""
 "More information about this can be found online in the Release notes at: %s"
 msgstr ""
+"Puede encontrar más información sobre esto online en las notas de la versión en: %s"
 
 #. TRANSLATOR: %s is the name of the manpage in question, e.g. apt-secure(8)
 #: apt-pkg/acquire-item.cc
@@ -300,6 +303,8 @@ msgid ""
 "This must be accepted explicitly before updates for this repository can be "
 "applied. See %s manpage for details."
 msgstr ""
+"Esto debe aceptarse explícitamente para que se puedan aplicar las actualizaciones de este repositorio. "
+"Consulte la página de manual de %s para obtener más información."
 
 #: apt-pkg/acquire-item.cc apt-pkg/update.cc apt-private/private-download.cc
 #, c-format
@@ -312,6 +317,8 @@ msgid ""
 "Repositories should provide a clear-signed InRelease file, but none found at "
 "%s."
 msgstr ""
+"Los repositorios deberían proporcionar un archivo InRelease claramente firmado, "
+"pero no se encontró ninguno en %s."
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -338,12 +345,12 @@ msgstr "No está disponible el informe de cambios para %s=%s"
 #: apt-pkg/acquire-worker.cc
 #, c-format
 msgid "The method '%s' is explicitly disabled via configuration."
-msgstr ""
+msgstr "El método '%s' está deshabilitado explícitamente en la configuración."
 
 #: apt-pkg/acquire-worker.cc methods/connect.cc
 #, c-format
 msgid "If you meant to use Tor remember to use %s instead of %s."
-msgstr ""
+msgstr "Si querías usar Tor, recuerda usar %s en lugar de %s."
 
 #: apt-pkg/acquire-worker.cc
 #, c-format
@@ -756,26 +763,26 @@ msgstr "Error de sintaxis %s:%u: Basura extra al final del archivo"
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
 msgid "Error:"
-msgstr ""
+msgstr "Error:"
 
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
 msgid "Warning:"
-msgstr ""
+msgstr "Advertencia:"
 
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
 msgid "Notice:"
-msgstr ""
+msgstr "Aviso:"
 
 #: apt-pkg/contrib/error.cc
 msgid "Audit:"
-msgstr ""
+msgstr "Auditoría:"
 
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
 msgid "Debug:"
-msgstr ""
+msgstr "Depuración:"
 
 #: apt-pkg/contrib/extracttar.cc
 #, c-format
@@ -826,7 +833,7 @@ msgstr "No se pudo bloquear %s"
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
 msgid "Could not get lock %s. It is held by process %d (%s)"
-msgstr ""
+msgstr "No se pudo bloquear %s. Bloqueado y pertenece al proceso %d (%s)."
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
@@ -838,6 +845,8 @@ msgid ""
 "Be aware that removing the lock file is not a solution and may break your "
 "system."
 msgstr ""
+"Tenga en cuenta que eliminar el archivo de bloqueo no es una solución "
+"y puede dañar su sistema."
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
@@ -1023,6 +1032,8 @@ msgid ""
 "%s: Credentials for %s match, but the protocol is not encrypted. Annotate "
 "with %s:// to use."
 msgstr ""
+"%s: Las credenciales de %s coinciden, pero el protocolo no está cifrado. "
+"Anote "con %s:// para usarlo.""
 
 #: apt-pkg/contrib/progress.cc
 #, c-format
@@ -1096,7 +1107,7 @@ msgstr "Error interno, no se pudo localizar el miembro %s"
 
 #: apt-pkg/deb/debfile.cc
 msgid "Unparsable control file"
-msgstr "Archivo de control inanalizable"
+msgstr "Archivo de control no analizable"
 
 #: apt-pkg/deb/debindexfile.cc
 #, fuzzy, c-format
@@ -1234,6 +1245,8 @@ msgid ""
 "The dpkg executable set in Dir::Bin::dpkg is missing, falling back to using "
 "default dpkg."
 msgstr ""
+"Falta el ejecutable dpkg en Dir::Bin::dpkg. "
+"Se vuelve a usar el dpkg predeterminado".
 
 #. we don't care for the difference
 #: apt-pkg/deb/dpkgpm.cc
@@ -1535,7 +1548,7 @@ msgid ""
 msgstr ""
 "Esta ejecución de la instalación requiere eliminar temporalmente el paquete "
 "esencial %s debido a un bucle de Conflictos/Pre-Dependencias. Normalmente "
-"esto es malo, pero si quiere hacerlo de todas formas, active la opción |"
+"esto es malo, pero si quiere hacerlo de todas formas, active la opción "
 "APT::Force-LoopBreak»."
 
 #: apt-pkg/pkgcache.cc
@@ -1688,6 +1701,8 @@ msgstr "No se entendió el pin tipo %s"
 msgid ""
 "%s: The special 'Pin-Priority: %s' can only be used for 'Package: *' records"
 msgstr ""
+"%s: La prioridad especial 'Pin-Priority: %s' solo se puede usar para "
+"registros 'Package: *'"
 
 #: apt-pkg/policy.cc
 #, c-format
@@ -1802,6 +1817,8 @@ msgid ""
 "Do you want to accept these changes and continue updating from this "
 "repository?"
 msgstr ""
+"¿Desea aceptar estos cambios y continuar actualizando desde "
+"este repositorio?"
 
 #: apt-private/private-cachefile.cc
 msgid "Correcting dependencies..."
@@ -2035,6 +2052,8 @@ msgid ""
 "Unmerged usr is no longer supported, use usrmerge to convert to a merged-usr "
 "system."
 msgstr ""
+"El usuario no fusionado ya no es compatible. Utilice 'usrmerge' para convertirlo "
+"a un sistema con usuario fusionado".
 
 #. TRANSLATORS: %s is a url to a page describing merged-usr (bookworm release notes)
 #: apt-private/private-install.cc
@@ -2138,6 +2157,8 @@ msgstr ""
 #, c-format
 msgid "More space needed than available: %sB > %sB, installation may fail"
 msgstr ""
+"Se necesita más espacio del disponible: %sB > %sB, "
+"o la instalación puede fallar"
 
 #. TRANSLATOR: The required space between number and unit is already included
 #. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB -
@@ -2147,7 +2168,7 @@ msgstr ""
 #: apt-private/private-install.cc
 #, c-format
 msgid "in %s:  %sB / %sB available\n"
-msgstr ""
+msgstr "en %s: %sB / %sB disponibles\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
 #. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
@@ -2157,11 +2178,13 @@ msgstr ""
 msgid ""
 "More space needed in %s than available: %sB > %sB, installation may fail"
 msgstr ""
+"Se necesita más espacio en %s del disponible: %sB > %sB, "
+"o la instalación puede fallar"
 
 #: apt-private/private-install.cc
 #, c-format
 msgid "Space needed: %sB\n"
-msgstr ""
+msgstr "Espacio necesario: %sB\n"
 
 #: apt-private/private-install.cc
 #, fuzzy, c-format
@@ -2185,14 +2208,16 @@ msgid ""
 "Removing essential system-critical packages is not permitted. This might "
 "break the system."
 msgstr ""
+"No se permite eliminar paquetes esenciales del sistema. "
+"Esto podría dañar el sistema."
 
 #: apt-private/private-install.cc
 msgid "Continue anyway?"
-msgstr ""
+msgstr "¿Continuar de todos modos?"
 
 #: apt-private/private-install.cc
 msgid "Continue?"
-msgstr ""
+msgstr "¿Continuar?"
 
 #: apt-private/private-install.cc cmdline/apt-mark.cc
 msgid "Do you want to continue?"
@@ -2288,7 +2313,7 @@ msgstr[1] ""
 
 #: apt-private/private-install.cc
 msgid "Result calculated by the 3.0 solver."
-msgstr ""
+msgstr "Resultado calculado por el solucionador 3.0."
 
 #: apt-private/private-install.cc
 msgid "Suggested packages:"
@@ -2525,7 +2550,7 @@ msgstr ""
 
 #: apt-private/private-output.cc
 msgid "Summary:"
-msgstr ""
+msgstr "Resumen:"
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2557,7 +2582,7 @@ msgstr "%lu desactualizados, "
 #: apt-private/private-output.cc
 #, c-format
 msgid "Downgrading: %lu, "
-msgstr ""
+msgstr "Desactualizando: %lu, "
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2567,7 +2592,7 @@ msgstr "%lu para eliminar y %lu no actualizados.\n"
 #: apt-private/private-output.cc
 #, c-format
 msgid "Removing: %lu, Not Upgrading: %lu\n"
-msgstr ""
+msgstr ""Eliminando: %lu, No actualizado: %lu\n""
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2659,7 +2684,7 @@ msgstr "  Tabla de versión:"
 
 #: apt-private/private-show.cc
 msgid "phased"
-msgstr ""
+msgstr "por fases"
 
 #: apt-private/private-source.cc
 #, c-format
@@ -2826,7 +2851,7 @@ msgstr "El fichero «%s» cambió, ejecute «apt-get update».\n"
 #: apt-private/private-sources.cc
 #, c-format
 msgid "Rewrite %zu sources?"
-msgstr ""
+msgstr "¿Reescribir fuentes %zu?"
 
 #: apt-private/private-unmet.cc
 #, c-format
@@ -2844,29 +2869,33 @@ msgid ""
 "Usage of %s should be preferred over embedding login information directly in "
 "the %s entry for '%s'"
 msgstr ""
+"Se recomienda usar %s antes que incrustar la información de inicio de sesión "
+"directamente en la entrada %s para '%s'."
 
 #. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
 #: apt-private/private-update.cc
 #, c-format
 msgid "The %s entry for '%s' should be upgraded to deb822 .sources"
-msgstr ""
+msgstr "La entrada %s para '%s' debe actualizarse a deb822 .sources"
 
 #. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
 #: apt-private/private-update.cc
 #, c-format
 msgid "Missing Signed-By in the %s entry for '%s'"
-msgstr ""
+msgstr "Falta Signed-By en la entrada %s para '%s'"
 
 #: apt-private/private-update.cc
 msgid ""
 "Consider migrating all sources.list(5) entries to the deb822 .sources format"
 msgstr ""
+"Considere migrar todas las entradas de sources.list(5) al formato .sources deb822"
 
 #: apt-private/private-update.cc
 msgid ""
 "The deb822 .sources format supports both embedded as well as external "
 "OpenPGP keys"
 msgstr ""
+"El formato .sources deb822 admite claves OpenPGP integradas y externas."
 
 #: apt-private/private-update.cc
 #, fuzzy
@@ -2880,7 +2909,7 @@ msgstr ""
 
 #: apt-private/private-update.cc
 msgid "Some sources can be modernized. Run 'apt modernize-sources' to do so."
-msgstr ""
+msgstr "Algunas fuentes se pueden modernizar. Ejecute 'apt modernize-sources' para hacerlo."
 
 #: apt-private/private-update.cc
 #, c-format
