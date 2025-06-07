@@ -1033,7 +1033,7 @@ msgid ""
 "with %s:// to use."
 msgstr ""
 "%s: Las credenciales de %s coinciden, pero el protocolo no está cifrado. "
-"Anote "con %s:// para usarlo."
+"Anote con %s:// para usarlo."
 
 #: apt-pkg/contrib/progress.cc
 #, c-format
@@ -2052,8 +2052,8 @@ msgid ""
 "Unmerged usr is no longer supported, use usrmerge to convert to a merged-usr "
 "system."
 msgstr ""
-"El usuario no fusionado ya no es compatible. Utilice 'usrmerge' para convertirlo "
-"a un sistema con usuario fusionado".
+"El usuario no fusionado ya no es compatible. Utilice usrmerge para convertirlo "
+"a un sistema con usuario fusionado."
 
 #. TRANSLATORS: %s is a url to a page describing merged-usr (bookworm release notes)
 #: apt-private/private-install.cc
