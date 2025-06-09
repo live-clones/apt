@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+  "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % aptent SYSTEM "apt.ent"> %aptent;
+<!ENTITY % aptverbatiment SYSTEM "apt-verbatim.ent"> %aptverbatiment;
+<!ENTITY % aptvendor SYSTEM "apt-vendor.ent"> %aptvendor;
+]>
+
+<refentry>
+
+ <refentryinfo>
+   &apt-author.team;
+   &apt-email;
+   &apt-product;
+   <!-- The last update date -->
+   <date>2025-06-09T00:00:00Z</date>
+ </refentryinfo>
+
+ <refmeta>
+   <refentrytitle>apt-transport-sftp</refentrytitle>
+   <manvolnum>1</manvolnum>
+   <refmiscinfo class="manual">APT</refmiscinfo>
+ </refmeta>
+
+ <!-- Man page title -->
+ <refnamediv>
+    <refname>apt-transport-sftp</refname>
+    <refpurpose>APT transport via the SSH/SFTP protocol</refpurpose>
+ </refnamediv>
+
+<refsect1><title>Description</title>
+<para>This APT transport allows the use of repositories accessed via the SSH File Transfer Protocol (SFTP).
+It is available by default since apt 3.0 and was available before that in the package <package>apt-transport-ssh</package>.
+Note that a transport is never called directly by a user but used by APT tools based on user configuration.</para>
+</refsect1>
+
+<refsect2><title>Client authentication</title>
+<para>Besides supporting password-based authentication (see &apt-authconf;) SFTP also supports
+authentication based on a private key via <literal>Acquire::sftp::PrivateKey</literal> and
+an optional <literal>Acquire::sftp::PassPhrase</literal>.
+This should be set to the base-64 encoded part of the private key file; the part between the <literal>-----BEGIN OPENSSH PRIVATE KEY-----</literal> and 
+the corresponding footer.
+It can also connect to a SSH agent via a UNIX domain-socket, via <literal>Acquire::sftp::SSHAuthSock</literal>.
+This value is typically also set in the <literal>SSH_AUTH_SOCK</literal> environment variable of a user.
+</para>
+</refsect2>
+
+<refsect1><title>Examples</title>
+<literallayout>
+Acquire::sftp {
+	PrivateKey "b4BjbnNz1CsrZ....
+	PassPhrase "secret";
+	SSHAuthSock "/run/user/1000/openssh_agent";
+};
+</literallayout>
+</refsect1>
+
+<refsect1>
+<title>See Also</title>
+<para>&apt-conf; &apt-authconf; &sources-list;
+</para>
+</refsect1>
+
+ &manbugs;
+
+</refentry>
