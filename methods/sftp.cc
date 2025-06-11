@@ -6,11 +6,6 @@
 #include <fstream>
 
 #include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-
-#include <libssh/libssh.h>
 
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/mmap.h>
@@ -18,125 +13,123 @@
 namespace SSH
 {
 
+const char *get_error_msg(LIBSSH2_SESSION *session)
+{
+   char *msg = nullptr;
+   libssh2_session_last_error(session, &msg, nullptr, 0);
+   return msg;
+}
+
 struct CheckedResult
 {
-   CheckedResult(ssh_session session, int rc = SSH_OK) : session(session)
+   CheckedResult(LIBSSH2_SESSION *session, int rc = LIBSSH2_ERROR_NONE) : session(session)
    {
-      if (!validate(rc))
+      if (!validate(session, rc))
 	 throw std::runtime_error("SSH Error");
    }
 
    CheckedResult &operator=(int rc)
    {
-      if (!validate(rc))
+      if (!validate(session, rc))
 	 throw std::runtime_error("SSH Error");
       return *this;
    }
 
-   private:
-   bool validate(int rc)
+   static bool validate(LIBSSH2_SESSION *session, int rc)
    {
-      if (rc == SSH_OK)
+      if (rc == LIBSSH2_ERROR_NONE)
 	 return true;
-      return _error->Error(_("SSH error: %s"), ssh_get_error(session));
+      char *msg = nullptr;
+      return _error->Error(_("SSH error: %s"), get_error_msg(session));
    }
 
-   ssh_session session;
+   private:
+   LIBSSH2_SESSION *session;
 };
 
-Session::Session() : session(ssh_new())
+Session::Session() : session(libssh2_session_init())
 {
 }
 
 Session::~Session()
 {
    if (session != nullptr)
-      ssh_disconnect(session);
-   ssh_free(session);
-   ssh_key_free(privateKey);
-   if (agent != 0)
-      close(agent);
+      libssh2_session_disconnect(session, "");
+   libssh2_session_free(session);
 }
 
 void Session::ApplyConfig()
 {
-   CheckedResult rc(session);
-
    // SSH is finicky about it's newlines, this seems the easiest way to define that private key in
    // APT's settings
+   auto privKeyFormat = _config->Find("Acquire::sftp::PrivateKeyFromat", "RSA");
+   auto pkHeader = std::format("-----BEGIN {} PRIVATE KEY-----", privKeyFormat);
+   auto pkFooter = std::format("-----END {} PRIVATE KEY-----", privKeyFormat);
    auto privKeyCore = _config->Find("Acquire::sftp::PrivateKey");
-   std::string privKey = "-----BEGIN OPENSSH PRIVATE KEY-----\n" + std::string(privKeyCore) + "\n-----END OPENSSH PRIVATE KEY-----\n";
-   std::string passPhrase = _config->Find("Acquire::sftp::PassPhrase");
-   if (!privKey.empty())
-   {
-      const char *passphrase = (passPhrase.empty()) ? nullptr : passPhrase.c_str();
-      ssh_auth_callback auth_callback = nullptr;
-      void *auth_data = nullptr;
-      if (privateKey != nullptr)
-	 ssh_key_free(privateKey);
-      rc = ssh_pki_import_privkey_base64(privKey.c_str(), passphrase, auth_callback, auth_data, &privateKey);
-   }
-   std::string agent_fn = _config->Find("Acquire::sftp::SSHAuthSock");
-   if (!agent_fn.empty())
-   {
-      struct sockaddr_un namesock;
-      namesock.sun_family = AF_UNIX;
-      strncpy(namesock.sun_path, (char *)agent_fn.c_str(), sizeof(namesock.sun_path));
-      agent = socket(AF_UNIX, SOCK_STREAM, 0);
-      bind(agent, (struct sockaddr *)&namesock, sizeof(struct sockaddr_un));
-      rc = ssh_set_agent_socket(session, agent);
-   }
+   privateKey = std::format("{}\n{}\n{}\n", pkHeader, privKeyCore, pkFooter);
+   passPhrase = _config->Find("Acquire::sftp::PassPhrase");
 }
 
-bool Session::Connect(URI uri)
+std::vector<std::string> Session::SupportedAlgorithms()
 {
-   if (ssh_is_connected(session))
-      ssh_disconnect(session);
+   const char **algs = nullptr;
+   int nalg = libssh2_session_supported_algs(session, 0, &algs);
+   std::vector<std::string> r;
+   for (int n = 0; n < nalg; n++)
+      r.push_back(algs[n]);
+   return r;
+}
 
-   ssh_options_set(session, SSH_OPTIONS_HOST, uri.Host.c_str());
+bool Session::Connect(const URI &uri, aptMethod *parent)
+{
+   if (session == nullptr)
+      return _error->Error("SSH Session is null");
+   libssh2_session_disconnect(session, "");
+
    int port = (uri.Port != 0) ? uri.Port : 22;
-   ssh_options_set(session, SSH_OPTIONS_PORT, &port);
-   if (!uri.User.empty())
-      ssh_options_set(session, SSH_OPTIONS_USER, uri.User.c_str());
+   std::unique_ptr<MethodFd> socket;
+   auto rc = ::Connect(uri.Host, port, nullptr, 22, m_socket, 0, parent);
+   if (rc != ResultState::SUCCESSFUL)
+      return _error->Error(_("SSH Session could not connect to %s"), uri.Host.c_str());
 
-   int rc = ssh_connect(session);
-   if (rc != SSH_OK)
-   {
-      return _error->Error(_("Error connecting to %s:%i\n%s\n"), uri.Host.c_str(), port, ssh_get_error(session));
-   }
+   SetNonBlock(m_socket->Fd(), false);
+   int rs = libssh2_session_startup(session, m_socket->Fd());
+   if (!CheckedResult::validate(session, rs))
+      return false;
 
    ApplyConfig();
 
-   int rca = SSH_AUTH_ERROR;
+   int rca = LIBSSH2_ERROR_AUTHENTICATION_FAILED;
    if (!uri.Password.empty())
    {
-      rca = ssh_userauth_password(session, nullptr, uri.Password.c_str());
+      rca = libssh2_userauth_password(session, nullptr, uri.Password.c_str());
    }
-   if ((rca != SSH_AUTH_SUCCESS) && (privateKey != nullptr))
+   if ((rca != LIBSSH2_ERROR_NONE) && (!privateKey.empty()))
    {
-      rca = ssh_userauth_publickey(session, nullptr, privateKey);
+      const char *pPassStr = passPhrase.empty() ? nullptr : passPhrase.data();
+      rca = libssh2_userauth_publickey_frommemory(session,
+						  uri.User.c_str(), uri.User.size(),
+						  nullptr, 0,
+						  privateKey.c_str(), privateKey.size(), pPassStr);
    }
-   if ((rca != SSH_AUTH_SUCCESS) && (agent != 0))
+   if (rca != LIBSSH2_ERROR_NONE)
    {
-      rca = ssh_userauth_agent(session, nullptr);
-   }
-   if (rca != SSH_AUTH_SUCCESS)
-   {
-      return _error->Error(_("\nError authenticating to %s%s:%i: error %i %s\n"), uri.User.c_str(), uri.Host.c_str(), port, rca, ssh_get_error(session));
+      return _error->Error(_("\nError authenticating to %s%s:%i: error %i %s\n"),
+			   uri.User.c_str(), uri.Host.c_str(), port, rca, SSH::get_error_msg(session));
    }
    return true;
 }
 
-File::File(sftp_session session, std::string_view path, int access)
+File::File(LIBSSH2_SFTP *session, std::string_view path, int access)
 {
-   file = sftp_open(session, path.data(), access, 0);
+   file = libssh2_sftp_open(session, path.data(), access, 0);
    if (file == NULL)
       _error->Error(_("SFTP Could not open: %s"), path.data());
 }
 
 File::~File()
 {
-   sftp_close(file);
+   libssh2_sftp_close(file);
 }
 
 bool File::IsOpen()
@@ -151,30 +144,31 @@ SFTP::SFTP(Session &ssh)
 
 SFTP::~SFTP()
 {
-   sftp_free(session);
+   libssh2_sftp_shutdown(session);
 }
 
 bool SFTP::reset(Session &ssh)
 {
-   sftp_free(session);
+   libssh2_sftp_shutdown(session);
    if (ssh.session == nullptr)
    {
       return _error->Error(_("SFTP received a null SSH session"));
    }
-   session = sftp_new(ssh.session);
+   session = libssh2_sftp_init(ssh.session);
    if (session == nullptr)
    {
       return _error->Error(_("Could not allocate SFTP"));
    }
-   int rc = sftp_init(session);
-   if (rc < 0)
-      return _error->Error(_("Could not initialize SFTP(%i): %s"), rc, ssh_get_error(session));
    return true;
 }
 
-sftp_attributes SFTP::stat(std::string_view path)
+std::optional<LIBSSH2_SFTP_ATTRIBUTES> SFTP::stat(std::string_view path)
 {
-   return sftp_stat(session, path.data());
+   File f(session, path, 0);
+   LIBSSH2_SFTP_ATTRIBUTES attr;
+   if (libssh2_sftp_fstat(f.file, &attr) != 0)
+      return std::nullopt;
+   return attr;
 }
 
 File SFTP::open(std::string_view path, int access)
@@ -186,53 +180,7 @@ Host::Host(const URI &u) : url(u.Host), port(u.Port)
 {
 }
 
-}; // namespace SSH
-
-class MappedOutput
-{
-   static int AllocateFile(std::string_view name, size_t fileSize)
-   {
-      unlink(name.data());
-      int fd = open(name.data(), O_CREAT | O_RDWR, S_IWUSR | S_IWGRP);
-      if (fd < 0)
-      {
-	 _error->Error(_("Could not create file: %s"), name);
-	 return -1;
-      }
-      int rpa = posix_fallocate(fd, 0, fileSize);
-      if (rpa != 0)
-      {
-	 _error->Error(_("Could not allocate file(%i): %s"), rpa, name);
-	 return -2;
-      }
-      return fd;
-   }
-
-   public:
-   MappedOutput(std::string_view name, size_t fileSize) : m_file(AllocateFile(name, fileSize), true),
-							  m_mmap(m_file, MMap::Public)
-   {
-   }
-
-   ~MappedOutput()
-   {
-      m_mmap.Sync();
-   }
-
-   bool IsOpen()
-   {
-      return m_file.IsOpen() && m_mmap.validData();
-   }
-
-   std::span<char> span()
-   {
-      return {reinterpret_cast<char *>(m_mmap.Data()), m_mmap.Size()};
-   }
-
-   private:
-   FileFd m_file;
-   MMap m_mmap;
-};
+} // namespace SSH
 
 SftpMethod::SftpMethod(std::string &&pProg) : aptMethod(std::move(pProg), "1.0", SendConfig | SendURIEncoded)
 {
@@ -249,29 +197,28 @@ bool SftpMethod::Fetch(FetchItem *Itm)
    SSH::Host host(uri);
    if (m_host != host)
    {
-      if (!m_ssh.Connect(uri))
+      if (!m_ssh.Connect(uri, this))
 	 return _error->Error(_("SSH Connect to %s failed"), host.url.c_str());
       m_host = host;
       if (!m_sftp.reset(m_ssh))
 	 return false;
    }
 
-   // A version with a tilde (~) gets converted to %7e, undo the HTML encoding
    auto uriPath = DeQuoteString(uri.Path);
    auto st = m_sftp.stat(uriPath);
-   if (st == nullptr)
+   if (!st.has_value())
       return _error->Error(_("Could not find: %s"), uriPath.c_str());
 
    // Prepare download
    FetchResult Res;
    Res.Filename = Itm->DestFile;
    Res.IMSHit = false;
-   Res.Size = st->size;
+   Res.Size = st->filesize;
    Res.LastModified = st->mtime;
 
    // Check for and up-to-date file, with the same logic as BaseHttpMethod
    bool mtimeMatch = Itm->LastModified >= st->mtime;
-   bool sizeMatch = Itm->ExpectedHashes.usable() ? (Itm->ExpectedHashes.FileSize() == st->size) : true;
+   bool sizeMatch = Itm->ExpectedHashes.usable() ? (Itm->ExpectedHashes.FileSize() == st->filesize) : true;
    if (mtimeMatch && sizeMatch)
    {
       Res.IMSHit = true;
@@ -286,16 +233,18 @@ bool SftpMethod::Fetch(FetchItem *Itm)
 
    // Read the data
    {
-      MappedOutput dest_map(Itm->DestFile.c_str(), st->size);
-      if (!dest_map.IsOpen())
+      FileFd To(Itm->DestFile, FileFd::WriteOnly | FileFd::Create);
+      if (!To.IsOpen())
 	 return false;
-      auto dest_span = dest_map.span();
-      while (dest_span.size() > 0)
+      std::array<char, 1 << 18> dest_buf;
+      int nRead = 0;
+      while (nRead < st->filesize)
       {
-	 int nr = sftp_read(fd_src.file, dest_span.data(), dest_span.size());
+	 int nr = libssh2_sftp_read(fd_src.file, dest_buf.data(), dest_buf.size());
 	 if (nr < 0)
-	    return _error->Error(_("Could not read: %s\n%s"), uri.Path.c_str(), sftp_get_error(m_sftp.session));
-	 dest_span = dest_span.subspan(nr);
+	    return _error->Error(_("Could not read: %s\n%s"), uri.Path.c_str(), SSH::get_error_msg(m_ssh.session));
+	 To.Write(dest_buf.data(), nr);
+	 nRead += nr;
       }
    }
 
@@ -315,11 +264,12 @@ bool SftpMethod::Configuration(std::string Message)
 int main(int argc, const char *argv[])
 try
 {
-   ssh_init();
+   if (libssh2_init(0) != 0)
+      return -1;
    std::string Binary{flNotDir(argv[0])};
 
    int rc = SftpMethod(std::move(Binary)).Run();
-   ssh_finalize();
+   libssh2_exit();
    return rc;
 }
 catch (std::exception &e)

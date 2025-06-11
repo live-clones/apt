@@ -141,6 +141,7 @@ endif()
 
 find_package(XXHASH REQUIRED)
 
+# sftp-transport dependencies
 find_package(OpenSSH)
 
 # Mount()ing and stat()ing and friends

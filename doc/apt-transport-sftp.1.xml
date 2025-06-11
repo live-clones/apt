@@ -38,10 +38,10 @@ Note that a transport is never called directly by a user but used by APT tools b
 <para>Besides supporting password-based authentication (see &apt-authconf;) SFTP also supports
 authentication based on a private key via <literal>Acquire::sftp::PrivateKey</literal> and
 an optional <literal>Acquire::sftp::PassPhrase</literal>.
-This should be set to the base-64 encoded part of the private key file; the part between the <literal>-----BEGIN OPENSSH PRIVATE KEY-----</literal> and 
-the corresponding footer.
-It can also connect to a SSH agent via a UNIX domain-socket, via <literal>Acquire::sftp::SSHAuthSock</literal>.
-This value is typically also set in the <literal>SSH_AUTH_SOCK</literal> environment variable of a user.
+The private key should be an RSA key, as generated via <literal>ssh-keygen -m PEM -t rsa -P "" -f id_rsa_PEM</literal>.
+This should be set to the base-64 encoded part of the private key file;
+the part between the <literal>-----BEGIN RSA PRIVATE KEY-----</literal> and the corresponding footer.
+The header and footer are generated using <literal>Acquire::sftp::PrivateKeyFromat</literal>, which defaults to RSA.
 </para>
 </refsect2>
 
@@ -49,8 +49,8 @@ This value is typically also set in the <literal>SSH_AUTH_SOCK</literal> environ
 <literallayout>
 Acquire::sftp {
 	PrivateKey "b4BjbnNz1CsrZ....
+	PrivateKeyFromat "RSA";
 	PassPhrase "secret";
-	SSHAuthSock "/run/user/1000/openssh_agent";
 };
 </literallayout>
 </refsect1>

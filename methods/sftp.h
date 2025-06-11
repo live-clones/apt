@@ -1,11 +1,13 @@
 #pragma once
 
-#include <libssh/sftp.h>
+#include <libssh2.h>
+#include <libssh2_sftp.h>
 
 #include <apt-pkg/macros.h>
 #include <apt-pkg/strutl.h>
 
 #include "aptmethod.h"
+#include "connect.h"
 
 namespace SSH
 {
@@ -19,26 +21,28 @@ class Session
    Session(const Session &) = delete;
    Session &operator=(const Session &) = delete;
 
-   [[nodiscard]] bool Connect(URI uri);
+   [[nodiscard]] bool Connect(const URI &uri, aptMethod *parent);
 
-   ssh_session session = nullptr;
+   std::vector<std::string> SupportedAlgorithms();
+
+   LIBSSH2_SESSION *session = nullptr;
 
    private:
    void ApplyConfig();
 
-   ssh_key privateKey = nullptr;
-   socket_t agent = 0;
+   std::unique_ptr<MethodFd> m_socket;
+   std::string privateKey, passPhrase;
 };
 
 class File
 {
    public:
-   File(sftp_session session, std::string_view path, int access);
+   File(LIBSSH2_SFTP *session, std::string_view path, int access);
    ~File();
 
    bool IsOpen();
 
-   sftp_file file;
+   LIBSSH2_SFTP_HANDLE *file;
 };
 
 class SFTP
@@ -53,11 +57,11 @@ class SFTP
 
    [[nodiscard]] bool reset(Session &ssh);
 
-   sftp_attributes stat(std::string_view path);
+   std::optional<LIBSSH2_SFTP_ATTRIBUTES> stat(std::string_view path);
 
    File open(std::string_view path, int access);
 
-   sftp_session session = nullptr;
+   LIBSSH2_SFTP *session = nullptr;
 };
 
 class Host

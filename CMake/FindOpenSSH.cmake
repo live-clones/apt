@@ -1,14 +1,14 @@
 find_package(PkgConfig)
 
-pkg_check_modules(SSH_PKGCONF libssh)
+pkg_check_modules(SSH_PKGCONF libssh2)
 
 find_path(OPENSSH_INCLUDE_DIRS
-  NAMES libssh/libssh.h
+  NAMES libssh2.h
   PATHS ${SSH_PKGCONF_INCLUDE_DIRS}
 )
 
 find_library(OPENSSH_LIBRARIES
-  NAMES ssh
+  NAMES ssh2
   PATHS ${SSH_PKGCONF_LIBRARY_DIRS}
 )
 
