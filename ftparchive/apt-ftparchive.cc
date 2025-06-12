@@ -84,19 +84,11 @@ struct PackageMap
    string SrcCacheDB;
    string BinOverride;
    string ExtraOverride;
-
-   // We generate for this given arch
-   string Arch;
-   bool IncludeArchAll;
    
    // Stuff for the Source File
    string SrcFile;
    string SrcOverride;
    string SrcExtraOverride;
-
-   // Translation master file
-   bool LongDesc;
-   TranslationWriter *TransWriter;
 
    // Contents 
    string Contents;
@@ -110,7 +102,15 @@ struct PackageMap
    string PathPrefix;
    unsigned int DeLinkLimit;
    mode_t Permissions;
-   
+
+   // We generate for this given arch
+   string Arch;
+
+   // Translation master file
+   TranslationWriter *TransWriter;
+
+   bool IncludeArchAll;
+   bool LongDesc;
    bool ContentsDone;
    bool PkgDone;
    bool SrcDone;
@@ -142,8 +142,8 @@ struct PackageMap
 		    vector<PackageMap>::iterator End,
 		    unsigned long &Left);
    
-   PackageMap() : IncludeArchAll(true), LongDesc(true), TransWriter(NULL),
-		  DeLinkLimit(0), Permissions(1), ContentsDone(false),
+   PackageMap() : DeLinkLimit(0), Permissions(1), TransWriter(NULL),
+		  IncludeArchAll(true), LongDesc(true), ContentsDone(false),
 		  PkgDone(false), SrcDone(false), ContentsMTime(0) {};
 };
 									/*}}}*/
