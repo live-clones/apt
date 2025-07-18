@@ -302,7 +302,7 @@ static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, char const
 {
    if (CmdMatches("auto", "manual", "hold", "unhold", "showauto",
 	    "showmanual", "showhold", "showholds", "showheld",
-	    "markauto", "unmarkauto", "minimize-manual"))
+	    "markauto", "unmarkauto", "minimize-manual", "suggest-auto"))
    {
       addArg('f',"file","Dir::State::extended_states",CommandLine::HasArg);
    }
@@ -323,6 +323,12 @@ static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, char const
       addArg('y',"yes","APT::Get::Assume-Yes",0);
       addArg('y',"assume-yes","APT::Get::Assume-Yes",0);
       addArg(0,"assume-no","APT::Get::Assume-No",0);
+   }
+
+   if (CmdMatches("suggest-auto"))
+   {
+      addArg('r', "raw", "APT::Mark::SuggestAuto::Raw-List", CommandLine::Boolean);
+      addArg('a', "apply", "APT::Mark::SuggestAuto::Apply", CommandLine::Boolean);
    }
 
    if (CmdMatches("minimize-manual") || (Cmd != nullptr && strncmp(Cmd, "show", strlen("show")) != 0))

@@ -74,6 +74,15 @@
       managed by system configuration metapackages.
        </para></listitem>
      </varlistentry>
+
+     <varlistentry><term><option>suggest-auto</option></term>
+	 <listitem><para><literal>suggest-auto</literal> is used to print a
+       list of packages that are currently marked as being manually installed,
+       but could be marked as being automatically installed without being
+       removed.
+       </para></listitem>
+     </varlistentry>
+
        <varlistentry><term><option>showauto</option></term>
 	 <listitem><para><literal>showauto</literal> is used to print a
      list of automatically installed packages with each package on a new line.
