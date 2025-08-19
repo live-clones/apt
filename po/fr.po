@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2025-05-19 18:28+0200\n"
-"PO-Revision-Date: 2025-03-07 12:02+0100\n"
+"PO-Revision-Date: 2025-08-19 19:16+0100\n"
 "Last-Translator: bubu <bubub@no-log.org>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
 "Language: fr\n"
@@ -2507,7 +2507,7 @@ msgstr "%lu mis à jour, %lu nouvellement installés, "
 #: apt-private/private-output.cc
 #, c-format
 msgid "Upgrading: %lu, Installing: %lu, "
-msgstr "Mise à niveau de : %lu. Installation de : %lu"
+msgstr "Mise à niveau de : %lu. Installation de : %lu. "
 
 #: apt-private/private-output.cc
 #, c-format
