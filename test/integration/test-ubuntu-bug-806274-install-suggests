@@ -25,10 +25,10 @@ The following NEW packages will be installed:
   apt bar foo
 0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.
 Inst foo (1.0 unstable [i386])
-Conf foo (1.0 unstable [i386])
 Inst apt (0.8.15 unstable [i386])
-Conf apt (0.8.15 unstable [i386])
 Inst bar (1.0 unstable [i386])
+Conf foo (1.0 unstable [i386])
+Conf apt (0.8.15 unstable [i386])
 Conf bar (1.0 unstable [i386])' aptget install apt -s --install-recommends --no-install-suggests
 
 
@@ -40,11 +40,11 @@ The following NEW packages will be installed:
   apt bar baz foo
 0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.
 Inst foo (1.0 unstable [i386])
-Conf foo (1.0 unstable [i386])
 Inst apt (0.8.15 unstable [i386])
-Conf apt (0.8.15 unstable [i386])
 Inst bar (1.0 unstable [i386])
 Inst baz (1.0 unstable [i386])
+Conf foo (1.0 unstable [i386])
+Conf apt (0.8.15 unstable [i386])
 Conf bar (1.0 unstable [i386])
 Conf baz (1.0 unstable [i386])' aptget install apt -s --install-recommends --install-suggests
 
@@ -60,8 +60,8 @@ The following NEW packages will be installed:
   apt foo
 0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
 Inst foo (1.0 unstable [i386])
-Conf foo (1.0 unstable [i386])
 Inst apt (0.8.15 unstable [i386])
+Conf foo (1.0 unstable [i386])
 Conf apt (0.8.15 unstable [i386])' aptget install apt -s --no-install-recommends --no-install-suggests
 
 testsuccessequal 'Reading package lists...
@@ -74,8 +74,8 @@ The following NEW packages will be installed:
   apt baz foo
 0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.
 Inst foo (1.0 unstable [i386])
-Conf foo (1.0 unstable [i386])
 Inst apt (0.8.15 unstable [i386])
-Conf apt (0.8.15 unstable [i386])
 Inst baz (1.0 unstable [i386])
+Conf foo (1.0 unstable [i386])
+Conf apt (0.8.15 unstable [i386])
 Conf baz (1.0 unstable [i386])' aptget install apt -s --no-install-recommends --install-suggests
