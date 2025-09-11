@@ -88,10 +88,7 @@ add_optional_compile_options(Werror=suggest-override)
 add_optional_compile_options(Werror=return-type)
 add_optional_compile_options(Wp,-D_GLIBCXX_ASSERTIONS)
 # apt-ftparchive dependencies
-find_package(Berkeley REQUIRED)
-if (BERKELEY_FOUND)
-  set(HAVE_BDB 1)
-endif()
+find_package(Lmdb REQUIRED)
 
 find_package(OpenSSL REQUIRED)
 
