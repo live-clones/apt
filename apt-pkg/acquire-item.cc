@@ -1906,9 +1906,10 @@ bool pkgAcqMetaBase::VerifyVendor(string const &)			/*{{{*/
 	 if (std::any_of(Changes.begin(),Changes.end(),[](pkgAcquireStatus::ReleaseInfoChange const &c) { return c.DefaultAction == false; }))
 	 {
 	    std::string msg;
-	    // TRANSLATOR: %s is the name of the manpage in question, e.g. apt-secure(8)
-	    strprintf(msg, _("This must be accepted explicitly before updates for "
-		     "this repository can be applied. See %s manpage for details."), "apt-secure(8)");
+	    // TRANSLATOR: %s is the name of the manpage in question, e.g. apt-get(8)
+	    strprintf(msg, _("This must be accepted explicitly using 'apt-get --allow-releaseinfo-change update' "
+                     "before updates for this repository can be applied. "
+                     "See %s manpage for details."), "apt-get(8)");
 	    Changes.push_back({"Confirmation", "", "", std::move(msg), true});
 	 }
 
