@@ -40,6 +40,6 @@ The following packages will be upgraded:
 Inst apt:i386 [1] (2 unstable [i386]) []
 Inst libsame:i386 [1] (2 unstable [i386])
 Inst libsame (2 unstable [amd64])
+Conf apt:i386 (2 unstable [i386])
 Conf libsame:i386 (2 unstable [i386])
-Conf libsame (2 unstable [amd64])
-Conf apt:i386 (2 unstable [i386])' aptget install libsame:amd64 -s
+Conf libsame (2 unstable [amd64])' aptget install libsame:amd64 -s

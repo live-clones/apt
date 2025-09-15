@@ -50,6 +50,7 @@ Breaks: apt-transport-https (<< 1.5~alpha4~),
         aptitude (<< 0.8.10)
 Conflicts: apt-verify, libnettle8 (<< 3.9.1-2.2~)
 Provides: apt-transport-https (= ${binary:Version})
+Protected: yes
 Recommends: ca-certificates
 Suggests: apt-doc,
           aptitude | synaptic | wajig,
