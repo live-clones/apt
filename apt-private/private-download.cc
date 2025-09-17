@@ -127,6 +127,7 @@ bool AcquireRun(pkgAcquire &Fetcher, int const PulseInterval, bool * const Failu
 bool CheckFreeSpaceBeforeDownload(std::string const &Dir, unsigned long long FetchBytes)/*{{{*/
 {
    uint32_t const RAMFS_MAGIC = 0x858458f6;
+   uint32_t const TMPFS_MAGIC = 0x01021994;
    /* Check for enough free space, but only if we are actually going to
       download */
    if (_config->FindB("APT::Get::Print-URIs", false) == true ||
@@ -142,22 +143,21 @@ bool CheckFreeSpaceBeforeDownload(std::string const &Dir, unsigned long long Fet
 	 return _error->Errno("statvfs",_("Couldn't determine free space in %s"),
 	       Dir.c_str());
    }
-   else
-   {
-      unsigned long long const FreeBlocks = _config->Find("APT::Sandbox::User").empty() ? Buf.f_bfree : Buf.f_bavail;
-      if (FreeBlocks < (FetchBytes / Buf.f_bsize))
-      {
-	 struct statfs Stat;
-	 if (statfs(Dir.c_str(),&Stat) != 0
+   unsigned long long const FreeBlocks = _config->Find("APT::Sandbox::User").empty() ? Buf.f_bfree : Buf.f_bavail;
+   if (FreeBlocks >= (FetchBytes / Buf.f_bsize))
+      return true;
+   struct statfs Stat;
+   if (statfs(Dir.c_str(), &Stat) != 0)
+      return _error->Error(_("Couldn't determine filesystem statistics of %s."), Dir.c_str());
+
 #ifdef HAVE_STRUCT_STATFS_F_TYPE
-	       || Stat.f_type != RAMFS_MAGIC
+   if (Stat.f_type == RAMFS_MAGIC)
+      return true;
+   // do not run out of space on a tmpfs without a size limit (size is zero)
+   if (Stat.f_type == TMPFS_MAGIC && Buf.f_blocks == 0)
+      return true;
 #endif
-	    )
-	    return _error->Error(_("You don't have enough free space in %s."),
-		  Dir.c_str());
-      }
-   }
-   return true;
+   return _error->Error(_("You don't have enough free space in %s."), Dir.c_str());
 }
 									/*}}}*/
 
