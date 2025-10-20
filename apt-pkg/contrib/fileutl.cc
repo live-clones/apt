@@ -934,11 +934,29 @@ pid_t ExecFork(std::set<int> KeepFDs)
       } else {
 	 long ScOpenMax = sysconf(_SC_OPEN_MAX);
 	 // Close all of our FDs - just in case
+#ifdef CLOSE_RANGE_CLOEXEC
+	 // The KeepFDs set is ordered, so iterate over all the gaps
+	 // and use close_range() with CLOSE_RANGE_CLOEXEC to close them efficiently.
+	 // This is necessary when _SC_OPEN_MAX is very large to avoid looping for a long time.
+	 int base = 2;
+	 for (int K : KeepFDs) {
+	     // Every time a gap is encountered, use close_range().
+	     if (K > base + 1) {
+		 close_range(base + 1, K - 1, CLOSE_RANGE_CLOEXEC);
+	     }
+	     base = K;
+	 }
+	 // Now close the rest, if any.
+	 if (base < ScOpenMax - 1) {
+	     close_range(base + 1, ScOpenMax - 1, CLOSE_RANGE_CLOEXEC);
+	 }
+#else
 	 for (int K = 3; K != ScOpenMax; K++)
 	 {
 	    if(KeepFDs.find(K) == KeepFDs.end())
 	       fcntl(K,F_SETFD,FD_CLOEXEC);
 	 }
+#endif
       }
    }
 
