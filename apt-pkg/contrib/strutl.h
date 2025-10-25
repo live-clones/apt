@@ -66,6 +66,7 @@ APT_PUBLIC std::string DeEscapeString(const std::string &input);
 
 APT_PUBLIC std::string SizeToStr(double Bytes);
 APT_PUBLIC std::string TimeToStr(unsigned long Sec);
+APT_PUBLIC std::string TimeToFixedStr(unsigned long TimeInSecs);
 APT_PUBLIC std::string Base64Encode(const std::string &Str);
 APT_PUBLIC std::string Base64Decode(const std::string_view in);
 APT_PUBLIC std::string OutputInDepth(const unsigned long Depth, const char* Separator="  ");
