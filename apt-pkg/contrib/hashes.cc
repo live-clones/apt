@@ -296,20 +296,15 @@ bool HashStringList::operator!=(HashStringList const &other) const
    return !(*this == other);
 }
 									/*}}}*/
-static APT_PURE std::string HexDigest(std::basic_string_view<unsigned char> const &Sum)
+static APT_PURE std::string HexDigest(unsigned char const* data, size_t size)
 {
-   char Conv[16] =
-      {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b',
-       'c', 'd', 'e', 'f'};
-   std::string Result(Sum.size() * 2, 0);
-
+   static constexpr char Conv[] = "0123456789abcdef";
+   std::string Result(size * 2, 0);
    // Convert each char into two letters
-   size_t J = 0;
-   size_t I = 0;
-   for (; I != (Sum.size()) * 2; J++, I += 2)
-   {
-      Result[I] = Conv[Sum[J] >> 4];
-      Result[I + 1] = Conv[Sum[J] & 0xF];
+   for (size_t j = 0, i = 0; j < size; ++j, i += 2) {
+      unsigned char b = data[j];
+      Result[i]     = Conv[(b >> 4) & 0xF];
+      Result[i + 1] = Conv[b & 0xF];
    }
    return Result;
 };
@@ -360,7 +355,7 @@ class PrivateHashes
       EVP_DigestFinal_ex(tmpContext, Sum, nullptr);
       EVP_MD_CTX_destroy(tmpContext);
 
-      return ::HexDigest(std::basic_string_view<unsigned char>(Sum, Size));
+      return ::HexDigest(Sum, static_cast<size_t>(Size));
    }
 
    bool Enable(HashAlgo const &algo)
