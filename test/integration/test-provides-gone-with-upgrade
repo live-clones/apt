@@ -23,5 +23,5 @@ The following packages will be upgraded:
 1 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
 Inst apt [0.8.14] (0.8.15 unstable [i386]) []
 Inst libapt-pkg4.10 (0.8.15 unstable [i386])
-Conf libapt-pkg4.10 (0.8.15 unstable [i386])
-Conf apt (0.8.15 unstable [i386])' aptget dist-upgrade -s
+Conf apt (0.8.15 unstable [i386])
+Conf libapt-pkg4.10 (0.8.15 unstable [i386])' aptget dist-upgrade -s

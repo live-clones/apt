@@ -37,7 +37,7 @@ The following packages will be REMOVED:
 Purg apt [1]
 Purg bar [1]
 Purg foo [1]
-Purg foo:i386 [1]' apt purge apt foo foo:i386 bar -s -o pkgCacheGen::ForceEssential=''
+Purg foo:i386 [1]' apt purge apt foo foo:i386 bar -s -o pkgCacheGen::ForceImportant=''
 
 msgmsg 'foo:i386 got the Important flag'
 rm -f rootdir/var/cache/apt/*.bin
@@ -52,7 +52,7 @@ This should NOT be done unless you know exactly what you are doing!
 Purg apt [1]
 Purg bar [1]
 Purg foo [1]
-Purg foo:i386 [1]' apt purge apt foo foo:i386 bar -s -o pkgCacheGen::ForceEssential='foo'
+Purg foo:i386 [1]' apt purge apt foo foo:i386 bar -s -o pkgCacheGen::ForceImportant='foo'
 
 rm -f rootdir/var/cache/apt/*.bin
 testsuccessequal 'Reading package lists...

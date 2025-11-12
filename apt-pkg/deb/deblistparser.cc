@@ -52,16 +52,16 @@ static const debListParser::WordList PrioList[] = {
 debListParser::debListParser(FileFd *File) :
    pkgCacheListParser(), Tags(File)
 {
+   forceEssential = _config->FindVector("pkgCacheGen::ForceEssential");
    // this dance allows an empty value to override the default
-   if (_config->Exists("pkgCacheGen::ForceEssential"))
+   if (_config->Exists("pkgCacheGen::ForceImportant"))
    {
-      forceEssential = _config->FindVector("pkgCacheGen::ForceEssential");
-      if (forceEssential.empty() == false && _config->Find("pkgCacheGen::ForceEssential").empty())
-	 forceEssential.emplace_back("apt");
+      forceImportant = _config->FindVector("pkgCacheGen::ForceImportant");
+      if (forceImportant.empty() == false && _config->Find("pkgCacheGen::ForceImportant").empty())
+	 forceImportant.emplace_back("apt");
    }
    else
-      forceEssential.emplace_back("apt");
-   forceImportant = _config->FindVector("pkgCacheGen::ForceImportant");
+      forceImportant.emplace_back("apt");
    myArch = _config->Find("APT::Architecture");
    // Possible values are: "all", "native", "installed" and "none"
    // The "installed" mode is handled by ParseStatus(), See #544481 and friends.
