@@ -223,8 +223,8 @@ bool APT::Solver::Work::operator<(APT::Solver::Work const &b) const
 {
    if ((not clause->optional && size < 2) != (not b.clause->optional && b.size < 2))
       return not b.clause->optional && b.size < 2;
-   if (clause->optional != b.clause->optional)
-      return clause->optional;
+   if (clause->eager != b.clause->eager)
+      return not clause->eager;
    if (clause->group != b.clause->group)
       return clause->group > b.clause->group;
    if ((size < 2) != (b.size < 2))
@@ -955,6 +955,7 @@ APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, p
 	 if (unlikely(debug >= 3))
 	    std::cerr << "Promoting previously satisfied clause to hard dependency: " << clause.toString(cache, true) << std::endl;
 	 clause.optional = false;
+	 clause.eager = true;
       }
       else if (
 	 IsUpgrade && not(AllowRemove && AllowInstall)				    // promote Recommends to Depends in upgrade, not in dist-upgrade.
@@ -965,6 +966,7 @@ APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, p
 	 if (unlikely(debug >= 3))
 	    std::cerr << "Promoting new clause to hard dependency: " << clause.toString(cache) << std::endl;
 	 clause.optional = false;
+	 clause.eager = true;
       }
       else if (not existing.end() && importantToKeep(start) && satisfied)
       {
@@ -975,6 +977,7 @@ APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, p
 	 clause.solutions.erase(std::remove_if(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
 					       { return var.CastPkg(cache)->CurrentVer == nullptr; }),
 				clause.solutions.end());
+	 clause.eager = true;
       }
    }
 
@@ -1004,6 +1007,7 @@ void APT::Solver::UndoOne()
       auto &state = (*this)[solvedItem.assigned];
       state.decision = Decision::NONE;
       state.reason = nullptr;
+      state.reasonStr = nullptr;
       state.depth = 0;
    }
 
@@ -1067,6 +1071,8 @@ bool APT::Solver::Pop()
    // FIXME: There should be a reason!
    if (not choice.empty() && not Enqueue(choice, false, {}))
       return false;
+
+   (*this)[choice].reasonStr = "backtracked";
 
    if (unlikely(debug >= 2))
       std::cerr << "Backtracked to choice " << choice.toString(cache) << "\n";
@@ -1363,7 +1369,8 @@ bool APT::Solver::ToDepCache(pkgDepCache &depcache) const
       }
       else if (P->CurrentVer || depcache[P].Install())
       {
-	 depcache.MarkDelete(P, false, 0, not(*this)[P].reason);
+	 bool automatic = (not (*this)[P].reason) && (not (*this)[P].reasonStr);
+	 depcache.MarkDelete(P, false, 0, automatic);
 	 depcache[P].Marked = 0;
 	 depcache[P].Garbage = 1;
       }

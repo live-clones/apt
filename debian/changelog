@@ -1,3 +1,84 @@
+apt (3.1.12) unstable; urgency=medium
+
+  [ Ruoyu Zhong ]
+  * Fix missing includes
+
+  [ Julian Andres Klode ]
+  * Correctly copy provided version in m-a lazy-init (Closes: #1120463)
+  * Special cow
+  * weakptr: Simplify destructor to use range-based for
+  * Improve documentation for apt --cli-version
+
+ -- Julian Andres Klode <jak@debian.org>  Mon, 10 Nov 2025 11:35:04 +0100
+
+apt (3.1.11) unstable; urgency=medium
+
+  * Adjust test cases to treat 3.0 as default APT_SOLVER if not set
+  * tests: Do not skip tests for --solver internal
+  * test: Correctly skip tests when not using -j
+  * Revert "depcache: Allow changing multi-arch versions for removed siblings"
+
+ -- Julian Andres Klode <jak@debian.org>  Sun, 26 Oct 2025 09:31:49 +0100
+
+apt (3.1.10) unstable; urgency=medium
+
+  [ Julian Andres Klode ]
+  * Record varying defaults based on cli-version, rather than binary
+  * Implement architecture variants
+  * Enable the new solver by default in 0.31, 1.21, 2.11, 3.1, and fix bugs:
+    - solver3: Eagerly satisfy previously satisfied Recommends
+    - solver3: Do not lose notion that we backtracked (LP: #2129819)
+    - solver3: Allow removing manually installed packages
+    - depcache: Allow changing multi-arch versions for removed siblings
+
+  [ Aindriú Mac Giolla Eoin ]
+  * Add Irish translation
+
+ -- Julian Andres Klode <jak@debian.org>  Sat, 25 Oct 2025 22:52:48 +0200
+
+apt (3.1.9) unstable; urgency=medium
+
+  [ Gyorgy Sarvari ]
+  * fix compiling with musl
+
+  [ Simon Johnsson ]
+  * Fix history command error when no ID was given
+
+  [ Jochen Sprickerhof ]
+  * Let APT::Get::Mark-Auto satisfy APT::Get::Build-Dep-Automatic
+    (Closes: #973260)
+
+  [ Julian Andres Klode ]
+  * ExecFork: Use close_range() if available
+  * Correctly append or remove FD_CLOEXEC
+  * French program translation update (Closes: #1116322)
+
+  [ Igor Támara ]
+  * Spanish translation update (Closes: #1110853)
+
+  [ Frans Spiesschaert ]
+  * Dutch program translation update (Closes: #1115366)
+  * Dutch manpages translation update (Closes: #1115367)
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Tue, 21 Oct 2025 19:27:47 +0200
+
+apt (3.1.8) unstable; urgency=medium
+
+  * Move "Tried to start delayed item […], but failed" to debugging
+    (Closes: #1111554)
+
+ -- Julian Andres Klode <jak@debian.org>  Sat, 04 Oct 2025 14:29:54 +0200
+
+apt (3.1.7) unstable; urgency=medium
+
+  [ Julian Andres Klode ]
+  * test-history: Adjust for as-installed testing
+
+  [ Simon Johnsson ]
+  * Add history undo, redo, and rollback features
+
+ -- Julian Andres Klode <jak@debian.org>  Thu, 02 Oct 2025 16:48:11 +0200
+
 apt (3.1.6) unstable; urgency=medium
 
   [ David Kalnischkies ]

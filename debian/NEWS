@@ -1,3 +1,14 @@
+apt (3.1.10) unstable; urgency=medium
+
+  The new solver is now the default.
+
+  The new --cli-version option requests a specific CLI version, i.e.
+  makes apt(8) try to behave like that version of apt. Accordingly,
+  if specified, apt no longer warns about unstable interfaces.
+  See the apt(8) manual page for more details.
+
+ -- Julian Andres Klode <jak@debian.org>  Sat, 25 Oct 2025 17:27:38 +0200
+
 apt (2.9.24) unstable; urgency=medium
 
   /etc/apt/trusted.gpg is no longer trusted. Setting the Dir::Etc::trusted

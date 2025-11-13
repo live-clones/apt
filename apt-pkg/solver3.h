@@ -237,7 +237,7 @@ class Solver
    // \brief If set, removals are allowed.
    bool AllowRemove{_config->FindB("APT::Solver::Remove", not(requestFlags & EDSP::Request::FORBID_REMOVE))};
    // \brief If set, removal of manual packages is allowed.
-   bool AllowRemoveManual{AllowRemove && _config->FindB("APT::Solver::RemoveManual", false)};
+   bool AllowRemoveManual{AllowRemove && _config->FindB("APT::Solver::RemoveManual", true)};
    // \brief If set, installs are allowed.
    bool AllowInstall{_config->FindB("APT::Solver::Install", not(requestFlags & EDSP::Request::FORBID_NEW_INSTALL))};
    // \brief If set, we use strict pinning.
@@ -406,10 +406,13 @@ struct APT::Solver::Clause
    // \brief A negative clause negates the solutions, that is X->A|B you get X->!(A|B), aka X->!A&!B
    bool negative;
 
+   // \brief An optional clause may be eager
+   bool eager;
+
    // Clauses merged with this clause
    std::forward_list<Clause> merged;
 
-   inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative) {}
+   inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative), eager(not optional) {}
 
    std::string toString(pkgCache &cache, bool pretty = false, bool showMerged = true) const;
 };
@@ -473,6 +476,8 @@ struct APT::Solver::State
    //
    // Vars < 0 are package ID, reasons > 0 are version IDs.
    const Clause *reason{};
+
+   const char *reasonStr{};
 
    // \brief The depth at which the decision has been taken
    depth_type depth{0};

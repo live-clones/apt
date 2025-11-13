@@ -2,6 +2,8 @@
 set -e
 
 TESTTORUN=''
+APT_SOLVER="${APT_SOLVER:-3.0}"
+APT_SKIP_TEST_FILE="${APT_SKIP_TEST_FILE:-solver3.broken}"
 while [ -n "$1" ]; do
 	if [ "$1" = "-q" ]; then
 		export MSGLEVEL=2
@@ -24,6 +26,7 @@ while [ -n "$1" ]; do
 		shift
 	elif [ "$1" = '--solver' ]; then
 		export APT_SOLVER="$2"
+		export APT_SKIP_TEST_FILE="/dev/null"
 		shift
 	elif [ "$1" = '--skip' ]; then
 		export APT_SKIP_TEST_FILE="$2"
@@ -161,7 +164,7 @@ if [ "$MSGLEVEL" -le 1 ]; then
 	printf "${CTEST}Running testcases${CRESET}: "
 fi
 for testcase in $TESTLIST; do
-	if [ "$APT_SKIP_TEST_FILE" ] && grep -qFx "${testcase##*/}" "$APT_SKIP_TEST_FILE"; then
+	if [ "$APT_SKIP_TEST_FILE" ] && sed 's/ *#.*//' "$APT_SKIP_TEST_FILE" | grep -qFx "${testcase##*/}"; then
 		printf "${CTEST}Skipping Testcase ${CHIGH}${testcase##*/}${CRESET}\n"
 		continue
 	fi
