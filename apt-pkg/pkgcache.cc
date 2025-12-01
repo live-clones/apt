@@ -281,9 +281,9 @@ uint32_t pkgCache::CacheHash()
 // ---------------------------------------------------------------------
 /* Returns 0 on error, pointer to the package otherwise */
 pkgCache::PkgIterator pkgCache::FindPkg(string_view Name) {
-   // If the name contains '/', treat it as a file path and search directly
-   if (!Name.empty() && Name.find('/') != std::string::npos)
-      return FindPkg(Name, "native");
+	// If the name contains '/', treat it as a file path and search directly
+	if (!Name.empty() && Name.find('/') != std::string::npos)
+	   return FindPkg(Name, "native");
 	auto const found = Name.rfind(':');
 	if (found == string::npos)
 	   return FindPkg(Name, "native");
