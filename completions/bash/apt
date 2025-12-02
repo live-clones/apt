@@ -187,7 +187,26 @@ _apt()
                 fi
                 return 0
                 ;;
-            show|list|download|changelog|depends|rdepends|why-not)
+            list)
+                if [[ $cur == ?(\\)\?* ]]; then
+                    compopt -o filenames  # escape to avoid ? filename matches
+                    COMPREPLY=( $( compgen -P '?' -W '
+                        automatic
+                        broken
+                        config-files
+                        essential
+                        garbage
+                        installed
+                        obsolete
+                        phasing
+                        security
+                        upgradable
+                        virtual
+                    ' -- "${cur#?(\\)\?}" ) )
+                    return 0
+                fi
+                ;&
+            show|download|changelog|depends|rdepends|why-not)
                 COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
                     2> /dev/null ) )
                 return 0
