@@ -130,7 +130,7 @@ aren't accidentally used by front-ends:
   Defaults to the value of `Acquire::PDiffs` which is *true* by default.
   Can be overridden per-source by the sources.list option of the same
   name. See the documentation for both of these for details.
-* `By-Hash`: controls if apt will try to use an URI constructed from
+* `By-Hash`: controls if apt will try to use a URI constructed from
   a hashsum of the file to download. See the documentation for config
   option `Acquire::By-Hash` and sources.list option `By-Hash` for details.
 * `CompressionTypes`: The default value is a space separated list of
