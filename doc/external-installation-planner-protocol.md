@@ -26,7 +26,7 @@ At each interaction with APT, a single planner is in use.  When there is
 a total of 2 or more planners, internals or externals, the user can
 choose which one to use.
 
-Each planner is identified by an unique string, the **planner name**.
+Each planner is identified by a unique string, the **planner name**.
 Planner names must be formed using only alphanumeric ASCII characters,
 dashes, and underscores; planner names must start with a lowercase ASCII
 letter.  The special name `internal` denotes APT's internal planner, is

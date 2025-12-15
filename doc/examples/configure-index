@@ -231,7 +231,7 @@ APT
   Status-Fd "<INT>";
   Status-deb822-Fd "<INT>";
   // Keep the list of FDs open (normally apt closes all fds when it
-  // does a ExecFork)
+  // does an ExecFork)
   Keep-Fds {};
 
   // control parameters for cron jobs by /etc/cron.daily/apt documented there
