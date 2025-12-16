@@ -155,9 +155,9 @@ as "ButAutomaticUpgrades: yes".</para>
 to determine which version of a package to install.
 <itemizedlist>
 <listitem><simpara>Never downgrade unless the priority of an available
-version exceeds 1000.  ("Downgrading" is installing a less recent version
-of a package in place of a more recent version.  Note that none of APT's
-default priorities exceeds 1000; such high priorities can only be set in
+version is at least 1000.  ("Downgrading" is installing a less recent version
+of a package in place of a more recent version.  Note that all of APT's
+default priorities are less than 1000; higher priorities can only be set in
 the preferences file.  Note also that downgrading a package
 can be risky.)</simpara></listitem>
 <listitem><simpara>Install the highest priority version.</simpara></listitem>
