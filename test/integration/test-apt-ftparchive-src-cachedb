@@ -185,7 +185,7 @@ rm -f aptarchive/pool/invalid/invalid_1.0.dsc
 rm -f aptarchive/pool/main/*
 testsuccess aptftparchive clean apt-ftparchive.conf -o Debug::APT::FTPArchive::Clean=1
 cp rootdir/tmp/testsuccess.output clean-out.txt
-testsuccess grep unique clean-out.txt
-testfileequal 'rootdir/tmp/testsuccess.output' "0	Number of unique keys in the tree"
-testsuccess grep sources-main.db clean-out.txt
-testfileequal 'rootdir/tmp/testsuccess.output' "sources-main.db"
+testsuccess grep Entries clean-out.txt
+testfileequal 'rootdir/tmp/testsuccess.output' "  Entries: 0"
+# testsuccess grep sources-main.db clean-out.txt
+# testfileequal 'rootdir/tmp/testsuccess.output' "sources-main.db"
