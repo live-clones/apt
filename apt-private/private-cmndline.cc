@@ -42,81 +42,149 @@ static bool CmdMatches_fn(char const *const Cmd, char const *const Match, Tail..
 #define addArg(w, x, y, z) Args.emplace_back(CommandLine::MakeArgs(w, x, y, z))
 #define CmdMatches(...) (Cmd != nullptr && CmdMatches_fn(Cmd, __VA_ARGS__))
 
-static bool addArgumentsAPTCache(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+struct option
 {
-   if (CmdMatches("depends", "rdepends"))
-   {
-      addArg('i', "important", "APT::Cache::Important", 0);
-      addArg(0, "installed", "APT::Cache::Installed", 0);
-      addArg(0, "pre-depends", "APT::Cache::ShowPre-Depends", 0);
-      addArg(0, "depends", "APT::Cache::ShowDepends", 0);
-      addArg(0, "recommends", "APT::Cache::ShowRecommends", 0);
-      addArg(0, "suggests", "APT::Cache::ShowSuggests", 0);
-      addArg(0, "replaces", "APT::Cache::ShowReplaces", 0);
-      addArg(0, "breaks", "APT::Cache::ShowBreaks", 0);
-      addArg(0, "conflicts", "APT::Cache::ShowConflicts", 0);
-      addArg(0, "enhances", "APT::Cache::ShowEnhances", 0);
-      addArg(0, "recurse", "APT::Cache::RecurseDepends", 0);
-      addArg(0, "implicit", "APT::Cache::ShowImplicit", 0);
-   }
-   else if (CmdMatches("search"))
-   {
-      addArg('n', "names-only", "APT::Cache::NamesOnly", 0);
-      addArg('f', "full", "APT::Cache::ShowFull", 0);
-   }
-   else if (CmdMatches("show") | CmdMatches("info"))
-   {
-      addArg('a', "all-versions", "APT::Cache::AllVersions", 0);
-   }
-   else if (CmdMatches("pkgnames"))
-   {
-      addArg(0, "all-names", "APT::Cache::AllNames", 0);
-   }
-   else if (CmdMatches("unmet"))
-   {
-      addArg('i', "important", "APT::Cache::Important", 0);
-   }
-   else if (CmdMatches("showsrc"))
-   {
-      addArg(0,"only-source","APT::Cache::Only-Source",0);
-   }
-   else if (CmdMatches("gencaches", "showpkg", "stats", "dump",
-	    "dumpavail", "showauto", "policy", "madison"))
-      ;
-   else
-      return false;
-
-   bool const found_something = Args.empty() == false;
-
-   // FIXME: move to the correct command(s)
-   addArg('g', "generate", "APT::Cache::Generate", 0);
-   addArg('t', "target-release", "APT::Default-Release", CommandLine::HasArg);
-   addArg('t', "default-release", "APT::Default-Release", CommandLine::HasArg);
-   addArg('S', "snapshot", "APT::Snapshot", CommandLine::HasArg);
-
-   addArg('p', "pkg-cache", "Dir::Cache::pkgcache", CommandLine::HasArg);
-   addArg('s', "src-cache", "Dir::Cache::srcpkgcache", CommandLine::HasArg);
-   addArg(0, "with-source", "APT::Sources::With::", CommandLine::HasArg);
-
-   return found_something;
-}
-									/*}}}*/
-static bool addArgumentsAPTCDROM(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
+   const char shrt;
+   const char *lng;
+   const char *option;
+   const char *description = nullptr;
+   const char flag = 0;
+};
+struct command
 {
-   if (CmdMatches("add", "ident") == false)
-      return false;
+   const std::initializer_list<std::string_view> commands;
+   const std::initializer_list<option> options;
+};
+struct binary
+{
+   APT_CMD binary;
+   const std::initializer_list<command> commands;
+   const std::initializer_list<option> options;
+};
 
-   // FIXME: move to the correct command(s)
-   addArg(0, "auto-detect", "Acquire::cdrom::AutoDetect", CommandLine::Boolean);
-   addArg('d', "cdrom", "Acquire::cdrom::mount", CommandLine::HasArg);
-   addArg('r', "rename", "APT::CDROM::Rename", 0);
-   addArg('m', "no-mount", "APT::CDROM::NoMount", 0);
-   addArg('f', "fast", "APT::CDROM::Fast", 0);
-   addArg('n', "just-print", "APT::CDROM::NoAct", 0);
-   addArg('n', "recon", "APT::CDROM::NoAct", 0);
-   addArg('n', "no-act", "APT::CDROM::NoAct", 0);
-   addArg('a', "thorough", "APT::CDROM::Thorough", 0);
-   return true;
+using commands = std::initializer_list<command>;
+using options = std::initializer_list<option>;
+
+constexpr std::initializer_list<binary> binaries{
+   binary{
+      APT_CMD::APT_CACHE,
+      {
+	 command{
+	    {"depends", "rdepends"},
+	    {
+	       {'i', "important", "APT::Cache::Important", "Print only important dependencies"},
+	       {0, "installed", "APT::Cache::Installed", "Print only installed dependencies"},
+	       {0, "pre-depends", "APT::Cache::ShowPre-Depends", "Print Pre-Depends"},
+	       {0, "depends", "APT::Cache::ShowDepends", "Print Depends"},
+	       {0, "recommends", "APT::Cache::ShowRecommends", "Print Recommends"},
+	       {0, "suggests", "APT::Cache::ShowSuggests", "Print Suggests"},
+	       {0, "replaces", "APT::Cache::ShowReplaces", "Print Replaces"},
+	       {0, "breaks", "APT::Cache::ShowBreaks", "Print Breaks"},
+	       {0, "conflicts", "APT::Cache::ShowConflicts", "Print Conflicts"},
+	       {0, "enhances", "APT::Cache::ShowEnhances", "Print Enhances"},
+	       {0, "recurse", "APT::Cache::RecurseDepends", "Print dependencies recursively"},
+	       {0, "implicit", "APT::Cache::ShowImplicit", "Print implicit dependencies"},
+	    },
+	 },
+	 command{
+	    {"search"},
+	    {
+	       {'n', "names-only", "APT::Cache::NamesOnly", "Only search names"},
+	       {'f', "full", "APT::Cache::ShowFull", "Show the full record"},
+	    },
+	 },
+	 command{
+	    {"show"},
+	    {
+	       {'a', "all-versions", "APT::Cache::AllVersions", "Show all versions"},
+	    },
+	 },
+	 command{
+	    {"pkgnames"},
+	    {
+	       {0, "all-names", "APT::Cache::AllNames", "Show virtual packages and missing dependencies"},
+	    },
+	 },
+	 command{
+	    {"unmet"},
+	    {
+	       {'i', "important", "APT::Cache::Important", "Print only important dependencies"},
+	    },
+	 },
+	 command{
+	    {"showsrc"},
+	    {
+	       {0, "only-source", "APT::Cache::Only-Source", "Only query source package names"},
+	    },
+	 },
+	 command{
+	    {"gencaches", "showpkg", "stats", "dump", "dumpavail", "showauto", "policy", "madison"},
+	    {},
+	 },
+      },
+      options{
+	 {'g', "generate", "APT::Cache::Generate", "Generate the cache"},
+	 {'t', "target-release", "APT::Default-Release", "Set the target release", CommandLine::HasArg},
+	 {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+	 {'S', "snapshot", "APT::Snapshot", "Snapshot to use", CommandLine::HasArg},
+
+	 {'p', "pkg-cache", "Dir::Cache::pkgcache", "Set the location of the pkgcache.bin", CommandLine::HasArg},
+	 {'s', "src-cache", "Dir::Cache::srcpkgcache", "Set the location of the srcpkgcache.bin", CommandLine::HasArg},
+	 {0, "with-source", "APT::Sources::With::", "Configure an ephemeral source file", CommandLine::HasArg},
+      },
+   },
+   binary{
+      APT_CMD::APT_CDROM,
+      commands{
+	 {
+	    {"add", "ident"},
+	    {
+	       {0, "auto-detect", "Acquire::cdrom::AutoDetect", "Auto detect the CD", CommandLine::Boolean},
+	       {'d', "cdrom", "Acquire::cdrom::mount", "CD mount point", CommandLine::HasArg},
+	       {'r', "rename", "APT::CDROM::Rename", "Rename the CD"},
+	       {'m', "no-mount", "APT::CDROM::NoMount", "Do not mount automatically"},
+	       {'f', "fast", "APT::CDROM::Fast", "Do a fast operation"},
+	       {'n', "just-print", "APT::CDROM::NoAct", "Just print, do not act"},
+	       {'n', "recon", "APT::CDROM::NoAct", "Just print, do not act"},
+	       {'n', "no-act", "APT::CDROM::NoAct", "Just print, do not act"},
+	       {'a', "thorough", "APT::CDROM::Thorough", "Be thorough"},
+	    },
+	 },
+      },
+      options{},
+   }};
+
+static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
+{
+   for (auto &binary : binaries)
+   {
+      if (binary.binary != Binary)
+	 continue;
+
+      if (Cmd)
+      {
+	 bool knownCommand = false;
+	 for (auto &command : binary.commands)
+	    if (std::find(command.commands.begin(), command.commands.end(), std::string_view(Cmd)) != std::end(command.commands))
+	    {
+	       for (auto &option : command.options)
+		  addArg(option.shrt, option.lng, option.option, option.flag);
+
+	       knownCommand = true;
+	    }
+
+	 if (not knownCommand)
+	    return false;
+      }
+
+      bool addedArgs = not Args.empty();
+      for (auto &option : binary.options)
+	 addArg(option.shrt, option.lng, option.option, option.flag);
+
+      return addedArgs;
+   }
+
+   return false;
 }
 									/*}}}*/
 static bool addArgumentsAPTConfig(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
@@ -368,7 +436,7 @@ static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * c
       addArg('f', "full", "APT::Cache::ShowFull", 0);
       addArg('S', "snapshot", "APT::Snapshot", CommandLine::HasArg);
    }
-   else if (addArgumentsAPTGet(Args, Cmd) || addArgumentsAPTCache(Args, Cmd))
+   else if (addArgumentsAPTGet(Args, Cmd) || addArguments(APT_CMD::APT_CACHE, Args, Cmd))
    {
        // we have no (supported) command-name overlaps so far, so we call
        // specifics in order until we find one which adds arguments
@@ -400,8 +468,10 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
       {
 	 case APT_CMD::APT: addArgumentsAPT(Args, Cmd); break;
 	 case APT_CMD::APT_GET: addArgumentsAPTGet(Args, Cmd); break;
-	 case APT_CMD::APT_CACHE: addArgumentsAPTCache(Args, Cmd); break;
-	 case APT_CMD::APT_CDROM: addArgumentsAPTCDROM(Args, Cmd); break;
+	 case APT_CMD::APT_CACHE:
+	 case APT_CMD::APT_CDROM:
+	    addArguments(Program, Args, Cmd);
+	    break;
 	 case APT_CMD::APT_CONFIG: addArgumentsAPTConfig(Args, Cmd); break;
 	 case APT_CMD::APT_DUMP_SOLVER: addArgumentsAPTDumpSolver(Args, Cmd); break;
 	 case APT_CMD::APT_EXTRACTTEMPLATES: addArgumentsAPTExtractTemplates(Args, Cmd); break;
@@ -455,6 +525,49 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
    if (_config->FindB("version") == true || Binary == APT_CMD::APT_FTPARCHIVE)
       return true;
    ShowHelpListCommands(Cmds);
+   for (auto &b : binaries)
+   {
+      if (b.binary != Binary)
+	 continue;
+      // Width of long option
+      size_t width = 0;
+      for (auto &c : b.commands)
+	 for (auto &option : c.options)
+	    width = std::max(strlen(option.lng), width);
+      for (auto &option : b.options)
+	 width = std::max(strlen(option.lng), width);
+      for (auto &command : b.commands)
+      {
+	 for (auto &subcommand : command.commands)
+	    std::cout << "  " << subcommand << std::endl;
+
+	 for (auto &option : command.options)
+	 {
+	    if (not option.description)
+	       continue;
+	    if (option.shrt && option.lng)
+	       std::cout << "    -" << option.shrt << ", --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	    else if (option.lng)
+	       std::cout << "        --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	    else if (option.shrt)
+	       std::cout << "    -" << option.shrt << "  " << option.description << std::endl;
+	 }
+	 std::cout << std::endl;
+      }
+      std::cout << "  Common options:" << std::endl;
+      for (auto &option : b.options)
+      {
+	 if (not option.description)
+	    continue;
+	 if (option.shrt && option.lng)
+	    std::cout << "    -" << option.shrt << ", --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	 else if (option.lng)
+	    std::cout << "        --" << std::left << std::setw(width) << option.lng << "  " << option.description << std::endl;
+	 else if (option.shrt)
+	    std::cout << "    -" << option.shrt << "  " << option.description << std::endl;
+      }
+   }
+
    std::cout << std::endl;
    char const * cmd = nullptr;
    switch (Binary)
@@ -474,6 +587,7 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
       case APT_CMD::APT_SORTPKG: cmd = "apt-sortpkgs(1)"; break;
       case APT_CMD::RRED: cmd = nullptr; break;
    }
+
    if (cmd != nullptr)
       ioprintf(std::cout, _("See %s for more information about the available commands."), cmd);
    if (Binary != APT_CMD::APT_DUMP_SOLVER && Binary != APT_CMD::APT_INTERNAL_SOLVER &&
