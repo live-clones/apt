@@ -25,7 +25,7 @@ At each interaction with APT, a single solver is in use.  When there is
 a total of 2 or more solvers, internals or externals, the user can
 choose which one to use.
 
-Each solver is identified by an unique string, the **solver
+Each solver is identified by a unique string, the **solver
 name**. Solver names must be formed using only alphanumeric ASCII
 characters, dashes, and underscores; solver names must start with a
 lowercase ASCII letter. The special name `internal` denotes APT's

@@ -27,7 +27,7 @@ are installed/removed.
 
 * PkgName = the name of the package
 * TotalPercentage = the total progress between [0..100]
-* description = a i18ned human readable description of the current action
+* description = an i18ned human readable description of the current action
 
 Example:
 
@@ -67,7 +67,7 @@ dlstatus
 
 * AlreadyDownloaded = the number of already downloaded packages
 * TotalPercentage = the total progress between [0..100]
-* description = a i18ned human readable description of the current action
+* description = an i18ned human readable description of the current action
 
 Example:
 

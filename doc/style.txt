@@ -57,7 +57,7 @@ almost always designates a change in ownership rules).
 
   * Pass by value or pass by reference should borrow the object from the
     caller
-  * Pass by non-const reference may be used to indicate a OUT type variable
+  * Pass by non-const reference may be used to indicate an OUT type variable
   * Pass by pointer (except in the case where the pointer is really an array)
     should be used when the object will be retained or ownership will be
     transferred. Ownership transference should be rare and noted by a comment.
