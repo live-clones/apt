@@ -292,10 +292,10 @@ class Solver
    Solver(pkgCache &Cache, pkgDepCache::Policy &Policy, EDSP::Request::Flags requestFlags);
    ~Solver();
 
-   // Assume that the variable is decided as specified.
-   [[nodiscard]] bool Assume(Var var, bool decision, const Clause *reason = nullptr);
+   // Assume a literal
+   [[nodiscard]] bool Assume(Lit lit, const Clause *reason = nullptr);
    // Enqueue a decision fact
-   [[nodiscard]] bool Enqueue(Var var, bool decision, const Clause *reason = nullptr);
+   [[nodiscard]] bool Enqueue(Lit lit, const Clause *reason = nullptr);
 
    // \brief Apply the selections from the dep cache to the solver
    [[nodiscard]] bool FromDepCache(pkgDepCache &depcache);

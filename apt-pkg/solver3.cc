@@ -557,16 +557,16 @@ bool APT::Solver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
    pkgObsolete[pkg] = 2;
    return true;
 }
-bool APT::Solver::Assume(Var var, bool decision, const Clause *reason)
+bool APT::Solver::Assume(Lit lit, const Clause *reason)
 {
    choices.push_back(solved.size());
-   return Enqueue(var, decision, std::move(reason));
+   return Enqueue(lit, std::move(reason));
 }
 
-bool APT::Solver::Enqueue(Var var, bool decision, const Clause *reason)
+bool APT::Solver::Enqueue(Lit lit, const Clause *reason)
 {
-   auto &state = (*this)[var];
-   auto decisionCast = decision ? Decision::MUST : Decision::MUSTNOT;
+   auto &state = (*this)[lit.var()];
+   auto decisionCast = lit.sign() ? Decision::MUSTNOT : Decision::MUST;
 
    if (state.decision != Decision::NONE)
    {
@@ -575,8 +575,8 @@ bool APT::Solver::Enqueue(Var var, bool decision, const Clause *reason)
 	 std::ostringstream err;
 	 err << "Unable to satisfy dependencies. Reached two conflicting decisions:" << "\n";
 	 std::unordered_set<Var> seen;
-	 err << "1. " << LongWhyStr(var, state.decision == Decision::MUST, state.reason, "   ", seen).substr(3) << "\n";
-	 err << "2. " << LongWhyStr(var, decision, reason, "   ", seen).substr(3);
+	 err << "1. " << LongWhyStr(lit.var(), state.decision == Decision::MUST, state.reason, "   ", seen).substr(3) << "\n";
+	 err << "2. " << LongWhyStr(lit.var(), not lit.sign(), reason, "   ", seen).substr(3);
 	 return _error->Error("%s", err.str().c_str());
       }
       return true;
@@ -586,11 +586,12 @@ bool APT::Solver::Enqueue(Var var, bool decision, const Clause *reason)
    state.depth = depth();
    state.reason = reason;
 
+   // FIXME: Adjust call to bestReason to use lit
    if (unlikely(debug >= 1))
-      std::cerr << "[" << depth() << "] " << (decision ? "Install" : "Reject") << ":" << var.toString(cache) << " (" << WhyStr(bestReason(reason, var)) << ")\n";
+      std::cerr << "[" << depth() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << lit.var().toString(cache) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
 
-   solved.push_back(Solved{var, std::nullopt});
-   propQ.push(var);
+   solved.push_back(Solved{lit.var(), std::nullopt});
+   propQ.push(lit.var());
 
    return true;
 }
@@ -613,7 +614,7 @@ bool APT::Solver::Propagate()
 	       continue;
 	    if (unlikely(debug >= 3))
 	       std::cerr << "Propagate " << var.toString(cache) << " to NOT " << rclause->reason.toString(cache) << " for dep " << const_cast<Clause *>(rclause)->toString(cache) << std::endl;
-	    if (not Enqueue(rclause->reason, false, rclause))
+	    if (not Enqueue(~rclause->reason, rclause))
 	       return false;
 	 }
       }
@@ -643,7 +644,7 @@ bool APT::Solver::Propagate()
 	       {
 		  // Find the variable that must be chosen and enqueue it as a fact
 		  for (auto sol : rclause->solutions)
-		     if ((*this)[sol].decision == Decision::NONE && not Enqueue(sol, true, rclause))
+		     if ((*this)[sol].decision == Decision::NONE && not Enqueue(sol, rclause))
 			return false;
 	       }
 	       continue;
@@ -654,7 +655,7 @@ bool APT::Solver::Propagate()
 	    if (unlikely(debug >= 3))
 	       std::cerr << "Propagate NOT " << var.toString(cache) << " to " << rclause->reason.toString(cache) << " for dep " << const_cast<Clause *>(rclause)->toString(cache) << std::endl;
 
-	    if (not Enqueue(rclause->reason, false, rclause)) // Last version invalidated
+	    if (not Enqueue(~rclause->reason, rclause)) // Last version invalidated
 	       return false;
 	 }
       }
@@ -1069,7 +1070,7 @@ bool APT::Solver::Pop()
       std::cerr << "Backtracking to choice " << choice.toString(cache) << "\n";
 
    // FIXME: There should be a reason!
-   if (not choice.empty() && not Enqueue(choice, false, {}))
+   if (not choice.empty() && not Enqueue(~choice, {}))
       return false;
 
    (*this)[choice].reasonStr = "backtracked";
@@ -1085,7 +1086,7 @@ bool APT::Solver::AddWork(Work &&w)
    if (w.clause->negative)
    {
       for (auto var : w.clause->solutions)
-	 if (not Enqueue(var, false, w.clause))
+	 if (not Enqueue(~var, w.clause))
 	    return false;
    }
    else
@@ -1093,7 +1094,7 @@ bool APT::Solver::AddWork(Work &&w)
       if (unlikely(debug >= 3 && w.clause->optional))
 	 std::cerr << "Enqueuing Recommends " << w.clause->toString(cache) << std::endl;
       if (w.clause->solutions.size() == 1 && not w.clause->optional)
-	 return Enqueue(w.clause->solutions[0], true, w.clause);
+	 return Enqueue(w.clause->solutions[0], w.clause);
 
       w.size = std::count_if(w.clause->solutions.begin(), w.clause->solutions.end(), [this](auto V)
 			     { return (*this)[V].decision != Decision::MUSTNOT; });
@@ -1158,7 +1159,7 @@ bool APT::Solver::Solve()
 	 }
 	 if (unlikely(debug >= 3))
 	    std::cerr << "(try it: " << sol.toString(cache) << ")\n";
-	 if (not Enqueue(sol, true, item.clause) && not Pop())
+	 if (not Enqueue(sol, item.clause) && not Pop())
 	    return false;
 	 foundSolution = true;
 	 break;
@@ -1195,7 +1196,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	 bool isPhasing = IsUpgrade && depcache.PhasingApplied(P) && not isForced;
 	 for (auto V = P.VersionList(); not V.end(); ++V)
 	    if (P.CurrentVer() != V && (depcache.GetCandidateVersion(P) != V || isPhasing))
-	       if (not Enqueue(Var(V), false, {}))
+	       if (not Enqueue(~Var(V), {}))
 		  return false;
       }
    }
@@ -1215,7 +1216,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
       {
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Hold " << P.FullName() << "\n";
-	 if (P->CurrentVer ? not Enqueue(Var(P.CurrentVer()), true) : not Enqueue(Var(P), false))
+	 if (P->CurrentVer ? not Enqueue(Var(P.CurrentVer())) : not Enqueue(~Var(P)))
 	    return false;
       }
       else if (state.Delete()						  // Normal delete request.
@@ -1225,7 +1226,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
       {
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Delete " << P.FullName() << "\n";
-	 if (not Enqueue(Var(P), false))
+	 if (not Enqueue(~Var(P)))
 	    return false;
       }
       else if (state.Install() || (state.Keep() && P->CurrentVer))
@@ -1251,7 +1252,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	 if (not isOptional)
 	 {
 	    // Pre-empt the non-optional requests, as we don't want to queue them, we can just "unit propagate" here.
-	    if (depcache[P].Keep() ? not Enqueue(Var(P), true) : not Enqueue(Var(depcache.GetCandidateVersion(P)), true))
+	    if (depcache[P].Keep() ? not Enqueue(Var(P)) : not Enqueue(Var(depcache.GetCandidateVersion(P))))
 	       return false;
 	 }
 	 else
@@ -1305,7 +1306,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
    std::stable_sort(manualPackages.begin(), manualPackages.end(), CompareProviders3{cache, policy, {}, *this});
    for (auto assumption : manualPackages)
    {
-      if (not Assume(assumption, true, {}) || not Propagate())
+      if (not Assume(assumption, {}) || not Propagate())
 	 if (not Pop())
 	    abort();
    }
