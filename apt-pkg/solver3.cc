@@ -299,12 +299,17 @@ inline APT::Solver::Var APT::Solver::bestReason(APT::Solver::Clause const *claus
    if (clause->reason == var)
       for (auto choice : clause->solutions)
       {
-	 if (clause->negative && (*this)[choice].decision == Decision::MUST)
+	 if (clause->negative && value(choice) == Decision::MUST)
 	    return choice;
-	 if (not clause->negative && (*this)[choice].decision == Decision::MUSTNOT)
+	 if (not clause->negative && value(choice) == Decision::MUSTNOT)
 	    return choice;
       }
    return clause->reason;
+}
+
+inline APT::Solver::Decision APT::Solver::value(Lit lit) const
+{
+   return lit.sign() ? ~(*this)[lit.var()].decision : (*this)[lit.var()].decision;
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
@@ -313,7 +318,7 @@ std::string APT::Solver::WhyStr(Var reason) const
    std::vector<std::string> out;
    while (not reason.empty())
    {
-      if ((*this)[reason].decision == Decision::MUSTNOT)
+      if (value(reason) == Decision::MUSTNOT)
 	 out.push_back(std::string("not ") + reason.toString(cache));
       else
 	 out.push_back(reason.toString(cache));
@@ -362,10 +367,10 @@ std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclaus
 	 if (choice == skip)
 	    continue;
 
-	 if ((*this)[choice].decision == Decision::NONE)
+	 if (value(choice) == Decision::NONE)
 	    out << prefix << "- " << choice.toString(cache) << " is undecided\n";
 	 else
-	    out << prefix << "- " << LongWhyStr(choice, (*this)[choice].decision == Decision::MUST, (*this)[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
+	    out << prefix << "- " << LongWhyStr(choice, value(choice) == Decision::MUST, (*this)[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
       }
    };
 
@@ -386,7 +391,7 @@ std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclaus
 
    // We could be called with a decision we tried to make but failed due to a conflict;
    // this checks if it is the real decision.
-   if ((*this)[var].decision != Decision::NONE && decision == ((*this)[var].decision == Decision::MUST) && (*this)[var].reason == rclause)
+   if (value(var) != Decision::NONE && decision == (value(var) == Decision::MUST) && (*this)[var].reason == rclause)
    {
       // If we have seen the real decision before; we dont't need to print it again.
       if (seen.find(var) != seen.end())
@@ -602,7 +607,7 @@ bool APT::Solver::Propagate()
    {
       Var var = propQ.front();
       propQ.pop();
-      if ((*this)[var].decision == Decision::MUST)
+      if (value(var) == Decision::MUST)
       {
 	 Discover(var);
 	 for (auto &clause : (*this)[var].clauses)
@@ -618,19 +623,19 @@ bool APT::Solver::Propagate()
 	       return false;
 	 }
       }
-      else if ((*this)[var].decision == Decision::MUSTNOT)
+      else if (value(var) == Decision::MUSTNOT)
       {
 	 for (auto rclause : (*this)[var].rclauses)
 	 {
 	    if (rclause->negative || rclause->reason.empty())
 	       continue;
-	    if ((*this)[rclause->reason].decision == Decision::MUSTNOT)
+	    if (value(rclause->reason) == Decision::MUSTNOT)
 	       continue;
 
 	    auto count = std::count_if(rclause->solutions.begin(), rclause->solutions.end(), [this](auto var)
-				       { return (*this)[var].decision != Decision::MUSTNOT; });
+				       { return value(var) != Decision::MUSTNOT; });
 
-	    if (count == 1 && (*this)[rclause->reason].decision == Decision::MUST)
+	    if (count == 1 && value(rclause->reason) == Decision::MUST)
 	    {
 	       if (unlikely(debug >= 3))
 		  std::cerr << "Propagate NOT " << var.toString(cache) << " to unit clause " << rclause->toString(cache);
@@ -644,7 +649,7 @@ bool APT::Solver::Propagate()
 	       {
 		  // Find the variable that must be chosen and enqueue it as a fact
 		  for (auto sol : rclause->solutions)
-		     if ((*this)[sol].decision == Decision::NONE && not Enqueue(sol, rclause))
+		     if (value(sol) == Decision::NONE && not Enqueue(sol, rclause))
 			return false;
 	       }
 	       continue;
@@ -815,7 +820,7 @@ void APT::Solver::Discover(Var var)
       // Recursively discover everything else that is not already FALSE by fact (MUSTNOT at depth 0)
       for (auto const &clause : state.clauses)
 	 for (auto const &var : clause->solutions)
-	    if ((*this)[var].decision != Decision::MUSTNOT || (*this)[var].depth > 0)
+	    if (value(var) != Decision::MUSTNOT || (*this)[var].depth > 0)
 	       discoverQ.push(var);
    }
 }
@@ -1097,7 +1102,7 @@ bool APT::Solver::AddWork(Work &&w)
 	 return Enqueue(w.clause->solutions[0], w.clause);
 
       w.size = std::count_if(w.clause->solutions.begin(), w.clause->solutions.end(), [this](auto V)
-			     { return (*this)[V].decision != Decision::MUSTNOT; });
+			     { return value(V) != Decision::MUSTNOT; });
       work.push_back(std::move(w));
       std::push_heap(work.begin(), work.end());
    }
@@ -1134,7 +1139,7 @@ bool APT::Solver::Solve()
       solved.push_back(Solved{Var(), item});
 
       if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
-		      { return (*this)[ver].decision == Decision::MUST; }))
+		      { return value(ver) == Decision::MUST; }))
       {
 	 if (unlikely(debug >= 2))
 	    std::cerr << "ELIDED " << item.toString(cache) << std::endl;
@@ -1147,7 +1152,7 @@ bool APT::Solver::Solve()
       bool foundSolution = false;
       for (auto &sol : item.clause->solutions)
       {
-	 if ((*this)[sol].decision == Decision::MUSTNOT)
+	 if (value(sol) == Decision::MUSTNOT)
 	 {
 	    if (unlikely(debug >= 3))
 	       std::cerr << "(existing conflict: " << sol.toString(cache) << ")\n";
@@ -1322,11 +1327,11 @@ bool APT::Solver::ToDepCache(pkgDepCache &depcache) const
    {
       depcache[P].Marked = 0;
       depcache[P].Garbage = 0;
-      if ((*this)[P].decision == Decision::MUST)
+      if (value(Var(P)) == Decision::MUST)
       {
 	 pkgCache::VerIterator cand;
 	 for (auto V = P.VersionList(); cand.end() && not V.end(); V++)
-	    if ((*this)[V].decision == Decision::MUST)
+	    if (value(Var(V)) == Decision::MUST)
 	       cand = V;
 
 	 auto reasonClause = (*this)[cand].reason;

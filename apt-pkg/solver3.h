@@ -79,10 +79,12 @@ using FastContiguousCacheMap = ContiguousCacheMap<K, V, true>;
  */
 class Solver
 {
+   public:
    enum class Decision : uint16_t;
-   enum class Hint : uint16_t;
    struct Var;
    struct Lit;
+
+   private:
    struct CompareProviders3;
    struct State;
    struct Clause;
@@ -277,6 +279,7 @@ class Solver
       return static_cast<depth_type>(choices.size());
    }
    inline Var bestReason(Clause const *clause, Var var) const;
+   inline Decision value(Lit lit) const;
 
    public:
    // \brief Create a new decision level.
@@ -582,4 +585,18 @@ struct std::hash<APT::Solver::Lit>
 constexpr APT::Solver::Lit APT::Solver::Var::operator~() const
 {
    return ~Lit(*this);
+}
+
+inline APT::Solver::Decision operator~(APT::Solver::Decision decision)
+{
+   switch (decision)
+   {
+   case APT::Solver::Decision::NONE:
+      return APT::Solver::Decision::NONE;
+   case APT::Solver::Decision::MUST:
+      return APT::Solver::Decision::MUSTNOT;
+   case APT::Solver::Decision::MUSTNOT:
+      return APT::Solver::Decision::MUST;
+   }
+   abort();
 }
