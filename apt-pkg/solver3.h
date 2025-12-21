@@ -82,12 +82,14 @@ class Solver
    enum class Decision : uint16_t;
    enum class Hint : uint16_t;
    struct Var;
+   struct Lit;
    struct CompareProviders3;
    struct State;
    struct Clause;
    struct Work;
    struct Solved;
    friend struct std::hash<APT::Solver::Var>;
+   friend struct std::hash<APT::Solver::Lit>;
 
    // \brief Groups of works, these are ordered.
    //
@@ -374,6 +376,9 @@ struct APT::Solver::Var
    constexpr bool operator!=(Var const other) const { return value != other.value; }
    constexpr bool operator==(Var const other) const { return value == other.value; }
 
+   /// \brief Negate
+   constexpr Lit operator~() const;
+
    std::string toString(pkgCache &cache) const
    {
       if (auto P = Pkg(cache); not P.end())
@@ -382,6 +387,36 @@ struct APT::Solver::Var
 	 return V.ParentPkg().FullName() + "=" + V.VerStr();
       return "(root)";
    }
+};
+
+/**
+ * \brief A literal is a variable with a sign.
+ *
+ * A literal 'A' means 'install A' whereas a literal '-A' means 'do not install A'.
+ */
+struct APT::Solver::Lit
+{
+   private:
+   friend struct std::hash<APT::Solver::Lit>;
+   // Private constructor from a number, to be used with operator~
+   explicit constexpr Lit(int32_t value) : value{value} {}
+   int32_t value;
+
+   public:
+   // SAFETY: value must be 31 bit, one bit is needed for the sign.
+   constexpr Lit(APT::Solver::Var var) : value{static_cast<int32_t>(var.value)} {}
+
+   // Accessors
+   constexpr APT::Solver::Var var() const { return APT::Solver::Var(std::abs(value)); }
+   constexpr bool sign() const { return value < 0; }
+   constexpr APT::Solver::Lit operator~() const { return Lit(-value); }
+
+   // Properties
+   constexpr bool empty() const { return value == 0; }
+   constexpr bool operator!=(Lit const other) const { return value != other.value; }
+   constexpr bool operator==(Lit const other) const { return value == other.value; }
+
+   std::string toString(pkgCache &cache) const { return (sign() ? "not " : "") + var().toString(cache); }
 };
 
 /**
@@ -535,3 +570,16 @@ struct std::hash<APT::Solver::Var>
    std::hash<decltype(APT::Solver::Var::value)> hash_value;
    std::size_t operator()(const APT::Solver::Var &v) const noexcept { return hash_value(v.value); }
 };
+
+// Custom specialization of std::hash can be injected in namespace std.
+template <>
+struct std::hash<APT::Solver::Lit>
+{
+   std::hash<decltype(APT::Solver::Lit::value)> hash_value;
+   std::size_t operator()(const APT::Solver::Lit &v) const noexcept { return hash_value(v.value); }
+};
+
+constexpr APT::Solver::Lit APT::Solver::Var::operator~() const
+{
+   return ~Lit(*this);
+}
