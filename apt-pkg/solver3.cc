@@ -213,7 +213,7 @@ APT::Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request:
    static_assert(sizeof(APT::Solver::Var) == sizeof(map_pointer<pkgCache::Package>));
    static_assert(sizeof(APT::Solver::Var) == sizeof(map_pointer<pkgCache::Version>));
    // Root state is "true".
-   rootState->decision = Decision::MUST;
+   rootState->decision = LiftedBool::True;
 }
 
 APT::Solver::~Solver() = default;
@@ -299,15 +299,15 @@ inline APT::Solver::Var APT::Solver::bestReason(APT::Solver::Clause const *claus
    if (clause->reason == var)
       for (auto choice : clause->solutions)
       {
-	 if (clause->negative && value(choice) == Decision::MUST)
+	 if (clause->negative && value(choice) == LiftedBool::True)
 	    return choice;
-	 if (not clause->negative && value(choice) == Decision::MUSTNOT)
+	 if (not clause->negative && value(choice) == LiftedBool::False)
 	    return choice;
       }
    return clause->reason;
 }
 
-inline APT::Solver::Decision APT::Solver::value(Lit lit) const
+inline APT::Solver::LiftedBool APT::Solver::value(Lit lit) const
 {
    return lit.sign() ? ~(*this)[lit.var()].decision : (*this)[lit.var()].decision;
 }
@@ -318,7 +318,7 @@ std::string APT::Solver::WhyStr(Var reason) const
    std::vector<std::string> out;
    while (not reason.empty())
    {
-      if (value(reason) == Decision::MUSTNOT)
+      if (value(reason) == LiftedBool::False)
 	 out.push_back(std::string("not ") + reason.toString(cache));
       else
 	 out.push_back(reason.toString(cache));
@@ -367,10 +367,10 @@ std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclaus
 	 if (choice == skip)
 	    continue;
 
-	 if (value(choice) == Decision::NONE)
+	 if (value(choice) == LiftedBool::Undefined)
 	    out << prefix << "- " << choice.toString(cache) << " is undecided\n";
 	 else
-	    out << prefix << "- " << LongWhyStr(choice, value(choice) == Decision::MUST, (*this)[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
+	    out << prefix << "- " << LongWhyStr(choice, value(choice) == LiftedBool::True, (*this)[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
       }
    };
 
@@ -391,7 +391,7 @@ std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclaus
 
    // We could be called with a decision we tried to make but failed due to a conflict;
    // this checks if it is the real decision.
-   if (value(var) != Decision::NONE && decision == (value(var) == Decision::MUST) && (*this)[var].reason == rclause)
+   if (value(var) != LiftedBool::Undefined && decision == (value(var) == LiftedBool::True) && (*this)[var].reason == rclause)
    {
       // If we have seen the real decision before; we dont't need to print it again.
       if (seen.find(var) != seen.end())
@@ -433,7 +433,7 @@ std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclaus
       {
 	 if ((it + 1) == path.rend() || seen.find(*(it + 1)) == seen.end())
 	 {
-	    out << prefix << (i == 1 ? "" : "1-") << i << ". " << printSelection(*it, state.decision == Decision::MUST) << " as above\n";
+	    out << prefix << (i == 1 ? "" : "1-") << i << ". " << printSelection(*it, state.decision == LiftedBool::True) << " as above\n";
 	 }
 	 continue;
       }
@@ -442,10 +442,10 @@ std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclaus
       {
 	 out << prefix << std::setw(w) << i << ". " << state.reason->toString(cache, true) << "\n";
 	 if (state.reason->solutions.size() > 1)
-	    out << prefix << std::setw(w) << " " << "  [selected " << it->toString(cache) << " for " << (state.decision == Decision::MUST ? "install" : "remove") << "]\n";
+	    out << prefix << std::setw(w) << " " << "  [selected " << it->toString(cache) << " for " << (state.decision == LiftedBool::True ? "install" : "remove") << "]\n";
       }
       else
-	 out << prefix << std::setw(w) << i << ". " << printSelection(*it, state.decision == Decision::MUST) << "\n";
+	 out << prefix << std::setw(w) << i << ". " << printSelection(*it, state.decision == LiftedBool::True) << "\n";
    }
 
    // Print the leaf. We can't have the leaf in the path because we might be called for an attempted decision
@@ -571,16 +571,16 @@ bool APT::Solver::Assume(Lit lit, const Clause *reason)
 bool APT::Solver::Enqueue(Lit lit, const Clause *reason)
 {
    auto &state = (*this)[lit.var()];
-   auto decisionCast = lit.sign() ? Decision::MUSTNOT : Decision::MUST;
+   auto decisionCast = lit.sign() ? LiftedBool::False : LiftedBool::True;
 
-   if (state.decision != Decision::NONE)
+   if (state.decision != LiftedBool::Undefined)
    {
       if (state.decision != decisionCast)
       {
 	 std::ostringstream err;
 	 err << "Unable to satisfy dependencies. Reached two conflicting decisions:" << "\n";
 	 std::unordered_set<Var> seen;
-	 err << "1. " << LongWhyStr(lit.var(), state.decision == Decision::MUST, state.reason, "   ", seen).substr(3) << "\n";
+	 err << "1. " << LongWhyStr(lit.var(), state.decision == LiftedBool::True, state.reason, "   ", seen).substr(3) << "\n";
 	 err << "2. " << LongWhyStr(lit.var(), not lit.sign(), reason, "   ", seen).substr(3);
 	 return _error->Error("%s", err.str().c_str());
       }
@@ -607,7 +607,7 @@ bool APT::Solver::Propagate()
    {
       Var var = propQ.front();
       propQ.pop();
-      if (value(var) == Decision::MUST)
+      if (value(var) == LiftedBool::True)
       {
 	 Discover(var);
 	 for (auto &clause : (*this)[var].clauses)
@@ -623,19 +623,19 @@ bool APT::Solver::Propagate()
 	       return false;
 	 }
       }
-      else if (value(var) == Decision::MUSTNOT)
+      else if (value(var) == LiftedBool::False)
       {
 	 for (auto rclause : (*this)[var].rclauses)
 	 {
 	    if (rclause->negative || rclause->reason.empty())
 	       continue;
-	    if (value(rclause->reason) == Decision::MUSTNOT)
+	    if (value(rclause->reason) == LiftedBool::False)
 	       continue;
 
 	    auto count = std::count_if(rclause->solutions.begin(), rclause->solutions.end(), [this](auto var)
-				       { return value(var) != Decision::MUSTNOT; });
+				       { return value(var) != LiftedBool::False; });
 
-	    if (count == 1 && value(rclause->reason) == Decision::MUST)
+	    if (count == 1 && value(rclause->reason) == LiftedBool::True)
 	    {
 	       if (unlikely(debug >= 3))
 		  std::cerr << "Propagate NOT " << var.toString(cache) << " to unit clause " << rclause->toString(cache);
@@ -649,7 +649,7 @@ bool APT::Solver::Propagate()
 	       {
 		  // Find the variable that must be chosen and enqueue it as a fact
 		  for (auto sol : rclause->solutions)
-		     if (value(sol) == Decision::NONE && not Enqueue(sol, rclause))
+		     if (value(sol) == LiftedBool::Undefined && not Enqueue(sol, rclause))
 			return false;
 	       }
 	       continue;
@@ -817,10 +817,10 @@ void APT::Solver::Discover(Var var)
 	 }
       }
 
-      // Recursively discover everything else that is not already FALSE by fact (MUSTNOT at depth 0)
+      // Recursively discover everything else that is not already FALSE by fact (False at depth 0)
       for (auto const &clause : state.clauses)
 	 for (auto const &var : clause->solutions)
-	    if (value(var) != Decision::MUSTNOT || (*this)[var].depth > 0)
+	    if (value(var) != LiftedBool::False || (*this)[var].depth > 0)
 	       discoverQ.push(var);
    }
 }
@@ -1011,7 +1011,7 @@ void APT::Solver::UndoOne()
       if (unlikely(debug >= 4))
 	 std::cerr << "Unassign " << solvedItem.assigned.toString(cache) << "\n";
       auto &state = (*this)[solvedItem.assigned];
-      state.decision = Decision::NONE;
+      state.decision = LiftedBool::Undefined;
       state.reason = nullptr;
       state.reasonStr = nullptr;
       state.depth = 0;
@@ -1102,7 +1102,7 @@ bool APT::Solver::AddWork(Work &&w)
 	 return Enqueue(w.clause->solutions[0], w.clause);
 
       w.size = std::count_if(w.clause->solutions.begin(), w.clause->solutions.end(), [this](auto V)
-			     { return value(V) != Decision::MUSTNOT; });
+			     { return value(V) != LiftedBool::False; });
       work.push_back(std::move(w));
       std::push_heap(work.begin(), work.end());
    }
@@ -1139,7 +1139,7 @@ bool APT::Solver::Solve()
       solved.push_back(Solved{Var(), item});
 
       if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
-		      { return value(ver) == Decision::MUST; }))
+		      { return value(ver) == LiftedBool::True; }))
       {
 	 if (unlikely(debug >= 2))
 	    std::cerr << "ELIDED " << item.toString(cache) << std::endl;
@@ -1152,7 +1152,7 @@ bool APT::Solver::Solve()
       bool foundSolution = false;
       for (auto &sol : item.clause->solutions)
       {
-	 if (value(sol) == Decision::MUSTNOT)
+	 if (value(sol) == LiftedBool::False)
 	 {
 	    if (unlikely(debug >= 3))
 	       std::cerr << "(existing conflict: " << sol.toString(cache) << ")\n";
@@ -1327,11 +1327,11 @@ bool APT::Solver::ToDepCache(pkgDepCache &depcache) const
    {
       depcache[P].Marked = 0;
       depcache[P].Garbage = 0;
-      if (value(Var(P)) == Decision::MUST)
+      if (value(Var(P)) == LiftedBool::True)
       {
 	 pkgCache::VerIterator cand;
 	 for (auto V = P.VersionList(); cand.end() && not V.end(); V++)
-	    if (value(Var(V)) == Decision::MUST)
+	    if (value(Var(V)) == LiftedBool::True)
 	       cand = V;
 
 	 auto reasonClause = (*this)[cand].reason;
@@ -1395,11 +1395,11 @@ std::string APT::Solver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterato
       return "";
    std::unordered_set<Var> seen;
    std::string buf;
-   if (solver[Var(pkg)].decision == Decision::NONE)
+   if (solver[Var(pkg)].decision == LiftedBool::Undefined)
       return strprintf(buf, "%s is undecided\n", pkg.FullName().c_str()), buf;
-   if (decision && solver[Var(pkg)].decision != Decision::MUST)
+   if (decision && solver[Var(pkg)].decision != LiftedBool::True)
       return strprintf(buf, "%s is not actually marked for install\n", pkg.FullName().c_str()), buf;
-   if (not decision && solver[Var(pkg)].decision == Decision::MUST)
+   if (not decision && solver[Var(pkg)].decision == LiftedBool::True)
       return strprintf(buf, "%s is actually marked for install\n", pkg.FullName().c_str()), buf;
    return solver.LongWhyStr(Var(pkg), decision, solver[Var(pkg)].reason, "", seen);
 }

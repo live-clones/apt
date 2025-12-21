@@ -80,7 +80,7 @@ using FastContiguousCacheMap = ContiguousCacheMap<K, V, true>;
 class Solver
 {
    public:
-   enum class Decision : uint16_t;
+   enum class LiftedBool : uint8_t;
    struct Var;
    struct Lit;
 
@@ -134,7 +134,7 @@ class Solver
    };
 
    // \brief Type to record depth at. This may very well be a 16-bit
-   // unsigned integer, then change Solver::State::Decision to be a
+   // unsigned integer, then change Solver::State::LiftedBool to be a
    // uint16_t class enum as well to get a more compact space.
    using depth_type = unsigned int;
 
@@ -279,7 +279,7 @@ class Solver
       return static_cast<depth_type>(choices.size());
    }
    inline Var bestReason(Clause const *clause, Var var) const;
-   inline Decision value(Lit lit) const;
+   inline LiftedBool value(Lit lit) const;
 
    public:
    // \brief Create a new decision level.
@@ -484,14 +484,14 @@ struct APT::Solver::Work
 };
 
 // \brief This essentially describes the install state in RFC2119 terms.
-enum class APT::Solver::Decision : uint16_t
+enum class APT::Solver::LiftedBool : uint8_t
 {
    // \brief We have not made a choice about the package yet
-   NONE,
+   Undefined,
    // \brief We need to install this package
-   MUST,
+   True,
    // \brief We cannot install this package (need conflicts with it)
-   MUSTNOT,
+   False,
 };
 
 /**
@@ -502,7 +502,7 @@ enum class APT::Solver::Decision : uint16_t
  */
 struct APT::Solver::State
 {
-   // \brief The reason for causing this state (invalid for NONE).
+   // \brief The reason for causing this state (invalid for Undefined).
    //
    // Rejects may have been caused by a later state. Consider we select
    // between x1 and x2 in depth = N. If we now find dependencies of x1
@@ -521,7 +521,7 @@ struct APT::Solver::State
    depth_type depth{0};
 
    // \brief This essentially describes the install state in RFC2119 terms.
-   Decision decision{Decision::NONE};
+   LiftedBool decision{LiftedBool::Undefined};
 
    // \brief Flags.
    struct
@@ -587,16 +587,16 @@ constexpr APT::Solver::Lit APT::Solver::Var::operator~() const
    return ~Lit(*this);
 }
 
-inline APT::Solver::Decision operator~(APT::Solver::Decision decision)
+inline APT::Solver::LiftedBool operator~(APT::Solver::LiftedBool decision)
 {
    switch (decision)
    {
-   case APT::Solver::Decision::NONE:
-      return APT::Solver::Decision::NONE;
-   case APT::Solver::Decision::MUST:
-      return APT::Solver::Decision::MUSTNOT;
-   case APT::Solver::Decision::MUSTNOT:
-      return APT::Solver::Decision::MUST;
+   case APT::Solver::LiftedBool::Undefined:
+      return APT::Solver::LiftedBool::Undefined;
+   case APT::Solver::LiftedBool::True:
+      return APT::Solver::LiftedBool::False;
+   case APT::Solver::LiftedBool::False:
+      return APT::Solver::LiftedBool::True;
    }
    abort();
 }
