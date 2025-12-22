@@ -209,7 +209,7 @@ APT::Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request:
 {
    // Ensure trivially
    static_assert(std::is_trivially_destructible_v<Work>);
-   static_assert(std::is_trivially_destructible_v<Solved>);
+   static_assert(std::is_trivially_destructible_v<Trail>);
    static_assert(sizeof(APT::Solver::Var) == sizeof(map_pointer<pkgCache::Package>));
    static_assert(sizeof(APT::Solver::Var) == sizeof(map_pointer<pkgCache::Version>));
    // Root state is "true".
@@ -564,7 +564,7 @@ bool APT::Solver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
 }
 bool APT::Solver::Assume(Lit lit, const Clause *reason)
 {
-   choices.push_back(solved.size());
+   trailLim.push_back(trail.size());
    return Enqueue(lit, std::move(reason));
 }
 
@@ -588,14 +588,14 @@ bool APT::Solver::Enqueue(Lit lit, const Clause *reason)
    }
 
    state.decision = decisionCast;
-   state.depth = depth();
+   state.depth = decisionLevel();
    state.reason = reason;
 
    // FIXME: Adjust call to bestReason to use lit
    if (unlikely(debug >= 1))
-      std::cerr << "[" << depth() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << lit.var().toString(cache) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
+      std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << lit.var().toString(cache) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
 
-   solved.push_back(Solved{lit.var(), std::nullopt});
+   trail.push_back(Trail{lit.var(), std::nullopt});
    propQ.push(lit.var());
 
    return true;
@@ -611,7 +611,7 @@ bool APT::Solver::Propagate()
       {
 	 Discover(var);
 	 for (auto &clause : (*this)[var].clauses)
-	    if (not AddWork(Work{clause.get(), depth()}))
+	    if (not AddWork(Work{clause.get(), decisionLevel()}))
 	       return false;
 	 for (auto rclause : (*this)[var].rclauses)
 	 {
@@ -642,7 +642,7 @@ bool APT::Solver::Propagate()
 	       if (rclause->optional)
 	       {
 		  // Enqueue duplicated item, this will ensure we see it at the correct time
-		  if (not AddWork(Work{rclause, depth()}))
+		  if (not AddWork(Work{rclause, decisionLevel()}))
 		     return false;
 	       }
 	       else
@@ -995,29 +995,29 @@ void APT::Solver::Push(Var var, Work work)
    if (unlikely(debug >= 2))
       std::cerr << "Trying choice for " << work.toString(cache) << std::endl;
 
-   choices.push_back(solved.size());
-   solved.push_back(Solved{var, std::move(work)});
+   trailLim.push_back(trail.size());
+   trail.push_back(Trail{var, std::move(work)});
 }
 
 void APT::Solver::UndoOne()
 {
-   auto solvedItem = solved.back();
+   auto trailItem = trail.back();
 
    if (unlikely(debug >= 4))
       std::cerr << "Undoing a single decision\n";
 
-   if (not solvedItem.assigned.empty())
+   if (not trailItem.assigned.empty())
    {
       if (unlikely(debug >= 4))
-	 std::cerr << "Unassign " << solvedItem.assigned.toString(cache) << "\n";
-      auto &state = (*this)[solvedItem.assigned];
+	 std::cerr << "Unassign " << trailItem.assigned.toString(cache) << "\n";
+      auto &state = (*this)[trailItem.assigned];
       state.decision = LiftedBool::Undefined;
       state.reason = nullptr;
       state.reasonStr = nullptr;
       state.depth = 0;
    }
 
-   if (auto work = solvedItem.work)
+   if (auto work = trailItem.work)
    {
       if (unlikely(debug >= 4))
 	 std::cerr << "Adding work item " << work->toString(cache) << std::endl;
@@ -1026,14 +1026,14 @@ void APT::Solver::UndoOne()
 	 abort();
    }
 
-   solved.pop_back();
+   trail.pop_back();
 
    // FIXME: Add the undo handling here once we have watchers.
 }
 
 bool APT::Solver::Pop()
 {
-   if (depth() == 0)
+   if (decisionLevel() == 0)
       return false;
 
    time_t now = time(nullptr);
@@ -1049,15 +1049,15 @@ bool APT::Solver::Pop()
    _error->Discard();
 
    // Assume() actually failed to enqueue anything, abort here
-   if (choices.back() == solved.size())
+   if (trailLim.back() == trail.size())
    {
-      choices.pop_back();
+      trailLim.pop_back();
       return true;
    }
 
-   assert(choices.back() < solved.size());
-   int itemsToUndo = solved.size() - choices.back();
-   auto choice = solved[choices.back()].assigned;
+   assert(trailLim.back() < trail.size());
+   int itemsToUndo = trail.size() - trailLim.back();
+   auto choice = trail[trailLim.back()].assigned;
 
    for (; itemsToUndo; --itemsToUndo)
       UndoOne();
@@ -1065,9 +1065,9 @@ bool APT::Solver::Pop()
    // We need to remove any work that is at a higher depth.
    // FIXME: We should just mark the entries as erased and only do a compaction
    //        of the heap once we have a lot of erased entries in it.
-   choices.pop_back();
+   trailLim.pop_back();
    work.erase(std::remove_if(work.begin(), work.end(), [this](Work &w) -> bool
-			     { return w.depth > depth() || w.erased; }),
+			     { return w.depth > decisionLevel() || w.erased; }),
 	      work.end());
    std::make_heap(work.begin(), work.end());
 
@@ -1136,7 +1136,7 @@ bool APT::Solver::Solve()
       }
       auto item = std::move(work.back());
       work.pop_back();
-      solved.push_back(Solved{Var(), item});
+      trail.push_back(Trail{Var(), item});
 
       if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
 		      { return value(ver) == LiftedBool::True; }))
@@ -1265,7 +1265,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	    Clause w{Var(), Group, isOptional};
 	    w.solutions.push_back(Var(P));
 	    auto insertedW = RegisterClause(std::move(w));
-	    if (insertedW && not AddWork(Work{insertedW, depth()}))
+	    if (insertedW && not AddWork(Work{insertedW, decisionLevel()}))
 	       return false;
 
 	    if (not isAuto)
@@ -1281,7 +1281,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	       shortcircuit.solutions.push_back(Var(V));
 	    std::stable_sort(shortcircuit.solutions.begin(), shortcircuit.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	    auto insertedShort = RegisterClause(std::move(shortcircuit));
-	    if (insertedShort && not AddWork(Work{insertedShort, depth()}))
+	    if (insertedShort && not AddWork(Work{insertedShort, decisionLevel()}))
 	       return false;
 
 	    // Discovery here is needed so the shortcircuit clause can actually become unit.
@@ -1300,7 +1300,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Install essential package " << P << std::endl;
 	 auto inserted = RegisterClause(std::move(w));
-	 if (inserted && not AddWork(Work{inserted, depth()}))
+	 if (inserted && not AddWork(Work{inserted, decisionLevel()}))
 	    return false;
       }
    }

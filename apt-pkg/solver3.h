@@ -89,7 +89,7 @@ class Solver
    struct State;
    struct Clause;
    struct Work;
-   struct Solved;
+   struct Trail;
    friend struct std::hash<APT::Solver::Var>;
    friend struct std::hash<APT::Solver::Lit>;
 
@@ -202,29 +202,24 @@ class Solver
 
    // \brief Heap of the remaining work.
    //
-   // We are using an std::vector with std::make_heap(), std::push_heap(),
-   // and std::pop_heap() rather than a priority_queue because we need to
-   // be able to iterate over the queued work and see if a choice would
-   // invalidate any work.
+   // In contrast to MiniSAT which picks undecided literals and decides them,
+   // we keep track of unsolved active clauses in a priority queue. This allows
+   // us to for example, solve Depends before Recommends (see Group).
    heap<Work> work;
 
-   // \brief Backlog of solved work.
-   //
-   // Solved work may become invalidated when backtracking, so store it
-   // here to revisit it later. This is similar to what MiniSAT calls the
-   // trail; one distinction is that we have both literals and our work
-   // queue to be concerned about
-   std::vector<Solved> solved;
+   /// \brief Trail of assignments done, and clauses solved.
+   ///
+   /// Record past assignments and solved clauses such that we can revert them when
+   /// backtracking.
+   std::vector<Trail> trail;
+
+   /// \brief Separator indices for different decision levels in trail
+   std::vector<depth_type> trailLim{};
 
    // \brief Propagation queue
    std::queue<Var> propQ;
    // \brief Discover variables
    std::queue<Var> discoverQ;
-
-   // \brief Current decision level.
-   //
-   // This is an index into the solved vector.
-   std::vector<depth_type> choices{};
 
    // \brief The time we called Solve()
    time_t startTime{};
@@ -273,10 +268,10 @@ class Solver
    // \brief Propagate all pending propagations
    [[nodiscard]] bool Propagate();
 
-   // \brief Return the current depth (choices.size() with casting)
-   depth_type depth()
+   // \brief Return the current depth (.size() with casting)
+   depth_type decisionLevel()
    {
-      return static_cast<depth_type>(choices.size());
+      return static_cast<depth_type>(trailLim.size());
    }
    inline Var bestReason(Clause const *clause, Var var) const;
    inline LiftedBool value(Lit lit) const;
@@ -286,7 +281,7 @@ class Solver
    void Push(Var var, Work work);
    // \brief Revert to the previous decision level.
    [[nodiscard]] bool Pop();
-   // \brief Undo a single assignment / solved work item
+   // \brief Undo a single assignment / trail work item
    void UndoOne();
    // \brief Add work to our work queue.
    [[nodiscard]] bool AddWork(Work &&work);
@@ -472,7 +467,7 @@ struct APT::Solver::Work
    // \brief The depth at which the item has been added
    depth_type depth;
 
-   // Number of valid choices
+   /// Number of valid choices at insertion time
    size_t size{0};
 
    // \brief This item should be removed from the queue.
@@ -539,16 +534,22 @@ struct APT::Solver::State
 };
 
 /**
- * \brief A solved item.
+ * \brief A trail item.
  *
- * Here we keep track of solved clauses and variable assignments such that we can easily undo
- * them.
+ * In MiniSAT, a trail item is an assigned literal. However, we store an assigned variable instead,
+ * since the assignment is still recorded when we need to access the trail; there does not appear
+ * to be a substantial value in recording the sign here; but it produces a risk for a disagreement
+ * between the actual state and the sign recorded in the trail.
+ *
+ * In addition to MiniSAT's trail, we also need to keep a trail of solved Work items; that is
+ * clauses that were being solved, as when undoing the trail, we need to mark those clauses
+ * active again by putting them back on the work heap.
  */
-struct APT::Solver::Solved
+struct APT::Solver::Trail
 {
-   // \brief A variable that has been assigned. We store this as a reason (FIXME: Rename Var to Var)
+   /// \brief A variable that got assigned True or False. May be reset to Undefined on backtracking.
    Var assigned;
-   // \brief A work item that has been solved. This needs to be put back on the queue.
+   /// \brief A work item (a clause) that was solved. Needs to be put back on the work heap on backtracking.
    std::optional<Work> work;
 };
 
