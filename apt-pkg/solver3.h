@@ -277,7 +277,6 @@ inline LiftedBool operator~(LiftedBool decision)
 class Solver
 {
    protected:
-   struct CompareProviders3;
    struct State;
    struct Work;
    struct Trail;
@@ -421,7 +420,7 @@ class Solver
  */
 class DependencySolver : public Solver
 {
-   friend class Solver::CompareProviders3;
+   friend class CompareProviders3;
 
    // Policy is needed for determining candidate version.
    pkgDepCache::Policy &policy;

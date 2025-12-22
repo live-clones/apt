@@ -41,164 +41,6 @@
 namespace APT::Solver
 {
 
-// FIXME: Helpers stolen from DepCache, please give them back.
-struct Solver::CompareProviders3 /*{{{*/
-{
-   pkgCache &Cache;
-   pkgDepCache::Policy &Policy;
-   pkgCache::PkgIterator const Pkg;
-   APT::Solver::DependencySolver &Solver;
-
-   pkgCache::VerIterator bestVersion(pkgCache::PkgIterator pkg)
-   {
-      pkgCache::VerIterator res = pkg.VersionList();
-      for (auto v = res; not v.end(); ++v)
-	 res = std::max(res, v, *this);
-      return res;
-   }
-   bool operator()(Var a, Var b)
-   {
-      pkgCache::VerIterator va = a.Ver(Cache);
-      pkgCache::VerIterator vb = b.Ver(Cache);
-      if (auto pa = a.Pkg(Cache))
-	 va = bestVersion(pa);
-      if (auto pb = b.Pkg(Cache))
-	 vb = bestVersion(pb);
-
-      assert(not va.end() && not vb.end());
-      return (*this)(va, vb);
-   }
-   bool operator()(pkgCache::VerIterator const &AV, pkgCache::VerIterator const &BV)
-   {
-      assert(not AV.end() && not BV.end());
-      pkgCache::PkgIterator const A = AV.ParentPkg();
-      pkgCache::PkgIterator const B = BV.ParentPkg();
-      // Compare versions for the same package. FIXME: Move this to the real implementation
-      if (A == B)
-      {
-	 if (AV == BV)
-	    return false;
-
-	 // Candidate wins in upgrade scenario
-	 if (Solver.IsUpgrade)
-	 {
-	    auto Cand = Solver.GetCandidateVer(A);
-	    if (AV == Cand || BV == Cand)
-	       return (AV == Cand);
-	 }
-
-	 // Installed version wins otherwise
-	 if (A.CurrentVer() == AV || B.CurrentVer() == BV)
-	    return (A.CurrentVer() == AV);
-
-	 // Rest is ordered list, first by priority
-	 if (auto pinA = Solver.GetPriority(AV), pinB = Solver.GetPriority(BV); pinA != pinB)
-	    return pinA > pinB;
-
-	 // Then by version
-	 return _system->VS->CmpVersion(AV.VerStr(), BV.VerStr()) > 0;
-      }
-      // Try obsolete choices only after exhausting non-obsolete choices such that we install
-      // packages replacing them and don't keep back upgrades depending on the replacement to
-      // keep the obsolete package installed.
-      if (Solver.IsUpgrade)
-	 if (auto obsoleteA = Solver.Obsolete(A), obsoleteB = Solver.Obsolete(B); obsoleteA != obsoleteB)
-	    return obsoleteB;
-      // Prefer MA:same packages if other architectures for it are installed
-      if ((AV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same ||
-	  (BV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
-      {
-	 bool instA = false;
-	 if ((AV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
-	 {
-	    pkgCache::GrpIterator Grp = A.Group();
-	    for (pkgCache::PkgIterator P = Grp.PackageList(); P.end() == false; P = Grp.NextPkg(P))
-	       if (P->CurrentVer != 0)
-	       {
-		  instA = true;
-		  break;
-	       }
-	 }
-	 bool instB = false;
-	 if ((BV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
-	 {
-	    pkgCache::GrpIterator Grp = B.Group();
-	    for (pkgCache::PkgIterator P = Grp.PackageList(); P.end() == false; P = Grp.NextPkg(P))
-	    {
-	       if (P->CurrentVer != 0)
-	       {
-		  instB = true;
-		  break;
-	       }
-	    }
-	 }
-	 if (instA != instB)
-	    return instA;
-      }
-      if ((A->CurrentVer == 0 || B->CurrentVer == 0) && A->CurrentVer != B->CurrentVer)
-	 return A->CurrentVer != 0;
-      // Prefer packages in the same group as the target; e.g. foo:i386, foo:amd64
-      if (A->Group != B->Group && not Pkg.end())
-      {
-	 if (A->Group == Pkg->Group && B->Group != Pkg->Group)
-	    return true;
-	 else if (B->Group == Pkg->Group && A->Group != Pkg->Group)
-	    return false;
-      }
-      // we like essentials
-      if ((A->Flags & pkgCache::Flag::Essential) != (B->Flags & pkgCache::Flag::Essential))
-      {
-	 if ((A->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
-	    return true;
-	 else if ((B->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
-	    return false;
-      }
-      if ((A->Flags & pkgCache::Flag::Important) != (B->Flags & pkgCache::Flag::Important))
-      {
-	 if ((A->Flags & pkgCache::Flag::Important) == pkgCache::Flag::Important)
-	    return true;
-	 else if ((B->Flags & pkgCache::Flag::Important) == pkgCache::Flag::Important)
-	    return false;
-      }
-      // prefer native architecture
-      if (strcmp(A.Arch(), B.Arch()) != 0)
-      {
-	 if (strcmp(A.Arch(), A.Cache()->NativeArch()) == 0)
-	    return true;
-	 else if (strcmp(B.Arch(), B.Cache()->NativeArch()) == 0)
-	    return false;
-	 std::vector<std::string> archs = APT::Configuration::getArchitectures();
-	 for (std::vector<std::string>::const_iterator a = archs.begin(); a != archs.end(); ++a)
-	    if (*a == A.Arch())
-	       return true;
-	    else if (*a == B.Arch())
-	       return false;
-      }
-      // higher priority seems like a good idea
-      if (AV->Priority != BV->Priority)
-	 return AV->Priority < BV->Priority;
-      if (auto NameCmp = strcmp(A.Name(), B.Name()))
-	 return NameCmp < 0;
-      // unable to decide…
-      return A->ID > B->ID;
-   }
-};
-
-/** \brief Returns \b true for packages matching a regular
- *  expression in APT::NeverAutoRemove.
- */
-class DefaultRootSetFunc2 : public pkgDepCache::DefaultRootSetFunc
-{
-   std::unique_ptr<APT::CacheFilter::Matcher> Kernels;
-
-   public:
-   DefaultRootSetFunc2(pkgCache *cache) : Kernels(APT::KernelAutoRemoveHelper::GetProtectedKernelsFilter(cache)) {};
-   ~DefaultRootSetFunc2() override = default;
-
-   bool InRootSet(const pkgCache::PkgIterator &pkg) override { return pkg.end() == false && ((*Kernels)(pkg) || DefaultRootSetFunc::InRootSet(pkg)); };
-}; // FIXME: DEDUP with pkgDepCache.
-/*}}}*/
-
 Solver::Solver(pkgCache &cache)
     : cache(cache),
       rootState(new State),
@@ -215,25 +57,6 @@ Solver::Solver(pkgCache &cache)
 }
 
 Solver::~Solver() = default;
-
-DependencySolver::DependencySolver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flags requestFlags)
-    : Solver(cache),
-      policy(policy),
-      requestFlags(requestFlags),
-      pkgObsolete(cache),
-      priorities(cache),
-      candidates(cache)
-{
-   // Ensure trivially
-   static_assert(std::is_trivially_destructible_v<Work>);
-   static_assert(std::is_trivially_destructible_v<Trail>);
-   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Package>));
-   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Version>));
-   // Root state is "true".
-   rootState->decision = LiftedBool::True;
-}
-
-DependencySolver::~DependencySolver() = default;
 
 // This function determines if a work item is less important than another.
 bool Solver::Work::operator<(Solver::Work const &b) const
@@ -512,73 +335,6 @@ std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, st
    return out.str();
 }
 
-// This is essentially asking whether any other binary in the source package has a higher candidate
-// version. This pretends that each package is installed at the same source version as the package
-// under consideration.
-bool DependencySolver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
-{
-   const auto pkg = cand.ParentPkg();
-   const int candPriority = GetPriority(cand);
-
-   for (auto ver = cand.Cache()->FindGrp(cand.SourcePkgName()).VersionsInSource(); not ver.end(); ver = ver.NextInSource())
-   {
-      // We are only interested in other packages in the same source package; built for the same architecture.
-      if (ver->ParentPkg == cand->ParentPkg || ver.ParentPkg()->Arch != cand.ParentPkg()->Arch ||
-	    (ver->MultiArch & pkgCache::Version::All) != (cand->MultiArch & pkgCache::Version::All) ||
-	     cache.VS->CmpVersion(ver.SourceVerStr(), cand.SourceVerStr()) <= 0)
-	 continue;
-
-      // We also take equal priority here, given that we have a higher version
-      const int priority = GetPriority(ver);
-      if (priority == 0 || priority < candPriority)
-	 continue;
-
-      pkgObsolete[pkg] = 2;
-      if (debug >= 3)
-	 std::cerr << "Obsolete: " << cand.ParentPkg().FullName() << "=" << cand.VerStr() << " due to " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << "\n";
-      return true;
-   }
-
-   return false;
-}
-
-bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
-{
-   if ((*this)[pkg].flags.manual && not AllowManual)
-      return false;
-   if (pkgObsolete[pkg] != 0)
-      return pkgObsolete[pkg] == 2;
-
-   auto ver = GetCandidateVer(pkg);
-
-   if (ver.end() && not StrictPinning)
-      ver = pkg.VersionList();
-   if (ver.end())
-   {
-      if (debug >= 3)
-	 std::cerr << "Obsolete: " << pkg.FullName() << " - not installable\n";
-      pkgObsolete[pkg] = 2;
-      return true;
-   }
-
-   if (ObsoletedByNewerSourceVersion(ver))
-      return true;
-
-   // Any version downloadable is good enough for us tbh
-   for (auto ver = pkg.VersionList(); not ver.end(); ++ver)
-   {
-      if (ver.Downloadable())
-      {
-	 pkgObsolete[pkg] = 1;
-	 return false;
-      }
-   }
-
-   if (debug >= 3)
-      std::cerr << "Obsolete: " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << " - not installable\n";
-   pkgObsolete[pkg] = 2;
-   return true;
-}
 bool Solver::Assume(Lit lit, const Clause *reason)
 {
    trailLim.push_back(trail.size());
@@ -685,6 +441,376 @@ bool Solver::Propagate()
    return true;
 }
 
+void Solver::Push(Var var, Work work)
+{
+   if (unlikely(debug >= 2))
+      std::cerr << "Trying choice for " << work.toString(cache) << std::endl;
+
+   trailLim.push_back(trail.size());
+   trail.push_back(Trail{var, std::move(work)});
+}
+
+void Solver::UndoOne()
+{
+   auto trailItem = trail.back();
+
+   if (unlikely(debug >= 4))
+      std::cerr << "Undoing a single decision\n";
+
+   if (not trailItem.assigned.empty())
+   {
+      if (unlikely(debug >= 4))
+	 std::cerr << "Unassign " << trailItem.assigned.toString(cache) << "\n";
+      auto &state = (*this)[trailItem.assigned];
+      state.decision = LiftedBool::Undefined;
+      state.reason = nullptr;
+      state.reasonStr = nullptr;
+      state.depth = 0;
+   }
+
+   if (auto work = trailItem.work)
+   {
+      if (unlikely(debug >= 4))
+	 std::cerr << "Adding work item " << work->toString(cache) << std::endl;
+
+      if (not AddWork(std::move(*work)))
+	 abort();
+   }
+
+   trail.pop_back();
+
+   // FIXME: Add the undo handling here once we have watchers.
+}
+
+bool Solver::Pop()
+{
+   if (decisionLevel() == 0)
+      return false;
+
+   time_t now = time(nullptr);
+   if (startTime == 0)
+      startTime = now;
+   if (now - startTime >= Timeout)
+      return _error->Error("Solver timed out.");
+
+   if (unlikely(debug >= 2))
+      for (std::string msg; _error->PopMessage(msg);)
+	 std::cerr << "Branch failed: " << msg << std::endl;
+
+   _error->Discard();
+
+   // Assume() actually failed to enqueue anything, abort here
+   if (trailLim.back() == trail.size())
+   {
+      trailLim.pop_back();
+      return true;
+   }
+
+   assert(trailLim.back() < trail.size());
+   int itemsToUndo = trail.size() - trailLim.back();
+   auto choice = trail[trailLim.back()].assigned;
+
+   for (; itemsToUndo; --itemsToUndo)
+      UndoOne();
+
+   // We need to remove any work that is at a higher depth.
+   // FIXME: We should just mark the entries as erased and only do a compaction
+   //        of the heap once we have a lot of erased entries in it.
+   trailLim.pop_back();
+   work.erase(std::remove_if(work.begin(), work.end(), [this](Work &w) -> bool
+			     { return w.depth > decisionLevel() || w.erased; }),
+	      work.end());
+   std::make_heap(work.begin(), work.end());
+
+   if (unlikely(debug >= 2))
+      std::cerr << "Backtracking to choice " << choice.toString(cache) << "\n";
+
+   // FIXME: There should be a reason!
+   if (not choice.empty() && not Enqueue(~choice, {}))
+      return false;
+
+   (*this)[choice].reasonStr = "backtracked";
+
+   if (unlikely(debug >= 2))
+      std::cerr << "Backtracked to choice " << choice.toString(cache) << "\n";
+
+   return true;
+}
+
+bool Solver::AddWork(Work &&w)
+{
+   if (w.clause->negative)
+   {
+      for (auto var : w.clause->solutions)
+	 if (not Enqueue(~var, w.clause))
+	    return false;
+   }
+   else
+   {
+      if (unlikely(debug >= 3 && w.clause->optional))
+	 std::cerr << "Enqueuing Recommends " << w.clause->toString(cache) << std::endl;
+      if (w.clause->solutions.size() == 1 && not w.clause->optional)
+	 return Enqueue(w.clause->solutions[0], w.clause);
+
+      w.size = std::count_if(w.clause->solutions.begin(), w.clause->solutions.end(), [this](auto V)
+			     { return value(V) != LiftedBool::False; });
+      work.push_back(std::move(w));
+      std::push_heap(work.begin(), work.end());
+   }
+   return true;
+}
+
+bool Solver::Solve()
+{
+   _error->PushToStack();
+   DEFER([&]()
+	 { _error->MergeWithStack(); });
+   startTime = time(nullptr);
+   while (true)
+   {
+      while (not Propagate())
+      {
+	 if (not Pop())
+	    return false;
+      }
+
+      if (work.empty())
+	 break;
+
+      // *NOW* we can pop the item.
+      std::pop_heap(work.begin(), work.end());
+
+      // This item has been replaced with a new one. Remove it.
+      if (work.back().erased)
+      {
+	 work.pop_back();
+	 continue;
+      }
+      auto item = std::move(work.back());
+      work.pop_back();
+      trail.push_back(Trail{Var(), item});
+
+      if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
+		      { return value(ver) == LiftedBool::True; }))
+      {
+	 if (unlikely(debug >= 2))
+	    std::cerr << "ELIDED " << item.toString(cache) << std::endl;
+	 continue;
+      }
+
+      if (unlikely(debug >= 1))
+	 std::cerr << item.toString(cache) << std::endl;
+
+      bool foundSolution = false;
+      for (auto &sol : item.clause->solutions)
+      {
+	 if (value(sol) == LiftedBool::False)
+	 {
+	    if (unlikely(debug >= 3))
+	       std::cerr << "(existing conflict: " << sol.toString(cache) << ")\n";
+	    continue;
+	 }
+	 if (item.size > 1 || item.clause->optional)
+	 {
+	    Push(sol, item);
+	 }
+	 if (unlikely(debug >= 3))
+	    std::cerr << "(try it: " << sol.toString(cache) << ")\n";
+	 if (not Enqueue(sol, item.clause) && not Pop())
+	    return false;
+	 foundSolution = true;
+	 break;
+      }
+      if (not foundSolution && not item.clause->optional)
+      {
+	 std::ostringstream err;
+
+	 err << "Unable to satisfy dependencies. Reached two conflicting decisions:" << "\n";
+	 std::unordered_set<Var> seen;
+	 err << "1. " << LongWhyStr(item.clause->reason, true, (*this)[item.clause->reason].reason, "   ", seen).substr(3) << "\n";
+	 err << "2. " << LongWhyStr(item.clause->reason, false, item.clause, "   ", seen).substr(3);
+	 _error->Error("%s", err.str().c_str());
+	 if (not Pop())
+	    return false;
+      }
+   }
+
+   return true;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// -------------------------------------------- Dependency solver -----------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
+// FIXME: Helpers stolen from DepCache, please give them back.
+struct CompareProviders3 /*{{{*/
+{
+   pkgCache &Cache;
+   pkgDepCache::Policy &Policy;
+   pkgCache::PkgIterator const Pkg;
+   APT::Solver::DependencySolver &Solver;
+
+   pkgCache::VerIterator bestVersion(pkgCache::PkgIterator pkg)
+   {
+      pkgCache::VerIterator res = pkg.VersionList();
+      for (auto v = res; not v.end(); ++v)
+	 res = std::max(res, v, *this);
+      return res;
+   }
+   bool operator()(Var a, Var b)
+   {
+      pkgCache::VerIterator va = a.Ver(Cache);
+      pkgCache::VerIterator vb = b.Ver(Cache);
+      if (auto pa = a.Pkg(Cache))
+	 va = bestVersion(pa);
+      if (auto pb = b.Pkg(Cache))
+	 vb = bestVersion(pb);
+
+      assert(not va.end() && not vb.end());
+      return (*this)(va, vb);
+   }
+   bool operator()(pkgCache::VerIterator const &AV, pkgCache::VerIterator const &BV)
+   {
+      assert(not AV.end() && not BV.end());
+      pkgCache::PkgIterator const A = AV.ParentPkg();
+      pkgCache::PkgIterator const B = BV.ParentPkg();
+      // Compare versions for the same package. FIXME: Move this to the real implementation
+      if (A == B)
+      {
+	 if (AV == BV)
+	    return false;
+
+	 // Candidate wins in upgrade scenario
+	 if (Solver.IsUpgrade)
+	 {
+	    auto Cand = Solver.GetCandidateVer(A);
+	    if (AV == Cand || BV == Cand)
+	       return (AV == Cand);
+	 }
+
+	 // Installed version wins otherwise
+	 if (A.CurrentVer() == AV || B.CurrentVer() == BV)
+	    return (A.CurrentVer() == AV);
+
+	 // Rest is ordered list, first by priority
+	 if (auto pinA = Solver.GetPriority(AV), pinB = Solver.GetPriority(BV); pinA != pinB)
+	    return pinA > pinB;
+
+	 // Then by version
+	 return _system->VS->CmpVersion(AV.VerStr(), BV.VerStr()) > 0;
+      }
+      // Try obsolete choices only after exhausting non-obsolete choices such that we install
+      // packages replacing them and don't keep back upgrades depending on the replacement to
+      // keep the obsolete package installed.
+      if (Solver.IsUpgrade)
+	 if (auto obsoleteA = Solver.Obsolete(A), obsoleteB = Solver.Obsolete(B); obsoleteA != obsoleteB)
+	    return obsoleteB;
+      // Prefer MA:same packages if other architectures for it are installed
+      if ((AV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same ||
+	  (BV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
+      {
+	 bool instA = false;
+	 if ((AV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
+	 {
+	    pkgCache::GrpIterator Grp = A.Group();
+	    for (pkgCache::PkgIterator P = Grp.PackageList(); P.end() == false; P = Grp.NextPkg(P))
+	       if (P->CurrentVer != 0)
+	       {
+		  instA = true;
+		  break;
+	       }
+	 }
+	 bool instB = false;
+	 if ((BV->MultiArch & pkgCache::Version::Same) == pkgCache::Version::Same)
+	 {
+	    pkgCache::GrpIterator Grp = B.Group();
+	    for (pkgCache::PkgIterator P = Grp.PackageList(); P.end() == false; P = Grp.NextPkg(P))
+	    {
+	       if (P->CurrentVer != 0)
+	       {
+		  instB = true;
+		  break;
+	       }
+	    }
+	 }
+	 if (instA != instB)
+	    return instA;
+      }
+      if ((A->CurrentVer == 0 || B->CurrentVer == 0) && A->CurrentVer != B->CurrentVer)
+	 return A->CurrentVer != 0;
+      // Prefer packages in the same group as the target; e.g. foo:i386, foo:amd64
+      if (A->Group != B->Group && not Pkg.end())
+      {
+	 if (A->Group == Pkg->Group && B->Group != Pkg->Group)
+	    return true;
+	 else if (B->Group == Pkg->Group && A->Group != Pkg->Group)
+	    return false;
+      }
+      // we like essentials
+      if ((A->Flags & pkgCache::Flag::Essential) != (B->Flags & pkgCache::Flag::Essential))
+      {
+	 if ((A->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
+	    return true;
+	 else if ((B->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
+	    return false;
+      }
+      if ((A->Flags & pkgCache::Flag::Important) != (B->Flags & pkgCache::Flag::Important))
+      {
+	 if ((A->Flags & pkgCache::Flag::Important) == pkgCache::Flag::Important)
+	    return true;
+	 else if ((B->Flags & pkgCache::Flag::Important) == pkgCache::Flag::Important)
+	    return false;
+      }
+      // prefer native architecture
+      if (strcmp(A.Arch(), B.Arch()) != 0)
+      {
+	 if (strcmp(A.Arch(), A.Cache()->NativeArch()) == 0)
+	    return true;
+	 else if (strcmp(B.Arch(), B.Cache()->NativeArch()) == 0)
+	    return false;
+	 std::vector<std::string> archs = APT::Configuration::getArchitectures();
+	 for (std::vector<std::string>::const_iterator a = archs.begin(); a != archs.end(); ++a)
+	    if (*a == A.Arch())
+	       return true;
+	    else if (*a == B.Arch())
+	       return false;
+      }
+      // higher priority seems like a good idea
+      if (AV->Priority != BV->Priority)
+	 return AV->Priority < BV->Priority;
+      if (auto NameCmp = strcmp(A.Name(), B.Name()))
+	 return NameCmp < 0;
+      // unable to decide…
+      return A->ID > B->ID;
+   }
+};
+
+/** \brief Returns \b true for packages matching a regular
+ *  expression in APT::NeverAutoRemove.
+ */
+class DefaultRootSetFunc2 : public pkgDepCache::DefaultRootSetFunc
+{
+   std::unique_ptr<APT::CacheFilter::Matcher> Kernels;
+
+   public:
+   DefaultRootSetFunc2(pkgCache *cache) : Kernels(APT::KernelAutoRemoveHelper::GetProtectedKernelsFilter(cache)) {};
+   ~DefaultRootSetFunc2() override = default;
+
+   bool InRootSet(const pkgCache::PkgIterator &pkg) override { return pkg.end() == false && ((*Kernels)(pkg) || DefaultRootSetFunc::InRootSet(pkg)); };
+}; // FIXME: DEDUP with pkgDepCache.
+/*}}}*/
+
+DependencySolver::DependencySolver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flags requestFlags)
+    : Solver(cache),
+      policy(policy),
+      requestFlags(requestFlags),
+      pkgObsolete(cache),
+      priorities(cache),
+      candidates(cache)
+{
+}
+
+DependencySolver::~DependencySolver() = default;
+
 static bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b)
 {
    while (1)
@@ -767,6 +893,73 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
    return inserted.get();
 }
 
+// This is essentially asking whether any other binary in the source package has a higher candidate
+// version. This pretends that each package is installed at the same source version as the package
+// under consideration.
+bool DependencySolver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
+{
+   const auto pkg = cand.ParentPkg();
+   const int candPriority = GetPriority(cand);
+
+   for (auto ver = cand.Cache()->FindGrp(cand.SourcePkgName()).VersionsInSource(); not ver.end(); ver = ver.NextInSource())
+   {
+      // We are only interested in other packages in the same source package; built for the same architecture.
+      if (ver->ParentPkg == cand->ParentPkg || ver.ParentPkg()->Arch != cand.ParentPkg()->Arch ||
+	  (ver->MultiArch & pkgCache::Version::All) != (cand->MultiArch & pkgCache::Version::All) ||
+	  cache.VS->CmpVersion(ver.SourceVerStr(), cand.SourceVerStr()) <= 0)
+	 continue;
+
+      // We also take equal priority here, given that we have a higher version
+      const int priority = GetPriority(ver);
+      if (priority == 0 || priority < candPriority)
+	 continue;
+
+      pkgObsolete[pkg] = 2;
+      if (debug >= 3)
+	 std::cerr << "Obsolete: " << cand.ParentPkg().FullName() << "=" << cand.VerStr() << " due to " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << "\n";
+      return true;
+   }
+
+   return false;
+}
+
+bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
+{
+   if ((*this)[pkg].flags.manual && not AllowManual)
+      return false;
+   if (pkgObsolete[pkg] != 0)
+      return pkgObsolete[pkg] == 2;
+
+   auto ver = GetCandidateVer(pkg);
+
+   if (ver.end() && not StrictPinning)
+      ver = pkg.VersionList();
+   if (ver.end())
+   {
+      if (debug >= 3)
+	 std::cerr << "Obsolete: " << pkg.FullName() << " - not installable\n";
+      pkgObsolete[pkg] = 2;
+      return true;
+   }
+
+   if (ObsoletedByNewerSourceVersion(ver))
+      return true;
+
+   // Any version downloadable is good enough for us tbh
+   for (auto ver = pkg.VersionList(); not ver.end(); ++ver)
+   {
+      if (ver.Downloadable())
+      {
+	 pkgObsolete[pkg] = 1;
+	 return false;
+      }
+   }
+
+   if (debug >= 3)
+      std::cerr << "Obsolete: " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << " - not installable\n";
+   pkgObsolete[pkg] = 2;
+   return true;
+}
 void DependencySolver::Discover(Var var)
 {
    assert(discoverQ.empty());
@@ -1005,202 +1198,6 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
    }
 
    return clause;
-}
-
-void Solver::Push(Var var, Work work)
-{
-   if (unlikely(debug >= 2))
-      std::cerr << "Trying choice for " << work.toString(cache) << std::endl;
-
-   trailLim.push_back(trail.size());
-   trail.push_back(Trail{var, std::move(work)});
-}
-
-void Solver::UndoOne()
-{
-   auto trailItem = trail.back();
-
-   if (unlikely(debug >= 4))
-      std::cerr << "Undoing a single decision\n";
-
-   if (not trailItem.assigned.empty())
-   {
-      if (unlikely(debug >= 4))
-	 std::cerr << "Unassign " << trailItem.assigned.toString(cache) << "\n";
-      auto &state = (*this)[trailItem.assigned];
-      state.decision = LiftedBool::Undefined;
-      state.reason = nullptr;
-      state.reasonStr = nullptr;
-      state.depth = 0;
-   }
-
-   if (auto work = trailItem.work)
-   {
-      if (unlikely(debug >= 4))
-	 std::cerr << "Adding work item " << work->toString(cache) << std::endl;
-
-      if (not AddWork(std::move(*work)))
-	 abort();
-   }
-
-   trail.pop_back();
-
-   // FIXME: Add the undo handling here once we have watchers.
-}
-
-bool Solver::Pop()
-{
-   if (decisionLevel() == 0)
-      return false;
-
-   time_t now = time(nullptr);
-   if (startTime == 0)
-      startTime = now;
-   if (now - startTime >= Timeout)
-      return _error->Error("Solver timed out.");
-
-   if (unlikely(debug >= 2))
-      for (std::string msg; _error->PopMessage(msg);)
-	 std::cerr << "Branch failed: " << msg << std::endl;
-
-   _error->Discard();
-
-   // Assume() actually failed to enqueue anything, abort here
-   if (trailLim.back() == trail.size())
-   {
-      trailLim.pop_back();
-      return true;
-   }
-
-   assert(trailLim.back() < trail.size());
-   int itemsToUndo = trail.size() - trailLim.back();
-   auto choice = trail[trailLim.back()].assigned;
-
-   for (; itemsToUndo; --itemsToUndo)
-      UndoOne();
-
-   // We need to remove any work that is at a higher depth.
-   // FIXME: We should just mark the entries as erased and only do a compaction
-   //        of the heap once we have a lot of erased entries in it.
-   trailLim.pop_back();
-   work.erase(std::remove_if(work.begin(), work.end(), [this](Work &w) -> bool
-			     { return w.depth > decisionLevel() || w.erased; }),
-	      work.end());
-   std::make_heap(work.begin(), work.end());
-
-   if (unlikely(debug >= 2))
-      std::cerr << "Backtracking to choice " << choice.toString(cache) << "\n";
-
-   // FIXME: There should be a reason!
-   if (not choice.empty() && not Enqueue(~choice, {}))
-      return false;
-
-   (*this)[choice].reasonStr = "backtracked";
-
-   if (unlikely(debug >= 2))
-      std::cerr << "Backtracked to choice " << choice.toString(cache) << "\n";
-
-   return true;
-}
-
-bool Solver::AddWork(Work &&w)
-{
-   if (w.clause->negative)
-   {
-      for (auto var : w.clause->solutions)
-	 if (not Enqueue(~var, w.clause))
-	    return false;
-   }
-   else
-   {
-      if (unlikely(debug >= 3 && w.clause->optional))
-	 std::cerr << "Enqueuing Recommends " << w.clause->toString(cache) << std::endl;
-      if (w.clause->solutions.size() == 1 && not w.clause->optional)
-	 return Enqueue(w.clause->solutions[0], w.clause);
-
-      w.size = std::count_if(w.clause->solutions.begin(), w.clause->solutions.end(), [this](auto V)
-			     { return value(V) != LiftedBool::False; });
-      work.push_back(std::move(w));
-      std::push_heap(work.begin(), work.end());
-   }
-   return true;
-}
-
-bool Solver::Solve()
-{
-   _error->PushToStack();
-   DEFER([&]() { _error->MergeWithStack(); });
-   startTime = time(nullptr);
-   while (true)
-   {
-      while (not Propagate())
-      {
-	 if (not Pop())
-	    return false;
-      }
-
-      if (work.empty())
-	 break;
-
-      // *NOW* we can pop the item.
-      std::pop_heap(work.begin(), work.end());
-
-      // This item has been replaced with a new one. Remove it.
-      if (work.back().erased)
-      {
-	 work.pop_back();
-	 continue;
-      }
-      auto item = std::move(work.back());
-      work.pop_back();
-      trail.push_back(Trail{Var(), item});
-
-      if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
-		      { return value(ver) == LiftedBool::True; }))
-      {
-	 if (unlikely(debug >= 2))
-	    std::cerr << "ELIDED " << item.toString(cache) << std::endl;
-	 continue;
-      }
-
-      if (unlikely(debug >= 1))
-	 std::cerr << item.toString(cache) << std::endl;
-
-      bool foundSolution = false;
-      for (auto &sol : item.clause->solutions)
-      {
-	 if (value(sol) == LiftedBool::False)
-	 {
-	    if (unlikely(debug >= 3))
-	       std::cerr << "(existing conflict: " << sol.toString(cache) << ")\n";
-	    continue;
-	 }
-	 if (item.size > 1 || item.clause->optional)
-	 {
-	    Push(sol, item);
-	 }
-	 if (unlikely(debug >= 3))
-	    std::cerr << "(try it: " << sol.toString(cache) << ")\n";
-	 if (not Enqueue(sol, item.clause) && not Pop())
-	    return false;
-	 foundSolution = true;
-	 break;
-      }
-      if (not foundSolution && not item.clause->optional)
-      {
-	 std::ostringstream err;
-
-	 err << "Unable to satisfy dependencies. Reached two conflicting decisions:" << "\n";
-	 std::unordered_set<Var> seen;
-	 err << "1. " << LongWhyStr(item.clause->reason, true, (*this)[item.clause->reason].reason, "   ", seen).substr(3) << "\n";
-	 err << "2. " << LongWhyStr(item.clause->reason, false, item.clause, "   ", seen).substr(3);
-	 _error->Error("%s", err.str().c_str());
-	 if (not Pop())
-	    return false;
-      }
-   }
-
-   return true;
 }
 
 // \brief Apply the selections from the dep cache to the solver
