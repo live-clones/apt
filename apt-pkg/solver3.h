@@ -276,7 +276,7 @@ inline LiftedBool operator~(LiftedBool decision)
  */
 class Solver
 {
-   private:
+   protected:
    struct CompareProviders3;
    struct State;
    struct Work;
@@ -295,8 +295,6 @@ class Solver
 
    // Cache is needed to construct Iterators from Version objects we see
    pkgCache &cache;
-   // Policy is needed for determining candidate version.
-   pkgDepCache::Policy &policy;
    // Root state
    std::unique_ptr<State> rootState;
    // States for packages
@@ -327,28 +325,6 @@ class Solver
    inline State &operator[](Var r);
    inline const State &operator[](Var r) const;
 
-   mutable FastContiguousCacheMap<pkgCache::Package, char> pkgObsolete;
-   // \brief Check if package is obsolete.
-   // \param AllowManual controls whether manual packages can be obsolete
-   bool Obsolete(pkgCache::PkgIterator pkg, bool AllowManual=false) const;
-   bool ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const;
-
-   mutable FastContiguousCacheMap<pkgCache::Version, short> priorities;
-   short GetPriority(pkgCache::VerIterator ver) const
-   {
-      if (priorities[ver] == 0)
-	 priorities[ver] = policy.GetPriority(ver);
-      return priorities[ver];
-   }
-
-   mutable ContiguousCacheMap<pkgCache::Package, pkgCache::VerIterator> candidates;
-   pkgCache::VerIterator GetCandidateVer(pkgCache::PkgIterator pkg) const
-   {
-      if (candidates[pkg].end())
-	 candidates[pkg] = policy.GetCandidateVer(pkg);
-      return candidates[pkg];
-   }
-
    // \brief Heap of the remaining work.
    //
    // In contrast to MiniSAT which picks undecided literals and decides them,
@@ -367,53 +343,22 @@ class Solver
 
    // \brief Propagation queue
    std::queue<Var> propQ;
-   // \brief Discover variables
-   std::queue<Var> discoverQ;
 
    // \brief The time we called Solve()
    time_t startTime{};
 
-   EDSP::Request::Flags requestFlags;
    /// Various configuration options
    std::string version{_config->Find("APT::Solver", "3.0")};
    // \brief Debug level
    int debug{_config->FindI("Debug::APT::Solver")};
-   // \brief If set, we try to keep automatically installed packages installed.
-   bool KeepAuto{version == "3.0" || not _config->FindB("APT::Get::AutomaticRemove")};
-   // \brief Determines if we are in upgrade mode.
-   bool IsUpgrade{_config->FindB("APT::Solver::Upgrade", requestFlags &EDSP::Request::UPGRADE_ALL)};
-   // \brief If set, removals are allowed.
-   bool AllowRemove{_config->FindB("APT::Solver::Remove", not(requestFlags & EDSP::Request::FORBID_REMOVE))};
-   // \brief If set, removal of manual packages is allowed.
-   bool AllowRemoveManual{AllowRemove && _config->FindB("APT::Solver::RemoveManual", true)};
-   // \brief If set, installs are allowed.
-   bool AllowInstall{_config->FindB("APT::Solver::Install", not(requestFlags & EDSP::Request::FORBID_NEW_INSTALL))};
-   // \brief If set, we use strict pinning.
-   bool StrictPinning{_config->FindB("APT::Solver::Strict-Pinning", true)};
-   // \brief If set, we install missing recommends and pick new best packages.
-   bool FixPolicyBroken{_config->FindB("APT::Get::Fix-Policy-Broken")};
-   // \brief If set, we use strict pinning.
-   bool DeferVersionSelection{_config->FindB("APT::Solver::Defer-Version-Selection", true)};
    // \brief If set, we use strict pinning.
    int Timeout{_config->FindI("APT::Solver::Timeout", 10)};
-
-   // \brief Keep recommends installed
-   bool KeepRecommends{_config->FindB("APT::AutoRemove::RecommendsImportant", true)};
-   // \brief Keep suggests installed
-   bool KeepSuggests{_config->FindB("APT::AutoRemove::SuggestsImportant", true)};
 
    // \brief Discover a variable, translating the underlying dependencies to the SAT presentation
    //
    // This does a breadth-first search of the entire dependency tree of var,
    // utilizing the discoverQ above.
-   void Discover(Var var);
-   // \brief Link a clause into the watchers
-   const Clause *RegisterClause(Clause &&clause);
-   // \brief Enqueue dependencies shared by all versions of the package.
-   void RegisterCommonDependencies(pkgCache::PkgIterator Pkg);
-
-   // \brief Translate an or group into a clause object
-   [[nodiscard]] Clause TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
+   virtual void Discover(Var var) = 0;
    // \brief Propagate all pending propagations
    [[nodiscard]] bool Propagate();
 
@@ -436,24 +381,19 @@ class Solver
    [[nodiscard]] bool AddWork(Work &&work);
 
    // \brief Basic solver initializer. This cannot fail.
-   Solver(pkgCache &Cache, pkgDepCache::Policy &Policy, EDSP::Request::Flags requestFlags);
-   ~Solver();
+   Solver(pkgCache &Cache);
+   virtual ~Solver();
 
    // Assume a literal
    [[nodiscard]] bool Assume(Lit lit, const Clause *reason = nullptr);
    // Enqueue a decision fact
    [[nodiscard]] bool Enqueue(Lit lit, const Clause *reason = nullptr);
 
-   // \brief Apply the selections from the dep cache to the solver
-   [[nodiscard]] bool FromDepCache(pkgDepCache &depcache);
-   // \brief Apply the solver result to the depCache
-   [[nodiscard]] bool ToDepCache(pkgDepCache &depcache) const;
-
    // \brief Solve the dependencies
    [[nodiscard]] bool Solve();
 
    // Print dependency chain
-   std::string WhyStr(Var reason) const;
+   virtual std::string WhyStr(Var reason) const;
 
    /**
     * \brief Print a long reason string
@@ -466,14 +406,88 @@ class Solver
     * \param prefix A prefix, for indentation purposes, as this is recursive
     * \param seen A set of seen objects such that the output does not repeat itself (not for safety, it is acyclic)
     */
-   std::string LongWhyStr(Var var, bool decision, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const;
-
-   // \brief Temporary internal API with external linkage for the `apt why` and `apt why-not` commands.
-   APT_PUBLIC static std::string InternalCliWhy(pkgDepCache &depcache, pkgCache::PkgIterator Pkg, bool decision);
+   virtual std::string LongWhyStr(Var var, bool decision, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const;
 };
 
-}; // namespace APT
+/*
+ * \brief APT 3.0 solver
+ *
+ * This is a simple solver focused on understandability and sensible results, it
+ * will not generally find all solutions to the problem but will try to find the best
+ * ones.
+ *
+ * It is a brute force solver with heuristics, conflicts learning, and 2**32 levels
+ * of backtracking.
+ */
+class DependencySolver : public Solver
+{
+   friend class Solver::CompareProviders3;
 
+   // Policy is needed for determining candidate version.
+   pkgDepCache::Policy &policy;
+   // Request flags determine the behavior of the options below, make sure it comes first.
+   EDSP::Request::Flags requestFlags;
+
+   // Configuration options for the dependency solver
+   bool KeepAuto{version == "3.0" || not _config->FindB("APT::Get::AutomaticRemove")};
+   bool IsUpgrade{_config->FindB("APT::Solver::Upgrade", requestFlags &EDSP::Request::UPGRADE_ALL)};
+   bool AllowRemove{_config->FindB("APT::Solver::Remove", not(requestFlags & EDSP::Request::FORBID_REMOVE))};
+   bool AllowRemoveManual{AllowRemove && _config->FindB("APT::Solver::RemoveManual", true)};
+   bool AllowInstall{_config->FindB("APT::Solver::Install", not(requestFlags & EDSP::Request::FORBID_NEW_INSTALL))};
+   bool StrictPinning{_config->FindB("APT::Solver::Strict-Pinning", true)};
+   bool FixPolicyBroken{_config->FindB("APT::Get::Fix-Policy-Broken")};
+   bool DeferVersionSelection{_config->FindB("APT::Solver::Defer-Version-Selection", true)};
+   bool KeepRecommends{_config->FindB("APT::AutoRemove::RecommendsImportant", true)};
+   bool KeepSuggests{_config->FindB("APT::AutoRemove::SuggestsImportant", true)};
+
+   // Helper functions for detecting obsolete packages
+   mutable FastContiguousCacheMap<pkgCache::Package, char> pkgObsolete;
+   bool Obsolete(pkgCache::PkgIterator pkg, bool AllowManual = false) const;
+   bool ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const;
+
+   // GetPriority() with caching
+   mutable FastContiguousCacheMap<pkgCache::Version, short> priorities;
+   short GetPriority(pkgCache::VerIterator ver) const
+   {
+      if (priorities[ver] == 0)
+	 priorities[ver] = policy.GetPriority(ver);
+      return priorities[ver];
+   }
+
+   // GetCandidateVer() with caching
+   mutable ContiguousCacheMap<pkgCache::Package, pkgCache::VerIterator> candidates;
+   pkgCache::VerIterator GetCandidateVer(pkgCache::PkgIterator pkg) const
+   {
+      if (candidates[pkg].end())
+	 candidates[pkg] = policy.GetCandidateVer(pkg);
+      return candidates[pkg];
+   }
+
+   // \brief Discover variables
+   std::queue<Var> discoverQ;
+   /// \brief Discover the dependencies of the variable
+   void Discover(Var var) override;
+   /// \brief Link a clause into the watchers
+   const Clause *RegisterClause(Clause &&clause);
+   /// \brief Enqueue dependencies shared by all versions of the package.
+   void RegisterCommonDependencies(pkgCache::PkgIterator Pkg);
+
+   /// \brief Translate an or group into a clause object
+   [[nodiscard]] Clause TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
+
+   public:
+   // \brief Basic solver initializer. This cannot fail.
+   DependencySolver(pkgCache &Cache, pkgDepCache::Policy &Policy, EDSP::Request::Flags requestFlags);
+   ~DependencySolver() override;
+
+   /// \brief Apply the selections from the dep cache to the solver
+   [[nodiscard]] bool FromDepCache(pkgDepCache &depcache);
+   /// \brief Apply the solver result to the depCache
+   [[nodiscard]] bool ToDepCache(pkgDepCache &depcache) const;
+   /// \brief Temporary internal API with external linkage for the `apt why` and `apt why-not` commands.
+   APT_PUBLIC static std::string InternalCliWhy(pkgDepCache &depcache, pkgCache::PkgIterator Pkg, bool decision);
+};
+}; // namespace APT::Solver
 /**
  * \brief A single work item
  *

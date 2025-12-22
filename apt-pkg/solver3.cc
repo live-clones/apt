@@ -47,7 +47,7 @@ struct Solver::CompareProviders3 /*{{{*/
    pkgCache &Cache;
    pkgDepCache::Policy &Policy;
    pkgCache::PkgIterator const Pkg;
-   APT::Solver::Solver &Solver;
+   APT::Solver::DependencySolver &Solver;
 
    pkgCache::VerIterator bestVersion(pkgCache::PkgIterator pkg)
    {
@@ -199,16 +199,11 @@ class DefaultRootSetFunc2 : public pkgDepCache::DefaultRootSetFunc
 }; // FIXME: DEDUP with pkgDepCache.
 /*}}}*/
 
-Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flags requestFlags)
+Solver::Solver(pkgCache &cache)
     : cache(cache),
-      policy(policy),
       rootState(new State),
       pkgStates(cache),
-      verStates(cache),
-      pkgObsolete(cache),
-      priorities(cache),
-      candidates(cache),
-      requestFlags(requestFlags)
+      verStates(cache)
 {
    // Ensure trivially
    static_assert(std::is_trivially_destructible_v<Work>);
@@ -220,6 +215,25 @@ Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flag
 }
 
 Solver::~Solver() = default;
+
+DependencySolver::DependencySolver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flags requestFlags)
+    : Solver(cache),
+      policy(policy),
+      requestFlags(requestFlags),
+      pkgObsolete(cache),
+      priorities(cache),
+      candidates(cache)
+{
+   // Ensure trivially
+   static_assert(std::is_trivially_destructible_v<Work>);
+   static_assert(std::is_trivially_destructible_v<Trail>);
+   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Package>));
+   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Version>));
+   // Root state is "true".
+   rootState->decision = LiftedBool::True;
+}
+
+DependencySolver::~DependencySolver() = default;
 
 // This function determines if a work item is less important than another.
 bool Solver::Work::operator<(Solver::Work const &b) const
@@ -501,7 +515,7 @@ std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, st
 // This is essentially asking whether any other binary in the source package has a higher candidate
 // version. This pretends that each package is installed at the same source version as the package
 // under consideration.
-bool Solver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
+bool DependencySolver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
 {
    const auto pkg = cand.ParentPkg();
    const int candPriority = GetPriority(cand);
@@ -528,7 +542,7 @@ bool Solver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
    return false;
 }
 
-bool Solver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
+bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
 {
    if ((*this)[pkg].flags.manual && not AllowManual)
       return false;
@@ -688,7 +702,7 @@ static bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b)
    return not(a->CompareOp & pkgCache::Dep::Or) && not(b->CompareOp & pkgCache::Dep::Or);
 }
 
-const Clause *Solver::RegisterClause(Clause &&clause)
+const Clause *DependencySolver::RegisterClause(Clause &&clause)
 {
    auto &clauses = (*this)[clause.reason].clauses;
    pkgCache::DepIterator dep(cache, clause.dep);
@@ -753,7 +767,7 @@ const Clause *Solver::RegisterClause(Clause &&clause)
    return inserted.get();
 }
 
-void Solver::Discover(Var var)
+void DependencySolver::Discover(Var var)
 {
    assert(discoverQ.empty());
    discoverQ.push(var);
@@ -828,7 +842,7 @@ void Solver::Discover(Var var)
    }
 }
 
-void Solver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
+void DependencySolver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
 {
    for (auto dep = Pkg.VersionList().DependsList(); not dep.end();)
    {
@@ -855,7 +869,7 @@ void Solver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
    }
 }
 
-Clause Solver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
+Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
 {
    // Non-important dependencies can only be installed if they are currently satisfied, see the check further
    // below once we have calculated all possible solutions.
@@ -1190,7 +1204,7 @@ bool Solver::Solve()
 }
 
 // \brief Apply the selections from the dep cache to the solver
-bool Solver::FromDepCache(pkgDepCache &depcache)
+bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 {
    DefaultRootSetFunc2 rootSet(&cache);
    std::vector<Var> manualPackages;
@@ -1322,7 +1336,7 @@ bool Solver::FromDepCache(pkgDepCache &depcache)
    return true;
 }
 
-bool Solver::ToDepCache(pkgDepCache &depcache) const
+bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 {
    FastContiguousCacheMap<pkgCache::Package, bool> movedManual(cache);
    pkgDepCache::ActionGroup group(depcache);
@@ -1388,9 +1402,9 @@ bool Solver::ToDepCache(pkgDepCache &depcache) const
 }
 
 // Command-line
-std::string Solver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterator pkg, bool decision)
+std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterator pkg, bool decision)
 {
-   Solver solver(cache.GetCache(), cache.GetPolicy(), EDSP::Request::Flags(0));
+   DependencySolver solver(cache.GetCache(), cache.GetPolicy(), EDSP::Request::Flags(0));
    // In case nothing has a positive dependency on pkg it may not actually be discovered in a `why-not`
    // scenario, so make sure we discover it explicitly.
    solver.Discover(Var(pkg));
