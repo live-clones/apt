@@ -38,13 +38,16 @@
 #include <iomanip>
 #include <sstream>
 
+namespace APT::Solver
+{
+
 // FIXME: Helpers stolen from DepCache, please give them back.
-struct APT::Solver::CompareProviders3 /*{{{*/
+struct Solver::CompareProviders3 /*{{{*/
 {
    pkgCache &Cache;
    pkgDepCache::Policy &Policy;
    pkgCache::PkgIterator const Pkg;
-   APT::Solver &Solver;
+   APT::Solver::Solver &Solver;
 
    pkgCache::VerIterator bestVersion(pkgCache::PkgIterator pkg)
    {
@@ -196,7 +199,7 @@ class DefaultRootSetFunc2 : public pkgDepCache::DefaultRootSetFunc
 }; // FIXME: DEDUP with pkgDepCache.
 /*}}}*/
 
-APT::Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flags requestFlags)
+Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flags requestFlags)
     : cache(cache),
       policy(policy),
       rootState(new State),
@@ -210,16 +213,16 @@ APT::Solver::Solver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request:
    // Ensure trivially
    static_assert(std::is_trivially_destructible_v<Work>);
    static_assert(std::is_trivially_destructible_v<Trail>);
-   static_assert(sizeof(APT::Solver::Var) == sizeof(map_pointer<pkgCache::Package>));
-   static_assert(sizeof(APT::Solver::Var) == sizeof(map_pointer<pkgCache::Version>));
+   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Package>));
+   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Version>));
    // Root state is "true".
    rootState->decision = LiftedBool::True;
 }
 
-APT::Solver::~Solver() = default;
+Solver::~Solver() = default;
 
 // This function determines if a work item is less important than another.
-bool APT::Solver::Work::operator<(APT::Solver::Work const &b) const
+bool Solver::Work::operator<(Solver::Work const &b) const
 {
    if ((not clause->optional && size < 2) != (not b.clause->optional && b.size < 2))
       return not b.clause->optional && b.size < 2;
@@ -280,7 +283,7 @@ std::string APT::Solver::Clause::toString(pkgCache &cache, bool pretty, bool sho
    return out;
 }
 
-std::string APT::Solver::Work::toString(pkgCache &cache) const
+std::string Solver::Work::toString(pkgCache &cache) const
 {
    std::ostringstream out;
    if (erased)
@@ -292,7 +295,7 @@ std::string APT::Solver::Work::toString(pkgCache &cache) const
    return out.str();
 }
 
-inline APT::Solver::Var APT::Solver::bestReason(APT::Solver::Clause const *clause, APT::Solver::Var var) const
+inline Var Solver::bestReason(Clause const *clause, Var var) const
 {
    if (not clause)
       return Var{};
@@ -307,13 +310,13 @@ inline APT::Solver::Var APT::Solver::bestReason(APT::Solver::Clause const *claus
    return clause->reason;
 }
 
-inline APT::Solver::LiftedBool APT::Solver::value(Lit lit) const
+inline LiftedBool Solver::value(Lit lit) const
 {
    return lit.sign() ? ~(*this)[lit.var()].decision : (*this)[lit.var()].decision;
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
-std::string APT::Solver::WhyStr(Var reason) const
+std::string Solver::WhyStr(Var reason) const
 {
    std::vector<std::string> out;
    while (not reason.empty())
@@ -333,7 +336,7 @@ std::string APT::Solver::WhyStr(Var reason) const
    return outstr;
 }
 
-std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const
+std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const
 {
    std::ostringstream out;
 
@@ -498,7 +501,7 @@ std::string APT::Solver::LongWhyStr(Var var, bool decision, const Clause *rclaus
 // This is essentially asking whether any other binary in the source package has a higher candidate
 // version. This pretends that each package is installed at the same source version as the package
 // under consideration.
-bool APT::Solver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
+bool Solver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const
 {
    const auto pkg = cand.ParentPkg();
    const int candPriority = GetPriority(cand);
@@ -525,7 +528,7 @@ bool APT::Solver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) cons
    return false;
 }
 
-bool APT::Solver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
+bool Solver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
 {
    if ((*this)[pkg].flags.manual && not AllowManual)
       return false;
@@ -562,13 +565,13 @@ bool APT::Solver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
    pkgObsolete[pkg] = 2;
    return true;
 }
-bool APT::Solver::Assume(Lit lit, const Clause *reason)
+bool Solver::Assume(Lit lit, const Clause *reason)
 {
    trailLim.push_back(trail.size());
    return Enqueue(lit, std::move(reason));
 }
 
-bool APT::Solver::Enqueue(Lit lit, const Clause *reason)
+bool Solver::Enqueue(Lit lit, const Clause *reason)
 {
    auto &state = (*this)[lit.var()];
    auto decisionCast = lit.sign() ? LiftedBool::False : LiftedBool::True;
@@ -601,7 +604,7 @@ bool APT::Solver::Enqueue(Lit lit, const Clause *reason)
    return true;
 }
 
-bool APT::Solver::Propagate()
+bool Solver::Propagate()
 {
    while (!propQ.empty())
    {
@@ -685,7 +688,7 @@ static bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b)
    return not(a->CompareOp & pkgCache::Dep::Or) && not(b->CompareOp & pkgCache::Dep::Or);
 }
 
-const APT::Solver::Clause *APT::Solver::RegisterClause(Clause &&clause)
+const Clause *Solver::RegisterClause(Clause &&clause)
 {
    auto &clauses = (*this)[clause.reason].clauses;
    pkgCache::DepIterator dep(cache, clause.dep);
@@ -750,7 +753,7 @@ const APT::Solver::Clause *APT::Solver::RegisterClause(Clause &&clause)
    return inserted.get();
 }
 
-void APT::Solver::Discover(Var var)
+void Solver::Discover(Var var)
 {
    assert(discoverQ.empty());
    discoverQ.push(var);
@@ -825,7 +828,7 @@ void APT::Solver::Discover(Var var)
    }
 }
 
-void APT::Solver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
+void Solver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
 {
    for (auto dep = Pkg.VersionList().DependsList(); not dep.end();)
    {
@@ -852,7 +855,7 @@ void APT::Solver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
    }
 }
 
-APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
+Clause Solver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
 {
    // Non-important dependencies can only be installed if they are currently satisfied, see the check further
    // below once we have calculated all possible solutions.
@@ -990,7 +993,7 @@ APT::Solver::Clause APT::Solver::TranslateOrGroup(pkgCache::DepIterator start, p
    return clause;
 }
 
-void APT::Solver::Push(Var var, Work work)
+void Solver::Push(Var var, Work work)
 {
    if (unlikely(debug >= 2))
       std::cerr << "Trying choice for " << work.toString(cache) << std::endl;
@@ -999,7 +1002,7 @@ void APT::Solver::Push(Var var, Work work)
    trail.push_back(Trail{var, std::move(work)});
 }
 
-void APT::Solver::UndoOne()
+void Solver::UndoOne()
 {
    auto trailItem = trail.back();
 
@@ -1031,7 +1034,7 @@ void APT::Solver::UndoOne()
    // FIXME: Add the undo handling here once we have watchers.
 }
 
-bool APT::Solver::Pop()
+bool Solver::Pop()
 {
    if (decisionLevel() == 0)
       return false;
@@ -1086,7 +1089,7 @@ bool APT::Solver::Pop()
    return true;
 }
 
-bool APT::Solver::AddWork(Work &&w)
+bool Solver::AddWork(Work &&w)
 {
    if (w.clause->negative)
    {
@@ -1109,7 +1112,7 @@ bool APT::Solver::AddWork(Work &&w)
    return true;
 }
 
-bool APT::Solver::Solve()
+bool Solver::Solve()
 {
    _error->PushToStack();
    DEFER([&]() { _error->MergeWithStack(); });
@@ -1187,7 +1190,7 @@ bool APT::Solver::Solve()
 }
 
 // \brief Apply the selections from the dep cache to the solver
-bool APT::Solver::FromDepCache(pkgDepCache &depcache)
+bool Solver::FromDepCache(pkgDepCache &depcache)
 {
    DefaultRootSetFunc2 rootSet(&cache);
    std::vector<Var> manualPackages;
@@ -1319,7 +1322,7 @@ bool APT::Solver::FromDepCache(pkgDepCache &depcache)
    return true;
 }
 
-bool APT::Solver::ToDepCache(pkgDepCache &depcache) const
+bool Solver::ToDepCache(pkgDepCache &depcache) const
 {
    FastContiguousCacheMap<pkgCache::Package, bool> movedManual(cache);
    pkgDepCache::ActionGroup group(depcache);
@@ -1385,9 +1388,9 @@ bool APT::Solver::ToDepCache(pkgDepCache &depcache) const
 }
 
 // Command-line
-std::string APT::Solver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterator pkg, bool decision)
+std::string Solver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterator pkg, bool decision)
 {
-   APT::Solver solver(cache.GetCache(), cache.GetPolicy(), EDSP::Request::Flags(0));
+   Solver solver(cache.GetCache(), cache.GetPolicy(), EDSP::Request::Flags(0));
    // In case nothing has a positive dependency on pkg it may not actually be discovered in a `why-not`
    // scenario, so make sure we discover it explicitly.
    solver.Discover(Var(pkg));
@@ -1403,3 +1406,4 @@ std::string APT::Solver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterato
       return strprintf(buf, "%s is actually marked for install\n", pkg.FullName().c_str()), buf;
    return solver.LongWhyStr(Var(pkg), decision, solver[Var(pkg)].reason, "", seen);
 }
+} // namespace APT::Solver

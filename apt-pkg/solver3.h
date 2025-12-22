@@ -22,7 +22,7 @@
 
 template <typename T> struct always_false : std::false_type {};
 
-namespace APT
+namespace APT::Solver
 {
 
 /**
@@ -67,6 +67,203 @@ class ContiguousCacheMap
 template <typename K, typename V>
 using FastContiguousCacheMap = ContiguousCacheMap<K, V, true>;
 
+struct Lit;
+
+// \brief Groups of works, these are ordered.
+//
+// Later items will be skipped if they are optional, or we will when backtracking,
+// try a different choice for them.
+enum class Group : uint8_t
+{
+   HoldOrDelete,
+
+   // Satisfying dependencies on entirely new packages first is a good idea because
+   // it may contain replacement packages like libfoo1t64 whereas we later will see
+   // Depends: libfoo1 where libfoo1t64 Provides libfoo1 and we'd have to choose.
+   SatisfyNew,
+   Satisfy,
+   // On a similar note as for SatisfyNew, if the dependency contains obsolete packages
+   // try it last.
+   SatisfyObsolete,
+
+   // Select a version of a package chosen for install.
+   SelectVersion,
+
+   // My intuition tells me that we should try to schedule upgrades first, then
+   // any non-obsolete installed packages, and only finally obsolete ones, such
+   // that newer packages guide resolution of dependencies for older ones, they
+   // may have more stringent dependencies, like a (>> 2) whereas an obsolete
+   // package may have a (>> 1), for example.
+   UpgradeManual,
+   InstallManual,
+   ObsoleteManual,
+
+   // Automatically installed packages must come last in the group, this allows
+   // us to see if they were installed as a dependency of a manually installed package,
+   // allowing a simple implementation of an autoremoval code.
+   UpgradeAuto,
+   KeepAuto,
+   ObsoleteAuto,
+
+   // Satisfy optional dependencies that were previously satisfied but won't otherwise be installed
+   SatisfySuggests,
+};
+
+// \brief This essentially describes the install state in RFC2119 terms.
+enum class LiftedBool : uint8_t
+{
+   // \brief We have not made a choice about the package yet
+   Undefined,
+   // \brief We need to install this package
+   True,
+   // \brief We cannot install this package (need conflicts with it)
+   False,
+};
+
+/**
+ * \brief Tagged union holding either a package, version, or nothing; representing the reason for installing something.
+ *
+ * We want to keep track of the reason why things are being installed such that
+ * we can have sensible debugging abilities; and we want to generically refer to
+ * both packages and versions as variables, hence this class was added.
+ *
+ */
+struct Var
+{
+   uint32_t value;
+
+   explicit constexpr Var(uint32_t value = 0) : value{value} {}
+   explicit Var(pkgCache::PkgIterator const &Pkg) : value(uint32_t(Pkg.MapPointer()) << 1) {}
+   explicit Var(pkgCache::VerIterator const &Ver) : value(uint32_t(Ver.MapPointer()) << 1 | 1) {}
+
+   inline constexpr bool isVersion() const { return value & 1; }
+   inline constexpr uint32_t mapPtr() const { return value >> 1; }
+
+   // \brief Return the package, if any, otherwise 0.
+   map_pointer<pkgCache::Package> Pkg() const
+   {
+      return isVersion() ? 0 : map_pointer<pkgCache::Package>{mapPtr()};
+   }
+   // \brief Return the version, if any, otherwise 0.
+   map_pointer<pkgCache::Version> Ver() const
+   {
+      return isVersion() ? map_pointer<pkgCache::Version>{mapPtr()} : 0;
+   }
+   // \brief Return the package iterator if storing a package, or an empty one
+   pkgCache::PkgIterator Pkg(pkgCache &cache) const
+   {
+      return isVersion() ? pkgCache::PkgIterator() : pkgCache::PkgIterator(cache, cache.PkgP + Pkg());
+   }
+   // \brief Return the version iterator if storing a package, or an empty end.
+   pkgCache::VerIterator Ver(pkgCache &cache) const
+   {
+      return isVersion() ? pkgCache::VerIterator(cache, cache.VerP + Ver()) : pkgCache::VerIterator();
+   }
+   // \brief Return a package, cast from version if needed
+   pkgCache::PkgIterator CastPkg(pkgCache &cache) const
+   {
+      return isVersion() ? Ver(cache).ParentPkg() : Pkg(cache);
+   }
+   // \brief Check if there is no reason.
+   constexpr bool empty() const { return value == 0; }
+   constexpr bool operator!=(Var const other) const { return value != other.value; }
+   constexpr bool operator==(Var const other) const { return value == other.value; }
+
+   /// \brief Negate
+   constexpr Lit operator~() const;
+
+   std::string toString(pkgCache &cache) const
+   {
+      if (auto P = Pkg(cache); not P.end())
+	 return P.FullName();
+      if (auto V = Ver(cache); not V.end())
+	 return V.ParentPkg().FullName() + "=" + V.VerStr();
+      return "(root)";
+   }
+};
+
+/**
+ * \brief A literal is a variable with a sign.
+ *
+ * A literal 'A' means 'install A' whereas a literal '-A' means 'do not install A'.
+ */
+struct Lit
+{
+   private:
+   friend struct std::hash<Lit>;
+   // Private constructor from a number, to be used with operator~
+   explicit constexpr Lit(int32_t value) : value{value} {}
+   int32_t value;
+
+   public:
+   // SAFETY: value must be 31 bit, one bit is needed for the sign.
+   constexpr Lit(Var var) : value{static_cast<int32_t>(var.value)} {}
+
+   // Accessors
+   constexpr Var var() const { return Var(std::abs(value)); }
+   constexpr bool sign() const { return value < 0; }
+   constexpr Lit operator~() const { return Lit(-value); }
+
+   // Properties
+   constexpr bool empty() const { return value == 0; }
+   constexpr bool operator!=(Lit const other) const { return value != other.value; }
+   constexpr bool operator==(Lit const other) const { return value == other.value; }
+
+   std::string toString(pkgCache &cache) const { return (sign() ? "not " : "") + var().toString(cache); }
+};
+
+/**
+ * \brief A single clause
+ *
+ * A clause is a normalized, expanded dependency, translated into an implication
+ * in terms of Var objects, that is, `reason -> solutions[0] | ... | solutions[n]`
+ */
+struct Clause
+{
+   // \brief Underyling dependency
+   pkgCache::Dependency *dep = nullptr;
+   // \brief Var for the work
+   Var reason;
+   // \brief The group we are in
+   Group group;
+   // \brief Possible solutions to this task, ordered in order of preference.
+   std::vector<Var> solutions{};
+   // \brief An optional clause does not need to be satisfied
+   bool optional;
+
+   // \brief A negative clause negates the solutions, that is X->A|B you get X->!(A|B), aka X->!A&!B
+   bool negative;
+
+   // \brief An optional clause may be eager
+   bool eager;
+
+   // Clauses merged with this clause
+   std::forward_list<Clause> merged;
+
+   inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative), eager(not optional) {}
+
+   std::string toString(pkgCache &cache, bool pretty = false, bool showMerged = true) const;
+};
+
+constexpr Lit Solver::Var::operator~() const
+{
+   return ~Lit(*this);
+}
+
+inline LiftedBool operator~(LiftedBool decision)
+{
+   switch (decision)
+   {
+   case LiftedBool::Undefined:
+      return LiftedBool::Undefined;
+   case LiftedBool::True:
+      return LiftedBool::False;
+   case LiftedBool::False:
+      return LiftedBool::True;
+   }
+   abort();
+}
+
 /*
  * \brief APT 3.0 solver
  *
@@ -79,59 +276,11 @@ using FastContiguousCacheMap = ContiguousCacheMap<K, V, true>;
  */
 class Solver
 {
-   public:
-   enum class LiftedBool : uint8_t;
-   struct Var;
-   struct Lit;
-
    private:
    struct CompareProviders3;
    struct State;
-   struct Clause;
    struct Work;
    struct Trail;
-   friend struct std::hash<APT::Solver::Var>;
-   friend struct std::hash<APT::Solver::Lit>;
-
-   // \brief Groups of works, these are ordered.
-   //
-   // Later items will be skipped if they are optional, or we will when backtracking,
-   // try a different choice for them.
-   enum class Group : uint8_t
-   {
-      HoldOrDelete,
-
-      // Satisfying dependencies on entirely new packages first is a good idea because
-      // it may contain replacement packages like libfoo1t64 whereas we later will see
-      // Depends: libfoo1 where libfoo1t64 Provides libfoo1 and we'd have to choose.
-      SatisfyNew,
-      Satisfy,
-      // On a similar note as for SatisfyNew, if the dependency contains obsolete packages
-      // try it last.
-      SatisfyObsolete,
-
-      // Select a version of a package chosen for install.
-      SelectVersion,
-
-      // My intuition tells me that we should try to schedule upgrades first, then
-      // any non-obsolete installed packages, and only finally obsolete ones, such
-      // that newer packages guide resolution of dependencies for older ones, they
-      // may have more stringent dependencies, like a (>> 2) whereas an obsolete
-      // package may have a (>> 1), for example.
-      UpgradeManual,
-      InstallManual,
-      ObsoleteManual,
-
-      // Automatically installed packages must come last in the group, this allows
-      // us to see if they were installed as a dependency of a manually installed package,
-      // allowing a simple implementation of an autoremoval code.
-      UpgradeAuto,
-      KeepAuto,
-      ObsoleteAuto,
-
-      // Satisfy optional dependencies that were previously satisfied but won't otherwise be installed
-      SatisfySuggests,
-   };
 
    // \brief Type to record depth at. This may very well be a 16-bit
    // unsigned integer, then change Solver::State::LiftedBool to be a
@@ -326,131 +475,6 @@ class Solver
 }; // namespace APT
 
 /**
- * \brief Tagged union holding either a package, version, or nothing; representing the reason for installing something.
- *
- * We want to keep track of the reason why things are being installed such that
- * we can have sensible debugging abilities; and we want to generically refer to
- * both packages and versions as variables, hence this class was added.
- *
- */
-struct APT::Solver::Var
-{
-   uint32_t value;
-
-   explicit constexpr Var(uint32_t value = 0) : value{value} {}
-   explicit Var(pkgCache::PkgIterator const &Pkg) : value(uint32_t(Pkg.MapPointer()) << 1) {}
-   explicit Var(pkgCache::VerIterator const &Ver) : value(uint32_t(Ver.MapPointer()) << 1 | 1) {}
-
-   inline constexpr bool isVersion() const { return value & 1; }
-   inline constexpr uint32_t mapPtr() const { return value >> 1; }
-
-   // \brief Return the package, if any, otherwise 0.
-   map_pointer<pkgCache::Package> Pkg() const
-   {
-      return isVersion() ? 0 : map_pointer<pkgCache::Package>{mapPtr()};
-   }
-   // \brief Return the version, if any, otherwise 0.
-   map_pointer<pkgCache::Version> Ver() const
-   {
-      return isVersion() ? map_pointer<pkgCache::Version>{mapPtr()} : 0;
-   }
-   // \brief Return the package iterator if storing a package, or an empty one
-   pkgCache::PkgIterator Pkg(pkgCache &cache) const
-   {
-      return isVersion() ? pkgCache::PkgIterator() : pkgCache::PkgIterator(cache, cache.PkgP + Pkg());
-   }
-   // \brief Return the version iterator if storing a package, or an empty end.
-   pkgCache::VerIterator Ver(pkgCache &cache) const
-   {
-      return isVersion() ? pkgCache::VerIterator(cache, cache.VerP + Ver()) : pkgCache::VerIterator();
-   }
-   // \brief Return a package, cast from version if needed
-   pkgCache::PkgIterator CastPkg(pkgCache &cache) const
-   {
-      return isVersion() ? Ver(cache).ParentPkg() : Pkg(cache);
-   }
-   // \brief Check if there is no reason.
-   constexpr bool empty() const { return value == 0; }
-   constexpr bool operator!=(Var const other) const { return value != other.value; }
-   constexpr bool operator==(Var const other) const { return value == other.value; }
-
-   /// \brief Negate
-   constexpr Lit operator~() const;
-
-   std::string toString(pkgCache &cache) const
-   {
-      if (auto P = Pkg(cache); not P.end())
-	 return P.FullName();
-      if (auto V = Ver(cache); not V.end())
-	 return V.ParentPkg().FullName() + "=" + V.VerStr();
-      return "(root)";
-   }
-};
-
-/**
- * \brief A literal is a variable with a sign.
- *
- * A literal 'A' means 'install A' whereas a literal '-A' means 'do not install A'.
- */
-struct APT::Solver::Lit
-{
-   private:
-   friend struct std::hash<APT::Solver::Lit>;
-   // Private constructor from a number, to be used with operator~
-   explicit constexpr Lit(int32_t value) : value{value} {}
-   int32_t value;
-
-   public:
-   // SAFETY: value must be 31 bit, one bit is needed for the sign.
-   constexpr Lit(APT::Solver::Var var) : value{static_cast<int32_t>(var.value)} {}
-
-   // Accessors
-   constexpr APT::Solver::Var var() const { return APT::Solver::Var(std::abs(value)); }
-   constexpr bool sign() const { return value < 0; }
-   constexpr APT::Solver::Lit operator~() const { return Lit(-value); }
-
-   // Properties
-   constexpr bool empty() const { return value == 0; }
-   constexpr bool operator!=(Lit const other) const { return value != other.value; }
-   constexpr bool operator==(Lit const other) const { return value == other.value; }
-
-   std::string toString(pkgCache &cache) const { return (sign() ? "not " : "") + var().toString(cache); }
-};
-
-/**
- * \brief A single clause
- *
- * A clause is a normalized, expanded dependency, translated into an implication
- * in terms of Var objects, that is, `reason -> solutions[0] | ... | solutions[n]`
- */
-struct APT::Solver::Clause
-{
-   // \brief Underyling dependency
-   pkgCache::Dependency *dep = nullptr;
-   // \brief Var for the work
-   Var reason;
-   // \brief The group we are in
-   Group group;
-   // \brief Possible solutions to this task, ordered in order of preference.
-   std::vector<Var> solutions{};
-   // \brief An optional clause does not need to be satisfied
-   bool optional;
-
-   // \brief A negative clause negates the solutions, that is X->A|B you get X->!(A|B), aka X->!A&!B
-   bool negative;
-
-   // \brief An optional clause may be eager
-   bool eager;
-
-   // Clauses merged with this clause
-   std::forward_list<Clause> merged;
-
-   inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative), eager(not optional) {}
-
-   std::string toString(pkgCache &cache, bool pretty = false, bool showMerged = true) const;
-};
-
-/**
  * \brief A single work item
  *
  * A work item is a positive dependency that still needs to be resolved. Work
@@ -460,7 +484,7 @@ struct APT::Solver::Clause
  * of all packages in there, finding solutions to them, and then adding all dependencies
  * not yet resolved to the work queue.
  */
-struct APT::Solver::Work
+struct APT::Solver::Solver::Work
 {
    const Clause *clause;
 
@@ -473,20 +497,9 @@ struct APT::Solver::Work
    // \brief This item should be removed from the queue.
    bool erased{false};
 
-   bool operator<(APT::Solver::Work const &b) const;
+   bool operator<(APT::Solver::Solver::Work const &b) const;
    std::string toString(pkgCache &cache) const;
    inline Work(const Clause *clause, depth_type depth) : clause(clause), depth(depth) {}
-};
-
-// \brief This essentially describes the install state in RFC2119 terms.
-enum class APT::Solver::LiftedBool : uint8_t
-{
-   // \brief We have not made a choice about the package yet
-   Undefined,
-   // \brief We need to install this package
-   True,
-   // \brief We cannot install this package (need conflicts with it)
-   False,
 };
 
 /**
@@ -495,7 +508,7 @@ enum class APT::Solver::LiftedBool : uint8_t
  * For each version, the solver records a decision at a certain level. It
  * maintains an array mapping from version ID to state.
  */
-struct APT::Solver::State
+struct APT::Solver::Solver::State
 {
    // \brief The reason for causing this state (invalid for Undefined).
    //
@@ -545,7 +558,7 @@ struct APT::Solver::State
  * clauses that were being solved, as when undoing the trail, we need to mark those clauses
  * active again by putting them back on the work heap.
  */
-struct APT::Solver::Trail
+struct APT::Solver::Solver::Trail
 {
    /// \brief A variable that got assigned True or False. May be reset to Undefined on backtracking.
    Var assigned;
@@ -553,7 +566,7 @@ struct APT::Solver::Trail
    std::optional<Work> work;
 };
 
-inline APT::Solver::State &APT::Solver::operator[](Var r)
+inline APT::Solver::Solver::State &APT::Solver::Solver::operator[](APT::Solver::Var r)
 {
    if (auto P = r.Pkg())
       return (*this)[cache.PkgP + P];
@@ -562,7 +575,7 @@ inline APT::Solver::State &APT::Solver::operator[](Var r)
    return *rootState.get();
 }
 
-inline const APT::Solver::State &APT::Solver::operator[](Var r) const
+inline const APT::Solver::Solver::State &APT::Solver::Solver::operator[](APT::Solver::Var r) const
 {
    return const_cast<Solver &>(*this)[r];
 }
@@ -582,22 +595,3 @@ struct std::hash<APT::Solver::Lit>
    std::hash<decltype(APT::Solver::Lit::value)> hash_value;
    std::size_t operator()(const APT::Solver::Lit &v) const noexcept { return hash_value(v.value); }
 };
-
-constexpr APT::Solver::Lit APT::Solver::Var::operator~() const
-{
-   return ~Lit(*this);
-}
-
-inline APT::Solver::LiftedBool operator~(APT::Solver::LiftedBool decision)
-{
-   switch (decision)
-   {
-   case APT::Solver::LiftedBool::Undefined:
-      return APT::Solver::LiftedBool::Undefined;
-   case APT::Solver::LiftedBool::True:
-      return APT::Solver::LiftedBool::False;
-   case APT::Solver::LiftedBool::False:
-      return APT::Solver::LiftedBool::True;
-   }
-   abort();
-}

@@ -66,7 +66,7 @@ static bool DoWhy(CommandLine &CmdL) /*{{{*/
    if (unlikely(not CacheFile.BuildDepCache()))
       return false;
    for (auto pkg : pkgset)
-      std::cout << APT::Solver::InternalCliWhy(CacheFile, pkg, decision) << std::flush;
+      std::cout << APT::Solver::Solver::InternalCliWhy(CacheFile, pkg, decision) << std::flush;
    return not _error->PendingError();
 }
 static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
