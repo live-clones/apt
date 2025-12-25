@@ -200,7 +200,7 @@ static bool Modernize(std::string const &filename) /*{{{*/
 	 std::string dir = _config->FindDir("Dir") + std::string{"usr/share/keyrings/"};
 	 std::string keyring = std::regex_replace(meta->GetOrigin(), std::regex(" "), "-") + "-archive-keyring";
 	 std::transform(keyring.begin(), keyring.end(), keyring.begin(), tolower);
-         if (auto k = findSignatureFile(dir + keyring, {".gpg"}); !k.empty())
+         if (auto k = findSignatureFile(dir + keyring, {".pgp", ".gpg"}); !k.empty())
             e.signedBy = k;
       }
 
