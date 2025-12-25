@@ -181,21 +181,33 @@ static bool Modernize(std::string const &filename) /*{{{*/
       if (meta->IsTrustedSet())
 	 e.options["Trusted"] = "yes";
 
+
+      auto findSignatureFile = [](const std::string& basePath, const std::vector<std::string>& extensions) -> std::string {
+         for (const auto& ext : extensions) {
+            std::string candidate = basePath + ext;
+            if (FileExists(candidate)) {
+               return candidate;
+            }
+         }
+         return "";
+      };
+
       std::string err;
       e.signedBy = meta->GetSignedBy();
       meta->Load(&err);
       if (e.signedBy.empty() && not meta->GetOrigin().empty())
       {
 	 std::string dir = _config->FindDir("Dir") + std::string{"usr/share/keyrings/"};
-	 std::string keyring = std::regex_replace(meta->GetOrigin(), std::regex(" "), "-") + "-archive-keyring.gpg";
+	 std::string keyring = std::regex_replace(meta->GetOrigin(), std::regex(" "), "-") + "-archive-keyring";
 	 std::transform(keyring.begin(), keyring.end(), keyring.begin(), tolower);
-	 if (FileExists(dir + keyring))
-	    e.signedBy = dir + keyring;
+         if (auto k = findSignatureFile(dir + keyring, {".gpg"}); !k.empty())
+            e.signedBy = k;
       }
-      if (auto k = _config->FindDir("Dir::Etc::trustedparts") += flNotDir(std::regex_replace(filename, std::regex("\\.list$"), ".gpg")); FileExists(k))
-	 e.signedBy = k;
-      if (auto k = _config->FindDir("Dir::Etc::trustedparts") += flNotDir(std::regex_replace(filename, std::regex("\\.list$"), ".asc")); FileExists(k))
-	 e.signedBy = k;
+
+      std::string trustedBase = _config->FindDir("Dir::Etc::TrustedParts");
+      trustedBase += flNotDir(std::regex_replace(filename, std::regex("\\.list$"), ""));
+      if (auto k = findSignatureFile(trustedBase, {".asc", ".gpg"}); !k.empty())
+         e.signedBy = k;
 
       if (isMain && not meta->GetOrigin().empty())
       {
