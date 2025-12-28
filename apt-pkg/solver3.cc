@@ -623,13 +623,10 @@ bool Solver::Solve()
       }
       if (not foundSolution && not item.clause->optional)
       {
-	 std::ostringstream err;
-
-	 err << "Unable to satisfy dependencies. Reached two conflicting assignments:" << "\n";
-	 std::unordered_set<Var> seen;
-	 err << "1. " << LongWhyStr(item.clause->reason, true, (*this)[item.clause->reason].reason, "   ", seen).substr(3) << "\n";
-	 err << "2. " << LongWhyStr(item.clause->reason, false, item.clause, "   ", seen).substr(3);
-	 _error->Error("%s", err.str().c_str());
+	 // Enqueue produces the right error message for us here, given that reason has been assigned true already...
+	 assert(value(item.clause->reason) == LiftedBool::True);
+	 bool res = Enqueue(~item.clause->reason, item.clause);
+	 assert(not res);
 	 if (not Pop())
 	    return false;
       }
