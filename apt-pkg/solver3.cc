@@ -127,7 +127,7 @@ std::string Solver::Work::toString(pkgCache &cache) const
       out << "Erased ";
    if (clause->optional)
       out << "Optional ";
-   out << "Item (" << ssize_t(size <= clause->solutions.size() ? size : -1) << "@" << depth << ") ";
+   out << "Item (" << ssize_t(size <= clause->solutions.size() ? size : -1) << "@" << level << ") ";
    out << clause->toString(cache);
    return out.str();
 }
@@ -361,7 +361,7 @@ bool Solver::Enqueue(Lit lit, const Clause *reason)
    }
 
    state.assignment = assignment;
-   state.depth = decisionLevel();
+   state.level = decisionLevel();
    state.reason = reason;
 
    // FIXME: Adjust call to bestReason to use lit
@@ -465,7 +465,7 @@ void Solver::UndoOne()
       state.assignment = LiftedBool::Undefined;
       state.reason = nullptr;
       state.reasonStr = nullptr;
-      state.depth = 0;
+      state.level = 0;
    }
 
    if (auto work = trailItem.work)
@@ -513,12 +513,12 @@ bool Solver::Pop()
    for (; itemsToUndo; --itemsToUndo)
       UndoOne();
 
-   // We need to remove any work that is at a higher depth.
+   // We need to remove any work that is at a higher level.
    // FIXME: We should just mark the entries as erased and only do a compaction
    //        of the heap once we have a lot of erased entries in it.
    trailLim.pop_back();
    work.erase(std::remove_if(work.begin(), work.end(), [this](Work &w) -> bool
-			     { return w.depth > decisionLevel() || w.erased; }),
+			     { return w.level > decisionLevel() || w.erased; }),
 	      work.end());
    std::make_heap(work.begin(), work.end());
 
@@ -1027,10 +1027,10 @@ void DependencySolver::Discover(Var var)
 	 }
       }
 
-      // Recursively discover everything else that is not already FALSE by fact (False at depth 0)
+      // Recursively discover everything else that is not already FALSE by fact (False at level 0)
       for (auto const &clause : state.clauses)
 	 for (auto const &var : clause->solutions)
-	    if (value(var) != LiftedBool::False || (*this)[var].depth > 0)
+	    if (value(var) != LiftedBool::False || (*this)[var].level > 0)
 	       discoverQ.push(var);
    }
 }

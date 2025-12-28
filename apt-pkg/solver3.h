@@ -281,16 +281,16 @@ class Solver
    struct Work;
    struct Trail;
 
-   // \brief Type to record depth at. This may very well be a 16-bit
+   // \brief Type to record decision level at. This may very well be a 16-bit
    // unsigned integer, then change Solver::State::LiftedBool to be a
    // uint16_t class enum as well to get a more compact space.
-   using depth_type = unsigned int;
+   using level_type = unsigned int;
 
    // Documentation
    template <typename T>
    using heap = std::vector<T>;
 
-   static_assert(sizeof(depth_type) >= sizeof(map_id_t));
+   static_assert(sizeof(level_type) >= sizeof(map_id_t));
 
    // Cache is needed to construct Iterators from Version objects we see
    pkgCache &cache;
@@ -338,7 +338,7 @@ class Solver
    std::vector<Trail> trail;
 
    /// \brief Separator indices for different decision levels in trail
-   std::vector<depth_type> trailLim{};
+   std::vector<level_type> trailLim{};
 
    // \brief Propagation queue
    std::queue<Var> propQ;
@@ -361,10 +361,10 @@ class Solver
    // \brief Propagate all pending propagations
    [[nodiscard]] bool Propagate();
 
-   // \brief Return the current depth (.size() with casting)
-   depth_type decisionLevel()
+   // \brief Return the current level (.size() with casting)
+   level_type decisionLevel()
    {
-      return static_cast<depth_type>(trailLim.size());
+      return static_cast<level_type>(trailLim.size());
    }
    inline Var bestReason(Clause const *clause, Var var) const;
    inline LiftedBool value(Lit lit) const;
@@ -491,7 +491,7 @@ class DependencySolver : public Solver
  * \brief A single work item
  *
  * A work item is a positive dependency that still needs to be resolved. Work
- * is ordered, by depth, length of solutions, and optionality.
+ * is ordered, by level, length of solutions, and optionality.
  *
  * The work can always be recalculated from the state by iterating over dependencies
  * of all packages in there, finding solutions to them, and then adding all dependencies
@@ -501,8 +501,8 @@ struct APT::Solver::Solver::Work
 {
    const Clause *clause;
 
-   // \brief The depth at which the item has been added
-   depth_type depth;
+   // \brief The level at which the item has been added
+   level_type level;
 
    /// Number of valid choices at insertion time
    size_t size{0};
@@ -512,7 +512,7 @@ struct APT::Solver::Solver::Work
 
    bool operator<(APT::Solver::Solver::Work const &b) const;
    std::string toString(pkgCache &cache) const;
-   inline Work(const Clause *clause, depth_type depth) : clause(clause), depth(depth) {}
+   inline Work(const Clause *clause, level_type level) : clause(clause), level(level) {}
 };
 
 /**
@@ -526,11 +526,11 @@ struct APT::Solver::Solver::State
    // \brief The reason for causing this state (invalid for Undefined).
    //
    // Rejects may have been caused by a later state. Consider we select
-   // between x1 and x2 in depth = N. If we now find dependencies of x1
+   // between x1 and x2 in level = N. If we now find dependencies of x1
    // leading to a conflict with a package in K < N, we will record all
-   // of them as REJECT in depth = K.
+   // of them as REJECT in level = K.
    //
-   // You can follow the reason chain upwards as long as the depth
+   // You can follow the reason chain upwards as long as the level
    // doesn't increase to unwind.
    //
    // Vars < 0 are package ID, reasons > 0 are version IDs.
@@ -538,8 +538,8 @@ struct APT::Solver::Solver::State
 
    const char *reasonStr{};
 
-   // \brief The depth at which the value has been assigned
-   depth_type depth{0};
+   // \brief The level at which the value has been assigned
+   level_type level{0};
 
    LiftedBool assignment{LiftedBool::Undefined};
 
