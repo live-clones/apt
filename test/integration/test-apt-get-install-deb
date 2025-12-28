@@ -32,7 +32,7 @@ done
 
 buildsimplenativepackage 'foo' 'i386,amd64' '1.0'
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:amd64 is not selected for install because:
       1. foo:i386=1.0 is selected for install
       2. foo:amd64 Conflicts foo:i386
@@ -181,7 +181,7 @@ echo 'Package: /pkg-/
 Pin: release a=experimental
 Pin-Priority: 501' > rootdir/etc/apt/preferences.d/pinit
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. pkg-last-line-parse:amd64=0 is selected for install
    2. pkg-last-line-parse:amd64 PreDepends pkg-as-it-should-be
       but none of the choices are installable:

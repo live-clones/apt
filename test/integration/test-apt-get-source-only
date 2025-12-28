@@ -40,7 +40,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  builddeps:foo : Depends: foo-bd but it is not installable
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:foo:amd64=1 is selected for install
    2. builddeps:foo:amd64 Depends foo-bd
       but none of the choices are installable:
@@ -56,7 +56,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  builddeps:not-foo : Depends: not-foo-bd but it is not installable
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:not-foo:amd64=1 is selected for install
    2. builddeps:not-foo:amd64 Depends not-foo-bd
       but none of the choices are installable:

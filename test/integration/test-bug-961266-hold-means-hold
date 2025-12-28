@@ -89,7 +89,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  git-ng : Depends: git (> 1:2.26.2)
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. git-ng:amd64=1:2.26.2-1 is selected for install
    2. git-ng:amd64 Depends git (> 1:2.26.2) and Depends git (< 1:2.26.2-.)
       but none of the choices are installable:
@@ -135,7 +135,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  git-ng : Depends: git (> 1:2.26.2)
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. git-ng:amd64=1:2.26.2-1 is selected for install
    2. git-ng:amd64 Depends git (> 1:2.26.2) and Depends git (< 1:2.26.2-.)
       but none of the choices are installable:
@@ -181,7 +181,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  git-ng : Depends: git (> 1:2.26.2)
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. git-ng:amd64=1:2.26.2-1 is selected for install
    2. git-ng:amd64 Depends git (> 1:2.26.2) and Depends git (< 1:2.26.2-.)
       but none of the choices are installable:

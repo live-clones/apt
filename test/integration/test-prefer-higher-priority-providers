@@ -91,7 +91,7 @@ Inst awesome (1 unstable [all])
 Conf baz (1 unstable [all])
 Conf awesome (1 unstable [all])" aptget install awesome foo- bar- -s
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. baz:$native is not selected for install
    2. baz:$native=1 is selected for install because:
       1. awesome:$native=1 is selected for install

@@ -179,7 +179,7 @@ distribution that some required packages have not yet been created
 or been moved out of Incoming.
 The following information may help to resolve the situation:
 '
-	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. hates-foo:amd64=1.0 is selected for install
    2. hates-foo:amd64 is not selected for install because:
       1. ${1%:*}:$4=1.0 is selected for install
@@ -191,7 +191,7 @@ The following packages have unmet dependencies:
              Conflicts: foo:i386
              Conflicts: foo:armel
 E: Unable to correct problems, you have held broken packages." aptget install $1 hates-foo -s --solver internal
-	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:$4=1.0 is selected for install
    2. foo:$4=1.0 is not selected for install because:
       1. $2:amd64=1.0 is selected for install

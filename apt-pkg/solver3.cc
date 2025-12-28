@@ -53,7 +53,7 @@ Solver::Solver(pkgCache &cache)
    static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Package>));
    static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Version>));
    // Root state is "true".
-   rootState->decision = LiftedBool::True;
+   rootState->assignment = LiftedBool::True;
 }
 
 Solver::~Solver() = default;
@@ -149,7 +149,7 @@ inline Var Solver::bestReason(Clause const *clause, Var var) const
 
 inline LiftedBool Solver::value(Lit lit) const
 {
-   return lit.sign() ? ~(*this)[lit.var()].decision : (*this)[lit.var()].decision;
+   return lit.sign() ? ~(*this)[lit.var()].assignment : (*this)[lit.var()].assignment;
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
@@ -173,31 +173,31 @@ std::string Solver::WhyStr(Var reason) const
    return outstr;
 }
 
-std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const
+std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const
 {
    std::ostringstream out;
 
    // Helper function to nicely print more details than just "install/do not install", such as "removal", "upgrade", "downgrade", "install"
-   auto printSelection = [this](Var var, bool decision)
+   auto printSelection = [this](Var var, bool assignment)
    {
       std::string s;
-      if (auto pkg = var.Pkg(cache); not decision && pkg && pkg->CurrentVer)
+      if (auto pkg = var.Pkg(cache); not assignment && pkg && pkg->CurrentVer)
 	 strprintf(s, "%s is selected for removal", var.toString(cache).c_str());
-      else if (auto ver = var.Ver(cache); decision && ver && ver.ParentPkg().CurrentVer() && ver.ParentPkg().CurrentVer() != ver)
+      else if (auto ver = var.Ver(cache); assignment && ver && ver.ParentPkg().CurrentVer() && ver.ParentPkg().CurrentVer() != ver)
       {
 	 if (cache.VS->CmpVersion(ver.ParentPkg().CurrentVer().VerStr(), ver.VerStr()) < 0)
 	    strprintf(s, "%s is selected as an upgrade", var.toString(cache).c_str());
 	 else
 	    strprintf(s, "%s is selected as a downgrade", var.toString(cache).c_str());
       }
-      else if (not decision)
+      else if (not assignment)
 	 strprintf(s, "%s is not selected for install", var.toString(cache).c_str());
       else
 	 strprintf(s, "%s is selected for install", var.toString(cache).c_str());
       return s;
    };
 
-   // Helper: Recurse into all of the children of the clause and print the decision for them.
+   // Helper: Recurse into all of the children of the clause and print the assignment for them.
    auto recurseChildren = [&](const Clause *clause, Var skip = Var())
    {
       if (clause->solutions.empty())
@@ -216,7 +216,7 @@ std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, st
 
    // Inverse version selection clauses that select the package if the version is selected,
    // such as pkg=ver -> pkg, are irrelevant for the user, skip them
-   if (var.Pkg() && decision && rclause && rclause->group == Group::SelectVersion)
+   if (var.Pkg() && assignment && rclause && rclause->group == Group::SelectVersion)
    {
       var = rclause->reason;
       rclause = (*this)[var].reason;
@@ -225,25 +225,25 @@ std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, st
    // No reason given, probably a user request or manually installed or essential or whatnot.
    if (not rclause)
    {
-      out << prefix << printSelection(var, decision) << "\n";
+      out << prefix << printSelection(var, assignment) << "\n";
       return out.str();
    }
 
-   // We could be called with a decision we tried to make but failed due to a conflict;
-   // this checks if it is the real decision.
-   if (value(var) != LiftedBool::Undefined && decision == (value(var) == LiftedBool::True) && (*this)[var].reason == rclause)
+   // We could be called with a assignment we tried to make but failed due to a conflict;
+   // this checks if it is the real assignment.
+   if (value(var) != LiftedBool::Undefined && assignment == (value(var) == LiftedBool::True) && (*this)[var].reason == rclause)
    {
-      // If we have seen the real decision before; we dont't need to print it again.
+      // If we have seen the real assignment before; we dont't need to print it again.
       if (seen.find(var) != seen.end())
       {
-	 out << prefix << printSelection(var, decision) << " as above\n";
+	 out << prefix << printSelection(var, assignment) << " as above\n";
 	 return out.str();
       }
       seen.insert(var);
    }
 
    // A package was decided "not install" due to a positive clause, so the clause is unsat.
-   if (not decision && rclause && not rclause->negative)
+   if (not assignment && rclause && not rclause->negative)
    {
       out << prefix << rclause->toString(cache, true) << "\n";
       out << prefix << "but none of the choices are installable:\n";
@@ -251,13 +251,13 @@ std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, st
       return out.str();
    }
 
-   // Build the strongest path from a root to our decision leaf
+   // Build the strongest path from a root to our assignment leaf
    std::vector<Var> path;
    for (auto reason = bestReason(rclause, var); not reason.empty(); reason = bestReason((*this)[reason].reason, reason))
       path.push_back(reason);
 
    // Render the strong reasoning path
-   out << prefix << printSelection(var, decision) << " because:\n";
+   out << prefix << printSelection(var, assignment) << " because:\n";
    auto w = std::to_string(path.size() + 1).size();
    size_t i = 1;
    for (auto it = path.rbegin(); it != path.rend(); ++it, ++i)
@@ -273,7 +273,7 @@ std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, st
       {
 	 if ((it + 1) == path.rend() || seen.find(*(it + 1)) == seen.end())
 	 {
-	    out << prefix << (i == 1 ? "" : "1-") << i << ". " << printSelection(*it, state.decision == LiftedBool::True) << " as above\n";
+	    out << prefix << (i == 1 ? "" : "1-") << i << ". " << printSelection(*it, state.assignment == LiftedBool::True) << " as above\n";
 	 }
 	 continue;
       }
@@ -282,13 +282,13 @@ std::string Solver::LongWhyStr(Var var, bool decision, const Clause *rclause, st
       {
 	 out << prefix << std::setw(w) << i << ". " << state.reason->toString(cache, true) << "\n";
 	 if (state.reason->solutions.size() > 1)
-	    out << prefix << std::setw(w) << " " << "  [selected " << it->toString(cache) << " for " << (state.decision == LiftedBool::True ? "install" : "remove") << "]\n";
+	    out << prefix << std::setw(w) << " " << "  [selected " << it->toString(cache) << " for " << (state.assignment == LiftedBool::True ? "install" : "remove") << "]\n";
       }
       else
-	 out << prefix << std::setw(w) << i << ". " << printSelection(*it, state.decision == LiftedBool::True) << "\n";
+	 out << prefix << std::setw(w) << i << ". " << printSelection(*it, state.assignment == LiftedBool::True) << "\n";
    }
 
-   // Print the leaf. We can't have the leaf in the path because we might be called for an attempted decision
+   // Print the leaf. We can't have the leaf in the path because we might be called for an attempted assignment
    // that conflicts with the actual assignment (to simplify: we marked X for not install, then we process Y depends X
    // and try to mark X and reach the conflict, we are called with "X" and the "Y depends X" clause).
    out << prefix << std::setw(w) << i << ". " << rclause->toString(cache, true) << "\n";
@@ -344,23 +344,23 @@ bool Solver::Assume(Lit lit, const Clause *reason)
 bool Solver::Enqueue(Lit lit, const Clause *reason)
 {
    auto &state = (*this)[lit.var()];
-   auto decisionCast = lit.sign() ? LiftedBool::False : LiftedBool::True;
+   auto assignment = lit.sign() ? LiftedBool::False : LiftedBool::True;
 
-   if (state.decision != LiftedBool::Undefined)
+   if (state.assignment != LiftedBool::Undefined)
    {
-      if (state.decision != decisionCast)
+      if (state.assignment != assignment)
       {
 	 std::ostringstream err;
-	 err << "Unable to satisfy dependencies. Reached two conflicting decisions:" << "\n";
+	 err << "Unable to satisfy dependencies. Reached two conflicting assignments:" << "\n";
 	 std::unordered_set<Var> seen;
-	 err << "1. " << LongWhyStr(lit.var(), state.decision == LiftedBool::True, state.reason, "   ", seen).substr(3) << "\n";
+	 err << "1. " << LongWhyStr(lit.var(), state.assignment == LiftedBool::True, state.reason, "   ", seen).substr(3) << "\n";
 	 err << "2. " << LongWhyStr(lit.var(), not lit.sign(), reason, "   ", seen).substr(3);
 	 return _error->Error("%s", err.str().c_str());
       }
       return true;
    }
 
-   state.decision = decisionCast;
+   state.assignment = assignment;
    state.depth = decisionLevel();
    state.reason = reason;
 
@@ -455,14 +455,14 @@ void Solver::UndoOne()
    auto trailItem = trail.back();
 
    if (unlikely(debug >= 4))
-      std::cerr << "Undoing a single decision\n";
+      std::cerr << "Undoing a single assignment\n";
 
    if (not trailItem.assigned.empty())
    {
       if (unlikely(debug >= 4))
 	 std::cerr << "Unassign " << trailItem.assigned.toString(cache) << "\n";
       auto &state = (*this)[trailItem.assigned];
-      state.decision = LiftedBool::Undefined;
+      state.assignment = LiftedBool::Undefined;
       state.reason = nullptr;
       state.reasonStr = nullptr;
       state.depth = 0;
@@ -625,7 +625,7 @@ bool Solver::Solve()
       {
 	 std::ostringstream err;
 
-	 err << "Unable to satisfy dependencies. Reached two conflicting decisions:" << "\n";
+	 err << "Unable to satisfy dependencies. Reached two conflicting assignments:" << "\n";
 	 std::unordered_set<Var> seen;
 	 err << "1. " << LongWhyStr(item.clause->reason, true, (*this)[item.clause->reason].reason, "   ", seen).substr(3) << "\n";
 	 err << "2. " << LongWhyStr(item.clause->reason, false, item.clause, "   ", seen).substr(3);
@@ -1399,7 +1399,7 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 }
 
 // Command-line
-std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterator pkg, bool decision)
+std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterator pkg, bool assignment)
 {
    DependencySolver solver(cache.GetCache(), cache.GetPolicy(), EDSP::Request::Flags(0));
    // In case nothing has a positive dependency on pkg it may not actually be discovered in a `why-not`
@@ -1409,12 +1409,12 @@ std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIt
       return "";
    std::unordered_set<Var> seen;
    std::string buf;
-   if (solver[Var(pkg)].decision == LiftedBool::Undefined)
+   if (solver[Var(pkg)].assignment == LiftedBool::Undefined)
       return strprintf(buf, "%s is undecided\n", pkg.FullName().c_str()), buf;
-   if (decision && solver[Var(pkg)].decision != LiftedBool::True)
+   if (assignment && solver[Var(pkg)].assignment != LiftedBool::True)
       return strprintf(buf, "%s is not actually marked for install\n", pkg.FullName().c_str()), buf;
-   if (not decision && solver[Var(pkg)].decision == LiftedBool::True)
+   if (not assignment && solver[Var(pkg)].assignment == LiftedBool::True)
       return strprintf(buf, "%s is actually marked for install\n", pkg.FullName().c_str()), buf;
-   return solver.LongWhyStr(Var(pkg), decision, solver[Var(pkg)].reason, "", seen);
+   return solver.LongWhyStr(Var(pkg), assignment, solver[Var(pkg)].reason, "", seen);
 }
 } // namespace APT::Solver

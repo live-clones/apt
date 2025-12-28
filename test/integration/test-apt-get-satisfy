@@ -80,7 +80,7 @@ testrun 'External' 'Reading package lists...
 Building dependency tree...
 Execute external solver...' --solver apt
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. satisfy:command-line:i386=1 is selected for install
    2. satisfy:command-line:i386 Depends depends (>= 2)
       but none of the choices are installable:

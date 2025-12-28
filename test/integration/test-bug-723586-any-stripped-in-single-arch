@@ -41,7 +41,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  python-mips : Depends: python3:mips but it is not installable
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. python-mips:amd64=3 is selected for install
    2. python-mips:amd64 Depends python3:mips
       but none of the choices are installable:

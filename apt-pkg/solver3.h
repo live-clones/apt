@@ -250,9 +250,9 @@ constexpr Lit Solver::Var::operator~() const
    return ~Lit(*this);
 }
 
-inline LiftedBool operator~(LiftedBool decision)
+inline LiftedBool operator~(LiftedBool value)
 {
-   switch (decision)
+   switch (value)
    {
    case LiftedBool::Undefined:
       return LiftedBool::Undefined;
@@ -385,7 +385,7 @@ class Solver
 
    // Assume a literal
    [[nodiscard]] bool Assume(Lit lit, const Clause *reason = nullptr);
-   // Enqueue a decision fact
+   // Enqueue a fact
    [[nodiscard]] bool Enqueue(Lit lit, const Clause *reason = nullptr);
 
    // \brief Solve the dependencies
@@ -397,15 +397,15 @@ class Solver
    /**
     * \brief Print a long reason string
     *
-    * Print a reason as to why `rclause` implies `decision` for the variable `var`.
+    * Print a reason as to why `rclause` implies `assignment` for the variable `var`.
     *
     * \param var The variable to print the reason for
-    * \param decision The assumed decision to print the reason for (may be different from actual decision if rclause is specified)
+    * \param assignment The assumed assignment to print the reason for (may be different from actual assignment if rclause is specified)
     * \param rclause The clause that caused this variable to be marked (or would be marked)
     * \param prefix A prefix, for indentation purposes, as this is recursive
     * \param seen A set of seen objects such that the output does not repeat itself (not for safety, it is acyclic)
     */
-   virtual std::string LongWhyStr(Var var, bool decision, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const;
+   virtual std::string LongWhyStr(Var var, bool assignment, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const;
 };
 
 /*
@@ -484,7 +484,7 @@ class DependencySolver : public Solver
    /// \brief Apply the solver result to the depCache
    [[nodiscard]] bool ToDepCache(pkgDepCache &depcache) const;
    /// \brief Temporary internal API with external linkage for the `apt why` and `apt why-not` commands.
-   APT_PUBLIC static std::string InternalCliWhy(pkgDepCache &depcache, pkgCache::PkgIterator Pkg, bool decision);
+   APT_PUBLIC static std::string InternalCliWhy(pkgDepCache &depcache, pkgCache::PkgIterator Pkg, bool assignment);
 };
 }; // namespace APT::Solver
 /**
@@ -518,7 +518,7 @@ struct APT::Solver::Solver::Work
 /**
  * \brief The solver state
  *
- * For each version, the solver records a decision at a certain level. It
+ * For each version, the solver records a assignment at a certain level. It
  * maintains an array mapping from version ID to state.
  */
 struct APT::Solver::Solver::State
@@ -538,11 +538,10 @@ struct APT::Solver::Solver::State
 
    const char *reasonStr{};
 
-   // \brief The depth at which the decision has been taken
+   // \brief The depth at which the value has been assigned
    depth_type depth{0};
 
-   // \brief This essentially describes the install state in RFC2119 terms.
-   LiftedBool decision{LiftedBool::Undefined};
+   LiftedBool assignment{LiftedBool::Undefined};
 
    // \brief Flags.
    struct
