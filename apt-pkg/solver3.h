@@ -509,9 +509,6 @@ struct APT::Solver::Solver::Work
    /// Number of valid choices at insertion time
    size_t size{0};
 
-   // \brief This item should be removed from the queue.
-   bool erased{false};
-
    bool operator<(APT::Solver::Solver::Work const &b) const;
    std::string toString(pkgCache &cache) const;
    inline Work(const Clause *clause, level_type level) : clause(clause), level(level) {}

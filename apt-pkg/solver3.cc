@@ -123,8 +123,6 @@ std::string APT::Solver::Clause::toString(pkgCache &cache, bool pretty, bool sho
 std::string Solver::Work::toString(pkgCache &cache) const
 {
    std::ostringstream out;
-   if (erased)
-      out << "Erased ";
    if (clause->optional)
       out << "Optional ";
    out << "Item (" << ssize_t(size <= clause->solutions.size() ? size : -1) << "@" << level << ") ";
@@ -506,11 +504,9 @@ bool Solver::Pop()
       UndoOne();
 
    // We need to remove any work that is at a higher level.
-   // FIXME: We should just mark the entries as erased and only do a compaction
-   //        of the heap once we have a lot of erased entries in it.
    trailLim.pop_back();
    work.erase(std::remove_if(work.begin(), work.end(), [this](Work &w) -> bool
-			     { return w.level > decisionLevel() || w.erased; }),
+			     { return w.level > decisionLevel(); }),
 	      work.end());
    std::make_heap(work.begin(), work.end());
 
@@ -572,9 +568,6 @@ bool Solver::Solve()
       auto item = work.front();
       std::pop_heap(work.begin(), work.end());
       work.pop_back();
-      // This item has been replaced with a new one. Remove it.
-      if (item.erased)
-	 continue;
 
       if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
 		      { return value(ver) == LiftedBool::True; }))
