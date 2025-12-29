@@ -166,8 +166,8 @@ struct Var
    }
    // \brief Check if there is no reason.
    constexpr bool empty() const { return value == 0; }
-   constexpr bool operator!=(Var const other) const { return value != other.value; }
-   constexpr bool operator==(Var const other) const { return value == other.value; }
+   constexpr bool operator!=(Var const other) const noexcept { return value != other.value; }
+   constexpr bool operator==(Var const other) const noexcept { return value == other.value; }
 
    /// \brief Negate
    constexpr Lit operator~() const;
@@ -206,8 +206,8 @@ struct Lit
 
    // Properties
    constexpr bool empty() const { return value == 0; }
-   constexpr bool operator!=(Lit const other) const { return value != other.value; }
-   constexpr bool operator==(Lit const other) const { return value == other.value; }
+   constexpr bool operator!=(Lit const other) const noexcept { return value != other.value; }
+   constexpr bool operator==(Lit const other) const noexcept { return value == other.value; }
 
    std::string toString(pkgCache &cache) const { return (sign() ? "not " : "") + var().toString(cache); }
 };

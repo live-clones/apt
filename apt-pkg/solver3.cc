@@ -826,17 +826,15 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 	     earlierDep.TargetPkg() != dep.TargetPkg())
 	    continue;
 	 if (std::none_of(earlierClause->solutions.begin(), earlierClause->solutions.end(), [&clause](auto earlierSol)
-			  { return std::find(clause.solutions.begin(),
-					     clause.solutions.end(),
-					     earlierSol) != clause.solutions.end(); }))
+			  { return std::ranges::contains(clause.solutions,
+							 earlierSol); }))
 	    continue;
 
 	 if (earlierClause->optional == clause.optional)
 	 {
 	    std::erase_if(earlierClause->solutions, [&clause, this](auto earlierSol)
-			  { return std::find(clause.solutions.begin(),
-					     clause.solutions.end(),
-					     earlierSol) == clause.solutions.end(); });
+			  { return not std::ranges::contains(clause.solutions,
+							     earlierSol); });
 
 	    earlierClause->merged.push_front(clause);
 	    merged = true;
@@ -845,9 +843,8 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 	 {
 	    // If say a Depends has fewer solution than a Recommends, remove the Recommend's extranous ones.
 	    std::erase_if(clause.solutions, [&earlierClause, this](auto sol)
-			  { return std::find(earlierClause->solutions.begin(),
-					     earlierClause->solutions.end(),
-					     sol) == earlierClause->solutions.end(); });
+			  { return not std::ranges::contains(earlierClause->solutions,
+							     sol); });
 
 	    // Remove recursion here, such that we display correctly (if we ever display anywhere...)
 	    auto earlierClauseCopy = *earlierClause;
