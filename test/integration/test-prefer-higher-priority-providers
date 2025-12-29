@@ -92,15 +92,17 @@ Conf baz (1 unstable [all])
 Conf awesome (1 unstable [all])" aptget install awesome foo- bar- -s
 
 testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
-   1. baz:$native is not selected for install
-   2. baz:$native=1 is selected for install because:
+   1. baz:$native=1 is selected for install because:
       1. awesome:$native=1 is selected for install
       2. awesome:$native Depends stuff
          [selected awesome:$native]
       For context, additional choices that could not be installed:
       * In awesome:$native Depends stuff:
         - foo:$native=1 is not selected for install
-        - bar:$native=1 is not selected for install" aptget install awesome foo- bar- baz- -s --solver 3.0
+        - bar:$native=1 is not selected for install
+   2. baz:$native=1 ->  | baz:$native
+      but none of the choices are installable:
+      - baz:$native is not selected for install" aptget install awesome foo- bar- baz- -s --solver 3.0
 testfailureequal "Reading package lists...
 Building dependency tree...
 Package 'foo' is not installed, so not removed

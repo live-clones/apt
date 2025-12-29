@@ -380,65 +380,77 @@ bool Solver::Propagate()
    {
       Var var = propQ.front();
       propQ.pop();
-      if (value(var) == LiftedBool::True)
+
+      // Stale propagation. These do not happen in MiniSat, because it clears the propQ on
+      // conflict, however, we simply keep the item in here and skip it.
+      if (value(var) == LiftedBool::Undefined)
+	 continue;
+
+      Lit lit = value(var) == LiftedBool::False ? ~var : var;
+      if (not lit.sign())
+	 Discover(lit.var());
+
+      for (auto clause : watches(lit))
       {
-	 Discover(var);
-	 for (auto &clause : (*this)[var].clauses)
-	    if (not AddWork(Work{clause.get(), decisionLevel()}))
-	       return false;
-	 for (auto rclause : (*this)[var].rclauses)
-	 {
-	    if (not rclause->negative || rclause->optional || rclause->reason.empty())
-	       continue;
-	    if (unlikely(debug >= 3))
-	       std::cerr << "Propagate " << var.toString(cache) << " to NOT " << rclause->reason.toString(cache) << " for dep " << const_cast<Clause *>(rclause)->toString(cache) << std::endl;
-	    if (not Enqueue(~rclause->reason, rclause))
-	       return false;
-	 }
-      }
-      else if (value(var) == LiftedBool::False)
-      {
-	 for (auto rclause : (*this)[var].rclauses)
-	 {
-	    if (rclause->negative || rclause->reason.empty())
-	       continue;
-	    if (value(rclause->reason) == LiftedBool::False)
-	       continue;
-
-	    auto count = std::count_if(rclause->solutions.begin(), rclause->solutions.end(), [this](auto var)
-				       { return value(var) != LiftedBool::False; });
-
-	    if (count == 1 && value(rclause->reason) == LiftedBool::True)
-	    {
-	       if (unlikely(debug >= 3))
-		  std::cerr << "Propagate NOT " << var.toString(cache) << " to unit clause " << rclause->toString(cache);
-	       if (rclause->optional)
-	       {
-		  // Enqueue duplicated item, this will ensure we see it at the correct time
-		  if (not AddWork(Work{rclause, decisionLevel()}))
-		     return false;
-	       }
-	       else
-	       {
-		  // Find the variable that must be chosen and enqueue it as a fact
-		  for (auto sol : rclause->solutions)
-		     if (value(sol) == LiftedBool::Undefined && not Enqueue(sol, rclause))
-			return false;
-	       }
-	       continue;
-	    }
-	    if (count >= 1 || rclause->optional)
-	       continue;
-
-	    if (unlikely(debug >= 3))
-	       std::cerr << "Propagate NOT " << var.toString(cache) << " to " << rclause->reason.toString(cache) << " for dep " << const_cast<Clause *>(rclause)->toString(cache) << std::endl;
-
-	    if (not Enqueue(~rclause->reason, rclause)) // Last version invalidated
-	       return false;
-	 }
+	 if (Propagate(clause, lit))
+	    continue;
+	 return false;
       }
    }
    return true;
+}
+
+bool Solver::Propagate(const Clause *clause, Lit p)
+{
+   if (debug >= 3)
+      std::cerr << "Propagate " << p.toString(cache) << " to " << clause->toString(cache) << std::endl;
+   // Negative clauses are trivial
+   if (clause->negative)
+   {
+      // One of the solutions was set, so reject the reason
+      if (p != clause->reason)
+	 return Enqueue(~clause->reason, clause);
+
+      // Here we need to reject all conflicting solutions (reason -> none of solutions)
+      for (auto sol : clause->solutions)
+	 if (not Enqueue(~sol, clause))
+	    return false;
+
+      return true;
+   }
+
+   // Check if the clause is unit, conflict, or undecided
+   Lit unit;
+   for (auto sol : clause->solutions)
+   {
+      if (value(sol) == LiftedBool::False)
+	 continue;
+      if (not unit.empty() || clause->optional)
+      {
+	 // We found a second solution, so we are undecided
+	 if (p == clause->reason)
+	    return AddWork(Work{clause, decisionLevel()});
+	 return true;
+      }
+
+      unit = sol;
+   }
+
+   // The clause is now either unit or conflict
+   if (not unit.empty())
+   {
+      // Unit clause. If it is an active clause, enqueue the unit literal.
+      if (value(clause->reason) == LiftedBool::True)
+         return Enqueue(unit, clause);
+      return true;
+   }
+   else
+   {
+      // Conflict clause. If this clause is non-optional; reject it's "reason".
+      if (not clause->optional)
+	 return Enqueue(~clause->reason, clause);
+      return true;
+   }
 }
 
 void Solver::UndoOne()
@@ -591,6 +603,7 @@ bool Solver::Solve()
       }
       else
       {
+	 abort();
 	 if (unlikely(debug >= 1))
 	    std::cerr << item.toString(cache) << "\n";
 	 // Enqueue produces the right error message for us here, given that reason has been assigned true already...
@@ -852,8 +865,11 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 
    clauses.push_back(std::make_unique<Clause>(std::move(clause)));
    auto const &inserted = clauses.back();
-   for (auto var : inserted->solutions)
-      (*this)[var].rclauses.push_back(inserted.get());
+   // Insert all our watches
+   if (not inserted->reason.empty())
+      watches(inserted->reason).push_back(inserted.get());
+   for (auto sol : inserted->solutions)
+      watches(inserted->negative ? sol : ~sol).push_back(inserted.get());
    return inserted.get();
 }
 
