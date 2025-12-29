@@ -343,6 +343,8 @@ bool Solver::Assume(Lit lit, const Clause *reason)
 
 bool Solver::Enqueue(Lit lit, const Clause *reason)
 {
+   assert(not lit.empty());
+
    auto &state = (*this)[lit.var()];
    auto assignment = lit.sign() ? LiftedBool::False : LiftedBool::True;
 
