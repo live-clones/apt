@@ -54,7 +54,7 @@ for <literal>Acquire::http</literal>. This manpage will only document the option
 <package>ca-certificates</package> package) are used for the verification of
 the server certificate. An alternative certificate authority (CA) can be
 configured with the <literal>Acquire::https::CAInfo</literal> option and its
-host-specific option <literal>Acquire::https::CAInfo::<replaceable>host</replaceable></literal>.
+host-specific option <literal>Acquire::https::<replaceable>host</replaceable>::CAInfo</literal>.
 The CAInfo option specifies a file made up of CA certificates (in PEM format)
 concatenated together to create the chain which APT should use to verify the
 path from your self-signed root certificate. If the remote server provides the
@@ -63,7 +63,7 @@ certificate. Otherwise, the whole chain is required. If you need to support
 multiple authorities, the only way is to concatenate everything.</para>
 <para>A custom certificate revocation list (CRL) can be configured with the options
 <literal>Acquire::https::CRLFile</literal> and
-<literal>Acquire::https::CRLFile::<replaceable>host</replaceable></literal>.
+<literal>Acquire::https::<replaceable>host</replaceable>::CRLFile</literal>.
 As with the previous option, a file in PEM format needs to be specified.</para>
 </refsect2>
 
