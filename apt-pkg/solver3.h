@@ -59,6 +59,10 @@ class ContiguousCacheMap
    V &operator[](const K *key) { return data_[key->ID]; }
    const V &operator[](const K *key) const { return data_[key->ID]; }
    ~ContiguousCacheMap() { delete[] data_; }
+
+   // Delete copy constructors for memory safety (rule of 3)
+   ContiguousCacheMap(const ContiguousCacheMap &) = delete;
+   ContiguousCacheMap &operator=(const ContiguousCacheMap &) = delete;
 };
 
 /**
