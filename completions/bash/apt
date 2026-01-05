@@ -1,4 +1,5 @@
 # Debian apt(8) completion                             -*- shell-script -*-
+# shellcheck shell=bash
 
 _apt()
 {
@@ -49,6 +50,7 @@ _apt()
         "download" "changelog"
         "moo"
         "modernize-sources"
+        "history-list" "history-info" "history-undo" "history-redo" "history-rollback"
         "depends" "rdepends" "why" "why-not"
         "policy")
 
@@ -94,7 +96,7 @@ _apt()
                 return 0
                 ;;
             list)
-                COMPREPLY=( $( compgen -W '--installed --upgradable 
+                COMPREPLY=( $( compgen -W '--installed --upgradable
                   --manual-installed
                   -v --verbose
                   -a --all-versions
@@ -235,6 +237,12 @@ _apt()
                     -- "$cur" ) )
                 return 0
                 ;;
+            history-info|history-rollback|history-redo|history-undo)
+                local _historyids=$( apt history-list |
+                    awk '/^(ID|$)/{next};{print$1}' |tac 2> /dev/null )
+                COMPREPLY=( $( compgen -W "${_historyids[@]}" -- "$cur" ) )
+                return 0
+                ;;
             moo)
                 COMPREPLY=( $( compgen -W 'moo' \
                     -- "$cur" ) )
@@ -248,6 +256,6 @@ _apt()
 
     return 0
 } &&
-complete -F _apt apt
+complete -o nosort -F _apt apt
 
 # ex: ts=4 sw=4 et filetype=sh
