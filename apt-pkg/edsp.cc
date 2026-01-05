@@ -796,7 +796,7 @@ bool EDSP::ResolveExternal(const char* const solver, pkgDepCache &Cache,
 			 unsigned int const flags, OpProgress *Progress) {
    if (strstr(solver, "3.") == solver)
    {
-      APT::Solver s(Cache.GetCache(), Cache.GetPolicy(), (EDSP::Request::Flags) flags);
+      APT::Solver::DependencySolver s(Cache.GetCache(), Cache.GetPolicy(), (EDSP::Request::Flags)flags);
       FileFd output;
       bool res = true;
       if (Progress != NULL)

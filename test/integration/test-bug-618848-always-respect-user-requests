@@ -14,7 +14,7 @@ insertpackage 'unstable' 'exim4-daemon-heavy' 'all' '1.0' 'Depends: libdb4.8'
 setupaptarchive
 
 # This does not work in 3.0 solver: We do not remove manually installed packages.
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. exim4-daemon-light:i386 is selected for install
    2. exim4-daemon-light:i386 Depends libdb4.8
       but none of the choices are installable:

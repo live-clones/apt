@@ -41,7 +41,7 @@ The following NEW packages will be installed:
 Inst po-debconf (1 unstable [all])
 Conf po-debconf (1 unstable [all])' aptget build-dep dash -s
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:dash:armel=1 is selected for install
    2. builddeps:dash:armel Depends po-debconf:armel
       but none of the choices are installable:
@@ -59,7 +59,7 @@ The following packages have unmet dependencies:
  builddeps:dash:armel : Depends: po-debconf:armel but it is not installable
 E: Unable to correct problems, you have held broken packages.' aptget build-dep -aarmel dash -s --solver internal
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:diffutils:armel=1 is selected for install
    2. builddeps:diffutils:armel Depends texi2html:armel
       but none of the choices are installable:
@@ -86,7 +86,7 @@ The following NEW packages will be installed:
 Inst libselinux1-dev (1 unstable [amd64])
 Conf libselinux1-dev (1 unstable [amd64])" aptget build-dep sed -s
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:sed:armel=1 is selected for install
    2. builddeps:sed:armel Depends libselinux-dev:armel
       but none of the choices are installable:

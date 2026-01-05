@@ -33,7 +33,7 @@ insertpackage 'unstable' 'foo-same-breaker-none' 'i386' '1.0' 'Conflicts: foo-sa
 
 setupaptarchive
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo-breaker-none:i386=1.0 is selected for install
    2. foo-breaker-none:i386 is not selected for install because:
       1. foo-provider:i386=1.0 is selected for install
@@ -77,7 +77,7 @@ Conf foo (4.0 unstable [i386])
 Conf foo-breaker-3 (1.0 unstable [i386])
 Conf foo-provider (1.0 unstable [i386])' aptget install foo-provider foo-breaker-3 -s
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo-foreign-provider:i386=1.0 is selected for install
    2. foo-foreign-provider:i386=1.0 is not selected for install because:
       1. foo-foreign-breaker-none:i386=1.0 is selected for install
@@ -121,7 +121,7 @@ Conf foo-foreign:amd64 (4.0 unstable [amd64])
 Conf foo-foreign-breaker-3 (1.0 unstable [i386])
 Conf foo-foreign-provider (1.0 unstable [i386])' aptget install foo-foreign-provider foo-foreign-breaker-3 -s
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo-same-breaker-none:i386=1.0 is selected for install
    2. foo-same-breaker-none:i386 is not selected for install because:
       1. foo-same-provider:i386=1.0 is selected for install
