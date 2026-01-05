@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.4\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:28+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2025-08-23 10:13+0200\n"
 "Last-Translator: Helge Kreutzmann <debian@helgefjell.de>\n"
 "Language-Team: German <debian-l10n-german@lists.debian.org>\n"
@@ -1969,6 +1969,12 @@ msgstr ""
 #: apt-private/private-download.cc
 #, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "Freier Platz in %s konnte nicht bestimmt werden."
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+#| msgid "Couldn't determine free space in %s"
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "Freier Platz in %s konnte nicht bestimmt werden."
 
 #: apt-private/private-download.cc

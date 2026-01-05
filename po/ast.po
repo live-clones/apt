@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.7.18\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:28+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2010-10-02 23:35+0100\n"
 "Last-Translator: Iñigo Varela <ivarela@softastur.org>\n"
 "Language-Team: Asturian (ast)\n"
@@ -1858,6 +1858,12 @@ msgstr "Hai problemes y utilizose -y ensin --force-yes"
 #: apt-private/private-download.cc
 #, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "Nun pue determinase l'espaciu llibre de %s"
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+#| msgid "Couldn't determine free space in %s"
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "Nun pue determinase l'espaciu llibre de %s"
 
 #: apt-private/private-download.cc

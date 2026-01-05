@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:28+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2010-08-30 02:31+0900\n"
 "Last-Translator: Changwoo Ryu <cwryu@debian.org>\n"
 "Language-Team: Korean <debian-l10n-korean@lists.debian.org>\n"
@@ -1837,6 +1837,12 @@ msgstr "문제가 발생했고 -y 옵션이 --force-yes 옵션 없이 사용되�
 #: apt-private/private-download.cc
 #, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "%s의 여유 공간의 크기를 파악할 수 없습니다"
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+#| msgid "Couldn't determine free space in %s"
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "%s의 여유 공간의 크기를 파악할 수 없습니다"
 
 #: apt-private/private-download.cc

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:28+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2005-06-06 13:46+0100\n"
 "Last-Translator: Dafydd Harries <daf@muse.19inch.net>\n"
 "Language-Team: Welsh <cy@pengwyn.linux.org.uk>\n"
@@ -1853,6 +1853,11 @@ msgstr "Mae problemau a defnyddwyd -y heb --force-yes"
 #: apt-private/private-download.cc
 #, fuzzy, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "Does dim digon o le rhydd yn %s gennych"
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "Does dim digon o le rhydd yn %s gennych"
 
 #: apt-private/private-download.cc

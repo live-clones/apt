@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:28+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2006-10-20 21:28+0300\n"
 "Last-Translator: Ossama M. Khayat <okhayat@yahoo.com>\n"
 "Language-Team: Arabic <support@arabeyes.org>\n"
@@ -1798,6 +1798,12 @@ msgstr "هناك مشاكل وتم استخدام -y دون --force-yes"
 #: apt-private/private-download.cc
 #, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "تعذر حساب المساحة الحرة في %s"
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+#| msgid "Couldn't determine free space in %s"
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "تعذر حساب المساحة الحرة في %s"
 
 #: apt-private/private-download.cc

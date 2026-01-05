@@ -38,7 +38,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.8.10\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:16+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2025-07-24 22:11-0500\n"
 "Last-Translator: Igor Támara <igor.tamara@gmail.com>\n"
 "Language-Team: Español; Castellano <debian-l10n-spanish@lists.debian.org>\n"
@@ -1998,6 +1998,12 @@ msgstr ""
 #: apt-private/private-download.cc
 #, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "No se pudo determinar el espacio libre en %s"
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+#| msgid "Couldn't determine free space in %s"
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "No se pudo determinar el espacio libre en %s"
 
 #: apt-private/private-download.cc

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:28+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2006-10-10 09:48+0700\n"
 "Last-Translator: Khoem Sokhem <khoemsokhem@khmeros.info>\n"
 "Language-Team: Khmer <support@khmeros.info>\n"
@@ -1821,6 +1821,12 @@ msgstr "មាន​បញ្ហា​ ហើយ -y ត្រូវ​បាន�
 #: apt-private/private-download.cc
 #, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "មិន​អាច​កំណត់​ទំហំ​ទំនេរ​ក្នុង​ %s បានឡើយ"
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+#| msgid "Couldn't determine free space in %s"
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "មិន​អាច​កំណត់​ទំហំ​ទំនេរ​ក្នុង​ %s បានឡើយ"
 
 #: apt-private/private-download.cc

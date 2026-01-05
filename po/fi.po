@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.5.26\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2025-10-21 19:28+0200\n"
+"POT-Creation-Date: 2026-01-05 22:58+0100\n"
 "PO-Revision-Date: 2008-12-11 14:52+0200\n"
 "Last-Translator: Tapio Lehtonen <tale@debian.org>\n"
 "Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>\n"
@@ -1820,6 +1820,12 @@ msgstr "Oli pulmia ja -y käytettiin ilman valitsinta --force-yes"
 #: apt-private/private-download.cc
 #, c-format
 msgid "Couldn't determine free space in %s"
+msgstr "Kansion %s vapaan tilan määrä ei selvinnyt"
+
+#: apt-private/private-download.cc
+#, fuzzy, c-format
+#| msgid "Couldn't determine free space in %s"
+msgid "Couldn't determine filesystem statistics of %s."
 msgstr "Kansion %s vapaan tilan määrä ei selvinnyt"
 
 #: apt-private/private-download.cc

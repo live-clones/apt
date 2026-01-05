@@ -1,3 +1,48 @@
+apt (3.1.13) unstable; urgency=medium
+
+  [ Ville Skyttä ]
+  * Grammar fixes
+  * bash-complete basic list search patterns
+
+  [ Daniel Lewart ]
+  * Priority 1000 allows downgrades (Closes: #1016967)
+
+  [ Simon Josefsson ]
+  * Fix host-specific Acquire::https CAInfo/CRLFile example (Closes: #1112123)
+
+  [ Christopher Bock ]
+  * configure-index Acquire::ForceIPv4/6
+  * completion: history
+
+  [ Julian Andres Klode ]
+  * Refactorings to the 3.0 solver:
+    - Introduce a Lit type to hold literals
+    - Refactor Assume(), Enqueue() from Var to Lit
+    - Implement value(Lit) and use it
+    - Rename Decision to LiftedBool
+    - Rename key concepts to MiniSAT names
+    - Refactor to use a namespace
+    - Extract DependencySolver
+    - Reorder the source code
+    - Rename decision to assignment
+    - Rename depth to level
+    - Re-use existing error message code in Solve()
+    - Remove Push() and refactor Solve()
+    - Add a strange assertion
+    - Modernize std::find() to std::ranges::contains
+    - Ensure rule-of-3 memory safety for ContiguousCacheMap
+  * macros: Introduce must_succeed() macro
+    This is like assert() but guaranteed to run its argument,
+    and only run the argument once, so you can must_succeed(foo())
+
+  [ Johannes Schauer Marin Rodrigues ]
+  * apt-private/private-download.cc: support unlimited space tmpfs
+
+  [ Aindriú Mac Giolla Eoin ]
+  * Updated Irish translation based on Release 3.1.12
+
+ -- Julian Andres Klode <jak@debian.org>  Mon, 05 Jan 2026 22:56:34 +0100
+
 apt (3.1.12) unstable; urgency=medium
 
   [ Ruoyu Zhong ]
