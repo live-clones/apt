@@ -47,7 +47,7 @@ Inst coolstuff2 (1.0-1 unstable [all])
 Conf stuff (1.0-1 unstable [all])
 Conf coolstuff2 (1.0-1 unstable [all])' aptget install coolstuff2 -s
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. coolstuff-broken:i386=1.0-1 is selected for install
    2. coolstuff-broken:i386 Depends cool2 | stuff2
       but none of the choices are installable:
@@ -99,7 +99,7 @@ Inst coolstuff-provided (1.0-1 unstable [all])
 Conf extrastuff (1.0-1 unstable [all])
 Conf coolstuff-provided (1.0-1 unstable [all])' aptget install coolstuff-provided -s
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. extrastuff:i386=1.0-1 is not selected for install
    2. extrastuff:i386=1.0-1 is selected for install because:
       1. coolstuff-provided-broken:i386=1.0-1 is selected for install

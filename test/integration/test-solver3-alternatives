@@ -15,7 +15,7 @@ insertpackage 'unstable' 'ba' 'all' '3' 'Depends: bay'
 insertpackage 'unstable' 'bb' 'all' '3' 'Depends: bby'
 setupaptarchive
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. bb:amd64 is selected for install because:
       1. unsat:amd64=3 is selected for install
       2. unsat:amd64 Depends a | b

@@ -60,7 +60,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  findutils : Depends: essentialpkg but it is not going to be installed
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. essentialpkg:i386 is selected for removal
    2. essentialpkg:i386 is selected for install because:
       1. findutils:i386 is selected for install

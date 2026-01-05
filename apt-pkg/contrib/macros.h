@@ -33,6 +33,14 @@
 	#define likely(x)	(x)
 	#define unlikely(x)	(x)
 #endif
+
+// Asserts that the result of expr is true
+#define must_succeed(expr) ({                                                                                   \
+   auto result = (expr);                                                                                        \
+   if (unlikely(not result))                                                                                    \
+      fprintf(stderr, "%s:%d: %s: Assertion `%s` failed.\n", __FILE__, __LINE__, __FUNCTION__, #expr), abort(); \
+   result;                                                                                                      \
+})
 #endif
 
 #if APT_GCC_VERSION >= 0x0300

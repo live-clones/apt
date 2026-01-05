@@ -64,7 +64,7 @@ Inst needsfoo:i386 (1 unstable [i386])
 Conf foo:i386 (1 unstable [i386])
 Conf needsfoo:i386 (1 unstable [i386])' aptget install needsfoo:i386 -s
 # FIXME: same problem, but two different unmet dependency messages depending on install order
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needsfoo:i386=1 is selected for install
    2. needsfoo:i386 Depends foo:i386
       but none of the choices are installable:
@@ -76,7 +76,7 @@ The following packages have unmet dependencies:
  foo : Conflicts: foo:i386 but 1 is to be installed
  foo:i386 : Conflicts: foo but 1 is to be installed
 E: Unable to correct problems, you have held broken packages." aptget install needsfoo:i386 foo:amd64 -s --solver internal
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needsfoo:i386=1 is selected for install
    2. needsfoo:i386 Depends foo:i386
       but none of the choices are installable:
@@ -87,7 +87,7 @@ testfailureequal "$BADPREFIX
 The following packages have unmet dependencies:
  needsfoo:i386 : Depends: foo:i386 but it is not installable
 E: Unable to correct problems, you have held broken packages." aptget install foo:amd64 needsfoo:i386 -s --solver internal
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needsfoo:amd64=1 is selected for install
    2. needsfoo:amd64 Depends foo
       but none of the choices are installable:
@@ -153,7 +153,7 @@ if [ "$APT_SOLVER" != "internal" ]; then
 NEEDSFOO2NATIVE="$BADPREFIX
 The following packages have unmet dependencies:
  needsfoover2 : Depends: foo:any (>= 2)
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needsfoover2:amd64=1 is selected for install
    2. needsfoover2:amd64 Depends foo:any (>= 2)
       but none of the choices are installable:
@@ -161,7 +161,7 @@ E: Unable to satisfy dependencies. Reached two conflicting decisions:
 NEEDSFOO2FOREIGN="$BADPREFIX
 The following packages have unmet dependencies:
  needsfoover2:i386 : Depends: foo:any (>= 2)
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needsfoover2:i386=1 is selected for install
    2. needsfoover2:i386 Depends foo:any (>= 2)
       but none of the choices are installable:
@@ -182,27 +182,27 @@ testfailureequal "$NEEDSFOO2FOREIGN" aptget install needsfoover2:i386 foo:i386 -
 testfailureequal "$NEEDSFOO2NATIVE" aptget install needsfoover2 foo:i386 -s
 
 solveableinsinglearch2() {
-	testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+	testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:amd64=1 is selected for install
    2. foo:amd64=1 is not selected for install because:
       1. hatesfoo:amd64=1 is selected for install
       2. hatesfoo:amd64 Conflicts foo' aptget install foo hatesfoo -s --solver 3.0
 
 	if [ "$(getarchitectures)" = "amd64 " ]; then
-		testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+		testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:amd64=1 is selected for install
    2. foo:amd64=1 is not selected for install because:
       1. hatesfooany:amd64=1 is selected for install
       2. hatesfooany:amd64 Conflicts foo:any' aptget install foo hatesfooany -s --solver 3.0
 	else
-		testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+		testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:amd64=1 is selected for install
    2. foo:amd64=1 is not selected for install because:
       1. hatesfooany:amd64=1 is selected for install
       2. hatesfooany:amd64 Conflicts foo:any
          [selected hatesfooany:amd64]' aptget install foo hatesfooany -s --solver 3.0
 	fi
-	testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+	testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:amd64=1 is selected for install
    2. foo:amd64=1 is not selected for install because:
       1. hatesfoonative:amd64=1 is selected for install
@@ -219,7 +219,7 @@ The following packages have unmet dependencies:
 E: Unable to correct problems, you have held broken packages." aptget install foo hatesfoonative -s --solver internal
 }
 solveableinsinglearch2
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:i386=1 is selected for install
    2. foo:i386=1 is not selected for install because:
       1. hatesfoo:amd64=1 is selected for install
@@ -228,7 +228,7 @@ testfailureequal "$BADPREFIX
 The following packages have unmet dependencies:
  hatesfoo : Conflicts: foo:i386 but 1 is to be installed
 E: Unable to correct problems, you have held broken packages." aptget install foo:i386 hatesfoo -s --solver internal
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. foo:i386=1 is selected for install
    2. foo:i386=1 is not selected for install because:
       1. hatesfooany:amd64=1 is selected for install
@@ -248,7 +248,7 @@ Inst hatesfoonative (1 unstable [amd64])
 Conf foo:i386 (1 unstable [i386])
 Conf hatesfoonative (1 unstable [amd64])' aptget install foo:i386 hatesfoonative -s
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needscoolfoo:i386=1 is selected for install
    2. needscoolfoo:i386 Depends coolfoo:i386
       but none of the choices are installable:
@@ -325,7 +325,7 @@ Inst needscoolfoover1 (1 unstable [amd64])
 Conf coolfoo (1 unstable [amd64])
 Conf coolfoover (1 unstable [amd64])
 Conf needscoolfoover1 (1 unstable [amd64])' aptget install needscoolfoover1 -s
-	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needscoolfoover2:amd64=1 is selected for install
    2. needscoolfoover2:amd64 Depends coolfoo:any (>= 2)
       but none of the choices are installable:
@@ -334,7 +334,7 @@ Conf needscoolfoover1 (1 unstable [amd64])' aptget install needscoolfoover1 -s
 The following packages have unmet dependencies:
  needscoolfoover2 : Depends: coolfoo:any (>= 2)
 E: Unable to correct problems, you have held broken packages." aptget install needscoolfoover2 -s --solver internal
-	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+	testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. needscoolfoover3:amd64=1 is selected for install
    2. needscoolfoover3:amd64 Depends coolfoo:any (>= 2)
       but none of the choices are installable:

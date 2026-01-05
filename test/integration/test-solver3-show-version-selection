@@ -14,7 +14,7 @@ insertpackage 'installed,unstable' 'libgcc-s1' 'amd64' '14.2.0-18' 'Multi-Arch: 
 
 setupaptarchive
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. libc6:s390x is selected for install because:
       1. sbuild-build-depends-main-dummy:s390x=0.invalid.0 is selected for install
       2. sbuild-build-depends-main-dummy:s390x Depends libgstreamer1.0-dev:s390x
@@ -26,7 +26,7 @@ testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decis
         2. libgcc-s1:amd64 is available in version 14.2.0-18
         3. libgcc-s1:s390x Breaks libgcc-s1 (!= 14.2.0-17)" apt install sbuild-build-depends-main-dummy --solver 3.0 libgcc-s1 -s
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. libc6:s390x is selected for install because:
       1. sbuild-build-depends-main-dummy:s390x=0.invalid.0 is selected for install
       2. sbuild-build-depends-main-dummy:s390x Depends libgstreamer1.0-dev:s390x

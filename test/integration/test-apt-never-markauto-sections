@@ -49,7 +49,7 @@ Remv foreignpkg:i386 [1]
 Remv nosection [1]
 Remv texteditor [1]' aptget autoremove mydesktop -s
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. bad-texteditor:amd64 is selected for install because:
       1. mydesktop:amd64 is selected for install
       2. mydesktop:amd64 Depends mydesktop-core

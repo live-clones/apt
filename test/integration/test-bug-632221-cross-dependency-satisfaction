@@ -35,7 +35,7 @@ insertsource 'unstable' 'source-specific-armel' 'armel' '1' 'Build-Depends: spec
 
 setupaptarchive
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:forbidden-no:armel=1 is selected for install
    2. builddeps:forbidden-no:armel Depends amdboot:any
       but none of the choices are installable:
@@ -53,7 +53,7 @@ The following packages have unmet dependencies:
  builddeps:forbidden-no:armel : Depends: amdboot:any but it is not installable
 E: Unable to correct problems, you have held broken packages.' aptget build-dep forbidden-no -s -a armel --solver internal
 
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:forbidden-same:armel=1 is selected for install
    2. builddeps:forbidden-same:armel Depends libc6:any
       but none of the choices are installable:
@@ -71,7 +71,7 @@ The following packages have unmet dependencies:
  builddeps:forbidden-same:armel : Depends: libc6:any but it is not installable
 E: Unable to correct problems, you have held broken packages.' aptget build-dep forbidden-same -s -a armel --solver internal
 
-testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg 'E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. builddeps:forbidden-foreign:armel=1 is selected for install
    2. builddeps:forbidden-foreign:armel Depends doxygen:any
       but none of the choices are installable:

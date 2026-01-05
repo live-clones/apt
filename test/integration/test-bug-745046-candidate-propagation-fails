@@ -40,7 +40,7 @@ The following information may help to resolve the situation:
 
 The following packages have unmet dependencies:
  gedit : Depends: common (>= 2) but it is not installable
-E: Unable to satisfy dependencies. Reached two conflicting decisions:
+E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. gedit:amd64=2 is selected as an upgrade
    2. gedit:amd64=2 Depends common (>= 2)
       but none of the choices are installable:

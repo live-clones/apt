@@ -8,7 +8,7 @@ configarchitecture "i386"
 setupaptarchive
 
 # FIXME: Should this say selected postifx?
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. postfix:i386=2.7.1-1 is selected for install
    2. postfix:i386=2.7.1-1 is not selected for install because:
       1. exim4-daemon-light:i386 is selected for install

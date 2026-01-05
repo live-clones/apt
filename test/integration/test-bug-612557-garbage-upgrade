@@ -18,7 +18,7 @@ testsuccess aptmark markauto python-uno openoffice.org-common
 testmarkedauto python-uno openoffice.org-common
 
 # The 3.0 solver does not remove openoffice.org-emailmerge because it is manually installed.
-testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting decisions:
+testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assignments:
    1. openoffice.org-common:i386=1:3.2.1-11+squeeze2 is not selected for install because:
       1. python-uno:i386=1:3.3.0-2 is selected as an upgrade
       2. python-uno:i386=1:3.3.0-2 Depends libreoffice-common
