@@ -1,6 +1,27 @@
 # Debian apt(8) completion                             -*- shell-script -*-
 # shellcheck shell=bash
 
+_apt_patterns() {
+    if [[ $cur == ?(\\)\?* ]]; then
+        compopt -o filenames  # escape to avoid ? filename matches
+        COMPREPLY=( $( compgen -P '?' -W '
+            automatic
+            broken
+            config-files
+            essential
+            garbage
+            installed
+            obsolete
+            phasing
+            security
+            upgradable
+            virtual
+        ' -- "${cur#?(\\)\?}" ) )
+        return 0
+    fi
+    return 1
+}
+
 _apt()
 {
     local sourcesdir="/etc/apt/sources.list.d"
@@ -179,6 +200,7 @@ _apt()
     if [[ -v command ]]; then
         case $command in
             remove|purge|autoremove|autopurge|why)
+                _apt_patterns && return 0
                 if [[ -f /etc/debian_version ]]; then
                     # Debian system
                     COMPREPLY=( $( \
@@ -189,26 +211,8 @@ _apt()
                 fi
                 return 0
                 ;;
-            list)
-                if [[ $cur == ?(\\)\?* ]]; then
-                    compopt -o filenames  # escape to avoid ? filename matches
-                    COMPREPLY=( $( compgen -P '?' -W '
-                        automatic
-                        broken
-                        config-files
-                        essential
-                        garbage
-                        installed
-                        obsolete
-                        phasing
-                        security
-                        upgradable
-                        virtual
-                    ' -- "${cur#?(\\)\?}" ) )
-                    return 0
-                fi
-                ;&
-            show|download|changelog|depends|rdepends|why-not)
+            show|list|download|changelog|depends|rdepends|why-not)
+                _apt_patterns || \
                 COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
                     2> /dev/null ) )
                 return 0
@@ -217,6 +221,7 @@ _apt()
                 if [[ "$cur" == .* || "$cur" == /* || "$cur" == ~* ]]; then
                     _filedir "deb"
                 else
+                    _apt_patterns || \
                     COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
                         2> /dev/null ) )
                 fi
@@ -226,6 +231,7 @@ _apt()
                 if [[ "$command" == build-dep && ( "$cur" == .* || "$cur" == /* || "$cur" == ~* ) ]]; then
                     _filedir "dsc"
                 else
+                    _apt_patterns || \
                     COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
                         2> /dev/null ) $( apt-cache dumpavail | \
                         command grep "^Source: $cur" | sort -u | cut -f2 -d" " ) )
