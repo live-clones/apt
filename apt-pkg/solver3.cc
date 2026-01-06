@@ -885,7 +885,7 @@ bool DependencySolver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand)
       if (priority == 0 || priority < candPriority)
 	 continue;
 
-      pkgObsolete[pkg] = 2;
+      pkgObsolete[pkg] = LiftedBool::True;
       if (debug >= 3)
 	 std::cerr << "Obsolete: " << cand.ParentPkg().FullName() << "=" << cand.VerStr() << " due to " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << "\n";
       return true;
@@ -898,8 +898,8 @@ bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) con
 {
    if ((*this)[pkg].flags.manual && not AllowManual)
       return false;
-   if (pkgObsolete[pkg] != 0)
-      return pkgObsolete[pkg] == 2;
+   if (pkgObsolete[pkg] != LiftedBool::Undefined)
+      return pkgObsolete[pkg] == LiftedBool::True;
 
    auto ver = GetCandidateVer(pkg);
 
@@ -909,7 +909,7 @@ bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) con
    {
       if (debug >= 3)
 	 std::cerr << "Obsolete: " << pkg.FullName() << " - not installable\n";
-      pkgObsolete[pkg] = 2;
+      pkgObsolete[pkg] = LiftedBool::True;
       return true;
    }
 
@@ -921,14 +921,14 @@ bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) con
    {
       if (ver.Downloadable())
       {
-	 pkgObsolete[pkg] = 1;
+	 pkgObsolete[pkg] = LiftedBool::False;
 	 return false;
       }
    }
 
    if (debug >= 3)
       std::cerr << "Obsolete: " << ver.ParentPkg().FullName() << "=" << ver.VerStr() << " - not installable\n";
-   pkgObsolete[pkg] = 2;
+   pkgObsolete[pkg] = LiftedBool::True;
    return true;
 }
 void DependencySolver::Discover(Var var)

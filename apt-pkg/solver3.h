@@ -442,7 +442,7 @@ class DependencySolver : public Solver
    bool KeepSuggests{_config->FindB("APT::AutoRemove::SuggestsImportant", true)};
 
    // Helper functions for detecting obsolete packages
-   mutable FastContiguousCacheMap<pkgCache::Package, char> pkgObsolete;
+   mutable FastContiguousCacheMap<pkgCache::Package, LiftedBool> pkgObsolete;
    bool Obsolete(pkgCache::PkgIterator pkg, bool AllowManual = false) const;
    bool ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const;
 
