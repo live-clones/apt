@@ -1,0 +1,4147 @@
+# Georgian translation for apt.
+# This file is put in the public domain.
+# Temuri Doghonadze <temuri.doghonadze@gmail.com>, 2023-2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: apt 3.1.12\n"
+"Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
+"POT-Creation-Date: 2025-11-10 10:36+0000\n"
+"PO-Revision-Date: 2025-12-23 07:21+0100\n"
+"Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
+"Language-Team: Georgian <(nothing)>\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.8\n"
+
+#: apt-pkg/acquire-item.cc
+msgid ""
+"Updating from such a repository can't be done securely, and is therefore "
+"disabled by default."
+msgstr ""
+"ამნაირი რეპოზიტორიიდან განახლება როგორც წესი, უსაფრთხო არაა. ამიტომ "
+"ნაგულისხმევად ის გამორთულია."
+
+#: apt-pkg/acquire-item.cc
+msgid ""
+"Data from such a repository can't be authenticated and is therefore "
+"potentially dangerous to use."
+msgstr ""
+"ამნაირი რეპოზიტორიიდან მიღებული მონაცემების ავთენტიკაცია შეუძლებელია და "
+"ამიტომ ისინი პოტენციურ საფრთხეს წარმოადგენენ."
+
+#: apt-pkg/acquire-item.cc
+msgid ""
+"See apt-secure(8) manpage for repository creation and user configuration "
+"details."
+msgstr ""
+"რეპოზიტორიის შექმნისა და მომხმარებლის მორგების დეტალების შესახებ "
+"ინფორმაციისთვის apt-secure(8) იხილეთ."
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "The repository '%s' is no longer signed."
+msgstr "რეპოზიტორია '%s' ხელმოწერილი აღარაა."
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "The repository '%s' no longer has a Release file."
+msgstr "რეპოზიტორიას '%s' რელიზის ფაილი აღარ აქვს."
+
+#: apt-pkg/acquire-item.cc
+msgid ""
+"This is normally not allowed, but the option "
+"Acquire::AllowDowngradeToInsecureRepositories was given to override it."
+msgstr ""
+"ეს ნორმალურად დაშვებული არაა, მაგრამ მითითებულია გადამფარავი პარამეტრი "
+"Acquire::AllowDowngradeToInsecureRepositories."
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "The repository '%s' is not signed."
+msgstr "რეპოზიტორია '%s' ხელმოწერილი არაა."
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "The repository '%s' does not have a Release file."
+msgstr "რეპოზიტორიას '%s' რელიზის ფაილი არ აქვს."
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "The repository '%s' provides only weak security information."
+msgstr "რეპოზიტორიას '%s' მხოლოდ სუსტი უსაფრთხოების ინფორმაცია გააჩნია."
+
+#: apt-pkg/acquire-item.cc ftparchive/writer.cc
+#, c-format
+msgid "Failed to readlink %s"
+msgstr "%s-ზე readlink()-ის შეცდომა"
+
+#: apt-pkg/acquire-item.cc ftparchive/cachedb.cc methods/rred.cc
+#, c-format
+msgid "Failed to stat %s"
+msgstr "%s-ის აღმოჩენის შეცდომა"
+
+#: apt-pkg/acquire-item.cc
+msgid "Hash Sum mismatch"
+msgstr "ჰეშის ჯამი არ ემთხვევა"
+
+#: apt-pkg/acquire-item.cc
+msgid "Insufficient information available to perform this download securely"
+msgstr "მითითებული ინფორმაცია უსაფრთხოდ გადმოწერისთვის საკმარისი არაა"
+
+#: apt-pkg/acquire-item.cc apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "rename failed, %s (%s -> %s)."
+msgstr "სახელის გადარქმევის შეცდომა, %s (%s -> %s)."
+
+#: apt-pkg/acquire-item.cc
+msgid "Size mismatch"
+msgstr "ზომა არ ემთხვევა"
+
+#: apt-pkg/acquire-item.cc
+msgid "Invalid file format"
+msgstr "არასწორი ფაილის ფორმატი"
+
+#: apt-pkg/acquire-item.cc
+msgid "Signature error"
+msgstr "ხელმოწერის შეცდომა"
+
+#. TRANSLATORS: %s is a single techy word like 'NODATA'
+#: apt-pkg/acquire-item.cc methods/gpgv.cc
+#, c-format
+msgid ""
+"Clearsigned file isn't valid, got '%s' (does the network require "
+"authentication?)"
+msgstr ""
+"ხელმოწერილი ფაილი არასწორია. მივიღე '%s' (ქსელს ავთენტიკაცია სჭირდება?)"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"An error occurred during the signature verification. The repository is not "
+"updated and the previous index files will be used. OpenPGP signature "
+"verification failed: %s: %s"
+msgstr ""
+"შეცდომა ხელმოწერის გადამოწმებისას. რეპოზიტორია არ განახლებულა და გამოიყენება "
+"წინა ინდექსის ფაილი. GPG ხელმოწერის გადამოწმების შეცდომა: %s: %s"
+
+#. Invalid signature file, reject (LP: #346386) (Closes: #627642)
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "OpenPGP signature verification failed: %s: %s"
+msgstr "GPG ხელმოწერის გადამოწმების შეცდომა: %s: %s"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"Skipping acquire of configured file '%s' as repository '%s' doesn't have the "
+"component '%s' (component misspelt in sources.list?)"
+msgstr ""
+"მოხდება მითითებული ფაილის '%s' მიღების გამოტოვება, რადგან რეპოზიტორიას '%s' "
+"კომპონენტი '%s' არ გააჩნია (კომპონენტი sources.list-ში არასწორად წერია?)"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"Skipping acquire of configured file '%s' as repository '%s' doesn't support "
+"architecture '%s'"
+msgstr ""
+"მოხდება მითითებული ფაილის '%s' გამოტოვება, რადგან რეპოზიტორიას '%s' "
+"არქიტექტურის '%s' მხარდაჭერა არ გააჩნია"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"Skipping acquire of configured file '%s' as repository '%s' does not seem to "
+"provide it (sources.list entry misspelt?)"
+msgstr ""
+"მოხდება მითითებული ფაილის '%s' გამოტოვება, რადგან რეპოზიტორიას '%s' ის არ "
+"გააჩნია (sources.list-ის ჩანაწერი არასწორია?)"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"Skipping acquire of configured file '%s' as repository '%s' provides only "
+"weak security information for it"
+msgstr ""
+"მოხდება მითითებული ფაილის '%s' გამოტოვება, რადგან რეპოზიტორია '%s' მხოლოდ "
+"სუსტ უსაფრთხოების მონაცემებს შეიცავს"
+
+#. TRANSLATOR: The first %s is the URL of the bad Release file, the second is
+#. the time since then the file is invalid - formatted in the same way as in
+#. the download progress display (e.g. 7d 3h 42min 1s)
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"Release file for %s is expired (invalid since %s). Updates for this "
+"repository will not be applied."
+msgstr ""
+"რელიზის ფაილი '%s'-სთვის ვადაგასულია (არასწორია %s-ის შემდეგ). ამ "
+"რეპოზიტორიიდან განახლება არ მოხდება."
+
+#. TRANSLATOR: The first %s is the URL of the bad Release file, the second is
+#. the time until the file will be valid - formatted in the same way as in
+#. the download progress display (e.g. 7d 3h 42min 1s)
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"Release file for %s is not valid yet (invalid for another %s). Updates for "
+"this repository will not be applied."
+msgstr ""
+"რელიზის ფაილი %s ჯერ სწორი არაა (არასწორია კიდევ %s). ამ რეპოზიტორიიდან "
+"განახლება არ მოხდება."
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "Conflicting distribution: %s (expected %s but got %s)"
+msgstr "გამომრიცხავი დირსტრიბუტივი:%s (ველოდი %s, მივიღე %s)"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "Repository '%s' changed its '%s' value from '%s' to '%s'"
+msgstr "რეპოზიტორიაში '%s' ცვლადის '%s' მნიშვნელობა '%s'-დან '%s'-ზე შეიცვალა"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "Repository '%s' changed its default priority for %s from %hi to %hi."
+msgstr ""
+"რეპოზიტორიამ '%s' თავისი ნაგულისხმები პრიორიტეტი '%s'-სთვის %hi-დან %hi-ზე "
+"შეცვალა."
+
+#. TRANSLATOR: the "this" refers to changes in the repository like a new release or owner change
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"More information about this can be found online in the Release notes at: %s"
+msgstr "ამის შესახებ მეტი ინფორმაცია ონლაინ შეგიძლიათ იპოვოთ, ბმულზე: %s"
+
+#. TRANSLATOR: %s is the name of the manpage in question, e.g. apt-secure(8)
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"This must be accepted explicitly before updates for this repository can be "
+"applied. See %s manpage for details."
+msgstr ""
+"ამ რეპოზიტორიიდან განახლებების მისაღებად ამას მკაფიოდ უნდა დაეთანხმოთ. "
+"დეტალებისთვის იხილეთ %s-ის სახელმძღვანელო."
+
+#: apt-pkg/acquire-item.cc apt-pkg/update.cc apt-private/private-download.cc
+#, c-format
+msgid "Failed to fetch %s  %s"
+msgstr "%s-ის გამოთხოვის შეცდომა  %s"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"Repositories should provide a clear-signed InRelease file, but none found at "
+"%s."
+msgstr ""
+"რეპოზიტორიებს უნდა ჰქონდეთ სუფთად ხელმოწერილი ფაილი InReelease, მაგრამ %s-ში "
+"ვერცერთი მოიძებნა."
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid ""
+"I wasn't able to locate a file for the %s package. This might mean you need "
+"to manually fix this package. (due to missing arch)"
+msgstr ""
+"ფაილი %s პაკეტისთვის ვერ ვიპოვე. ეს შეიძლება ნიშნავდეს, რომ პაკეტი ხელით "
+"უნდა გაასწოროთ. (არქიტექტურა არ არსებობს)"
+
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "Can't find a source to download version '%s' of '%s'"
+msgstr "'%2$s'-ის ვერსიის %1$s გადმოსაწერი წყარო ვერ ვიპოვე"
+
+#. TRANSLATOR: %s=%s is sourcename=sourceversion, e.g. apt=1.1
+#: apt-pkg/acquire-item.cc
+#, c-format
+msgid "Changelog unavailable for %s=%s"
+msgstr "ცვლილებების ჟურნალი მიუწვდომელია პაკეტისთვის %s=%s"
+
+#: apt-pkg/acquire-worker.cc
+#, c-format
+msgid "The method '%s' is explicitly disabled via configuration."
+msgstr "მეთოდი '%s' კონფიგურაციიდანაა გამორთული."
+
+#: apt-pkg/acquire-worker.cc methods/connect.cc
+#, c-format
+msgid "If you meant to use Tor remember to use %s instead of %s."
+msgstr "თუ Tor-ის გამოყენებას გულისხმობდით, გამოიყენეთ %s %s-ის მაგიერ."
+
+#: apt-pkg/acquire-worker.cc
+#, c-format
+msgid "The method driver %s could not be found."
+msgstr "მეთოდის დრაივერი %s აღმოჩენილი არაა."
+
+#: apt-pkg/acquire-worker.cc
+#, c-format
+msgid "Is the package %s installed?"
+msgstr "პაკეტი %s ნამდვილად დაყენებულია?"
+
+#: apt-pkg/acquire-worker.cc
+#, c-format
+msgid "Method %s did not start correctly"
+msgstr "მეთოდი %s სწორად არ გაეშვა"
+
+#: apt-pkg/acquire-worker.cc
+#, c-format
+msgid ""
+"Please insert the disc labeled: '%s' in the drive '%s' and press [Enter]."
+msgstr "ჩადეთ დისკი ჭდით: '%s' ამძრავში '%s' და [Enter]-ს დააწექით."
+
+#: apt-pkg/acquire.cc apt-pkg/cdrom.cc
+#, c-format
+msgid "List directory %s is missing."
+msgstr "სიების საქაღალდე %s ვერ ვპოვე."
+
+#: apt-pkg/acquire.cc
+#, c-format
+msgid "Archives directory %s is missing."
+msgstr "არქივის საქაღალდე %s ვერ ვიპოვე."
+
+#: apt-pkg/acquire.cc
+#, c-format
+msgid "Unable to lock directory %s"
+msgstr "საქაღალდის (%s) დაბლოკვის შეცდომა"
+
+#: apt-pkg/acquire.cc
+#, c-format
+msgid "No sandbox user '%s' on the system, can not drop privileges"
+msgstr ""
+"სისტემაში სენდბოქსის მომხმარებელი '%s' არ არსებობს. პრივილეგიების დაწევა "
+"შეუძლებელია"
+
+#: apt-pkg/acquire.cc
+#, c-format
+msgid ""
+"Download is performed unsandboxed as root as file '%s' couldn't be accessed "
+"by user '%s'."
+msgstr ""
+"გადმოწერა სენდბოქსის გარეშე, root-ით მოხდება, რადგან ფაილზე '%s' "
+"მომხმარებელს '%s' წვდომა არ გააჩნია."
+
+#: apt-pkg/acquire.cc apt-pkg/clean.cc
+#, c-format
+msgid "Clean of %s is not supported"
+msgstr "%s-ის გასუფთავება მხარდაჭერილი არაა"
+
+#. Only warn if there are no sources.list.d.
+#. Only warn if there is no sources.list file.
+#: apt-pkg/acquire.cc apt-pkg/clean.cc apt-pkg/contrib/cdromutl.cc
+#: apt-pkg/contrib/fileutl.cc apt-pkg/deb/dpkgpm.cc apt-pkg/init.cc
+#: apt-pkg/policy.cc apt-pkg/sourcelist.cc
+#, c-format
+msgid "Unable to read %s"
+msgstr "%s-ის წაკითხვის შეცდომა"
+
+#: apt-pkg/acquire.cc
+#, c-format
+msgid "Retrieving file %li of %li (%s remaining)"
+msgstr "%li ფაილის მიღება %li-დან (დარჩენილია %s)"
+
+#: apt-pkg/acquire.cc
+#, c-format
+msgid "Retrieving file %li of %li"
+msgstr "%li ფაილის მიღება %li-დან"
+
+#: apt-pkg/algorithms.cc
+#, c-format
+msgid ""
+"The package %s needs to be reinstalled, but I can't find an archive for it."
+msgstr "საჭიროა პაკეტის %s თავიდან დაყენება, მაგრამ მისთვის არქივი ვერ ვიპოვე."
+
+#: apt-pkg/algorithms.cc
+msgid ""
+"Error, pkgProblemResolver::Resolve generated breaks, this may be caused by "
+"held packages."
+msgstr ""
+"შეცდომა. pkgProblemResolver::Resolve-მა შეცდომები დააგენერირა. ეს შეიძლება "
+"შეჩერებული პაკეტების გამო ხდებოდეს."
+
+#: apt-pkg/algorithms.cc
+msgid "Unable to correct problems, you have held broken packages."
+msgstr "პრობლემები ვერ მოვაგვარე. თქვენი პაკეტები გაფუჭებულია."
+
+#: apt-pkg/cachefile.cc
+msgid "The package lists or status file could not be parsed or opened."
+msgstr "სტატუსის ფაილის დამუშავება ან გახსნა შეუძლებელია."
+
+#: apt-pkg/cachefile.cc
+msgid "You may want to run apt-get update to correct these problems"
+msgstr "ამ პრობლემების მოგვარება 'apt-get update' ბრძანების გაშვებით შეგიძლიათ"
+
+#: apt-pkg/cachefile.cc methods/mirror.cc
+msgid "The list of sources could not be read."
+msgstr "წყაროების სიის წაკითხვა შეუძლებელია."
+
+#: apt-pkg/cachefilter-patterns.cc apt-pkg/cachefilter.cc
+#: apt-private/private-output.cc
+#, c-format
+msgid "Regex compilation error - %s"
+msgstr "რეგულარული გამოსახულების აგების შეცდომა - %s"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Couldn't find task '%s'"
+msgstr "ამოცანა '%s' ვერ ვიპოვე"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Couldn't find any package by regex '%s'"
+msgstr "რეგულარული გამოსახულებით '%s' ვერც ერთი პაკეტი ვერ ვიპოვე"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Couldn't find any package by glob '%s'"
+msgstr "გლობით '%s' ვერც ერთი პაკეტი ვერ ვიპოვე"
+
+#: apt-pkg/cacheset.cc apt-private/private-show.cc
+#, c-format
+msgid "Unable to locate package %s"
+msgstr "პაკეტი %s ვერ ვიპოვე"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Can't select versions from package '%s' as it is purely virtual"
+msgstr "პაკეტიდან '%s' ვერსიას ვერ ავირჩევ, რადგან ის სრულად ვირტუალურია"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Can't select newest version from package '%s' as it is purely virtual"
+msgstr ""
+"პაკეტიდან '%s' უახლეს ვერსიას ვერ ავირჩევ, რადგან ის სრულად ვირტუალურია"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Can't select candidate version from package %s as it has no candidate"
+msgstr ""
+"პაკეტიდან '%s' კანდიდატ ვერსიას ვერ ავირჩევ, რადგან ის სრულად ვირტუალურია"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Can't select installed version from package %s as it is not installed"
+msgstr ""
+"პაკეტიდან '%s' დაყენებულ ვერსიას ვერ ავირჩევ, რადგან ის სრულად ვირტუალურია"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid ""
+"Can't select installed nor candidate version from package '%s' as it has "
+"neither of them"
+msgstr ""
+"პაკეტიდან '%s' დაყენებულ ან კანდიდატ ვერსიას ვერ ავირჩევ, რადგან მათ ის არ "
+"გააჩნია"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Release '%s' for '%s' was not found"
+msgstr "რელიზი '%s' '%s'-სთვის აღმოჩენილი არაა"
+
+#: apt-pkg/cacheset.cc
+#, c-format
+msgid "Version '%s' for '%s' was not found"
+msgstr "ვერსია '%s' '%s'-სთვის აღმოჩენილი არაა"
+
+#: apt-pkg/cdrom.cc
+msgid "Unmounting CD-ROM...\n"
+msgstr "CD-ROM-ის მოხსნა...\n"
+
+#: apt-pkg/cdrom.cc
+#, c-format
+msgid "Using CD-ROM mount point %s\n"
+msgstr "გამოიყენება CD-ROM-ის მიმაგრების წერტილი %s\n"
+
+#: apt-pkg/cdrom.cc
+msgid "Waiting for disc...\n"
+msgstr "დისკის მოლოდინი...\n"
+
+#: apt-pkg/cdrom.cc
+msgid "Mounting CD-ROM...\n"
+msgstr "CD-ROM-ის მოლოდინი...\n"
+
+#: apt-pkg/cdrom.cc
+msgid "Identifying... "
+msgstr "იდენტიფიკაცია... "
+
+#: apt-pkg/cdrom.cc
+#, c-format
+msgid "Stored label: %s\n"
+msgstr "დამახსოვრებული ჭდე: %s\n"
+
+#: apt-pkg/cdrom.cc
+msgid "Scanning disc for index files...\n"
+msgstr "დისკის სკანირება ინდექსის ფაილებისთვის...\n"
+
+#: apt-pkg/cdrom.cc
+#, c-format
+msgid ""
+"Found %zu package indexes, %zu source indexes, %zu translation indexes and "
+"%zu signatures\n"
+msgstr ""
+"აღმოჩენილია %zu პაკეტის ინდექსი, %zu წყაროს ინდექსი, %zu თარგმანის ინდექსი "
+"და %zu ხელმოწერა\n"
+
+#: apt-pkg/cdrom.cc
+msgid ""
+"Unable to locate any package files, perhaps this is not a Debian Disc or the "
+"wrong architecture?"
+msgstr ""
+"პაკეტის ფაილები ვერ ვიპოვე. ალბათ დისკი Debian-ის არაა ან არქიტექტურა "
+"მცდარია?"
+
+#: apt-pkg/cdrom.cc
+#, c-format
+msgid "Found label '%s'\n"
+msgstr "ვიპოვე ჭდე '%s'\n"
+
+#: apt-pkg/cdrom.cc
+msgid "That is not a valid name, try again.\n"
+msgstr "ეს სახელი არასწორია. თავიდან სცადეთ.\n"
+
+#: apt-pkg/cdrom.cc
+#, c-format
+msgid ""
+"This disc is called: \n"
+"'%s'\n"
+msgstr ""
+"ამ დისკის სახელია:\n"
+"'%s'\n"
+
+#: apt-pkg/cdrom.cc
+msgid "Copying package lists..."
+msgstr "პაკეტების სიის კოპირება..."
+
+#: apt-pkg/cdrom.cc
+msgid "Writing new source list\n"
+msgstr "ახალი წყაროს სიის ჩაწერა\n"
+
+#: apt-pkg/cdrom.cc
+msgid "Source list entries for this disc are:\n"
+msgstr "დისკისთვის წყაროს სიის ჩანაწერებია:\n"
+
+#: apt-pkg/clean.cc
+#, c-format
+msgid "Unable to stat %s."
+msgstr "%s-ის აღმოჩენის შეცდომა."
+
+#: apt-pkg/contrib/arfile.cc
+msgid "Invalid archive signature"
+msgstr "არასწორი არქივის ხელმოწერა"
+
+#: apt-pkg/contrib/arfile.cc
+msgid "Error reading archive member header"
+msgstr "არქივის წევრის თავსართის წაკითხვის შეცდომა"
+
+#: apt-pkg/contrib/arfile.cc
+msgid "Invalid archive member header"
+msgstr "არქივის წევრის თავსართის წაკითხვის შეცდომა"
+
+#: apt-pkg/contrib/arfile.cc
+msgid "Archive is too short"
+msgstr "არქივი მეტისმეტად მოკლეა"
+
+#: apt-pkg/contrib/arfile.cc
+msgid "Failed to read the archive headers"
+msgstr "არქივის თავსართების წაკითხვის შეცდომა"
+
+#: apt-pkg/contrib/cdromutl.cc
+#, c-format
+msgid "Unable to stat the mount point %s"
+msgstr "მიმაგრების წერტილის (%s) აღმოჩენის შეცდომა"
+
+#: apt-pkg/contrib/cdromutl.cc
+msgid "Failed to stat the cdrom"
+msgstr "CD-ROM-ის აღმოჩენის შეცდომა"
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid ""
+"Command line option '%c' [from %s] is not understood in combination with the "
+"other options."
+msgstr ""
+"ბრძანების სტრიქონის პარამეტრი '%c' [%s-დან] სხვა პარამეტრებთან ერთად "
+"გაუგებარია."
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid ""
+"Command line option %s is not understood in combination with the other "
+"options"
+msgstr "ბრძანების სტრიქონის პარამეტრი %s სხვა პარამეტრებთან ერთად გაუგებარია"
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid "Command line option %s is not boolean"
+msgstr "ბრძანების სტრიქონის პარამეტრი %s ლოგიკური არაა"
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid "Option %s requires an argument."
+msgstr "პარამეტრს ('%s') არგუმენტი ესაჭიროება."
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid "Option %s: Configuration item specification must have an =<val>."
+msgstr ""
+"პარამეტრი %s: მოსარგები ელემენტის სპეციფიციკაციას უნდა ჰქონდეს =<მნიშვნ>."
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid "Option %s requires an integer argument, not '%s'"
+msgstr "პარამეტრს %s არგუმენტად მთელი რიცხვი ესაჭიროება და არა '%s'"
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid "Option '%s' is too long"
+msgstr "პარამეტრი '%s' ძალიან გრძელია"
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid "Sense %s is not understood, try true or false."
+msgstr "გრძნობა %s ვერ გავიგე, სცადეთ true ან false."
+
+#: apt-pkg/contrib/cmndline.cc
+#, c-format
+msgid "Invalid operation %s"
+msgstr "არასწორი ოპერაცია: %s"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Unrecognized type abbreviation: '%c'"
+msgstr "უცნობი ტიპი აბრევიატურა: '%c'"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Block starts with no name."
+msgstr "სინტაქსის შეცდომა %s:%u: ბლოკი უსახელოდ იწყება."
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Malformed tag"
+msgstr "სინტაქსის შეცდომა %s:%u: არასწორი ჭდე"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Extra junk after value"
+msgstr "სინტაქსის შეცდომა %s:%u: დამატებითი ნაგავი მნიშვნელობის შემდეგ"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Directives can only be done at the top level"
+msgstr ""
+"სინტაქსის შეცდომა %s:%u: საქაღალდეებზე მუშაობა მხოლოდ ზედა დონიდან შეგიძლიათ"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Too many nested includes"
+msgstr "სინტაქსის შეცდომა %s:%u: მეტისმეტად ბევრი ერთმანეთში ჩადგმული ჩასმა"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Included from here"
+msgstr "სინტაქსის შეცდომა %s:%u: ჩასმულია აქედან"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Unsupported directive '%s'"
+msgstr "სინტაქსის შეცდომა %s:%u: დირექტივა '%s' მხარდაჭერილი არაა"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: clear directive requires an option tree as argument"
+msgstr ""
+"სინტაქსის შეცდომა %s:%u: დირექტივას clear არგუმენტად პარამეტრების ხე სჭირდება"
+
+#: apt-pkg/contrib/configuration.cc
+#, c-format
+msgid "Syntax error %s:%u: Extra junk at end of file"
+msgstr "სინტაქსის შეცდომა %s:%u: დამატებითი ნაგავი ფაილის ბოლოში"
+
+#. TRANSLATOR: This is a warning level displayed before the message
+#: apt-pkg/contrib/error.cc
+msgid "Error:"
+msgstr "შეცდომა:"
+
+#. TRANSLATOR: This is a warning level displayed before the message
+#: apt-pkg/contrib/error.cc
+msgid "Warning:"
+msgstr "გაფრთხილება:"
+
+#. TRANSLATOR: This is a warning level displayed before the message
+#: apt-pkg/contrib/error.cc
+msgid "Notice:"
+msgstr "შეტყობინება:"
+
+#: apt-pkg/contrib/error.cc
+msgid "Audit:"
+msgstr "აუდიტი:"
+
+#. TRANSLATOR: This is a warning level displayed before the message
+#: apt-pkg/contrib/error.cc
+msgid "Debug:"
+msgstr "გამართვა:"
+
+#: apt-pkg/contrib/extracttar.cc
+#, c-format
+msgid "Cannot find a configured compressor for '%s'"
+msgstr "'%s'-სთვის მითითებული შემკუმშავი ვერ ვიპოვე"
+
+#: apt-pkg/contrib/extracttar.cc
+msgid "Corrupted archive"
+msgstr "დაზიანებული არქივი"
+
+#: apt-pkg/contrib/extracttar.cc
+msgid "Tar checksum failed, archive corrupted"
+msgstr "Tar-ის საკონტროლო ჯამი არასწორია. არქივი დაზიანებულია"
+
+#: apt-pkg/contrib/extracttar.cc
+#, c-format
+msgid "Unknown TAR header type %u"
+msgstr "უცნობი TAR თავსართის ტიპი %u"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Problem unlinking the file %s"
+msgstr "პრობლემა ფაილის (%s) მოხსნისას"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Not using locking for read only lock file %s"
+msgstr "ბლოკირება არ გამოიყენება, რადგან ბლოკირების ფაილი %s მხოლოდ-კითხვადია"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Could not open lock file %s"
+msgstr "ბლოკის ფაილის (%s) გახსნის შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Not using locking for nfs mounted lock file %s"
+msgstr ""
+"ბლოკირება არ გამოიყენება, რადგან ბლოკირების ფაილი %s nfs მიმაგრების წერტილზეა"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Could not get lock %s. It is held by process %d"
+msgstr "%s-ის ბლოკირების შეცდომა. ის შეჩერებულია შემდეგი პროცესის მიერ: %d"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Could not get lock %s. It is held by process %d (%s)"
+msgstr ""
+"%s-ის ბლოკირების შეცდომა. ის შეჩერებულია შემდეგი პროცესის მიერ: %d (%s)"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Could not get lock %s"
+msgstr "ბლოკის (%s) მიღების შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+msgid ""
+"Be aware that removing the lock file is not a solution and may break your "
+"system."
+msgstr ""
+"გაითვალისწინეთ, რომ ბლოკის ფაილის წაშლა გადაწყვეტა არაა და შეიძლება, სისტემა "
+"გაგიფუჭოთ."
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "List of files can't be created as '%s' is not a directory"
+msgstr ""
+"ფაილების ჩამონათვალის შექმნა შეუძლებელია, რადგან '%s' საქაღალდეს არ "
+"წარმოადგენს"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Ignoring '%s' in directory '%s' as it is not a regular file"
+msgstr "'%s'-ის გამოტოვება საქაღალდეში '%s', რადგან ის ჩვეულებრივი ფაილი არაა"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Ignoring file '%s' in directory '%s' as it has no filename extension"
+msgstr ""
+"'%s'-ის გამოტოვება საქაღალდეში '%s', რადგან მას ფაილის სახელის გაფართოება არ "
+"აქვს"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid ""
+"Ignoring file '%s' in directory '%s' as it has an invalid filename extension"
+msgstr ""
+"'%s'-ის გამოტოვება საქაღალდეში '%s', რადგან მისი ფაილის სახელის გაფართოება "
+"არასწორია"
+
+#: apt-pkg/contrib/fileutl.cc apt-pkg/contrib/gpgv.cc apt-pkg/deb/debsystem.cc
+#: cmdline/apt-dump-solver.cc
+#, c-format
+msgid "Waited for %s but it wasn't there"
+msgstr "%s-ს ველოდე, მაგრამ იქ არ იყო"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Sub-process %s received a segmentation fault."
+msgstr "ქვეპროცესმა %s სეგმენტაციის შეცდომა მიიღო."
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Sub-process %s received signal %u."
+msgstr "ქვეპროცესმა %s მიიღო სიგნალი %u."
+
+#. we forward the statuscode, so don't generate a message on the fd in this case
+#: apt-pkg/contrib/fileutl.cc apt-pkg/contrib/gpgv.cc
+#, c-format
+msgid "Sub-process %s returned an error code (%u)"
+msgstr "ქვეპროცესმა %s შეცდომის კოდი (%u) დააბრუნა"
+
+#: apt-pkg/contrib/fileutl.cc apt-pkg/contrib/gpgv.cc
+#, c-format
+msgid "Sub-process %s exited unexpectedly"
+msgstr "ქვეპროცესი %s მოულოდნელად დასრულდა"
+
+#: apt-pkg/contrib/fileutl.cc
+msgid "Read error"
+msgstr "წაკითხვის შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+msgid "Write error"
+msgstr "ჩაწერის შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Problem closing the gzip file %s"
+msgstr "GZip ფაილის (%s) დახურვის შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+msgid "Unexpected end of file"
+msgstr "ფაილის მოულოდნელი ბოლო"
+
+#: apt-pkg/contrib/fileutl.cc
+msgid "Failed to create subprocess IPC"
+msgstr "ქვეპროცესის IPC-ის შექმნის შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+msgid "Failed to exec compressor "
+msgstr "შეცდომა შემკუმშავის გაშვებისას "
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Could not open file %s"
+msgstr "ფაილის გახსნა შეუძლებელია: %s"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Could not open file descriptor %d"
+msgstr "ფაილის დესკრიპტორის %d გახსნა შეუძლებელია"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "read, still have %llu to read but none left"
+msgstr "გახსნა. ვაპირებდი, წამეკითხა %llu, მაგრამ აღარაფერი დარჩა"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "write, still have %llu to write but couldn't"
+msgstr "ჩაწერა. ვაპირებდი, %llu ჩამეწერა, მაგრამ ვერ ვქენი"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Problem closing the file %s"
+msgstr "ფაილის (%s) დახურვის შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Problem renaming the file %s to %s"
+msgstr "ფაილის სახელის %s-დან %s-ზე გადარქმევის შეცდომა"
+
+#: apt-pkg/contrib/fileutl.cc
+msgid "Problem syncing the file"
+msgstr "ფაილის სინქრონიზაციის პრობლემა"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Unable to mkstemp %s"
+msgstr "შეცდომა mkstemp %s-ის გაშვებისას"
+
+#: apt-pkg/contrib/fileutl.cc
+#, c-format
+msgid "Unable to write to %s"
+msgstr "%s-ში ჩაწერა შეუძლებელია"
+
+#: apt-pkg/contrib/mmap.cc
+msgid "Can't mmap an empty file"
+msgstr "ცარიელი ფაილის mmap() შეუძლებელია"
+
+#: apt-pkg/contrib/mmap.cc
+#, c-format
+msgid "Couldn't make mmap of %llu bytes"
+msgstr "%llu ბაიტის mmap() შეუძლებელია"
+
+#: apt-pkg/contrib/mmap.cc
+#, c-format
+msgid "Couldn't duplicate file descriptor %i"
+msgstr "ფაილის დესკრიპტორის %i დუბლირება შეუძლებელია"
+
+#: apt-pkg/contrib/mmap.cc
+msgid "Unable to close mmap"
+msgstr "შეცდომა mmap()-ის დახურვისას"
+
+#: apt-pkg/contrib/mmap.cc
+msgid "Unable to synchronize mmap"
+msgstr "შეცდომა mmap()-ის სინქრონიზაციისას"
+
+#: apt-pkg/contrib/mmap.cc
+#, c-format
+msgid "Couldn't make mmap of %lu bytes"
+msgstr "%lu ბაიტის mmap() შეუძლებელია"
+
+#: apt-pkg/contrib/mmap.cc
+msgid "Failed to truncate file"
+msgstr "ფაილის წაკვეთა შეუძლებელია"
+
+#: apt-pkg/contrib/mmap.cc
+#, c-format
+msgid ""
+"Dynamic MMap ran out of room. Please increase the size of APT::Cache-Start. "
+"Current value: %lu. (man 5 apt.conf)"
+msgstr ""
+"დინამიკური MMAP-ისთვის ადგილი აღარ დარჩა. გაზარდეთ APT::Cache-Start-ის ზომა. "
+"მიმდინარე მნიშვნელობაა %lu. (man 5 apt.conf)"
+
+#: apt-pkg/contrib/mmap.cc
+#, c-format
+msgid ""
+"Unable to increase the size of the MMap as the limit of %lu bytes is already "
+"reached."
+msgstr ""
+"MMAP-ის ზომის მეტად გაზრდა შეუძლებელია, რადგან ზღვარი %lu ბაიტი უკვე "
+"მიღწეულია."
+
+#: apt-pkg/contrib/mmap.cc
+msgid ""
+"Unable to increase size of the MMap as automatic growing is disabled by user."
+msgstr ""
+"MMAP-ის ზომის გაზრდა შეუძლებელია, რადგან ავტომატური გაზრდა გამორთულია "
+"მომხმარებლის მიერ."
+
+#: apt-pkg/contrib/netrc.cc
+#, c-format
+msgid ""
+"%s: Credentials for %s match, but the protocol is not encrypted. Annotate "
+"with %s:// to use."
+msgstr ""
+"%s: %s-ის ავტორიზაციის დეტალები სწორია, მაგრამ პროტოკოლი დაშიფრული არაა. "
+"გამოსაყენებლად მიუთითეთ %s:// ."
+
+#: apt-pkg/contrib/progress.cc
+#, c-format
+msgid "%c%s... Error!"
+msgstr "%c%s... შეცდომა!"
+
+#: apt-pkg/contrib/progress.cc
+#, c-format
+msgid "%c%s... Done"
+msgstr "%c%s... დასრულდა"
+
+#: apt-pkg/contrib/progress.cc
+msgid "..."
+msgstr "..."
+
+#: apt-pkg/contrib/progress.cc
+#, c-format
+msgid "%c%s... %llu/%llus"
+msgstr "%c%s... %llu/%llus"
+
+#: apt-pkg/contrib/progress.cc
+#, c-format
+msgid "%c%s... %llus"
+msgstr "%c%s... %llus"
+
+#: apt-pkg/contrib/progress.cc
+#, c-format
+msgid "%c%s... %u%%"
+msgstr "%c%s... %u%%"
+
+#. TRANSLATOR: d means days, h means hours, min means minutes, s means seconds
+#: apt-pkg/contrib/strutl.cc
+#, c-format
+msgid "%lid %lih %limin %lis"
+msgstr "%liდ %liსთ %liწთ %liწმ"
+
+#. TRANSLATOR: h means hours, min means minutes, s means seconds
+#: apt-pkg/contrib/strutl.cc
+#, c-format
+msgid "%lih %limin %lis"
+msgstr "%liსთ %liსთ %liწმ"
+
+#. TRANSLATOR: min means minutes, s means seconds
+#: apt-pkg/contrib/strutl.cc
+#, c-format
+msgid "%limin %lis"
+msgstr "%liწთ %liწმ"
+
+#. TRANSLATOR: s means seconds
+#: apt-pkg/contrib/strutl.cc
+#, c-format
+msgid "%lis"
+msgstr "%liწმ"
+
+#: apt-pkg/contrib/strutl.cc
+#, c-format
+msgid "Selection %s not found"
+msgstr "არჩევანი %s ვერ ვიპოვე"
+
+#: apt-pkg/deb/debfile.cc
+#, c-format
+msgid "This is not a valid DEB archive, missing '%s' member"
+msgstr "ეს სწორი DEB არქივი არაა, რადგან '%s' წევრი აკლია"
+
+#: apt-pkg/deb/debfile.cc
+#, c-format
+msgid "Internal error, could not locate member %s"
+msgstr "შიდა შეცდომა. წევრი %s ვერ ვიპოვე"
+
+#: apt-pkg/deb/debfile.cc
+msgid "Unparsable control file"
+msgstr "არადამუშავებადი კონტროლის ფაილი"
+
+#: apt-pkg/deb/debindexfile.cc
+#, c-format
+msgid "Could not read meta data from %s"
+msgstr "%s-დან მეტამონაცემების წაკითხვა შეუძლებელია"
+
+#. TRANSLATOR: an identifier like Packages; Releasefile key indicating
+#. a file like main/binary-amd64/Packages; another identifier like Contents;
+#. filename and linenumber of the sources.list entry currently parsed
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "Target %s wants to acquire the same file (%s) as %s from source %s"
+msgstr "სამიზნე %s-ს უნდა მიიღოს იგივე ფაილი (%s), რაც %s-ს, წყაროდან %s"
+
+#. TRANSLATOR: an identifier like Packages; Releasefile key indicating
+#. a file like main/binary-amd64/Packages; filename and linenumber of
+#. two sources.list entries
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "Target %s (%s) is configured multiple times in %s and %s"
+msgstr "წყარო %s (%s) %s-ში და %s-ში ერთზე მეტჯერაა მითითებული"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "Unable to parse Release file %s"
+msgstr "რელიზის ფაილის '%s' დამუშავება შეუძლებელია"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "No sections in Release file %s"
+msgstr "რელიზის ფაილში '%s' სექციები ნაპოვნი არაა"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "No Hash entry in Release file %s"
+msgstr "რელიზის ფაილში '%s' ჰეშის სექცია ვერ ვიპოვე"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid ""
+"No Hash entry in Release file %s which is considered strong enough for "
+"security purposes"
+msgstr ""
+"რელიზის ფაილში '%s' ჰეშის სექცია, რომელიც საკმარისად ძლიერია "
+"უსაფრთხოებისთვის, ვერ ვიპოვე"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "Invalid '%s' entry in Release file %s"
+msgstr "არასწორი '%s'-ის ჩანაწერი რელიზის ფაილში %s"
+
+#. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "Conflicting values set for option %s regarding source %s %s"
+msgstr ""
+"პარამეტრისთვის %s წყაროს %s %s შესახებ ურთიერთგამომრიცხავი მნიშვნელობები "
+"აყენია"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "Invalid value set for option %s regarding source %s %s (%s)"
+msgstr ""
+"პარამეტრისთვის %s წყაროს %s %s (%s) შესახებ არასწორი მნიშვნელობები აყენია"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, c-format
+msgid "Conflicting values set for option %s regarding source %s %s: %s != %s"
+msgstr ""
+"პარამეტრისთვის %s წყაროს %s %s შესახებ ურთიერთგამომრიცხავი მნიშვნელობები "
+"აყენია: %s !=%s"
+
+#: apt-pkg/deb/debrecords.cc apt-pkg/tagfile.cc
+#, c-format
+msgid "Unable to parse package file %s (%d)"
+msgstr "პაკეტის ფაილის %s (%d) დამუშავების შეცდოა"
+
+#: apt-pkg/deb/debsystem.cc
+#, c-format
+msgid "Waiting for cache lock: %s"
+msgstr "კეშის დაბლოკვის მოლოდინი: %s"
+
+#: apt-pkg/deb/debsystem.cc
+#, c-format
+msgid ""
+"Unable to acquire the dpkg frontend lock (%s), is another process using it?"
+msgstr "შეცდომა dpkg-ის წინაბოლოს ბლოკის (%s) მიღებისას. სხვაც იყენებს?"
+
+#: apt-pkg/deb/debsystem.cc
+#, c-format
+msgid "Unable to acquire the dpkg frontend lock (%s), are you root?"
+msgstr "შეცდომა dpkg-ის წინაბოლოს ბლოკის (%s) მიღებისას. root ბრძანდებით?"
+
+#. TRANSLATORS: the %s contains the recovery command, usually
+#. dpkg --configure -a
+#: apt-pkg/deb/debsystem.cc
+#, c-format
+msgid ""
+"dpkg was interrupted, you must manually run '%s' to correct the problem. "
+msgstr ""
+"dpkg ავარიულად დასრულდა. პრობლემის გადასაწყვეტად '%s' ხელით უნდა გაუშვათ. "
+
+#: apt-pkg/deb/debsystem.cc
+#, c-format
+msgid ""
+"Unable to lock the administration directory (%s), is another process using "
+"it?"
+msgstr "ადმინისტრირების საქაღალდის (%s) დაბლოკვის შეცდომა. სხვაც იყენებს?"
+
+#: apt-pkg/deb/debsystem.cc
+#, c-format
+msgid "Unable to lock the administration directory (%s), are you root?"
+msgstr "ადმინისტრირების საქაღალდის (%s) დაბლოკვის შეცდომა. root ბრძანდებით?"
+
+#: apt-pkg/deb/debsystem.cc
+msgid "Not locked"
+msgstr "დაბლოკილი არაა"
+
+#: apt-pkg/deb/debsystem.cc
+msgid ""
+"The dpkg executable set in Dir::Bin::dpkg is missing, falling back to using "
+"default dpkg."
+msgstr ""
+"dpkg-ის გამშვები ფაილი, რომელიც დაყენებულია Dir::Bin::dpkg-ში, აღმოჩენილი "
+"არაა. გადავერთვები ნაგულისხმები dpkg-ის გამოყენებაზე."
+
+#. we don't care for the difference
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Preparing %s"
+msgstr "%s-ის მომზადება"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Preparing to configure %s"
+msgstr "%s-ის მოსარგებად მომზადება"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Preparing for removal of %s"
+msgstr "%s-ის წასაშლელად მომზადება"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Preparing to completely remove %s"
+msgstr "%s-ის სრულად წასაშლელად მომზადება"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Noting disappearance of %s"
+msgstr "%s-ის გაქრობის ჩანიშვნა"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Running post-installation trigger %s"
+msgstr "დაყენებისშემდგომი ტრიგერის (%s) გაშვება"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Installed %s"
+msgstr "%s დაყენებულია"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Configuring %s"
+msgstr "%s-ის მორგება"
+
+#. FIXME: use a better string after freeze
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Directory '%s' missing"
+msgstr "საქაღალდე '%s' აღმოჩენილი არაა"
+
+#: apt-pkg/deb/dpkgpm.cc apt-pkg/edsp.cc
+#, c-format
+msgid "Could not open file '%s'"
+msgstr "ფაილის ('%s') გახსნა შეუძლებელია"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Unpacking %s"
+msgstr "%s-ის გაშლა"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Installing %s"
+msgstr "%s-ის დაყენება"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Removing %s"
+msgstr "%s-ის წაშლა"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Completely removing %s"
+msgstr "%s-ის სრულად წაშლა"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Completely removed %s"
+msgstr "%s-ის სრულად წაიშალა"
+
+#: apt-pkg/deb/dpkgpm.cc
+#, c-format
+msgid "Can not write log (%s)"
+msgstr "ჟურნალის (%s) ჩაწერის შეცდომა"
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid "Is /dev/pts mounted?"
+msgstr "/dev/pts მიმაგრებულია?"
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid "Operation was interrupted before it could finish"
+msgstr "ოპერაცია მის დასრულებამდე შეწყდა"
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid "No apport report written because MaxReports is reached already"
+msgstr "Apport-ის ანგარიში ჩაწერილი არაა, რადგან MaxReports უკვე მიღწეულა"
+
+#. check if its not a follow up error
+#: apt-pkg/deb/dpkgpm.cc
+msgid "dependency problems - leaving unconfigured"
+msgstr "დამოკიდებულებს პრობლემები - მორგება არ მოხდება"
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid ""
+"No apport report written because the error message indicates its a followup "
+"error from a previous failure."
+msgstr ""
+"Apport-ის ანგარიში ჩაწერილი არაა, რადგან შეცდომის შეტყობინებიდან "
+"გამომდინარე, ის წინა შეცდომას მოყოლილი ახალი შეცდომას წარმოადგენს."
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid ""
+"No apport report written because the error message indicates a disk full "
+"error"
+msgstr ""
+"Apport-ის ანგარიში ჩაწერილი არაა, რადგან შეცდომის შეტყობინებიდან "
+"გამომდინარე, დისკზე ადგილი აღარაა"
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid ""
+"No apport report written because the error message indicates a out of memory "
+"error"
+msgstr ""
+"Apport-ის ანგარიში ჩაწერილი არაა, რადგან შეცდომის შეტყობინებიდან "
+"გამომდინარე, მეხსიერება საკმარისი არაა"
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid ""
+"No apport report written because the error message indicates an issue on the "
+"local system"
+msgstr ""
+"Apport-ის ანგარიში ჩაწერილი არაა, რადგან შეცდომის შეტყობინებიდან "
+"გამომდინარე, ლოკალურ სისტემას პრობლემები გააჩნია"
+
+#: apt-pkg/deb/dpkgpm.cc
+msgid ""
+"No apport report written because the error message indicates a dpkg I/O error"
+msgstr ""
+"Apport-ის ანგარიში ჩაწერილი არაა, რადგან შეცდომის შეტყობინება dpkg-ს შეტანა "
+"გამოტანის შეცდომაზე მიუთითებს"
+
+#: apt-pkg/depcache.cc
+msgid "Building dependency tree"
+msgstr "დამოკიდებულების ხის აგება"
+
+#: apt-pkg/depcache.cc
+msgid "Candidate versions"
+msgstr "კანდიდატი ვერსიები"
+
+#: apt-pkg/depcache.cc
+msgid "Dependency generation"
+msgstr "დამოკიდებულებების გენერაცია"
+
+#: apt-pkg/depcache.cc
+msgid "Reading state information"
+msgstr "მდგომარეობის ინფორმაციის წაკითხვა"
+
+#: apt-pkg/depcache.cc
+#, c-format
+msgid "Failed to open StateFile %s"
+msgstr "მდგომარეობის ფაილის %s გახსნის შეცდომა"
+
+#: apt-pkg/depcache.cc
+#, c-format
+msgid "Failed to write temporary StateFile %s"
+msgstr "დროებითი მდგომარეობის ფაილის %s ჩაწერის შეცდომა"
+
+#: apt-pkg/dirstream.cc
+#, c-format
+msgid "Failed to write file %s"
+msgstr "ფაილის (%s) ჩაწერის შეცდომა"
+
+#: apt-pkg/dirstream.cc
+#, c-format
+msgid "Failed to close file %s"
+msgstr "ფაილის (%s) დახურვის შეცდომა"
+
+#: apt-pkg/edsp.cc
+msgid "Send scenario to solver"
+msgstr "ამომხსნელისთვის სცენარის გაგზავნა"
+
+#: apt-pkg/edsp.cc
+msgid "Send request to solver"
+msgstr "ამომხსნელისთვის მოთხოვნის გაგზავნა"
+
+#: apt-pkg/edsp.cc
+msgid "Prepare for receiving solution"
+msgstr "ამოხსნის მიღებისთვის მომზადება"
+
+#: apt-pkg/edsp.cc
+msgid "External solver failed without a proper error message"
+msgstr "გარე ამომხსნელი ავარიულად, სწორი შეცდომის შეტყობინების გარეშე დასრულდა"
+
+#: apt-pkg/edsp.cc apt-pkg/upgrade.cc
+msgid "Calculating upgrade"
+msgstr "განახლების გამოთვლა"
+
+#: apt-pkg/edsp.cc
+msgid "Solving dependencies"
+msgstr "დამოკიდებულებების ამოხსნა"
+
+#: apt-pkg/edsp.cc
+msgid "Execute external solver"
+msgstr "გარე ამომხსნელის გაშვება"
+
+#: apt-pkg/edsp.cc
+msgid "Execute external planner"
+msgstr "გარე დამგეგმავის გაშვება"
+
+#: apt-pkg/edsp.cc
+msgid "Send request to planner"
+msgstr "დამგეგმავისთვის მოთხოვნის გაგზავნა"
+
+#: apt-pkg/edsp.cc
+msgid "Send scenario to planner"
+msgstr "დამგეგმავისთვის სცენარის გაგზავნა"
+
+#: apt-pkg/edsp.cc
+msgid "External planner failed without a proper error message"
+msgstr "გარე დამგეგმავი ავარიულად, სწორი შეცდომის შეტყობინების გარეშე დასრულდა"
+
+#: apt-pkg/history.cc
+#, c-format
+msgid "Unknown flag: %s"
+msgstr "უცნობი ალამი: %s"
+
+#: apt-pkg/history.cc
+#, c-format
+msgid "Cannot find history files: %s"
+msgstr "ისტორიის ფაილები ვერ ვიპოვე: %s"
+
+#: apt-pkg/history.cc
+#, c-format
+msgid "Could not open file: %s"
+msgstr "ფაილის გახსნა შეუძლებელია: \"%s\""
+
+#: apt-pkg/history.cc
+#, c-format
+msgid "Could not parse file: %s"
+msgstr "ფაილის დამუშავების შეცდომა: %s"
+
+#: apt-pkg/history.cc
+#, c-format
+msgid "Could not close file: %s"
+msgstr "ფაილის დახურვის შეცდომა: %s"
+
+#: apt-pkg/indexcopy.cc
+#, c-format
+msgid "Wrote %i records.\n"
+msgstr "ჩაიწერა %i ჩანაწერი.\n"
+
+#: apt-pkg/indexcopy.cc
+#, c-format
+msgid "Wrote %i records with %i missing files.\n"
+msgstr "ჩაწერილია %i ჩანაწერი %i ფაილით, რომელიც აკლია.\n"
+
+#: apt-pkg/indexcopy.cc
+#, c-format
+msgid "Wrote %i records with %i mismatched files\n"
+msgstr "ჩაწერილია %i ჩანაწერი %i ფაილით, რომელიც არ ემთხვევა\n"
+
+#: apt-pkg/indexcopy.cc
+#, c-format
+msgid "Wrote %i records with %i missing files and %i mismatched files\n"
+msgstr ""
+"ჩაწერილია %i ჩანაწერი %i ფაილით, რომელიც აკლია და %i-ით, რომელიც არ "
+"ემთხვევა\n"
+
+#: apt-pkg/indexcopy.cc
+#, c-format
+msgid "Can't find authentication record for: %s"
+msgstr "არარსებული ავთენტიკაციის ჩანაწერი ელემენტისთვის: %s"
+
+#: apt-pkg/indexcopy.cc
+#, c-format
+msgid "Hash mismatch for: %s"
+msgstr "%s: ჰეში არ ემთხვევა"
+
+#: apt-pkg/init.cc
+#, c-format
+msgid "Packaging system '%s' is not supported"
+msgstr "პაკეტების სისტემა '%s' მხადაჭერილი არაა"
+
+#: apt-pkg/init.cc
+msgid "Unable to determine a suitable packaging system type"
+msgstr "შესაფერისი პაკეტების სისტემის ტიპის დადგენა შეუძლებელია"
+
+#: apt-pkg/install-progress.cc
+#, c-format
+msgid "Progress: [%3li%%]"
+msgstr "მიმდინარეობა: [%3li%%]"
+
+#. send status information that we are about to fork dpkg
+#: apt-pkg/install-progress.cc
+msgid "Running dpkg"
+msgstr "Dpkg გაშვებულია"
+
+#: apt-pkg/packagemanager.cc
+#, c-format
+msgid ""
+"Could not perform immediate configuration on '%s'. Please see man 5 apt.conf "
+"under APT::Immediate-Configure for details. (%d)"
+msgstr ""
+"'%s'-ზე დაუყოვნებლივი მორგების გადატარება შეუძლებელია. დეტალებისთვის იხილეთ "
+"'man 5 apt.conf'-ის თავი: APT::Immediate-Configure. (%d)"
+
+#: apt-pkg/packagemanager.cc
+#, c-format
+msgid "Could not configure '%s'. "
+msgstr "'%s'-ის მორგების შეცდომა. "
+
+#: apt-pkg/packagemanager.cc
+#, c-format
+msgid ""
+"This installation run will require temporarily removing the essential "
+"package %s due to a Conflicts/Pre-Depends loop. This is often bad, but if "
+"you really want to do it, activate the APT::Force-LoopBreak option."
+msgstr ""
+"კონფლიქტების/დამოკიდებულების-წინა მარყუჟის გამო ამისი დაყენება ძირითადი "
+"პაკეტის, %s, დროებით წაშლას მოითხოვს. ეს, ჩვეულებრივ, არასწორია, მაგრამ, თუ "
+"მართლა გნებავთ, ეს გააკეთოთ, APT::Force-LoopBreak პარამეტრი ჩართეთ."
+
+#: apt-pkg/pkgcache.cc
+msgid "Empty package cache"
+msgstr "პაკეტების კეშის გასუფთავება"
+
+#: apt-pkg/pkgcache.cc
+msgid "The package cache file is corrupted"
+msgstr "პაკეტების კეშის ფაილი დაზიანებულია"
+
+#: apt-pkg/pkgcache.cc
+msgid "The package cache file is an incompatible version"
+msgstr "პაკეტების კეშის ფაილის ვერსია თავსებადი არაა"
+
+#: apt-pkg/pkgcache.cc
+#, c-format
+msgid "This APT does not support the versioning system '%s'"
+msgstr "ამ APT-ს ვერსიების სისტემის '%s' მხარდაჭერა არ გააჩნია"
+
+#: apt-pkg/pkgcache.cc
+#, c-format
+msgid "The package cache was built for different architectures: %s vs %s"
+msgstr "პაკეტების კეში სხვა არქიტექტურისთვისაა აგებული: %s და %s"
+
+#: apt-pkg/pkgcache.cc
+msgid "The package cache file is corrupted, it has the wrong hash"
+msgstr "პაკეტების კეშის ფაილი დაზიანებულია, რადგან მისი ჰეში არასწორია"
+
+#: apt-pkg/pkgcache.cc
+msgid "Depends"
+msgstr "დამოკიდებულია"
+
+#: apt-pkg/pkgcache.cc
+msgid "PreDepends"
+msgstr "წინასწარდამოკიდებულია"
+
+#: apt-pkg/pkgcache.cc
+msgid "Suggests"
+msgstr "გირჩევთ"
+
+#: apt-pkg/pkgcache.cc
+msgid "Conflicts"
+msgstr "კონფლიქტები"
+
+#: apt-pkg/pkgcache.cc
+msgid "Recommends"
+msgstr "რეკომენდაციას უწევს"
+
+#: apt-pkg/pkgcache.cc
+msgid "Replaces"
+msgstr "ანაცვლებს"
+
+#: apt-pkg/pkgcache.cc
+msgid "Breaks"
+msgstr "შესვენებები"
+
+#: apt-pkg/pkgcache.cc
+msgid "Enhances"
+msgstr "გააფართოებს"
+
+#: apt-pkg/pkgcache.cc
+msgid "Obsoletes"
+msgstr "მოძველებული"
+
+#: apt-pkg/pkgcache.cc
+msgid "important"
+msgstr "მნიშვნელოვანი"
+
+#: apt-pkg/pkgcache.cc
+msgid "required"
+msgstr "აუცილებელია"
+
+#: apt-pkg/pkgcache.cc
+msgid "standard"
+msgstr "სტანდარტული"
+
+#: apt-pkg/pkgcache.cc
+msgid "extra"
+msgstr "ექსტრა"
+
+#: apt-pkg/pkgcache.cc
+msgid "optional"
+msgstr "არასავალდებულო"
+
+#: apt-pkg/pkgcachegen.cc
+msgid "Cache has an incompatible versioning system"
+msgstr "კეშს შეუთავსებელი ვერსიის სისტემა გააჩნია"
+
+#. TRANSLATOR: The first placeholder is a package name,
+#. the other two should be copied verbatim as they include debug info
+#: apt-pkg/pkgcachegen.cc
+#, c-format
+msgid "Error occurred while processing %s (%s%d)"
+msgstr "შეცდომა %s-ის დამუშავებისას (%s%d)"
+
+#: apt-pkg/pkgcachegen.cc
+msgid "Wow, you exceeded the number of package names this APT is capable of."
+msgstr ""
+"განსაცვიფრებელია! თქვენ გადააცილეთ პაკეტის სახელების რაოდენობას, რომლის "
+"მხარდაჭერაც APT-ის ამ ვერსიას გააჩნია."
+
+#: apt-pkg/pkgcachegen.cc
+msgid "Wow, you exceeded the number of versions this APT is capable of."
+msgstr ""
+"განსაცვიფრებელია! თქვენ გადააცილეთ ვერსიების რაოდენობას, რომლის მხარდაჭერაც "
+"APT-ის ამ ვერსიას გააჩნია."
+
+#: apt-pkg/pkgcachegen.cc
+msgid "Wow, you exceeded the number of descriptions this APT is capable of."
+msgstr ""
+"განსაცვიფრებელია! თქვენ გადააცილეთ აღწერების რაოდენობას, რომლის მხარდაჭერაც "
+"APT-ის ამ ვერსიას გააჩნია."
+
+#: apt-pkg/pkgcachegen.cc
+msgid "Wow, you exceeded the number of dependencies this APT is capable of."
+msgstr ""
+"განსაცვიფრებელია! თქვენ გადააცილეთ დამოკიდებულებების რაოდენობას, რომლის "
+"მხარდაჭერაც APT-ის ამ ვერსიას გააჩნია."
+
+#: apt-pkg/pkgcachegen.cc
+msgid "Reading package lists"
+msgstr "პაკეტების სიის კითხვა"
+
+#: apt-pkg/pkgcachegen.cc
+msgid "IO Error saving source cache"
+msgstr "შეტანა/გამოტანის შეცდომა წყაროს კეშის შენახვისას"
+
+#: apt-pkg/pkgrecords.cc
+#, c-format
+msgid "Index file type '%s' is not supported"
+msgstr "ინდექსის ფაილის ტიპი '%s' მხარდაჭერილი არაა"
+
+#: apt-pkg/policy.cc
+#, c-format
+msgid ""
+"The value '%s' is invalid for APT::Default-Release as such a release is not "
+"available in the sources"
+msgstr ""
+"მნიშვნელობა '%s' APT::Default-Release-სთვის არასწორია იმიტომ, რომ ასეთი "
+"რელიზი წყაროებში ხელმისაწვდომი არაა"
+
+#: apt-pkg/policy.cc
+#, c-format
+msgid "Invalid record in the preferences file %s, no Package header"
+msgstr "არასწორი ჩანაწერი პარამეტრების ფაილში %s. პაკეტის თავსართის გარეშე"
+
+#: apt-pkg/policy.cc
+#, c-format
+msgid "Did not understand pin type %s"
+msgstr "მიმაგრების ტიპი %s გაუგებარია"
+
+#: apt-pkg/policy.cc
+#, c-format
+msgid ""
+"%s: The special 'Pin-Priority: %s' can only be used for 'Package: *' records"
+msgstr ""
+"%s: ჩანაწერებისთვის 'Package: *' სპეციალური პარამეტრი 'Pin-Priority: %s' "
+"შეგიძლიათ გამოიყენოთ"
+
+#: apt-pkg/policy.cc
+#, c-format
+msgid "%s: Value %s is outside the range of valid pin priorities (%d to %d)"
+msgstr ""
+"%s: მნიშვნელობა %s მიმაგრების პრიორიტეტების დასაშვებ დიაპაზონს გარეთაა (%d-"
+"დან %d-მდე)"
+
+#: apt-pkg/policy.cc
+msgid "No priority (or zero) specified for pin"
+msgstr "მიმაგრებისთვის პრიორიტეტი მითითებული არაა (ან ნულოვანია)"
+
+#. TRANSLATOR: %u is a line number, the first %s is a filename of a file with the extension "second %s" and the third %s is a unique identifier for bugreports
+#: apt-pkg/sourcelist.cc
+#, c-format
+msgid "Malformed entry %u in %s file %s (%s)"
+msgstr "არასწორი ჩანაწერი ხაზზე %u ფაილში '%s' %s (%s)"
+
+#: apt-pkg/sourcelist.cc
+#, c-format
+msgid "Malformed line %u in source list %s (type)"
+msgstr "არასწორი ჩანაწერი ხაზზე %u წყაროების სიაში %s (ტიპი)"
+
+#: apt-pkg/sourcelist.cc
+#, c-format
+msgid "Type '%s' is not known on line %u in source list %s"
+msgstr "ტიპი '%s', რომელსაც იყენებთ ხაზზე %u წყაროების სიაში %s, არასწორია"
+
+#: apt-pkg/sourcelist.cc
+#, c-format
+msgid "Malformed stanza %u in source list %s (type)"
+msgstr "არასწორი სექცია ხაზზე %u წყაროების სიაში %s (ტიპი)"
+
+#: apt-pkg/sourcelist.cc
+#, c-format
+msgid "Type '%s' is not known on stanza %u in source list %s"
+msgstr "ტიპი '%s', რომელსაც იყენებთ სექციაში %u წყაროების სიაში %s, არასწორია"
+
+#: apt-pkg/sourcelist.cc apt-private/private-install.cc
+#, c-format
+msgid "Unsupported file %s given on commandline"
+msgstr "ბრძანების სტრიქონში მითითებული ფაილი %s მხარდაჭერილი არაა"
+
+#: apt-pkg/srcrecords.cc
+msgid "You must put some 'deb-src' URIs in your sources.list"
+msgstr "თქვენს sources.list-ში 'deb-src' URI-ები უნდა მიუთითოთ"
+
+#: apt-pkg/tagfile.cc
+#, c-format
+msgid "Cannot convert %s to integer: out of range"
+msgstr "%s-ის მთელ რიცხვში გადაყვანა შეუძლებელია: დიაპაზონს გარეთაა"
+
+#: apt-pkg/update.cc
+msgid ""
+"Some index files failed to download. They have been ignored, or old ones "
+"used instead."
+msgstr ""
+"ზოგიერთი ინდექსის ფაილის გადმოწერა შეუძლებელია. ისინი გამოვტოვე და ძველებს "
+"ვიყენებ."
+
+#. TRANSLATOR: Very short word to be displayed before unchanged files in 'apt-get update'
+#: apt-private/acqprogress.cc
+#, c-format
+msgid "Hit:%lu %s"
+msgstr "დამთხვ:%lu %s"
+
+#. TRANSLATOR: Very short word to be displayed for files processed in 'apt-get update'
+#. Potentially replaced later by "Hit:", "Ign:" or "Err:" if something (bad) happens
+#: apt-private/acqprogress.cc
+#, c-format
+msgid "Get:%lu %s"
+msgstr "მღბ:%lu %s"
+
+#. TRANSLATOR: Very short word to be displayed for files in 'apt-get update'
+#. which failed to download, but the error is ignored (compare "Err:")
+#: apt-private/acqprogress.cc
+#, c-format
+msgid "Ign:%lu %s"
+msgstr "იგნ:%lu %s"
+
+#. TRANSLATOR: Very short word to be displayed for files in 'apt-get update'
+#. which failed to download and the error is critical (compare "Ign:")
+#: apt-private/acqprogress.cc
+#, c-format
+msgid "Err:%lu %s"
+msgstr "შეცდ:%lu %s"
+
+#: apt-private/acqprogress.cc
+#, c-format
+msgid "Fetched %sB in %s (%sB/s)\n"
+msgstr "გამოთხოვილია %sბ %s-ში (%sბ/წმ)\n"
+
+#: apt-private/acqprogress.cc
+msgid " [Working]"
+msgstr " [ვმუშაობ]"
+
+#: apt-private/acqprogress.cc
+#, c-format
+msgid ""
+"Media change: please insert the disc labeled\n"
+" '%s'\n"
+"in the drive '%s' and press [Enter]\n"
+msgstr ""
+"მედიის ცვლილება: ჩადეთ დისკი წარწერით\n"
+" '%s'\n"
+"ამძრავში '%s' და [Enter]-ს დააწექით\n"
+
+#: apt-private/acqprogress.cc
+msgid ""
+"Do you want to accept these changes and continue updating from this "
+"repository?"
+msgstr "ეთანხმებით ამ ცვლილებებს და გავაგრძელო განახლება ამ რეპოზიტორიიდან?"
+
+#: apt-private/private-cachefile.cc
+msgid "Correcting dependencies..."
+msgstr "დამოკიდებულებების შესწორება..."
+
+#: apt-private/private-cachefile.cc
+msgid " failed."
+msgstr " წარუმატებელია."
+
+#: apt-private/private-cachefile.cc
+msgid "Unable to correct dependencies"
+msgstr "დამოკიდებულებების შესწორება შეუძლებელია"
+
+#: apt-private/private-cachefile.cc
+msgid "Unable to minimize the upgrade set"
+msgstr "განახლების სეტის შემცირება შეუძლებელია"
+
+#: apt-private/private-cachefile.cc
+msgid " Done"
+msgstr " მზდაა"
+
+#: apt-private/private-cachefile.cc apt-private/private-install.cc
+msgid "You might want to run 'apt --fix-broken install' to correct these."
+msgstr "ამების გასასწორებლად 'apt --fix-broken install'-ის გაშვება სცადეთ."
+
+#: apt-private/private-cachefile.cc apt-private/private-install.cc
+msgid ""
+"Unmet dependencies. Try 'apt --fix-broken install' with no packages (or "
+"specify a solution)."
+msgstr ""
+"დაუკმაყოფილებელი დამოკიდებულებები. სცადეთ 'apt --fix-broken install' "
+"პაკეტების გარეშე (ან მიუთითეთ გადაწყვეტა)."
+
+#: apt-private/private-cacheset.cc apt-private/private-search.cc
+msgid "Sorting"
+msgstr "დალაგება"
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid "Note, selecting '%s' for task '%s'\n"
+msgstr "შენიშვნა: ამოცანისთვის '%2$s' არჩეულია '%1$s'\n"
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid "Note, selecting '%s' for glob '%s'\n"
+msgstr "შენიშვნა: გლობისთვის '%2$s' არჩეულია '%1$s'\n"
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid "Note, selecting '%s' for regex '%s'\n"
+msgstr "შენიშვნა: რეგულარული გამოსახულებისთვის '%2$s' არჩეულია '%1$s'\n"
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid "Package %s is a virtual package provided by:\n"
+msgstr "პაკეტი %s ვირტუალური პაკეტია, რომელსაც მოგაწვდით:\n"
+
+#: apt-private/private-cacheset.cc
+msgid " [Installed]"
+msgstr " [დაყენებულია]"
+
+#: apt-private/private-cacheset.cc
+msgid " [Not candidate version]"
+msgstr " [კანდიდატის ვერსია არაა]"
+
+#: apt-private/private-cacheset.cc
+msgid "You should explicitly select one to install."
+msgstr "დასაყენებლად ზუსტად უნდა მიუთითოთ."
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid ""
+"Package %s is not available, but is referred to by another package.\n"
+"This may mean that the package is missing, has been obsoleted, or\n"
+"is only available from another source\n"
+msgstr ""
+"პაკეტი %s ხელმისაწვდომი არაა, მაგრამ სჭირდება სხვა პაკეტს.\n"
+"ეს შეიძლება ნიშნავდეს, რომ პაკეტი არ არსებობს, მოძველებულია\n"
+"ან ხელმისაწვდომი მხოლოდ სხვა წყაროდანაა\n"
+
+#: apt-private/private-cacheset.cc
+msgid "However the following packages replace it:"
+msgstr "მაგრამ მას შემდეგი პაკეტები ჩაანაცვლებენ:"
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid "Package '%s' has no installation candidate"
+msgstr "პაკეტს '%s' დაყენების კანდიდატი არ გააჩნია"
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid "Virtual packages like '%s' can't be removed\n"
+msgstr "'%s'-ის მსგავს ვირტუალურ პაკეტს ვერ წაშლით\n"
+
+#. TRANSLATORS: Note, this is not an interactive question
+#: apt-private/private-cacheset.cc apt-private/private-install.cc
+#, c-format
+msgid "Package '%s' is not installed, so not removed. Did you mean '%s'?\n"
+msgstr ""
+"პაკეტი '%s' დაყენებული არაა, ასე რომ, არ წაიშლება. გულისხმობდით '%s'?\n"
+
+#: apt-private/private-cacheset.cc apt-private/private-install.cc
+#, c-format
+msgid "Package '%s' is not installed, so not removed\n"
+msgstr "პაკეტი '%s' დაყენებული არაა, ასე რომ, არ წაიშლება\n"
+
+#: apt-private/private-cacheset.cc
+#, c-format
+msgid "Note, selecting '%s' instead of '%s'\n"
+msgstr "შენიშვნა: '%2$s'-ის მაგიერ არჩეულია '%1$s'\n"
+
+#: apt-private/private-cmndline.cc
+msgid "Most used commands:"
+msgstr "ყველაზე ხშირად გამოყენებული ბრძანებები:"
+
+#: apt-private/private-cmndline.cc
+#, c-format
+msgid "See %s for more information about the available commands."
+msgstr "ხელმისაწვდომი ბრძანებების შესახებ მეტი ინფორმაციისთვის იხილეთ %s."
+
+#: apt-private/private-cmndline.cc
+msgid ""
+"Configuration options and syntax is detailed in apt.conf(5).\n"
+"Information about how to configure sources can be found in sources.list(5).\n"
+"Package and version choices can be expressed via apt_preferences(5).\n"
+"Security details are available in apt-secure(8).\n"
+msgstr ""
+"კონფიგურაციის პარამეტრების და სინტაქსის დეტალები შეგიძლიათ apt.conf(5)-ში "
+"იხილოთ.\n"
+"ინფორმაციას, როგორ მოირგოთ წყაროები, sources.list(5)-ში იხილავთ.\n"
+"პაკეტების და ვერსიების აღწერა apt_preferences(5)-შია.\n"
+"უსაფრთხოების დეტალები კი apt-secure(8)-შია ხელმისაწვდომი.\n"
+
+#: apt-private/private-cmndline.cc
+msgid "This APT has Super Cow Powers."
+msgstr "ამ APT-ს სუპერძროხის შესაძლებლობები გააჩნია."
+
+#: apt-private/private-cmndline.cc
+msgid "This APT helper has Super Meep Powers."
+msgstr "ამ APT-ის დამხმარეს სუპერღმუილის შესაძლებლობები გააჩნია."
+
+#: apt-private/private-cmndline.cc
+msgid ""
+"--force-yes is deprecated, use one of the options starting with --allow "
+"instead."
+msgstr ""
+"--force-yes მოძველებულია. გამოიყენეთ სხვა პარამეტრები, რომლებიც --allow -ით "
+"იწყება."
+
+#: apt-private/private-depends.cc apt-private/private-download.cc
+#: apt-private/private-show.cc cmdline/apt-mark.cc
+msgid "No packages found"
+msgstr "პაკეტების გარეშე"
+
+#: apt-private/private-download.cc
+msgid "WARNING: The following packages cannot be authenticated!"
+msgstr "გაფრთხილება: შემდეგი პაკეტების ავთენტიკაცია შეუძლებელია!"
+
+#: apt-private/private-download.cc
+msgid "Authentication warning overridden.\n"
+msgstr "ავთენტიკაციის გაფრთხილება გადაფარულია.\n"
+
+#: apt-private/private-download.cc
+msgid "Some packages could not be authenticated"
+msgstr "ზოგიერთი პაკეტის ავთენტიკაცია შეუძლებელია"
+
+#: apt-private/private-download.cc
+msgid "Install these packages without verification?"
+msgstr "დავაყენო ეს პაკეტები გადამოწმების გარეშე?"
+
+#: apt-private/private-download.cc
+msgid ""
+"There were unauthenticated packages and -y was used without --allow-"
+"unauthenticated"
+msgstr ""
+"არსებობს არაავთენტიფიცირებული პაკეტები და -y --allow-unauthenticated-ის "
+"გარეშეა მითითებული"
+
+#: apt-private/private-download.cc
+#, c-format
+msgid "Couldn't determine free space in %s"
+msgstr "%s-ში არსებული თავისუფალი ადგილის განსაზღვრა შეუძლებელია"
+
+#: apt-private/private-download.cc
+#, c-format
+msgid "You don't have enough free space in %s."
+msgstr "%s-ში არსებული თავისუფალი ადგილი საკმარისი არაა."
+
+#: apt-private/private-download.cc
+msgid "Unable to lock the download directory"
+msgstr "გადმოწერის საქაღალდის დაბლოკვის შეცდომა"
+
+#: apt-private/private-history.cc
+msgid "Install"
+msgstr "დაყენება"
+
+#: apt-private/private-history.cc
+msgid "Reinstall"
+msgstr "თავიდან დაყენება"
+
+#: apt-private/private-history.cc
+msgid "Upgrade"
+msgstr "გაუმჯობესება"
+
+#: apt-private/private-history.cc
+msgid "Downgrade"
+msgstr "ვერსიის დაწევა"
+
+#: apt-private/private-history.cc
+msgid "Remove"
+msgstr "წაშლა"
+
+#: apt-private/private-history.cc
+msgid "Purge"
+msgstr "გაწმენდა"
+
+#: apt-private/private-history.cc
+msgid "Undefined"
+msgstr "აღუწერელია"
+
+#: apt-private/private-history.cc
+msgid "ID"
+msgstr "ID"
+
+#: apt-private/private-history.cc
+msgid "Command line"
+msgstr "ბრძანების სტრიქონი"
+
+#. NOTE: if date format is different,
+#. this width needs to change
+#: apt-private/private-history.cc
+msgid "Date and Time"
+msgstr "თარიღი და დრო"
+
+#. width for datestring
+#: apt-private/private-history.cc
+msgid "Action"
+msgstr "ქმედება"
+
+#. 9 chars longest action type
+#: apt-private/private-history.cc
+msgid "Changes"
+msgstr "ცვლილებები"
+
+#: apt-private/private-history.cc
+msgid "automatic"
+msgstr "ავტომატური"
+
+#: apt-private/private-history.cc
+msgid "Transaction ID"
+msgstr "ტრანსაქციის ID"
+
+#: apt-private/private-history.cc
+msgid "Start time"
+msgstr "დაწყების დრო"
+
+#: apt-private/private-history.cc
+msgid "End time"
+msgstr "დასრულების დრო"
+
+#: apt-private/private-history.cc
+msgid "Requested by"
+msgstr "Მოთხოვნილია ვის მიერ"
+
+#: apt-private/private-history.cc
+msgid "Error"
+msgstr "შეცდომა"
+
+#: apt-private/private-history.cc
+msgid "Comment"
+msgstr "კომენტარი"
+
+#. For each performed action, print what it did to each package
+#: apt-private/private-history.cc
+msgid "Packages changed"
+msgstr "პაკეტები შეიცვალა"
+
+#: apt-private/private-history.cc
+#, c-format
+msgid "Could not find package %s"
+msgstr "ვერ ვიპოვე პაკეტი %s"
+
+#: apt-private/private-history.cc
+#, c-format
+msgid "Tried to remove %s, but it is not installed"
+msgstr "ვცადე, წამეშალა %s, მაგრამ ის დაყენებული არაა"
+
+#: apt-private/private-history.cc
+#, c-format
+msgid "Could not find given version %s of %s"
+msgstr "ვერ ვიპოვე მითითებული ვერსია %s პაკეტისთვის %s"
+
+#: apt-private/private-history.cc
+msgid "Incorrect usage, no ID was given."
+msgstr "არასწორი გამოყენება. ID მითითებული არაა."
+
+#: apt-private/private-history.cc
+#, c-format
+msgid "'%s' not a valid ID."
+msgstr "'%s' სწორი ID არაა."
+
+#: apt-private/private-history.cc
+#, c-format
+msgid "Transaction ID '%ld' out of bounds."
+msgstr "ტრანზაქციის ID '%ld' საზღვრებს გარეთაა."
+
+#: apt-private/private-history.cc
+#, c-format
+msgid "Could not read %s"
+msgstr "'%s'-ის წაკითხვის შეცდომა"
+
+#: apt-private/private-history.cc
+#, c-format
+msgid "Could not read: %s"
+msgstr "წაკითხვა შეუძლებელია: %s"
+
+#: apt-private/private-install.cc
+msgid ""
+"Some packages could not be installed. This may mean that you have\n"
+"requested an impossible situation or if you are using the unstable\n"
+"distribution that some required packages have not yet been created\n"
+"or been moved out of Incoming."
+msgstr ""
+"ზოგიერთი პაკეტის დაყენება შეუძლებელია. ეს შეიძლება ნიშნავდეს, რომ თქვენ\n"
+"მოითხოვეთ შეუძლებელი სცენარი ან იყენებთ არასტაბილურ დისტრიბუტივს,\n"
+"რომელშიც ზოგიერთი მოთხოვნილი პაკეტი ჯერ შექმნილი არაა, ან\n"
+"გაიტანეს რეპოზიტორიიდან."
+
+#.
+#. if (Packages == 1)
+#. {
+#. c1out << std::endl;
+#. c1out <<
+#. _("Since you only requested a single operation it is extremely likely that\n"
+#. "the package is simply not installable and a bug report against\n"
+#. "that package should be filed.") << std::endl;
+#. }
+#.
+#: apt-private/private-install.cc
+msgid "The following information may help to resolve the situation:"
+msgstr "ამ ინფორმაციამ, შეიძლება, პრობლემა გადაწყვიტოს:"
+
+#: apt-private/private-install.cc
+msgid "Broken packages"
+msgstr "გაფუჭებული პაკეტები"
+
+#: apt-private/private-install.cc
+msgid "Writing error report"
+msgstr "შეცდომის ანგარიშის ჩაწერა"
+
+#: apt-private/private-install.cc
+msgid ""
+"Unmerged usr is no longer supported, use usrmerge to convert to a merged-usr "
+"system."
+msgstr ""
+"შეურწყმელი usr მხარდაჭერილი აღარაა. გამოიყენეთ usrmerge, რომ სისტემაში usr-"
+"ის შერწყმა მოხდეს."
+
+#. TRANSLATORS: %s is a url to a page describing merged-usr (bookworm release notes)
+#: apt-private/private-install.cc
+#, c-format
+msgid "See %s for more details."
+msgstr "მეტი დეტალებისთვის იხილეთ %s."
+
+#: apt-private/private-install.cc
+msgid ""
+"Unable to fetch some archives, maybe run apt update or try with --fix-"
+"missing?"
+msgstr ""
+"ზოგიერთი არქივის გამოთხოვის შეცდომა. სცადეთ apt-get update ან გაუშვით "
+"პარამეტრით --fix-missing?"
+
+#: apt-private/private-install.cc
+msgid "Internal error, InstallPackages was called with broken packages!"
+msgstr ""
+"შიდა შეცდომა. InstallPackages-სთვის გამოძახებისას გადაცემული პაკეტები "
+"დაზიანებულია!"
+
+#: apt-private/private-install.cc
+msgid "Packages need to be removed but remove is disabled."
+msgstr "საჭიროა პაკეტის წაშლა, მაგრამ წაშლა გამორთულია."
+
+#: apt-private/private-install.cc
+msgid ""
+"Essential packages were removed and -y was used without --allow-remove-"
+"essential."
+msgstr ""
+"მოთხოვნილია ძირითადი პაკეტების წაშლა და -y --allow-remove-essential-ის "
+"გარეშეა გამოყენებული."
+
+#: apt-private/private-install.cc
+msgid "Packages were downgraded and -y was used without --allow-downgrades."
+msgstr ""
+"მოთხოვნილია პაკეტების ვერსიის დაწევა და -y --allow-downgrade-ის გარეშეა "
+"გამოყენებული."
+
+#: apt-private/private-install.cc
+msgid ""
+"Held packages were changed and -y was used without --allow-change-held-"
+"packages."
+msgstr ""
+"იცვლება შეჩერებული პაკეტები და -y --allow-change-held-packages-ის გარეშეა "
+"გამოყენებული."
+
+#: apt-private/private-install.cc
+msgid "Internal error, Ordering didn't finish"
+msgstr "შიდა შეცდომა. დალაგება არ დასრულებულა"
+
+#: apt-private/private-install.cc
+msgid "How odd... The sizes didn't match, email apt@packages.debian.org"
+msgstr ""
+"უცნაურია.. ზომები არ ემთხვევა. მოგვწერეთ ელფოსტაზე apt@packages.debian.org"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "  Download size: %sB / %sB\n"
+msgstr "  გადმოწერის ზომა: %sბ / %sბ\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement strings, so %sB will be correctly translate in e.g. 1,5 MB
+#: apt-private/private-install.cc
+#, c-format
+msgid "Need to get %sB/%sB of archives.\n"
+msgstr "საჭიროა %sბ/%sბ არქივის გამოთხოვა.\n"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "  Download size: %sB\n"
+msgstr "  გადმოსაწერი ზომა: %sბ\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#: apt-private/private-install.cc
+#, c-format
+msgid "Need to get %sB of archives.\n"
+msgstr "საჭიროა %sბ არქივის მიღება.\n"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "After this operation, %sB of additional disk space will be used.\n"
+msgstr ""
+"ამ ოპერაციის შემდეგ გამოყენებული იქნება დამატებითი %sბ დისკური სივრცე.\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#: apt-private/private-install.cc
+#, c-format
+msgid "Space needed: %sB / %sB available\n"
+msgstr "ადგილი საჭიროა: %sბ / %sბ ხელმისაწვდომია\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#: apt-private/private-install.cc
+#, c-format
+msgid "More space needed than available: %sB > %sB, installation may fail"
+msgstr "საჭიროა არსებულზე მეტი ადგილი: %sბ > %sბ, დაყენება შეიძლება ჩავარდეს"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB -
+#. The first %s is the location of the boot directory (determined from Dir::Boot),
+#. and it tells the space being needed there.
+#. (We have two spaces to align with parent "space needed:"for /boot)
+#: apt-private/private-install.cc
+#, c-format
+msgid "in %s:  %sB / %sB available\n"
+msgstr "%s-ში:  %sბ / %sბ ხელმისაწვდომია\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#. The first %s is the location of the boot directory (determined from Dir::Boot)
+#: apt-private/private-install.cc
+#, c-format
+msgid ""
+"More space needed in %s than available: %sB > %sB, installation may fail"
+msgstr ""
+"%s-ში საჭიროა არსებულზე მეტი ადგილი: %sბ > %sბ, დაყენება შეიძლება ჩავარდეს"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "Space needed: %sB\n"
+msgstr "საჭიროა ადგილი: %sბ\n"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "  Freed space: %sB\n"
+msgstr "  გათავისუფლდა ადგილი: %sბ\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#: apt-private/private-install.cc
+#, c-format
+msgid "After this operation, %sB disk space will be freed.\n"
+msgstr "ამ ოპერაციის შემდეგ %sბ დისკური სივრცე გათავისუფლდება.\n"
+
+#: apt-private/private-install.cc
+msgid "Trivial Only specified but this is not a trivial operation."
+msgstr ""
+"მოთხოვნილია მხოლოდ ტრივიალური ოპერაციები, მაგრამ ეს ოპერაცია ტრივიალური არაა."
+
+#: apt-private/private-install.cc
+msgid ""
+"Removing essential system-critical packages is not permitted. This might "
+"break the system."
+msgstr ""
+"სისტემისთვის კრიტიკული პაკეტების წაშლა აკრძალულია. ამან შეიძლება სისტემა "
+"გააფუჭოს."
+
+#: apt-private/private-install.cc
+msgid "Continue anyway?"
+msgstr "გავაგრძელო მაინც?"
+
+#: apt-private/private-install.cc
+msgid "Continue?"
+msgstr "გავაგრძელო?"
+
+#: apt-private/private-install.cc cmdline/apt-mark.cc
+msgid "Do you want to continue?"
+msgstr "გნებავთ, გააგრძელოთ?"
+
+#: apt-private/private-install.cc
+msgid "Abort."
+msgstr "შეწყვეტა."
+
+#: apt-private/private-install.cc
+msgid "Some files failed to download"
+msgstr "ზოგიერთი ფაილის გადმოწერის შეცდომა"
+
+#: apt-private/private-install.cc apt-private/private-source.cc
+msgid "Download complete and in download only mode"
+msgstr "მითითებულია მხოლოდ-გადმოწერის რეჟიმი და გადმოწერა დასრულდა"
+
+#: apt-private/private-install.cc
+msgid "--fix-missing and media swapping is not currently supported"
+msgstr "--fix-missing და მედიის შეცვლა ამჟამად მხარდაჭერილი არაა"
+
+#: apt-private/private-install.cc
+msgid "Unable to correct missing packages."
+msgstr "ნაკლული პაკეტების შესწორება შეუძლებელია."
+
+#: apt-private/private-install.cc
+msgid "Aborting install."
+msgstr "დაყენების გაუქმება."
+
+#: apt-private/private-install.cc
+msgid ""
+"The following package disappeared from your system as\n"
+"all files have been overwritten by other packages:"
+msgid_plural ""
+"The following packages disappeared from your system as\n"
+"all files have been overwritten by other packages:"
+msgstr[0] ""
+"შემდეგი პაკეტი გაქრა თქვენი სისტემიდან, რადგან\n"
+"ყველა ფაილი გადაეწერა შემდეგი სხვა პაკეტებიდან:"
+msgstr[1] ""
+"შემდეგი პაკეტები გაქრნენ თქვენი სისტემიდან, რადგან\n"
+"ყველა ფაილი გადაეწერა შემდეგი სხვა პაკეტებიდან:"
+
+#: apt-private/private-install.cc
+msgid "Note: This is done automatically and on purpose by dpkg."
+msgstr ""
+"შეტყობინება: ეს ავტომატურად კეთდება და ვიცით, ამას dpkg რატომაც აკეთებს."
+
+#: apt-private/private-install.cc
+msgid "We are not supposed to delete stuff, can't start AutoRemover"
+msgstr "არაფერი უნდა წავშალოთ. AutoRemover-ის გაშვება შეუძლებელია"
+
+#: apt-private/private-install.cc
+msgid ""
+"Hmm, seems like the AutoRemover destroyed something which really\n"
+"shouldn't happen. Please file a bug report against apt."
+msgstr ""
+"როგორც ჩანს, AutoRemover-მა რაღაც გააფუჭა, რაც\n"
+"არ უნდა მომხდარიყო. მოგვწერეთ apt-ის ამ შეცდომის შესახებ."
+
+#: apt-private/private-install.cc
+msgid "Internal Error, AutoRemover broke stuff"
+msgstr "შიდა შეცდომა. AutoRemover-მა რაღაცები გააფუჭა"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "Use '%s' to remove it."
+msgid_plural "Use '%s' to remove them."
+msgstr[0] "წასაშლელად გამოიყენეთ '%s'."
+msgstr[1] "წასაშლელად გამოიყენეთ '%s'."
+
+#: apt-private/private-install.cc
+msgid ""
+"The following package was automatically installed and is no longer required:"
+msgid_plural ""
+"The following packages were automatically installed and are no longer "
+"required:"
+msgstr[0] "შემდეგი პაკეტი ავტომატურად იქნა დაყენებული და საჭირო აღარაა:"
+msgstr[1] "შემდეგი პაკეტები ავტომატურად იქნა დაყენებული და საჭირო აღარაა:"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "%lu package was automatically installed and is no longer required.\n"
+msgid_plural ""
+"%lu packages were automatically installed and are no longer required.\n"
+msgstr[0] "%lu პაკეტი ავტომატურად იქნა დაყენებული და საჭირო აღარაა.\n"
+msgstr[1] "%lu პაკეტი ავტომატურად იქნა დაყენებული და საჭირო აღარაა.\n"
+
+#: apt-private/private-install.cc
+msgid "Result calculated by the 3.0 solver."
+msgstr "შედეგი გამოთვლილია 3.0 ამომხსნელის მიერ."
+
+#: apt-private/private-install.cc
+msgid "Suggested packages:"
+msgstr "შეთავაზებული პაკეტები:"
+
+#: apt-private/private-install.cc
+msgid "Recommended packages:"
+msgstr "რეკომენდებული პაკეტები:"
+
+#: apt-private/private-install.cc
+msgid "The following additional packages will be installed:"
+msgstr "დაყენებული იქნება შემდეგი დამატებითი პაკეტები:"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "Skipping %s, it is already installed and upgrade is not set.\n"
+msgstr ""
+"%s გამოტოვებულია, რადგან ის უკვე დაყენებულია და განახლება მითითებული არაა.\n"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "Skipping %s, it is not installed and only upgrades are requested.\n"
+msgstr ""
+"%s გამოტოვებულია, რადგან ის დაყენებული არაა და მოთხოვნილია მხოლოდ "
+"განახლებები.\n"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "Reinstallation of %s is not possible, it cannot be downloaded.\n"
+msgstr "%s-ის თავიდან დაყენება შეუძლებელია. ის ვერ გადმოვწერე.\n"
+
+#. TRANSLATORS: First string is package name, second is version
+#: apt-private/private-install.cc
+#, c-format
+msgid "%s is already the newest version (%s).\n"
+msgstr "%s-ის ვერსია (%s) უკვე უახლესია.\n"
+
+#: apt-private/private-install.cc cmdline/apt-get.cc cmdline/apt-mark.cc
+#, c-format
+msgid "%s set to manually installed.\n"
+msgstr "%s მხოლოდ ხელით შეგიძლიათ, დააყენოთ.\n"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "Selected version '%s' (%s) for '%s'\n"
+msgstr "არჩეულია ვერსია '%s' (%s) '%s'-სთვის\n"
+
+#: apt-private/private-install.cc
+#, c-format
+msgid "Selected version '%s' (%s) for '%s' because of '%s'\n"
+msgstr "არჩეულია ვერსია '%s' (%s) '%s'-სთვის '%s'-ის გამოო\n"
+
+#: apt-private/private-list.cc
+msgid "Listing"
+msgstr "ჩამონათვალი"
+
+#: apt-private/private-list.cc
+#, c-format
+msgid "There is %i additional version. Please use the '-a' switch to see it"
+msgid_plural ""
+"There are %i additional versions. Please use the '-a' switch to see them."
+msgstr[0] ""
+"არსებობს %i დამატებითი ვერსია. მათ სანახავად გამოიყენეთ პარამეტრი '-a'"
+msgstr[1] ""
+"არსებობს %i დამატებითი ვერსია. მათ სანახავად გამოიყენეთ პარამეტრი '-a'."
+
+#. TRANSLATORS: placeholder is a binary name like apt or apt-get
+#: apt-private/private-main.cc
+#, c-format
+msgid ""
+"NOTE: This is only a simulation!\n"
+"      %s needs root privileges for real execution.\n"
+"      Keep also in mind that locking is deactivated,\n"
+"      so don't depend on the relevance to the real current situation!\n"
+msgstr ""
+"შენიშვნა: ეს მხოლოდ სიმულაციაა!\n"
+"      %s-ს რეალურად გასაშვებად root-ის პრივილეგიები სჭირდება.\n"
+"      ასევე დაიმახსოვრეთ, რომ დაბლოკვა გამორთულია,\n"
+"      ასე რომ ამის რეალურ სამყაროსთან შესაბამისობას ნუ დაეყრდნობით!\n"
+
+#: apt-private/private-output.cc apt-private/private-show.cc
+msgid "unknown"
+msgstr "უცნობი"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "[installed,upgradable to: %s]"
+msgstr "[დაყენებული, ვერსიის აწევა შეიძლება: %s]"
+
+#: apt-private/private-output.cc
+msgid "[installed,local]"
+msgstr "[დაყენებული,ლოკალური]"
+
+#: apt-private/private-output.cc
+msgid "[installed,auto-removable]"
+msgstr "[დაყენებული, ავტომატურად წაშლადი]"
+
+#: apt-private/private-output.cc
+msgid "[installed,automatic]"
+msgstr "[დაყენებული, ავტომატური]"
+
+#: apt-private/private-output.cc
+msgid "[installed]"
+msgstr "[დაყენებულია]"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "[upgradable from: %s]"
+msgstr "[განახლებადი ვერსიიდან: %s]"
+
+#: apt-private/private-output.cc
+msgid "[residual-config]"
+msgstr "[დარჩენილი-კონფიგურაცია]"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "but %s is installed"
+msgstr "მაგრამ %s დაყენებული არაა"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "but %s is to be installed"
+msgstr "მაგრამ %s-ის დაყენება მოხდება"
+
+#: apt-private/private-output.cc
+msgid "but it is not installable"
+msgstr "მაგრამ ის დაყენებადი არაა"
+
+#: apt-private/private-output.cc
+msgid "but it is a virtual package"
+msgstr "მაგრამ ის ვირტუალური პაკეტია"
+
+#: apt-private/private-output.cc
+msgid "but it is not going to be installed"
+msgstr "მაგრამ მისი დაყენება არ მოხდება"
+
+#: apt-private/private-output.cc
+msgid "but it is not installed"
+msgstr "მაგრამ ის დაყენებული არაა"
+
+#: apt-private/private-output.cc
+msgid " or"
+msgstr " ან"
+
+#: apt-private/private-output.cc
+msgid "The following packages have unmet dependencies:"
+msgstr "დაუკმაყოფილებელი დამოკიდებულებები გააჩნია შემდეგ პაკეტებს:"
+
+#: apt-private/private-output.cc
+msgid "Unsatisfied dependencies:"
+msgstr "დაუკმაყოფილებელი დამოკიდებულებები:"
+
+#: apt-private/private-output.cc
+msgid "The following NEW packages will be installed:"
+msgstr "დაყენებული იქნება შემდეგი ახალი პაკეტები:"
+
+#: apt-private/private-output.cc
+msgid "Installing:"
+msgstr "დაყენება:"
+
+#: apt-private/private-output.cc
+msgid "Installing dependencies:"
+msgstr "დამოკიდებულებების დაყენება:"
+
+#: apt-private/private-output.cc
+msgid "REMOVING:"
+msgstr "წაიშლება:"
+
+#: apt-private/private-output.cc
+msgid "The following packages will be REMOVED:"
+msgstr "წაიშლება შემდეგი პაკეტები:"
+
+#: apt-private/private-output.cc
+msgid "The following upgrades have been deferred due to phasing:"
+msgstr "შემდეგი განახლებები გადაიდო ფაზირების გამო:"
+
+#: apt-private/private-output.cc
+msgid "Not upgrading yet due to phasing:"
+msgstr "ვერსიის აწევა არ ხდება ფაზირების გამო:"
+
+#: apt-private/private-output.cc
+msgid "Not upgrading:"
+msgstr "ვერსია არ აიწევა:"
+
+#: apt-private/private-output.cc
+msgid "The following packages have been kept back:"
+msgstr "შემდეგი პაკეტები არ შეიცვლება:"
+
+#: apt-private/private-output.cc
+msgid "The following packages will be upgraded:"
+msgstr "შემდეგი პაკეტების ვერსია აიწევა:"
+
+#: apt-private/private-output.cc
+msgid "Upgrading:"
+msgstr "ვერსია აიწევა:"
+
+#: apt-private/private-output.cc
+msgid "DOWNGRADING:"
+msgstr "ვერსია ჩამოიწევა:"
+
+#: apt-private/private-output.cc
+msgid "The following packages will be DOWNGRADED:"
+msgstr "შემდეგი პაკეტების ვერსია ჩამოიწევა:"
+
+#: apt-private/private-output.cc
+msgid "Changing held packages:"
+msgstr "შენარჩუნებული პაკეტების შეცვლა:"
+
+#: apt-private/private-output.cc
+msgid "The following held packages will be changed:"
+msgstr "შეიცვლება შემდეგი შეუცვლელი პაკეტი:"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "%s (due to %s)"
+msgstr "%s (%s-ის გამო)"
+
+#: apt-private/private-output.cc
+msgid ""
+"WARNING: The following essential packages will be removed.\n"
+"This should NOT be done unless you know exactly what you are doing!"
+msgstr ""
+"გაფრთხილება: წაიშლება შემდეგი ძირითადი პაკეტი.\n"
+"ამას არასდროს უნდა ხდებოდეს, თუ ზუსტად არ იცით, რას აკეთებთ!"
+
+#: apt-private/private-output.cc
+msgid "Summary:"
+msgstr "შეჯამება:"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "%lu upgraded, %lu newly installed, "
+msgstr "%lu განახლდა, %lu ახალი დაყენებული, "
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "Upgrading: %lu, Installing: %lu, "
+msgstr "ვერსია აიწევა: %lu, მოხდება დაყენება: %lu, "
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "%lu reinstalled, "
+msgstr "%lu თავიდან დაყენებულია, "
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "Reinstalling: %lu, "
+msgstr "თავიდან დაყენება: %lu, "
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "%lu downgraded, "
+msgstr "%lu პაკეტის ვერსია ჩამოიწია, "
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "Downgrading: %lu, "
+msgstr "ვერსიის ჩამოწევა: %lu, "
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "%lu to remove and %lu not upgraded.\n"
+msgstr "%lu უნდა წავშალ და %lu არ განახლდება.\n"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "Removing: %lu, Not Upgrading: %lu\n"
+msgstr "წაიშლება: %lu, ვერსია არ აიწევა: %lu\n"
+
+#: apt-private/private-output.cc
+#, c-format
+msgid "%lu not fully installed or removed.\n"
+msgstr "%lu სრულად არც დაყენებულია, არც წაშლილი.\n"
+
+#. TRANSLATOR: Yes/No question help-text: defaulting to Y[es]
+#. e.g. "Do you want to continue? [Y/n] "
+#. The user has to answer with an input matching the
+#. YESEXPR/NOEXPR defined in your l10n.
+#: apt-private/private-output.cc
+msgid "[Y/n]"
+msgstr "[Y/n] (დიახ/არა)"
+
+#. TRANSLATOR: Yes/No question help-text: defaulting to N[o]
+#. e.g. "Should this file be removed? [y/N] "
+#. The user has to answer with an input matching the
+#. YESEXPR/NOEXPR defined in your l10n.
+#: apt-private/private-output.cc
+msgid "[y/N]"
+msgstr "[y/N]"
+
+#. TRANSLATOR: "Yes" answer printed for a yes/no question if --assume-yes is set
+#: apt-private/private-output.cc
+msgid "Y"
+msgstr "Y"
+
+#. TRANSLATOR: "No" answer printed for a yes/no question if --assume-no is set
+#: apt-private/private-output.cc apt-private/private-sources.cc
+msgid "N"
+msgstr "N"
+
+#: apt-private/private-search.cc
+msgid "You must give at least one search pattern"
+msgstr "აუცილებელია, ერთი ძებნის პირობა მაინც მიუთითოთ"
+
+#: apt-private/private-search.cc
+msgid "Full Text Search"
+msgstr "სრული ტექსტით ძებნა"
+
+#: apt-private/private-show.cc
+#, c-format
+msgid "There is %i additional record. Please use the '-a' switch to see it"
+msgid_plural ""
+"There are %i additional records. Please use the '-a' switch to see them."
+msgstr[0] ""
+"არსებობს %i დამატებითი ჩანაწერი. მათ სანახავად გამოიყენეთ პარამეტრი '-a'"
+msgstr[1] ""
+"არსებობს %i დამატებითი ჩანაწერი. მათ სანახავად გამოიყენეთ პარამეტრი '-a'."
+
+#: apt-private/private-show.cc
+msgid "not a real package (virtual)"
+msgstr "არ წარმოადგენს რეალურ პაკეტს (ვირტუალურია)"
+
+#: apt-private/private-show.cc
+msgid "Package files:"
+msgstr "პაკეტის ფაილები:"
+
+#: apt-private/private-show.cc
+msgid "Cache is out of sync, can't x-ref a package file"
+msgstr "კეში სინქრონიზებული არაა. პაკეტის ფაილს ვერ x-ref"
+
+#. Show any packages have explicit pins
+#: apt-private/private-show.cc
+msgid "Pinned packages:"
+msgstr "მიმაგრებული პაკეტები:"
+
+#. Print the package name and the version we are forcing to
+#: apt-private/private-show.cc
+#, c-format
+msgid "%s -> %s with priority %d\n"
+msgstr "%s -> %s პრიორიტეტით %d\n"
+
+#: apt-private/private-show.cc
+msgid "  Installed: "
+msgstr "   დაყენებულია: "
+
+#: apt-private/private-show.cc
+msgid "  Candidate: "
+msgstr "  კანდიდატი: "
+
+#: apt-private/private-show.cc
+msgid "(none)"
+msgstr "(არცერთი)"
+
+#. Show the priority tables
+#: apt-private/private-show.cc
+msgid "  Version table:"
+msgstr "  ვერსიების ცხრილი:"
+
+#: apt-private/private-show.cc
+msgid "phased"
+msgstr "ნაბიჯ-ნაბიჯ"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Can not find a package for architecture '%s'"
+msgstr "არქიტექტურისთვის '%s' პაკეტი ვერ ვიპოვე"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Can not find a package '%s' with version '%s'"
+msgstr "პაკეტი \"%s\" ვერსიით '%s' ვერ ვიპოვე"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Can not find a package '%s' with release '%s'"
+msgstr "პაკეტი \"%s\" რელიზით '%s' ვერ ვიპოვე"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Picking '%s' as source package instead of '%s'\n"
+msgstr "ვირჩევ '%s'-ს, როგორც კოდის პაკეტს, '%s'-ის მაგიერ\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Can not find version '%s' of package '%s'"
+msgstr "ვერსია '%s' პაკეტისთვის '%s' ვერ ვიპოვე"
+
+#: apt-private/private-source.cc
+msgid "Must specify at least one package to fetch source for"
+msgstr "კოდის პაკეტის გადმოსაწერად ერთი სახელი მაინც უნდა მიუთითოთ"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Unable to find a source package for %s"
+msgstr "%s-ის კოდის პაკეტი ვერ ვიპოვე"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid ""
+"NOTICE: '%s' packaging is maintained in the '%s' version control system at:\n"
+"%s\n"
+msgstr ""
+"შეტყობინება: '%s' პაკეტების სისტემა იმართება '%s' ვერსიის კონტროლის სისტემით "
+"მისამართზე:\n"
+"%s\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid ""
+"Please use:\n"
+"%s\n"
+"to retrieve the latest (possibly unreleased) updates to the package.\n"
+msgstr ""
+"პაკეტის უკანასკნელი (შეიძლება, სატესტო) \n"
+"განახლების გადმოსაწერად გამოიყენეთ:\n"
+"%s\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Skipping already downloaded file '%s'\n"
+msgstr "უკვე გადმოწერილი ფაილის (%s) გამოტოვება\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement strings, so %sB will be correctly translate in e.g. 1,5 MB
+#: apt-private/private-source.cc
+#, c-format
+msgid "Need to get %sB/%sB of source archives.\n"
+msgstr "აუცილებელია %sბ/%sბ კოდის არქივის მიღება.\n"
+
+#. TRANSLATOR: The required space between number and unit is already included
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#: apt-private/private-source.cc
+#, c-format
+msgid "Need to get %sB of source archives.\n"
+msgstr "საჭიროა %sბ კოდის არქივის მიღება.\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Fetch source %s\n"
+msgstr "%s-ის კოდის მიღება\n"
+
+#: apt-private/private-source.cc
+msgid "Failed to fetch some archives."
+msgstr "ზოგიერთი არქივის გამოთხოვის შეცდომა."
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Skipping unpack of already unpacked source in %s\n"
+msgstr "'%s'-ში უკვე გაშლილი კოდის გაშლის გამოტოვება\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Unpack command '%s' failed.\n"
+msgstr "გაშლის ბრძანება '%s' ჩავარდა.\n"
+
+#: apt-private/private-source.cc
+msgid "Check if the 'dpkg-dev' package is installed.\n"
+msgstr "შეამოწმეთ, დაყენებულია თუ არა პაკეტი 'dpkg-dev'.\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Build command '%s' failed.\n"
+msgstr "აგების ბრძანება '%s' ჩავარდა.\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Unable to get build-dependency information for %s"
+msgstr "%s-სთვის აგების დამოკიდებულებების ინფორმაციის მიღება შეუძლებელია"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "%s has no build depends.\n"
+msgstr "%s აგებისას არაფერზეა დამოკიდებული.\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid ""
+"No architecture information available for %s. See apt.conf(5) "
+"APT::Architectures for setup"
+msgstr ""
+"%s-სთვის არქიტექტურის ინფორმაცია ხელმისაწვდომი არა. მოსარგებად apt.conf(5)-"
+"ის APT::Archtecutes სექცია იხილეთ"
+
+#: apt-private/private-source.cc
+msgid "Must specify at least one package to check builddeps for"
+msgstr "აგების დამოკიდებულებების შესამოწმებლად ერთი პაკეტი მაინც უნდა მიუთითოთ"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid ""
+"Invalid operator '%c' at offset %d, did you mean '%c%c' or '%c='? - in: %s"
+msgstr ""
+"არასწორი ოპერატორი '%c' წანაცვლებაზე %d, გულიხმობდით '%c%c'-ს თუ '%c='-ს? %s-"
+"ში"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Note, using directory '%s' to get the build dependencies\n"
+msgstr ""
+"შენიშვნა: აგების დამოკიდებულებების მისაღებად გამოიყენება საქაღალდე '%s'\n"
+
+#: apt-private/private-source.cc
+#, c-format
+msgid "Note, using file '%s' to get the build dependencies\n"
+msgstr "შენიშვნა: აგების დამოკიდებულებების მისაღებად გამოიყენება ფაილი '%s'\n"
+
+#: apt-private/private-source.cc
+msgid "Failed to process build dependencies"
+msgstr "აგების დამოკიდებულებების დამუშავების შეცდომა"
+
+#: apt-private/private-sources.cc
+#, c-format
+msgid "Failed to parse %s. Edit again? "
+msgstr "%s-ის დამუშავება ჩავარდა. ჩაასწორებთ კიდევ ერთხელ? "
+
+#: apt-private/private-sources.cc
+#, c-format
+msgid "Your '%s' file changed, please run 'apt-get update'.\n"
+msgstr "თქვენი '%s' ფაილი შეიცვალა. გაუშვით 'apt-get update'.\n"
+
+#: apt-private/private-sources.cc
+#, c-format
+msgid "Rewrite %zu sources?"
+msgstr "გადავაწერო თავზე %zu წყაროს?"
+
+#: apt-private/private-unmet.cc
+#, c-format
+msgid "Package %s version %s has an unmet dep:\n"
+msgstr "პაკეტს %s ვერსიით %s დაუკმაყოფილებელი დამოკიდებულებები გააჩნია:\n"
+
+#: apt-private/private-update.cc
+msgid "The update command takes no arguments"
+msgstr "განახლების ბრძანებას არგუმენტები არ სჭირდება"
+
+#. TRANSLATOR: the first two are manpage references, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, c-format
+msgid ""
+"Usage of %s should be preferred over embedding login information directly in "
+"the %s entry for '%s'"
+msgstr ""
+"'%3$s'-სთვის '%2$s ჩანაწერში ავტორიზაციის დეტალების ჩაშენებას '%1$s'-ის "
+"გამოყენება სჯობს"
+
+#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, c-format
+msgid "The %s entry for '%s' should be upgraded to deb822 .sources"
+msgstr ""
+"%s ჩანაწერის განახლება '%s'-ისთვის უნდა განახლდეს დებ822 .sources ფორმატში"
+
+#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, c-format
+msgid "Missing Signed-By in the %s entry for '%s'"
+msgstr "აკლია Signed-By %s-ის ჩანაწერში '%s'-ისთვის"
+
+#: apt-private/private-update.cc
+msgid ""
+"Consider migrating all sources.list(5) entries to the deb822 .sources format"
+msgstr ""
+"იფიქრეთ ყველა sources.list(5) ჩანაწერის მიგრაციაზე deb822 .sources ფორმატში"
+
+#: apt-private/private-update.cc
+msgid ""
+"The deb822 .sources format supports both embedded as well as external "
+"OpenPGP keys"
+msgstr ""
+"deb822 .sources ფორმატს ორივე, ჩაშენებული და გარე OpenPGP გასაღებების "
+"მხარდაჭერა გააჩნია"
+
+#: apt-private/private-update.cc
+msgid "See apt-secure(8) for best practices in configuring repository signing."
+msgstr ""
+"რეპოზიტორიის ხელმოწერის მორგების საუკეთესო რჩევებისთვის იხილეთ apt-secure(8)."
+
+#: apt-private/private-update.cc
+msgid "Some sources can be modernized. Run 'apt modernize-sources' to do so."
+msgstr ""
+"შესაძლებელია ზოგიერთი წყაროს მოდერნიზაცია. ამისთვის გაუშვით 'apt modernize-"
+"sources'."
+
+#: apt-private/private-update.cc
+#, c-format
+msgid "%i package can be upgraded. Run 'apt list --upgradable' to see it.\n"
+msgid_plural ""
+"%i packages can be upgraded. Run 'apt list --upgradable' to see them.\n"
+msgstr[0] ""
+"შესაძლებელია %i პაკეტის ვერსიის აწევა. სანახავად 'apt list --upgradeable' "
+"გაუშვით.\n"
+msgstr[1] ""
+"შესაძლებელია %i პაკეტის ვერსიის აწევა. სანახავად 'apt list --upgradeable' "
+"გაუშვით.\n"
+
+#: apt-private/private-update.cc
+msgid "All packages are up to date."
+msgstr "ყველა პაკეტი განახლებულია."
+
+#: cmdline/apt-cache.cc cmdline/apt-mark.cc
+#, c-format
+msgid "%s does not take any arguments"
+msgstr "%s არგუმენტებს არ იღებს"
+
+#: cmdline/apt-cache.cc
+msgid "Total package names: "
+msgstr "სულ პაკეტის სახელები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total package structures: "
+msgstr "სულ პაკეტის სტრუქტურები: "
+
+#: cmdline/apt-cache.cc
+msgid "  Normal packages: "
+msgstr "  ნორმალური პაკეტები: "
+
+#: cmdline/apt-cache.cc
+msgid "  Pure virtual packages: "
+msgstr "  სუფთად ვირტუალური პაკეტები:  "
+
+#: cmdline/apt-cache.cc
+msgid "  Single virtual packages: "
+msgstr "  ერთი ვირტუალური პაკეტი: "
+
+#: cmdline/apt-cache.cc
+msgid "  Mixed virtual packages: "
+msgstr "  შერეული ვირტუალური პაკეტები:  "
+
+#: cmdline/apt-cache.cc
+msgid "  Missing: "
+msgstr "   აკლია: "
+
+#: cmdline/apt-cache.cc
+msgid "Total distinct source versions: "
+msgstr "სულ განსხვავებული ვერსიები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total distinct versions: "
+msgstr "სულ განსხვავებული ვერსიები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total distinct descriptions: "
+msgstr "სულ განსხვავებული აღწერები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total dependencies: "
+msgstr "სულ დამოკიდებულებები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total ver/file relations: "
+msgstr "სულ ვერს/ფაილის ურთიერთობები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total Desc/File relations: "
+msgstr "სულ აღწ/ფაილის ურთიერთობები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total Provides mappings: "
+msgstr "სულ მომწოდებლის მიბმები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total globbed strings: "
+msgstr "სულ გლობის სტრიქონები: "
+
+#: cmdline/apt-cache.cc
+msgid "Total slack space: "
+msgstr "კეშის თავისუფალი ადგილი: "
+
+#: cmdline/apt-cache.cc
+msgid "Total space accounted for: "
+msgstr "ჯამური ადგილი პაკეტებისთვის: "
+
+#: cmdline/apt-cache.cc
+msgid "This command is deprecated. Please use 'apt-mark showauto' instead."
+msgstr "ეს ბრძანება მოძველებულია. სამაგიეროდ 'apt-mark showauto' გამოიყენეთ."
+
+#: cmdline/apt-cache.cc
+msgid ""
+"Usage: apt-cache [options] command\n"
+"       apt-cache [options] show pkg1 [pkg2 ...]\n"
+"\n"
+"apt-cache queries and displays available information about installed\n"
+"and installable packages. It works exclusively on the data acquired\n"
+"into the local cache via the 'update' command of e.g. apt-get. The\n"
+"displayed information may therefore be outdated if the last update was\n"
+"too long ago, but in exchange apt-cache works independently of the\n"
+"availability of the configured sources (e.g. offline).\n"
+msgstr ""
+"გამოყენება: apt-cache [პარამეტრი] ბრძანება\n"
+"       apt-cache [პარამეტრი] show pkg1 [pkg2 ...]\n"
+"\n"
+"apt-cache დაყენებული და დაყენებადი პაკეტების შესახებ ინფორმაციას გამოითხოვს "
+"და \n"
+"აჩვენებს. ის მხოლოდ, მაგალითად apt-get-ის 'update' ბრძანების მიერ შექმნილ "
+"კეშზე მუშაობს, \n"
+"იმის გამო, რომ განახლება დიდი ხნის წინ მოხდა, \n"
+"გამოტანილი ინფორმაცია შეიძლება მოძველებული აღმოჩნდეს,\n"
+"მაგრამ, სამაგიეროდ, apt-cache მითითებული \n"
+"წყაროების გარეშეც (მაგალითად, ინტერნეტის გარეშე) მუშაობს.\n"
+
+#: cmdline/apt-cache.cc
+msgid "Show source records"
+msgstr "წყაროს ჩანაწერების ჩვენება"
+
+#: cmdline/apt-cache.cc
+msgid "Search the package list for a regex pattern"
+msgstr "პაკეტების სიაში რეგულარული გამოსახულების ნიმუშის მოძებნა"
+
+#: cmdline/apt-cache.cc
+msgid "Show raw dependency information for a package"
+msgstr "პაკეტისთვის დაუმუშავებელი დამოკიდებულებების ინფორმაციის ჩვენება"
+
+#: cmdline/apt-cache.cc
+msgid "Show reverse dependency information for a package"
+msgstr "პაკეტისთვის შებრუნებული დამოკიდებულებების ინფორმაციის ჩვენება"
+
+#: cmdline/apt-cache.cc
+msgid "Show a readable record for the package"
+msgstr "პაკეტისთვის წაკითხვადი ჩანაწერის ჩვენება"
+
+#: cmdline/apt-cache.cc
+msgid "List the names of all packages in the system"
+msgstr "სისტემაში დაყენებული ყველა პაკეტის ჩამონათვალი"
+
+#: cmdline/apt-cache.cc
+msgid "Show policy settings"
+msgstr "პოლიტიკის პარამეტრების ჩვენება"
+
+#: cmdline/apt-cdrom.cc
+msgid "Please provide a name for this Disc, such as 'Debian 5.0.3 Disk 1'"
+msgstr "შეიყვანეთ დისკის სახელი. მაგ 'Debian 5.0.3 Disk 1'"
+
+#: cmdline/apt-cdrom.cc
+msgid "Please insert a Disc in the drive and press [Enter]"
+msgstr "ჩადეთ დისკი ამძრავში და დააწექით [Enter]-ს"
+
+#: cmdline/apt-cdrom.cc
+#, c-format
+msgid "Failed to mount '%s' to '%s'"
+msgstr "'%s'-ის '%s'-ზე მიმაგრების შეცდომა"
+
+#: cmdline/apt-cdrom.cc
+msgid ""
+"No CD-ROM could be auto-detected or found using the default mount point.\n"
+"You may try the --cdrom option to set the CD-ROM mount point.\n"
+"See 'man apt-cdrom' for more information about the CD-ROM auto-detection and "
+"mount point."
+msgstr ""
+"CD-ROM-ი ავტომატურად ვერ ვიპოვე ან მისი ნაგულისხმევი მიმაგრების წერტილი "
+"აღმოჩენილი არაა.\n"
+"მიმაგრების წერტილის სანახავად, შეგიძლიათ, პარამეტრი --cdrom სცადოთ.\n"
+"CD-ROM-ის ავტომატური ამოცნობისა და მიმაგრების წერტილის შესახებ მეტი "
+"ინფორმაციისთვის იხილეთ 'man apt-cdrom'."
+
+#: cmdline/apt-cdrom.cc
+msgid "Repeat this process for the rest of the CDs in your set."
+msgstr "ეს ოპერაცია დარჩენილ CD-ებზეც გაიმეორეთ."
+
+#: cmdline/apt-cdrom.cc
+msgid ""
+"Usage: apt-cdrom [options] command\n"
+"\n"
+"apt-cdrom is used to add CDROM's, USB flashdrives and other removable\n"
+"media types as package sources to APT. The mount point and device\n"
+"information is taken from apt.conf(5), udev(7) and fstab(5).\n"
+msgstr ""
+"გამოყენება: apt-cdrom [პარამეტრები] ბრძანება\n"
+"\n"
+"apt-cdrom-ი CDROM-ების, USB დისკების და სხვა მოხსნადი მედიის ტიპების APT-ის "
+"წყაროდ მისათითებლად \n"
+"გამოიყენება. მიმაგრების წერტილი და მოწყობილობის ინფორმაცია \n"
+"apt.conf(5)-დან, udev(7)-დან და fstab(5)-დან მიიღება\n"
+
+#: cmdline/apt-config.cc
+msgid "Arguments not in pairs"
+msgstr "არგუმენტები წყვილებად არაა"
+
+#: cmdline/apt-config.cc
+msgid ""
+"Usage: apt-config [options] command\n"
+"\n"
+"apt-config is an interface to the configuration settings used by\n"
+"all APT tools, mainly intended for debugging and shell scripting.\n"
+msgstr ""
+"გამოყენება: apt-config [პარამეტრები] ბრძანება\n"
+"\n"
+"apt-config-ი APT-ის ყველა პროგრამის კონფიგურაციის ინტერფეისია,\n"
+"რომელიც ძირითადად გამართვისთვის და გარსის სკრიპტებში გამოიყენება.\n"
+
+#: cmdline/apt-config.cc
+msgid "get configuration values via shell evaluation"
+msgstr "კონფიგურაციის პარამეტრების მიღება გარსის ბრძანებების გაშვებით"
+
+#: cmdline/apt-config.cc
+msgid "show the active configuration setting"
+msgstr "აქტიური კონფიგურაციის პარამეტრის ჩვენება"
+
+#: cmdline/apt-dump-solver.cc
+msgid ""
+"Usage: apt-dump-solver\n"
+"\n"
+"apt-dump-solver is an interface to store an EDSP scenario in\n"
+"a file and optionally forwards it to another solver.\n"
+msgstr ""
+"გამოყენება: apt-dump-solver\n"
+"\n"
+"apt-dump-solver-ი EDSP სცენარების ფაილში შენახვის (და არასავალდებულოდ, \n"
+"სხვა ამომხსნელთან გადამამისამართებელი) ინტერფეისია.\n"
+
+#: cmdline/apt-extracttemplates.cc
+msgid ""
+"Usage: apt-extracttemplates file1 [file2 ...]\n"
+"\n"
+"apt-extracttemplates is used to extract config and template files\n"
+"from debian packages. It is used mainly by debconf(1) to prompt for\n"
+"configuration questions before installation of packages.\n"
+msgstr ""
+"გამოყენება: apt-extracttemplates ფაილ1 [ფაილი2 ...]\n"
+"\n"
+"apt-extracttemplates-i Debian-ის პაკეტებიდან კონფიგურაციის და ნიმუშის "
+"ფაილების გამოსაღებად გამოიყენება.\n"
+"ის ძირითადად debconf(1)-ის მიერ გამოიყენება კონფიგურაციის კითხვებისთვის,\n"
+"სანამ პაკეტების დაყენება მოხდება.\n"
+
+#: cmdline/apt-extracttemplates.cc
+msgid "Cannot get debconf version. Is debconf installed?"
+msgstr "შეცდომა debconf-ის ვერსიის მიღებისას. დაყენებული გაქვთ debconf?"
+
+#: cmdline/apt-get.cc
+#, c-format
+msgid "Couldn't find package %s"
+msgstr "პაკეტი %s ვერ ვიპოვე"
+
+#: cmdline/apt-get.cc cmdline/apt-mark.cc
+#, c-format
+msgid "%s set to automatically installed.\n"
+msgstr "%s ავტომატურად დასაყენებლადაა მონიშნული.\n"
+
+#: cmdline/apt-get.cc cmdline/apt-mark.cc
+msgid ""
+"This command is deprecated. Please use 'apt-mark auto' and 'apt-mark manual' "
+"instead."
+msgstr ""
+"ეს ბრძანება მოძველებულია. გამოიყენეთ 'apt-mark auto' ან 'apt-mark manual'."
+
+#: cmdline/apt-get.cc
+msgid "Internal error, problem resolver broke stuff"
+msgstr "შიდა შეცდომა. პრობლემების გადამჭრელმა რაღაცები გააფუჭა"
+
+#: cmdline/apt-get.cc
+msgid "Supported modules:"
+msgstr "მხარდაჭერილი მოდულები:"
+
+#: cmdline/apt-get.cc
+msgid ""
+"Usage: apt-get [options] command\n"
+"       apt-get [options] install|remove pkg1 [pkg2 ...]\n"
+"       apt-get [options] source pkg1 [pkg2 ...]\n"
+"\n"
+"apt-get is a command line interface for retrieval of packages\n"
+"and information about them from authenticated sources and\n"
+"for installation, upgrade and removal of packages together\n"
+"with their dependencies.\n"
+msgstr ""
+"გამოყენება: apt-get [პარამეტრები] command\n"
+"       apt-get [პარამეტრები] install|remove pkg1 [pkg2 ...]\n"
+"       apt-get [პარამეტრები] source pkg1 [pkg2 ...]\n"
+"\n"
+"apt-get ბრძანების სტრიქონის, როგორც პაკეტების \n"
+"ავთენტიფიცირებული წყაროებიდან გადმოწერისა და დაყენების,\n"
+"მათზე ინფორმაციის მიღებისთვის, ისე მათი, როგორც მათი\n"
+"დამოკიდებულებების დაყენების, წაშლის და განახლების ბრძანებაა.\n"
+
+#: cmdline/apt-get.cc
+msgid "Retrieve new lists of packages"
+msgstr "პაკეტების ახალი სიის მიღება"
+
+#: cmdline/apt-get.cc
+msgid "Perform an upgrade"
+msgstr "განახლების ჩატარება"
+
+#: cmdline/apt-get.cc
+msgid "Install new packages (pkg is libc6 not libc6.deb)"
+msgstr "ახალი პაკეტების დაყენება (pkg არის libc6 და არა libc6.deb)"
+
+#: cmdline/apt-get.cc
+msgid "Reinstall packages (pkg is libc6 not libc6.deb)"
+msgstr "პაკეტების თავიდან დაყენება (pkg არის libc6 და არა libc6.deb)"
+
+#: cmdline/apt-get.cc
+msgid "Remove packages"
+msgstr "პაკეტების მოცილება"
+
+#: cmdline/apt-get.cc
+msgid "Remove packages and config files"
+msgstr "პაკეტის და კონფიგურაციის ფაილების წაშლა"
+
+#: cmdline/apt-get.cc
+msgid "Remove automatically all unused packages"
+msgstr "გამოუყენებელი პაკეტების ავტომატური წაშლა"
+
+#: cmdline/apt-get.cc
+msgid "Distribution upgrade, see apt-get(8)"
+msgstr "დისტრიბუტივის ვერსიის აწევა. იხ apt-get(8)"
+
+#: cmdline/apt-get.cc
+msgid "Follow dselect selections"
+msgstr "'delect'-ის არჩევანზე მიყოლა"
+
+#: cmdline/apt-get.cc
+msgid "Configure build-dependencies for source packages"
+msgstr "კოდის პაკეტის აგების დამოკიდებულებების მორგება"
+
+#: cmdline/apt-get.cc
+msgid "Satisfy dependency strings"
+msgstr "დამოკიდებულების სტრიქონების დაკმაყოფილება"
+
+#: cmdline/apt-get.cc
+msgid "Erase downloaded archive files"
+msgstr "გადმოწერილი არქივის ფაილების წაშლა"
+
+#: cmdline/apt-get.cc
+msgid "Erase old downloaded archive files"
+msgstr "ძველი გადმოწერილი არქივის ფაილების წაშლა"
+
+#: cmdline/apt-get.cc
+msgid "Verify that there are no broken dependencies"
+msgstr "შემოწმება, არსებობს თუ არა არასწორი დამოკიდებულებები"
+
+#: cmdline/apt-get.cc
+msgid "Download source archives"
+msgstr "კოდის არქივების გადმოწერა"
+
+#: cmdline/apt-get.cc
+msgid "Download the binary package into the current directory"
+msgstr "ბინარული პაკეტის გადმოწერა მიმდინარე საქაღალდეში"
+
+#: cmdline/apt-get.cc
+msgid "Download and display the changelog for the given package"
+msgstr "მითითებული პაკეტის ცვლილების ჟურნალის გადმოწერა და ჩვენება"
+
+#: cmdline/apt-helper.cc
+msgid "Need one URL as argument"
+msgstr "არგუმენტად საჭიროა ერთი ბმული"
+
+#: cmdline/apt-helper.cc
+msgid "Must specify at least one pair url/filename"
+msgstr "აუცილებელია სულ ცოტა ერთი ბმული/ფაილისსახელი წყვილის მითითება"
+
+#: cmdline/apt-helper.cc
+msgid "Download Failed"
+msgstr "გადმოწერის შეცდომა"
+
+#: cmdline/apt-helper.cc
+#, c-format
+msgid "GetSrvRec failed for %s"
+msgstr "GetSrvRec-ის შეცდომა %s-სთვის"
+
+#: cmdline/apt-helper.cc
+msgid ""
+"Usage: apt-helper [options] command\n"
+"       apt-helper [options] cat-file file ...\n"
+"       apt-helper [options] download-file uri target-path\n"
+"\n"
+"apt-helper bundles a variety of commands for shell scripts to use\n"
+"e.g. the same proxy configuration or acquire system as APT would.\n"
+msgstr ""
+"გამოყენება: apt-helper [პარამეტრები] ბრძანება\n"
+"       apt-helper [პარამეტრები] cat-file file ...\n"
+"       apt-helper [პარამეტრები] download-file uri target-path\n"
+"\n"
+"apt-helper აერთიანებს მრავალ ბრძანებას, რომლებიც სკრიპტებისთვის,\n"
+"მაგალითად, პროქსის კონფიგურაციისთვის და სისტემის მართვისთვის, ისე, როგორც "
+"ამას APT იზამდა, გამოიყენება.\n"
+
+#: cmdline/apt-helper.cc
+msgid "download the given uri to the target-path"
+msgstr "მითითებული URI-ის სამიზნე ბილიკზე გადმოწერა"
+
+#: cmdline/apt-helper.cc
+msgid "lookup a SRV record (e.g. _http._tcp.ftp.debian.org)"
+msgstr "მოხდება SRV ჩანაწერის ამოხსნა (მაგ: _http._tcp.ftp.debian.org)"
+
+#: cmdline/apt-helper.cc
+msgid "concatenate files, with automatic decompression"
+msgstr "ფაილების კონკატენაცია, ავტომატური გაშლით"
+
+#: cmdline/apt-helper.cc
+msgid "hash file"
+msgstr "ჰეშის ფაილი"
+
+#: cmdline/apt-helper.cc
+msgid "detect proxy using apt.conf"
+msgstr "პროქსის აღმოჩენა apt.conf-ით"
+
+#: cmdline/apt-helper.cc
+msgid "wait for system to be online"
+msgstr "დაელოდეთ, სანამ სისტემა ჩაირთვება"
+
+#: cmdline/apt-helper.cc
+msgid "drop privileges before running given command"
+msgstr "პრივილეგიების დაწევა მითითებული ბრძანების გაშვებამდე"
+
+#: cmdline/apt-helper.cc
+msgid "analyse a pattern"
+msgstr "ნიმუშის ანალიზი"
+
+#: cmdline/apt-internal-planner.cc
+msgid ""
+"Usage: apt-internal-planner\n"
+"\n"
+"apt-internal-planner is an interface to use the current internal\n"
+"installation planner for the APT family like an external one,\n"
+"for debugging or the like.\n"
+msgstr ""
+"გამოყენება: apt-internal-planner\n"
+"\n"
+"apt-internal-planner ინტერფეისია, რომელიც საშუალებას გაძლევთ,\n"
+"APT-ის შიდა დაყენების დამგეგმავი, როგორც გარე, ისე გამოიყენოთ. \n"
+"მაგალითად, გამართვის ან რამე მსგავსისთვის\n"
+
+#: cmdline/apt-internal-solver.cc
+msgid ""
+"Usage: apt-internal-solver\n"
+"\n"
+"apt-internal-solver is an interface to use the current internal\n"
+"resolver for the APT family like an external one, for debugging or\n"
+"the like.\n"
+msgstr ""
+"გამოყენება: apt-internal-solver\n"
+"\n"
+"apt-internal-solver ინტერფესია APT-ს ოჯახის მიმდინარე შიდა ამომხსნელის, "
+"როგორც გარეს\n"
+"გამოსაყენებლად. გამოიყენება, მაგალითად, გამართვისთვის,\n"
+"ან რამე მსგავსისთვის.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "%s can not be marked as it is not installed.\n"
+msgstr "%s-ის დანიშვნა შეუძლებელია, რადგან ის დაყენებული არაა.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "%s was already set to manually installed.\n"
+msgstr "%s, როგორც ხელით დასაყენებელი, უკვე მონიშნული იყო.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "%s was already set to automatically installed.\n"
+msgstr "%s ავტომატურად დასაყენებლად მონიშნული უკვე იყო.\n"
+
+#: cmdline/apt-mark.cc
+msgid "No changes necessary"
+msgstr "ცვლილებები საჭირო არაა"
+
+#: cmdline/apt-mark.cc
+msgid "The following packages will be marked as automatically installed:"
+msgstr "შემდეგი პაკეტები მოინიშნება, როგორც ავტომატურად დასაყენებელი:"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "%s was already set on hold.\n"
+msgstr "%s უკვე შეჩერებულია.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "%s was already not on hold.\n"
+msgstr "%s უკვე შეჩერებული არ იყო.\n"
+
+#: cmdline/apt-mark.cc
+msgid "Executing dpkg failed. Are you root?"
+msgstr "შეცდომა dpkg-ის გაშვებისას. root-ი ბრძანდებით?"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "%s set on hold.\n"
+msgstr "%s მოინიშნა, როგორც შეჩერებული.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "Canceled hold on %s.\n"
+msgstr "%s-ის შეჩერებულობა გაუქმდა.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "Selected %s for purge.\n"
+msgstr "%s არჩეულია გასაწმენდად.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "Selected %s for removal.\n"
+msgstr "%s არჩეულია წასაშლელად.\n"
+
+#: cmdline/apt-mark.cc
+#, c-format
+msgid "Selected %s for installation.\n"
+msgstr "%s არჩეულია დასაყენებლად.\n"
+
+#: cmdline/apt-mark.cc
+msgid ""
+"Usage: apt-mark [options] {auto|manual} pkg1 [pkg2 ...]\n"
+"\n"
+"apt-mark is a simple command line interface for marking packages\n"
+"as manually or automatically installed. It can also be used to\n"
+"manipulate the dpkg(1) selection states of packages, and to list\n"
+"all packages with or without a certain marking.\n"
+msgstr ""
+"გამოყენება: apt-mark [პარამეტრი] {auto|manual} pkg1 [pkg2 ...]\n"
+"\n"
+"apt-mark მარტივი პროგრამაა პაკეტების ავტომატურად ან ხელით დაყენებადად\n"
+"მოსანიშნად. \n"
+"ის ასევე შეგიძლიათ dpkg(1)-ის პაკეტების მდგომარეობის შესაცვლელადაც,\n"
+"ისევე, როგორც გარკვეული ნიშნის მქონე პაკეტების ჩამონათვლის მისაღებად "
+"გამოიყენოთ.\n"
+
+#: cmdline/apt-mark.cc
+msgid "Mark the given packages as automatically installed"
+msgstr "მითითებული პაკეტების ავტომატურად დასაყენებლად მონიშვნა"
+
+#: cmdline/apt-mark.cc
+msgid "Mark the given packages as manually installed"
+msgstr "მითითებული პაკეტების ხელით დასაწყენებლად მონიშვნა"
+
+#: cmdline/apt-mark.cc
+msgid "Mark all dependencies of meta packages as automatically installed."
+msgstr "მეტაპაკეტების დამოკიდებულებების ავტომატური დაყენების ჩართვის მონიშვნა."
+
+#: cmdline/apt-mark.cc
+msgid "Mark a package as held back"
+msgstr "პაკეტის შეჩერებულად მონიშვნა"
+
+#: cmdline/apt-mark.cc
+msgid "Unset a package set as held back"
+msgstr "პაკეტის შეჩერებულად მონიშვნის გაუქმება"
+
+#: cmdline/apt-mark.cc
+msgid "Print the list of automatically installed packages"
+msgstr "ავტომატურად დაყენებული პაკეტების ჩამონათვლის გამოტანა"
+
+#: cmdline/apt-mark.cc
+msgid "Print the list of manually installed packages"
+msgstr "ხელით დაყენებული პაკეტების ჩამონათვალის გამოტანა"
+
+#: cmdline/apt-mark.cc
+msgid "Print the list of packages on hold"
+msgstr "შეჩერებული პაკეტების ჩამონათვალის გამოტანა"
+
+#: cmdline/apt-sortpkgs.cc
+msgid "Unknown package record!"
+msgstr "უცნობი პაკეტის ჩანაწერი!"
+
+#: cmdline/apt-sortpkgs.cc
+msgid ""
+"Usage: apt-sortpkgs [options] file1 [file2 ...]\n"
+"\n"
+"apt-sortpkgs is a simple tool to sort package information files.\n"
+"By default it sorts by binary package information, but the -s option\n"
+"can be used to switch to source package ordering instead.\n"
+msgstr ""
+"გამოყენება: apt-sortpkgs [პარამეტრები] ფაილი1 [ფაილი2 ...]\n"
+"\n"
+"apt-sortpkgs მარტივი პროგრამაა პაკეტის ინფორმაციის ფაილებს დასალაგებლად.\n"
+"ნაგულისხმევად ის ალაგებს ბინარული პაკეტის ინფორმაციის მიხედვით, მაგრამ -s \n"
+"პარამეტრის მითითებით ის კოდის პაკეტების დალაგებაზე გადაერთვება.\n"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] command\n"
+"\n"
+"apt is a commandline package manager and provides commands for\n"
+"searching and managing as well as querying information about packages.\n"
+"It provides the same functionality as the specialized APT tools,\n"
+"like apt-get and apt-cache, but enables options more suitable for\n"
+"interactive use by default.\n"
+msgstr ""
+"გამოყენება: apt [პარამეტრი] ბრძანება\n"
+"\n"
+"apt \n"
+"\n"
+"ბრძანების სტრიქონის პაკეტების მმართველია და გააჩნია პაკეტების\n"
+"როგორც ძებნისა და მართვის, ასევე მათ შესახებ ინფორმაციის გამოთხოვის "
+"ბრძანებები.\n"
+"მას აქვს იგივე ფუნქციონალი, რაც სპეციალიზებულ APT-ის პროგრამებს,\n"
+"როგორებიცაა apt-get და apt-cache, მაგრამ მისი პარამეტრები\n"
+"ინტერაქტიული გამოყენებისთვის უფრო ადვილია.\n"
+
+#. query
+#: cmdline/apt.cc
+msgid "list packages based on package names"
+msgstr "პაკეტების მათი სახელებით დალაგება"
+
+#: cmdline/apt.cc
+msgid "search in package descriptions"
+msgstr "პაკეტების აღწერაში ძებნა"
+
+#: cmdline/apt.cc
+msgid "show package details"
+msgstr "პაკეტის დეტალების ჩვენება"
+
+#. package stuff
+#: cmdline/apt.cc
+msgid "install packages"
+msgstr "პაკეტების დაყენება"
+
+#: cmdline/apt.cc
+msgid "reinstall packages"
+msgstr "პაკეტების თავიდან დაყენება"
+
+#: cmdline/apt.cc
+msgid "remove packages"
+msgstr "პაკეტების წაშლა"
+
+#: cmdline/apt.cc
+msgid "automatically remove all unused packages"
+msgstr "გამოუყენებელი პაკეტების ავტომატური წაშლა"
+
+#. system wide stuff
+#: cmdline/apt.cc
+msgid "update list of available packages"
+msgstr "ხელმისაწვდომი პაკეტების სიის განახლება"
+
+#: cmdline/apt.cc
+msgid "upgrade the system by installing/upgrading packages"
+msgstr "სისტემის ვერსიის აწევა პაკეტების დაყენება/ვერსიის აწევით"
+
+#: cmdline/apt.cc
+msgid "upgrade the system by removing/installing/upgrading packages"
+msgstr "სისტემის ვერსიის აწევა პაკეტების წაშლა/დაყენება/ვერსიის აწევით"
+
+#. history stuff
+#: cmdline/apt.cc
+msgid "show list of history"
+msgstr "ისტორიის სიის ჩვენება"
+
+#: cmdline/apt.cc
+msgid "show info on specific transactions"
+msgstr "ინფორმაციის ჩვენება სპეციფიკური ტრანზაქციების შესახებ"
+
+#: cmdline/apt.cc
+msgid "redo transactions"
+msgstr "ტრანზაქციების გამეორება"
+
+#: cmdline/apt.cc
+msgid "undo transactions"
+msgstr "ტრანზაქციების გაუქმება"
+
+#: cmdline/apt.cc
+msgid "rollback transactions"
+msgstr "ტრანზაქციების დაბრუნება"
+
+#. misc
+#: cmdline/apt.cc
+msgid "edit the source information file"
+msgstr "კოდის ინფორმაციის ფაილის ჩასწორება"
+
+#: cmdline/apt.cc
+msgid "modernize .list files to .sources files"
+msgstr ".list ფაილების მოდერნიზაცია .sources ფაილებამდე"
+
+#: cmdline/apt.cc
+msgid "satisfy dependency strings"
+msgstr "დამოკიდებულების სტრიქონების დაკმაყოფილება"
+
+#: cmdline/apt.cc
+msgid "produce a reason trace for the current state of the package"
+msgstr "მიზეზის ტრეისის წარმოება პაკეტის მიმდინარე მდგომარეობისთვის"
+
+#: dselect/install
+msgid "Bad default setting!"
+msgstr "არასწორი ნაგულისხმები მნიშვნელობა!"
+
+#: dselect/install dselect/update
+msgid "Press [Enter] to continue."
+msgstr "გასაგრძელებლად დააჭირეთ [Enter]-ს."
+
+#: dselect/install
+msgid "Do you want to erase any previously downloaded .deb files?"
+msgstr "გნებავთ ყველა ადრე გადმოწერილი .deb ფაილის წაშლა?"
+
+#: dselect/install
+msgid "Some errors occurred while unpacking. Packages that were installed"
+msgstr "შეცდომები გაშლისას. პაკეტები, რომლებიც დადგა"
+
+#: dselect/install
+msgid "will be configured. This may result in duplicate errors"
+msgstr "მორგებული იქნება. ამან შეიძლება დუბლირების შეცდომები"
+
+#: dselect/install
+msgid "or errors caused by missing dependencies. This is OK, only the errors"
+msgstr ""
+"ან დამოკიდებულებების შეცდომები გამოიწვიოს. თუ ეს მისაღებია, მხოლოდ შეცდომები"
+
+#: dselect/install
+msgid ""
+"above this message are important. Please fix them and run [I]nstall again"
+msgstr ""
+"შეტყობინებები, რომლებიც მაღლაა, მნიშვნელოვანია. გაასწორეთ ისინი და "
+"[I]დაყენება თავიდან გაუშვით"
+
+#: dselect/update
+msgid "Merging available information"
+msgstr "ხელმისაწვდომი ინფორმაციის შერწყმა"
+
+#: ftparchive/apt-ftparchive.cc
+msgid "Package extension list is too long"
+msgstr "პაკეტის გაფართოებების სია ძალიან გრძელია"
+
+#: ftparchive/apt-ftparchive.cc
+#, c-format
+msgid "Error processing directory %s"
+msgstr "საქაღალდის (%s) დამუშავების შეცდომა"
+
+#: ftparchive/apt-ftparchive.cc
+msgid "Source extension list is too long"
+msgstr "წყაროს გაფართოებების სია ძალიან გრძელია"
+
+#: ftparchive/apt-ftparchive.cc
+msgid "Error writing header to contents file"
+msgstr "შემცველობის ფაილში თავსართის ჩაწერის შეცდომა"
+
+#: ftparchive/apt-ftparchive.cc
+#, c-format
+msgid "Error processing contents %s"
+msgstr "%s-ის შემცველობის დამუშავების შეცდომა"
+
+#: ftparchive/apt-ftparchive.cc
+msgid ""
+"Usage: apt-ftparchive [options] command\n"
+"Commands: packages binarypath [overridefile [pathprefix]]\n"
+"          sources srcpath [overridefile [pathprefix]]\n"
+"          contents path\n"
+"          release path\n"
+"          generate config [groups]\n"
+"          clean config\n"
+"\n"
+"apt-ftparchive generates index files for Debian archives. It supports\n"
+"many styles of generation from fully automated to functional replacements\n"
+"for dpkg-scanpackages and dpkg-scansources\n"
+"\n"
+"apt-ftparchive generates Package files from a tree of .debs. The\n"
+"Package file contains the contents of all the control fields from\n"
+"each package as well as the MD5 hash and filesize. An override file\n"
+"is supported to force the value of Priority and Section.\n"
+"\n"
+"Similarly apt-ftparchive generates Sources files from a tree of .dscs.\n"
+"The --source-override option can be used to specify a src override file\n"
+"\n"
+"The 'packages' and 'sources' command should be run in the root of the\n"
+"tree. BinaryPath should point to the base of the recursive search and \n"
+"override file should contain the override flags. Pathprefix is\n"
+"appended to the filename fields if present. Example usage from the \n"
+"Debian archive:\n"
+"   apt-ftparchive packages dists/potato/main/binary-i386/ > \\\n"
+"               dists/potato/main/binary-i386/Packages\n"
+"\n"
+"Options:\n"
+"  -h    This help text\n"
+"  --md5 Control MD5 generation\n"
+"  -s=?  Source override file\n"
+"  -q    Quiet\n"
+"  -d=?  Select the optional caching database\n"
+"  --no-delink Enable delinking debug mode\n"
+"  --contents  Control contents file generation\n"
+"  -c=?  Read this configuration file\n"
+"  -o=?  Set an arbitrary configuration option"
+msgstr ""
+
+#: ftparchive/apt-ftparchive.cc
+msgid "No selections matched"
+msgstr "დამთხვევები აღმოჩენილი არაა"
+
+#: ftparchive/apt-ftparchive.cc
+#, c-format
+msgid "Some files are missing in the package file group `%s'"
+msgstr "პაკეტების ჯგუფს '%s' ზოგიერთი ფაილი აკლია"
+
+#: ftparchive/cachedb.cc
+#, c-format
+msgid "DB was corrupted, file renamed to %s.old"
+msgstr "ბაზა დაზიანებულია. ფაილის სახელი შეიცვალა %s.old-ზე"
+
+#: ftparchive/cachedb.cc
+#, c-format
+msgid "DB is old, attempting to upgrade %s"
+msgstr "ბაზა ძველია.ვეცდები %s-ის ვერსია ავწიო"
+
+#: ftparchive/cachedb.cc
+msgid ""
+"DB format is invalid. If you upgraded from an older version of apt, please "
+"remove and re-create the database."
+msgstr ""
+"ბაზის ფორმატი არასწორია. თუ თქვენ apt-ის ძველი ვერსიიდან განახლდით, წაშალეთ "
+"ის და ბაზა თავიდან შექმენით."
+
+#: ftparchive/cachedb.cc
+#, c-format
+msgid "Unable to open DB file %s: %s"
+msgstr "DB-ის ფაილის (%s) გახსნის შეცდომა: %s"
+
+#: ftparchive/cachedb.cc
+msgid "Failed to read .dsc"
+msgstr ".dsc ფაილის წაითხვა ჩავარდა"
+
+#: ftparchive/cachedb.cc
+msgid "Archive has no control record"
+msgstr "არქივს საკონტროლო ჩანაწერი არ გააჩნია"
+
+#: ftparchive/cachedb.cc
+msgid "Unable to get a cursor"
+msgstr "კურსორის მიღება შეუძლებელია"
+
+#: ftparchive/contents.cc
+msgid "realloc - Failed to allocate memory"
+msgstr "realloc - მეხსიერების გამოყოფის შეცდომა"
+
+#: ftparchive/multicompress.cc
+#, c-format
+msgid "Unknown compression algorithm '%s'"
+msgstr "შეკუმშვის ალგორითმი '%s' უცნობია"
+
+#: ftparchive/multicompress.cc
+#, c-format
+msgid "Compressed output %s needs a compression set"
+msgstr "შეკუმშულ გამოტანას %s შეკუმშვის დაყენება სჭირდება"
+
+#: ftparchive/multicompress.cc
+msgid "Failed to create IPC pipe to subprocess"
+msgstr "ქვეპროცესამდე IPC არხის შექმნის შეცდომა"
+
+#: ftparchive/multicompress.cc
+msgid "Failed to fork"
+msgstr "დამხმარე პროცესის გაშვების შეცდომა"
+
+#: ftparchive/multicompress.cc
+msgid "Compress child"
+msgstr "შვილის შეკუმშვა"
+
+#: ftparchive/multicompress.cc
+#, c-format
+msgid "Internal error, failed to create %s"
+msgstr "შიდა შეცდომა. %s-ის შექმნის მცდელობა ჩავარდა"
+
+#: ftparchive/multicompress.cc
+msgid "IO to subprocess/file failed"
+msgstr "ქვეპროცესის/ფაილის შეტანა/გამოტანა ჩავარდა"
+
+#: ftparchive/multicompress.cc
+msgid "Failed to read while computing MD5"
+msgstr "წაკითხვის შეცდომა MD5-ის გამოთვლისას"
+
+#: ftparchive/multicompress.cc
+#, c-format
+msgid "Failed to rename %s to %s"
+msgstr "%s-ის სახელის %s-ზე გადარქმევის მცდელობა ჩავარდა"
+
+#: ftparchive/override.cc
+#, c-format
+msgid "Unable to open %s"
+msgstr "%s-ის გახსნის შეცდომა"
+
+#. skip spaces
+#. find end of word
+#: ftparchive/override.cc
+#, c-format
+msgid "Malformed override %s line %llu (%s)"
+msgstr "არასწორი გადაფარვა %s ხაზზე %llu (%s)"
+
+#: ftparchive/override.cc
+#, c-format
+msgid "Failed to read the override file %s"
+msgstr "გადაფარვის ფაილის %s წაკითხვის შეცდომა"
+
+#: ftparchive/override.cc
+#, c-format
+msgid "Malformed override %s line %llu #1"
+msgstr "არასწორი გადაფარვა %s ხაზზე %llu #1"
+
+#: ftparchive/override.cc
+#, c-format
+msgid "Malformed override %s line %llu #2"
+msgstr "არასწორი გადაფარვა %s ხაზზე %llu #2"
+
+#: ftparchive/override.cc
+#, c-format
+msgid "Malformed override %s line %llu #3"
+msgstr "არასწორი გადაფარვა %s ხაზზე %llu #3"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "W: Unable to read directory %s\n"
+msgstr "გ: საქაღალდე %s ვერ წავიკითხე\n"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "W: Unable to stat %s\n"
+msgstr "გ: %s-ის აღმოჩენა შეუძლებელია\n"
+
+#: ftparchive/writer.cc
+msgid "E: "
+msgstr "შეცდ: "
+
+#: ftparchive/writer.cc
+msgid "W: "
+msgstr "გაფრთხ: "
+
+#: ftparchive/writer.cc
+msgid "E: Errors apply to file "
+msgstr "შეცდ: შეცდომები ეხება ფაილს  "
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "Failed to resolve %s"
+msgstr "%s-ის ამოხსნის შეცდომა"
+
+#: ftparchive/writer.cc
+msgid "Tree walking failed"
+msgstr "ხის გავლის შეცდომა"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "Failed to open %s"
+msgstr "%s-ის გახსნის შეცდომა"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid " DeLink %s [%s]\n"
+msgstr " DeLink %s [%s]\n"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "*** Failed to link %s to %s"
+msgstr "*** %s -დან %s-მდე ბმულის შექმნის შეცდომა"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid " DeLink limit of %sB hit.\n"
+msgstr " %sბ-ში DeLink-ის ზღვარი გადაჭარბებულია.\n"
+
+#: ftparchive/writer.cc
+msgid "Archive had no package field"
+msgstr "არქივს პაკეტის ველი არ გააჩნია"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "  %.*s has no override entry\n"
+msgstr "  %.*s-ს არ აქვს გადაფარვის ჩანაწერი\n"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "  %.*s maintainer is %.*s not %s\n"
+msgstr "  %.*s-ის წამყვანია %.*s და არა %s\n"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "  %.*s has no source override entry\n"
+msgstr "  %.*s-ს წყაროს გადაფარვის ჩანაწერი არ გააჩნია\n"
+
+#: ftparchive/writer.cc
+#, c-format
+msgid "  %.*s has no binary override entry either\n"
+msgstr "  %.*s-ს ბინარული პაკეტის გადაფარვის ჩანაწერი ასევე არ გააჩნია\n"
+
+#: methods/basehttp.cc
+msgid "Waiting for headers"
+msgstr "თავსართების მოლოდინი"
+
+#: methods/basehttp.cc
+msgid "The HTTP server sent an invalid reply header"
+msgstr "HTTP სერვერის მიერ გამოგზავნილი საპასუხო თავსართი არასწორია"
+
+#: methods/basehttp.cc
+msgid "Bad header line"
+msgstr "არასწორი თავსართის ხაზი"
+
+#: methods/basehttp.cc
+msgid "The HTTP server sent an invalid Content-Length header"
+msgstr "HTTP სერვერის მიერ გამოგზავნილი თავსართი Content-Length არასწორია"
+
+#: methods/basehttp.cc
+msgid "The HTTP server sent an invalid Content-Range header"
+msgstr "HTTP სერვერის მიერ გამოგზავნილი თავსართი Content-Range არასწორია"
+
+#: methods/basehttp.cc
+msgid "This HTTP server has broken range support"
+msgstr "HTTP სერვერს დიაპაზონის არასწორი მხარდაჭერა გააჩნია"
+
+#: methods/basehttp.cc
+msgid "Unknown date format"
+msgstr "თარიღის უცნობი ფორმატი"
+
+#: methods/basehttp.cc
+msgid "Bad header data"
+msgstr "არასწორი თავსართის მონაცემები"
+
+#: methods/basehttp.cc
+msgid "Connection failed"
+msgstr "დაკავშირების შეცდომა"
+
+#: methods/basehttp.cc methods/http.cc
+#, c-format
+msgid "File has unexpected size (%llu != %llu). Mirror sync in progress?"
+msgstr ""
+"ფაილის ზომა მოულოდნელია (%llu != %llu). სარკის სინქრონიზაციას დაამთხვიეთ?"
+
+#: methods/basehttp.cc
+#, c-format
+msgid ""
+"Automatically disabled %s due to incorrect response from server/proxy. (man "
+"5 apt.conf)"
+msgstr ""
+"სერვერის/პროქსის არასწორი პასუხის გამო %s ავტომატურად გამოირთო. (man 5 "
+"apt.conf)"
+
+#: methods/basehttp.cc
+msgid "Internal error"
+msgstr "შიდა შეცდომა"
+
+#: methods/cdrom.cc
+#, c-format
+msgid "Unable to read the cdrom database %s"
+msgstr "CD-ROM-ის ბაზის %s წაკითხვა შეუძლებელია"
+
+#: methods/cdrom.cc
+msgid ""
+"Please use apt-cdrom to make this CD-ROM recognized by APT. apt-get update "
+"cannot be used to add new CD-ROMs"
+msgstr ""
+"APT-სთვის ამ CD-ROM-ის გასაგებინებლად apt-cdrom შეგიძლიათ, გამოიყენოთ. apt-"
+"get update-ს ახალი CD-ROM-ების დასამატებლად ვერ გამოიყენებთ"
+
+#: methods/cdrom.cc
+msgid "Wrong CD-ROM"
+msgstr "არასწორი CD-ROM"
+
+#: methods/cdrom.cc
+#, c-format
+msgid "Unable to unmount the CD-ROM in %s, it may still be in use."
+msgstr ""
+"%s-ში ჩადებული CD-ROM-ის მოხსნა შეუძლებელია. შეიძლება, ის ჯერ კიდევ "
+"გამოიყენება."
+
+#: methods/cdrom.cc
+msgid "Disk not found."
+msgstr "დისკი ვერ ვიპოვე."
+
+#: methods/cdrom.cc methods/file.cc
+msgid "File not found"
+msgstr "ფაილი ვერ მოიძებნა"
+
+#. TRANSLATOR: %s is e.g. Tor's ".onion" which would likely fail or leak info (RFC7686)
+#: methods/connect.cc
+#, c-format
+msgid "Direct connection to %s domains is blocked by default."
+msgstr "%s დომენებთან პირდაპირ მიერთება ნაგულისხმევად გამორთულია."
+
+#: methods/connect.cc
+#, c-format
+msgid "[IP: %s %s]"
+msgstr "[IP: %s %s]"
+
+#: methods/connect.cc
+#, c-format
+msgid "Connected to %s (%s)"
+msgstr "მივუერთდი %s-ს (%s)"
+
+#: methods/connect.cc methods/http.cc
+#, c-format
+msgid "Connecting to %s (%s)"
+msgstr "%s-სთან (%s) მიერთება"
+
+#: methods/connect.cc
+#, c-format
+msgid "Could not create a socket for %s (f=%u t=%u p=%u)"
+msgstr "%s-სთვის (f=%u t=%u p=%u) სოკეტის შექმნა შეუძლებელია"
+
+#: methods/connect.cc
+#, c-format
+msgid "Cannot initiate the connection to %s:%s (%s)."
+msgstr "%s:%s-სთან (%s) დაკავშირების დაწყება შეუძლებელია."
+
+#: methods/connect.cc
+msgid "Failed"
+msgstr "ჩავარდა"
+
+#: methods/connect.cc
+#, c-format
+msgid "Could not connect to %s:%s (%s)."
+msgstr "%s:%s-სთან მიერთების შეცდომა (%s)."
+
+#: methods/connect.cc
+#, c-format
+msgid "Could not connect to %s:%s (%s), connection timed out"
+msgstr "%s:%s-სთან მიერთების შეცდომა (%s). მიერთების მოლოდინის ვადა ამოიწურა"
+
+#: methods/connect.cc
+#, c-format
+msgid "Connecting to %s"
+msgstr "%s-სთან მიერთება"
+
+#: methods/connect.cc
+#, c-format
+msgid "Could not resolve '%s'"
+msgstr "'%s'-ის ამოხსნის შეცდომა"
+
+#: methods/connect.cc
+#, c-format
+msgid "Temporary failure resolving '%s'"
+msgstr "'%s'-ის ამოხსნის დროებითი შეცდომა"
+
+#: methods/connect.cc
+#, c-format
+msgid "System error resolving '%s:%s'"
+msgstr "სისტემური შეცდომა '%s:%s'-ის ამოხსნისას"
+
+#: methods/connect.cc
+#, c-format
+msgid "Something wicked happened resolving '%s:%s' (%i - %s)"
+msgstr "'%s:%s'-ის ამოხსნისას რაღაც უცნაური მოხდა (%i - %s)"
+
+#: methods/connect.cc
+#, c-format
+msgid "Unable to connect to %s:%s:"
+msgstr "%s:%s-სთან მიერთების შეცდომა:"
+
+#: methods/copy.cc
+msgid "Failed to stat"
+msgstr "აღმოჩენის შეცდომა"
+
+#: methods/file.cc
+msgid "Invalid URI, local URIS must not start with //"
+msgstr "არასწორი URI. ლოკალური URI-ები //-ით არ უნდაიწყებოდეს"
+
+#: methods/gpgv.cc
+#, c-format
+msgid "untrusted public key algorithm: %s"
+msgstr "არასანდო საჯარო გასაღების ალგორითმი: %s"
+
+#: methods/gpgv.cc
+#, c-format
+msgid "%s will be deprecated in a future release"
+msgstr "%s მოძველებულად გამოცხადდება მომავალ რელიზში"
+
+#. TRANSLATORS: %s is a single techy word like 'NODATA'
+#: methods/gpgv.cc
+#, c-format
+msgid ""
+"Signed file isn't valid, got '%s' (does the network require authentication?)"
+msgstr ""
+"ხელმოწერილი ფაილი არასწორია. მივიღე '%s' (ქსელს ავთენტიკაცია ხომ არ "
+"სჭირდება?)"
+
+#: methods/gpgv.cc
+msgid "At least one invalid signature was encountered."
+msgstr "აღმოჩენილია სულ ცოტა ერთი არასწორი ხელმოწერა."
+
+#: methods/gpgv.cc
+msgid ""
+"Internal error: Good signature, but could not determine key fingerprint?!"
+msgstr ""
+"შიდა შეცდომა. ხელმოწერა სწორია, მაგრამ გასაღების ანაბეჭდის დადგენა "
+"შეუძლებელია?!"
+
+#: methods/gpgv.cc
+msgid "Could not execute 'gpgv' to verify signature (is gnupg installed?)"
+msgstr ""
+"ხელმოწერის გადასამოწმებლად 'gpgv'-ის გაშვება შეუძლებელია (gnupg დაყენებული "
+"გაქვთ?)"
+
+#: methods/gpgv.cc
+msgid "Unknown error executing gpgv"
+msgstr "უცნობი შეცდომა gpgv-ის შესრულებისას"
+
+#. TRANSLATORS: The second %s is the reason and is untranslated for repository owners.
+#: methods/gpgv.cc
+#, c-format
+msgid "Signature by key %s uses weak algorithm (%s)"
+msgstr "ხელმოწერა გასაღებით %s სუსტ ალგორითმს (%s) იყენებს"
+
+#: methods/gpgv.cc
+msgid "The following signatures were invalid:\n"
+msgstr "შემდეგი ხელმოწერები არასწორია:\n"
+
+#: methods/gpgv.cc
+msgid ""
+"The following signatures couldn't be verified because the public key is not "
+"available:\n"
+msgstr ""
+"შემდეგი ხელმოწერების გადამოწმება შეუძლებელია მათი საჯარო გასაღების "
+"მიუწვდომლობის გამო:\n"
+
+#: methods/http.cc
+msgid "Error reading from server. Remote end closed connection"
+msgstr "სერვერიდან კითხვის შეცდომა. დაშორებულმა მხარემ შეერთება დახურა"
+
+#: methods/http.cc
+msgid "Error reading from server"
+msgstr "სერვერიდან კითხვის შეცდომა"
+
+#: methods/http.cc
+msgid "Error writing to file"
+msgstr "ფაილში ჩაწერის შეცდომა"
+
+#: methods/http.cc
+msgid "Select failed"
+msgstr "არჩევის შეცდომა"
+
+#: methods/http.cc
+msgid "Connection timed out"
+msgstr "კავშირის ვადა გავიდა"
+
+#: methods/http.cc
+msgid "Problem hashing file"
+msgstr "ფაილის ჰეშირების პრობლემა"
+
+#: methods/rred.cc
+msgid "Failed to set modification time"
+msgstr "ცვლილების დროის დაყენების შეცდომა"
+
+#: methods/store.cc
+msgid "Empty files can't be valid archives"
+msgstr "ცარიელი ფაილები სწორი არქივები ვერ იქნება"
