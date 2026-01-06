@@ -12,7 +12,7 @@ usr/bin/apt-mark
 usr/lib/*/libapt-private.so*
 usr/lib/apt/apt-helper
 usr/lib/apt/apt-extracttemplates
-usr/lib/apt/methods/
+/usr/lib/apt/methods/!(*sftp*)
 usr/lib/apt/planners/dump
 usr/lib/apt/solvers/dump
 usr/lib/dpkg/methods/apt/

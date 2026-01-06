@@ -236,6 +236,9 @@ apt (3.1.1) experimental; urgency=medium
 
 apt (3.1.0) experimental; urgency=medium
 
+  [ Thijs Withaar ]
+  * Re-introduced SSH/SFTP transport, now based on the OpenSSH library
+
   [ Julian Andres Klode ]
   * debian/NEWS: Document new requirements on trusted.gpg.d (Closes: #1104320)
   * test: Fix test-skipped regression in 3.0.1
