@@ -1372,19 +1372,34 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIterator pkg, bool assignment)
 {
    DependencySolver solver(cache.GetCache(), cache.GetPolicy(), EDSP::Request::Flags(0));
-   // In case nothing has a positive dependency on pkg it may not actually be discovered in a `why-not`
-   // scenario, so make sure we discover it explicitly.
-   solver.Discover(Var(pkg));
-   if (not solver.FromDepCache(cache) || not solver.Solve())
-      return "";
-   std::unordered_set<Var> seen;
    std::string buf;
-   if (solver[Var(pkg)].assignment == LiftedBool::Undefined)
-      return strprintf(buf, "%s is undecided\n", pkg.FullName().c_str()), buf;
-   if (assignment && solver[Var(pkg)].assignment != LiftedBool::True)
-      return strprintf(buf, "%s is not actually marked for install\n", pkg.FullName().c_str()), buf;
-   if (not assignment && solver[Var(pkg)].assignment == LiftedBool::True)
-      return strprintf(buf, "%s is actually marked for install\n", pkg.FullName().c_str()), buf;
-   return solver.LongWhyStr(Var(pkg), assignment, solver[Var(pkg)].reason, "", seen);
+
+   auto doOne = [&](Var var) -> std::string
+   {
+      solver.Discover(var);
+      if (not solver.FromDepCache(cache) || not solver.Solve())
+	 return "";
+      std::unordered_set<Var> seen;
+      if (solver[var].assignment == LiftedBool::Undefined)
+	 return strprintf(buf, "%s is undecided\n", var.toString(cache).c_str()), buf;
+      if (assignment && solver[var].assignment != LiftedBool::True)
+	 return strprintf(buf, "%s is not actually marked for install\n", var.toString(cache).c_str()), buf;
+      if (not assignment && solver[var].assignment == LiftedBool::True)
+	 return strprintf(buf, "%s is actually marked for install\n", var.toString(cache).c_str()), buf;
+      return solver.LongWhyStr(var, assignment, solver[var].reason, "", seen);
+   };
+
+   if (pkg.VersionList().end())
+   {
+      if (pkg.ProvidesList().end())
+	 return strprintf(buf, "%s is a virtual package without a provider\n", pkg.FullName().c_str()), buf;
+
+      std::ostringstream out;
+      ioprintf(out, "%s is a virtual package, printing all providers\n", pkg.FullName().c_str());
+      for (auto prv = pkg.ProvidesList(); not prv.end(); ++prv)
+	 out << doOne(Var(prv.OwnerVer()));
+      return out.str();
+   }
+   return doOne(Var(pkg));
 }
 } // namespace APT::Solver

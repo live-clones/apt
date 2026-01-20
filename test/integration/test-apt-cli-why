@@ -13,6 +13,8 @@ insertpackage 'unstable' 'other-level-2' 'all' '1' 'Conflicts: level-2
 Provides: level-2'
 insertpackage 'unstable' 'almost-level-2' 'all' '1' 'Conflicts: level-2'
 insertpackage 'unstable' 'level-3' 'all' '1' 'Conflicts: level-3'
+insertpackage 'unstable' 'provider-for-virtual-package' 'all' '1' 'Provides: virtual-package'
+insertpackage 'unstable' 'depends-on-not-really-virtual-package' 'all' '1' 'Depends: not-really-virtual-package'
 setupaptarchive
 
 testsuccess aptmark auto level-1 level-2
@@ -69,3 +71,8 @@ For context, additional choices that could not be installed:
 
 
 testsuccessequal "level-3:amd64 is undecided" apt why level-3
+
+testsuccessequal "virtual-package:amd64 is a virtual package, printing all providers
+provider-for-virtual-package:amd64=1 is undecided" apt why virtual-package
+testsuccessequal "not-really-virtual-package:amd64 is a virtual package without a provider" apt why not-really-virtual-package
+
