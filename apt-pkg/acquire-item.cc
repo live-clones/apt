@@ -1703,8 +1703,9 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
 	       if (TransactionManager->MetaIndexParser->IsArchitectureSupported(arch) == false)
 	       {
 		  new CleanupItem(Owner, TransactionManager, Target);
-		  _error->Notice(_("Skipping acquire of configured file '%s' as repository '%s' doesn't support architecture '%s'"),
-			Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str(), arch.c_str());
+		  if (not std::ranges::contains(APT::Configuration::getArchitectureVariants(true), arch, [](auto v) { return v.name; }))
+		     _error->Notice(_("Skipping acquire of configured file '%s' as repository '%s' doesn't support architecture '%s'"),
+			   Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str(), arch.c_str());
 		  continue;
 	       }
 	       // if the architecture is officially supported but currently no packages for it available,
