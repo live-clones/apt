@@ -1,5 +1,6 @@
 debian/*.service /usr/lib/systemd/system/
 debian/*.timer /usr/lib/systemd/system/
+debian/61-apt.rules /usr/lib/udev/rules.d/
 debian/apt.systemd.daily usr/lib/apt
 debian/default-sequoia.config usr/share/apt/
 etc/apt/
