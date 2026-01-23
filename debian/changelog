@@ -1,3 +1,10 @@
+apt (3.1.14) unstable; urgency=medium
+
+  * why: Render info about all providers on virtual packages
+  * variants: Do not report unsupported variants in repositories
+
+ -- Julian Andres Klode <jak@debian.org>  Fri, 23 Jan 2026 21:02:29 +0100
+
 apt (3.1.13) unstable; urgency=medium
 
   [ Ville Skyttä ]
