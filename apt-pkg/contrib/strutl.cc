@@ -435,6 +435,24 @@ string SizeToStr(double Size)
    return "";
 }
 									/*}}}*/
+// TimeToFixedStr - Convert the time into a (mostly) fixed-size string  *{{{*/
+// ---------------------------------------------------------------------
+/* Converts seconds to HH:MM:SS or MM:SS format */
+string TimeToFixedStr(unsigned long TimeInSecs)
+{
+   int TimeSec = TimeInSecs % 60;
+   int TimeMin = (TimeInSecs / 60) % 60;
+   int TimeHour = (TimeInSecs / 60 / 60);
+   std::string TimeStr;
+
+   if (TimeHour)
+      strprintf(TimeStr, "%02d:%02d:%02d", TimeHour, TimeMin, TimeSec);
+   else
+      strprintf(TimeStr, "%02d:%02d", TimeMin, TimeSec);
+
+   return TimeStr;
+}
+									/*}}}*/
 // TimeToStr - Convert the time into a string				/*{{{*/
 // ---------------------------------------------------------------------
 /* Converts a number of seconds to a hms format */
