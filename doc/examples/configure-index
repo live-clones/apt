@@ -598,7 +598,7 @@ pkgCacheGen
   Essential "<STRING>"; // native,all, none, installed
   Protected "<STRING>"; // native,all, none, installed
   ForceEssential "<STRING_OR_LIST>"; // package names
-  ForceImportant "<LIST>"; // package names
+  ForceImportant "<STRING_OR_LIST>"; // package names
 };
 
 // modify points awarded for various facts about packages while
