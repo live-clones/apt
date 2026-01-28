@@ -31,7 +31,6 @@
 									/*}}}*/
 
 CacheDB::CacheDB(std::string const &DB)
-   : Dbp(0), Fd(NULL), DebFile(0)
 {
    TmpKey[0]='\0';
    ReadyDB(DB);
@@ -54,49 +53,72 @@ bool CacheDB::ReadyDB(std::string const &DB)
    ReadOnly = _config->FindB("APT::FTPArchive::ReadOnlyDB",false);
    
    // Close the old DB
-   if (Dbp != 0) 
-      Dbp->close(Dbp,0);
-   
-   /* Check if the DB was disabled while running and deal with a 
-      corrupted DB */
-   if (DBFailed() == true)
+   if (DbTxn != NULL)
    {
-      _error->Warning(_("DB was corrupted, file renamed to %s.old"),DBFile.c_str());
-      rename(DBFile.c_str(),(DBFile+".old").c_str());
+      err = mdb_txn_commit(DbTxn);
+      if (err)
+        _error->Warning(_("DB transaction ran into an error while saving/closing: %s"),mdb_strerror(err));
+
+      DbTxn = NULL;
+      //mdb_dbi_close(DbEnv, Dbi);
+      mdb_env_close(DbEnv);
+      Dbi = 0;
+      DbEnv = NULL;
    }
+
+   //TODO: we just set DbTxn to NULL, this will never run.
+   // Besides, lmdb doesn't save if anything serious happens, so the
+   // above commit() will fail.
+   // /* Check if the DB was disabled while running and deal with a 
+   //    corrupted DB */
+   // if (DBFailed() == true)
+   // {
+   //    _error->Warning(_("DB was corrupted, file renamed to %s.old"),DBFile.c_str());
+   //    rename(DBFile.c_str(),(DBFile+".old").c_str());
+   // }
    
    DBLoaded = false;
-   Dbp = 0;
+   Dbi = 0;
    DBFile = std::string();
    
    if (DB.empty())
       return true;
 
-   db_create(&Dbp, NULL, 0);
-   if ((err = Dbp->open(Dbp, NULL, DB.c_str(), NULL, DB_BTREE,
-                        (ReadOnly?DB_RDONLY:DB_CREATE),
-                        0644)) != 0)
-   {
-      if (err == DB_OLD_VERSION)
-      {
-          _error->Warning(_("DB is old, attempting to upgrade %s"),DBFile.c_str());
-	  err = Dbp->upgrade(Dbp, DB.c_str(), 0);
-	  if (!err)
-	     err = Dbp->open(Dbp, NULL, DB.c_str(), NULL, DB_HASH,
-                            (ReadOnly?DB_RDONLY:DB_CREATE), 0644);
+   if ((err = mdb_env_create(&DbEnv)))
+      return _error->Error(_("Unable to open DB file %s: %s"),DB.c_str(), mdb_strerror(err));
 
-      }
-      // the database format has changed from DB_HASH to DB_BTREE in 
-      // apt 0.6.44
-      if (err == EINVAL)
+   // if lmdb runs out of space, it won't save the transaction at the mdb_txn_commit() above.
+   if ((err = mdb_env_set_mapsize(DbEnv, DB_MAPSIZE)) != 0)
+   {
+      _error->Warning(_("DB virtual memory sizing failed at '%li', trying lower value. %s"), DB_MAPSIZE, mdb_strerror(err));
+      if ((err = mdb_env_set_mapsize(DbEnv, DB_MAPSIZE / 4)) != 0)
       {
-	 _error->Error(_("DB format is invalid. If you upgraded from an older version of apt, please remove and re-create the database."));
+         //TODO: what to do?
+         return _error->Error(_("DB virtual memory sizing failed at '%li', please... . %s"), DB_MAPSIZE / 4, mdb_strerror(err));
       }
-      if (err)
-      {
-          Dbp = 0;
-          return _error->Error(_("Unable to open DB file %s: %s"),DB.c_str(), db_strerror(err));
-      }
+   }
+
+   if ((err = mdb_env_open(DbEnv,DB.c_str(),MDB_NOSUBDIR | (ReadOnly ? MDB_RDONLY : 0),0664)))
+   {
+      mdb_env_close(DbEnv);
+      if (err == MDB_INVALID || err == MDB_VERSION_MISMATCH)
+         _error->Error(_("DB format is invalid. If you upgraded from an older version of apt, please remove and re-create the database."));
+
+      return _error->Error(_("Unable to open DB file %s: %s"),DB.c_str(), mdb_strerror(err));
+   }
+
+   if ((err = mdb_txn_begin(DbEnv, NULL, 0, &DbTxn)))
+   {
+      mdb_env_close(DbEnv);
+      return _error->Error(_("Unable to open DB transaction for %s: %s"),DB.c_str(), mdb_strerror(err));
+   }
+
+   if ((err = mdb_dbi_open(DbTxn, NULL, 0, &Dbi)))
+   {
+      mdb_txn_abort(DbTxn);
+      DbTxn = NULL;
+      mdb_env_close(DbEnv);
+      return _error->Error(_("Unable to open DB transaction for %s: %s"),DB.c_str(), mdb_strerror(err));
    }
 
    DBFile = DB;
@@ -181,48 +203,9 @@ bool CacheDB::GetFileStat(bool const &doStat)
                            _("Failed to stat %s"),FileName.c_str());
    }
    CurStat.FileSize = St.st_size;
-   CurStat.mtime = htonl(St.st_mtime);
+   CurStat.mtime = St.st_mtime;
    CurStat.Flags |= FlSize;
    
-   return true;
-}
-									/*}}}*/
-// CacheDB::GetCurStatCompatOldFormat           			/*{{{*/
-// ---------------------------------------------------------------------
-/* Read the old (32bit FileSize) StateStore format from disk */
-bool CacheDB::GetCurStatCompatOldFormat()
-{
-   InitQueryStats();
-   Data.data = &CurStatOldFormat;
-   Data.flags = DB_DBT_USERMEM;
-   Data.ulen = sizeof(CurStatOldFormat);
-   if (Get() == false)
-   {
-      CurStat.Flags = 0;
-   } else {
-      CurStat.Flags = CurStatOldFormat.Flags;
-      CurStat.mtime = CurStatOldFormat.mtime;
-      CurStat.FileSize = CurStatOldFormat.FileSize;
-      memcpy(CurStat.MD5, CurStatOldFormat.MD5, sizeof(CurStat.MD5));
-      memcpy(CurStat.SHA1, CurStatOldFormat.SHA1, sizeof(CurStat.SHA1));
-      memcpy(CurStat.SHA256, CurStatOldFormat.SHA256, sizeof(CurStat.SHA256));
-   }
-   return true;
-}
-									/*}}}*/
-// CacheDB::GetCurStatCompatOldFormat           			/*{{{*/
-// ---------------------------------------------------------------------
-/* Read the new (64bit FileSize) StateStore format from disk */
-bool CacheDB::GetCurStatCompatNewFormat()
-{
-   InitQueryStats();
-   Data.data = &CurStat;
-   Data.flags = DB_DBT_USERMEM;
-   Data.ulen = sizeof(CurStat);
-   if (Get() == false)
-   {
-      CurStat.Flags = 0;
-   }
    return true;
 }
 									/*}}}*/
@@ -238,27 +221,17 @@ bool CacheDB::GetCurStat()
    {
       // do a first query to just get the size of the data on disk
       InitQueryStats();
-      Data.data = &CurStat;
-      Data.flags = DB_DBT_USERMEM;
-      Data.ulen = 0;
-      Get();
 
-      if (Data.size == 0)
-      {
-         // nothing needs to be done, we just have not data for this deb
-      }
-      // check if the record is written in the old format (32bit filesize)
-      else if(Data.size == sizeof(CurStatOldFormat))
-      {
-         GetCurStatCompatOldFormat();
-      }
-      else if(Data.size == sizeof(CurStat))
-      {
-         GetCurStatCompatNewFormat();
-      } else {
-         return _error->Error("Cache record size mismatch (%ul)", Data.size);
-      }
+      if (!Get())
+         return true;
 
+      if (Data.mv_size != sizeof(CurStat))
+         return _error->Error("Cache record size mismatch (%lu)", Data.mv_size);
+
+      memcpy(&CurStat, Data.mv_data, sizeof(CurStat));
+
+      //TODO: Can you cache on 1 machine and reuse on a different arch?
+      // just store in host endian - FileSize was always wrong anyway (u64).
       CurStat.Flags = ntohl(CurStat.Flags);
       CurStat.FileSize = ntohl(CurStat.FileSize);
    }      
@@ -306,7 +279,7 @@ bool CacheDB::LoadSource()						/*{{{*/
    {
       // Lookup the control information
       InitQuerySource();
-      if (Get() == true && Dsc.TakeDsc(Data.data, Data.size) == true)
+      if (Get() == true && Dsc.TakeDsc(Data.mv_data, Data.mv_size) == true)
       {
 	    return true;
       }
@@ -340,7 +313,7 @@ bool CacheDB::LoadControl()
    {
       // Lookup the control information
       InitQueryControl();
-      if (Get() == true && Control.TakeControl(Data.data,Data.size) == true)
+      if (Get() == true && Control.TakeControl(Data.mv_data,Data.mv_size) == true)
 	    return true;
       CurStat.Flags &= ~FlControl;
    }
@@ -377,7 +350,7 @@ bool CacheDB::LoadContents(bool const &GenOnly)
       InitQueryContent();
       if (Get() == true)
       {
-	 if (Contents.TakeContents(Data.data,Data.size) == true)
+	 if (Contents.TakeContents(Data.mv_data,Data.mv_size) == true)
 	    return true;
       }
       
@@ -523,7 +496,8 @@ bool CacheDB::Finish()
    CurStat.Flags = htonl(CurStat.Flags);
    CurStat.FileSize = htonl(CurStat.FileSize);
    InitQueryStats();
-   Put(&CurStat,sizeof(CurStat));
+   if (!Put(&CurStat,sizeof(CurStat)))
+      _error->Warning(_("Put ran into an issue"));
    CurStat.Flags = ntohl(CurStat.Flags);
    CurStat.FileSize = ntohl(CurStat.FileSize);
 
@@ -538,41 +512,47 @@ bool CacheDB::Clean()
    if (DBLoaded == false)
       return true;
 
-   /* I'm not sure what VERSION_MINOR should be here.. 2.4.14 certainly
-      needs the lower one and 2.7.7 needs the upper.. */
-   DBC *Cursor;
-   if ((errno = Dbp->cursor(Dbp, NULL, &Cursor, 0)) != 0)
+   int err;
+   MDB_cursor *Cursor;
+
+   if ((err = mdb_cursor_open(DbTxn, Dbi, &Cursor)))
       return _error->Error(_("Unable to get a cursor"));
    
-   DBT Key;
-   DBT Data;
-   memset(&Key,0,sizeof(Key));
-   memset(&Data,0,sizeof(Data));
-   while ((errno = Cursor->c_get(Cursor,&Key,&Data,DB_NEXT)) == 0)
+   while ((err = mdb_cursor_get(Cursor, &Key, &Data, MDB_NEXT)) == 0)
    {
-      const char *Colon = (char*)memrchr(Key.data, ':', Key.size);
+      const char *Colon = (char*)memrchr(Key.mv_data, ':', Key.mv_size);
       if (Colon)
       {
-         if (stringcmp(Colon + 1, (char *)Key.data+Key.size,"st") == 0 ||
-             stringcmp(Colon + 1, (char *)Key.data+Key.size,"cl") == 0 ||
-             stringcmp(Colon + 1, (char *)Key.data+Key.size,"cs") == 0 ||
-             stringcmp(Colon + 1, (char *)Key.data+Key.size,"cn") == 0)
-	 {
-            std::string FileName = std::string((const char *)Key.data,Colon);
+         if (stringcmp(Colon + 1, (char *)Key.mv_data+Key.mv_size,"st") == 0 ||
+               stringcmp(Colon + 1, (char *)Key.mv_data+Key.mv_size,"cl") == 0 ||
+               stringcmp(Colon + 1, (char *)Key.mv_data+Key.mv_size,"cs") == 0 ||
+               stringcmp(Colon + 1, (char *)Key.mv_data+Key.mv_size,"cn") == 0)
+         {
+            std::string FileName = std::string((const char *)Key.mv_data,Colon);
             if (FileExists(FileName) == true) {
-		continue;
+               continue;
             }
-	 }
+         }
       }
-      Cursor->c_del(Cursor,0);
+      mdb_cursor_del(Cursor, 0);
    }
-   int res = Dbp->compact(Dbp, NULL, NULL, NULL, NULL, DB_FREE_SPACE, NULL);
-   if (res < 0)
-      _error->Warning("compact failed with result %i", res);
+   //It's a mem-mapped Btreee, no compaction or fragmentation
 
    if(_config->FindB("Debug::APT::FTPArchive::Clean", false) == true)
-      Dbp->stat_print(Dbp, 0);
-
+   {
+      //simulate output of mdb_stat
+      MDB_stat stats;
+      memset(&stats, 0, sizeof(stats));
+      if (mdb_stat(DbTxn, Dbi, &stats) == 0)
+      {
+         std::cout << "Status of Main DB"    << std::endl;
+         std::cout << "  Tree depth: "       << stats.ms_depth << std::endl;
+         std::cout << "  Branch pages: "     << stats.ms_branch_pages << std::endl;
+         std::cout << "  Leaf pages: "       << stats.ms_leaf_pages << std::endl;
+         std::cout << "  Overflow pages: "   << stats.ms_overflow_pages << std::endl;
+         std::cout << "  Entries: "          << stats.ms_entries << std::endl;
+      }
+   }
 
    return true;
 }

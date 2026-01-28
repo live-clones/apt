@@ -14,15 +14,21 @@
 #include <apt-pkg/debfile.h>
 #include <apt-pkg/hashes.h>
 
-#include <db.h>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <lmdb.h>
 #include <string>
 
 #include "contents.h"
 #include "sources.h"
+
+// Memory map size to use for LMDB - virtual, not physical.
+//    Has to be pagesize multiples, 4KiB or getpagesize()?
+//    Should probably do an async flush every X puts
+//    1 dist repo 'packages' database needs roughly 1GB - allow several.
+#define DB_MAPSIZE      10240L * (256 * 4096)     // 10GiB
 
 class FileFd;
 
@@ -32,10 +38,12 @@ class CacheDB
    protected:
       
    // Database state/access
-   DBT Key;
-   DBT Data;
+   MDB_val Key;
+   MDB_val Data;
    std::string TmpKey;
-   DB *Dbp;
+   MDB_dbi Dbi {};
+   MDB_txn *DbTxn {};
+   MDB_env *DbEnv {};
    bool DBLoaded;
    bool ReadOnly;
    std::string DBFile;
@@ -43,11 +51,9 @@ class CacheDB
    // Generate a key for the DB of a given type
    void _InitQuery(const char *Type)
    {
-      memset(&Key,0,sizeof(Key));
-      memset(&Data,0,sizeof(Data));
       TmpKey.assign(FileName).append(":").append(Type);
-      Key.data = TmpKey.data();
-      Key.size = TmpKey.size();
+      Key.mv_data = TmpKey.data();
+      Key.mv_size = TmpKey.size();
    }
    
    void InitQueryStats() {
@@ -65,18 +71,21 @@ class CacheDB
 
    inline bool Get() 
    {
-      return Dbp->get(Dbp,0,&Key,&Data,0) == 0;
+      return mdb_get(DbTxn, Dbi, &Key, &Data) == 0;
    };
    inline bool Put(const void *In,unsigned long const &Length) 
    {
       if (ReadOnly == true)
-	 return true;
-      Data.size = Length;
-      Data.data = (void *)In;
-      if (DBLoaded == true && (errno = Dbp->put(Dbp,0,&Key,&Data,0)) != 0)
+         return true;
+      Data.mv_size = Length;
+      Data.mv_data = (void *)In;
+      int err = mdb_put(DbTxn,Dbi,&Key,&Data,0);
+      if (DBLoaded == true && err != 0)
       {
-	 DBLoaded = false;
-	 return false;
+         //TODO: not translated, move to source file, maybe stop inlining?
+         _error->Warning("DB put failed to store a record: %s",mdb_strerror(err));
+         DBLoaded = false;
+         return false;
       }
       return true;
    }
@@ -86,11 +95,7 @@ class CacheDB
    bool OpenDebFile();
    void CloseDebFile();
 
-   // GetCurStat needs some compat code, see lp #1274466)
-   bool GetCurStatCompatOldFormat();
-   bool GetCurStatCompatNewFormat();
    bool GetCurStat();
-
    bool GetFileStat(bool const &doStat = false);
    bool LoadControl();
    bool LoadContents(bool const &GenOnly);
@@ -102,18 +107,6 @@ class CacheDB
                   FlSize=(1<<3), FlSHA1=(1<<4), FlSHA256=(1<<5),
                   FlSHA512=(1<<6), FlSource=(1<<7)
    };
-
-   // the on-disk format changed (FileSize increased to 64bit) in 
-   // commit 650faab0 which will lead to corruption with old caches
-   struct StatStoreOldFormat
-   {
-      uint32_t Flags;
-      uint32_t mtime;
-      uint32_t FileSize;
-      uint8_t  MD5[16];
-      uint8_t  SHA1[20];
-      uint8_t  SHA256[32];
-   } CurStatOldFormat;
 
    // WARNING: this struct is read/written to the DB so do not change the
    //          layout of the fields (see lp #1274466), only append to it
@@ -131,8 +124,8 @@ class CacheDB
    
    // 'set' state
    std::string FileName;
-   FileFd *Fd;
-   debDebFile *DebFile;
+   FileFd *Fd {};
+   debDebFile *DebFile {};
    
    public:
 
@@ -169,7 +162,7 @@ class CacheDB
    } Stats;
    
    bool ReadyDB(std::string const &DB = "");
-   inline bool DBFailed() {return Dbp != 0 && DBLoaded == false;};
+   inline bool DBFailed() {return DbTxn && DbEnv && Dbi != 0 && DBLoaded == false;};
    inline bool Loaded() {return DBLoaded == true;};
    
    inline unsigned long long GetFileSize(void) {return CurStat.FileSize;}
