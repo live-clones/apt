@@ -449,10 +449,10 @@ The following packages have unmet dependencies:
  uninstallablepkg : Depends: libmtp8 (>= 10:0.20.1) but it is not going to be installed
                     Depends: amarok-utils (= 2.3.2-2+exp) but it is not going to be installed
 E: Unable to satisfy dependencies. Reached two conflicting assignments:
-   1. amarok-utils:i386=2.3.2-2+exp is not selected for install
-   2. amarok-utils:i386=2.3.2-2+exp is selected for install because:
-      1. uninstallablepkg:i386=1.0 is selected for install
-      2. uninstallablepkg:i386 Depends amarok-utils (= 2.3.2-2+exp)" aptget install uninstallablepkg/experimental --trivial-only -V --solver 3.0
+   1. uninstallablepkg:i386=1.0 is selected for install
+   2. uninstallablepkg:i386 Depends libmtp8 (>= 10:0.20.1)
+      but none of the choices are installable:
+      [no choices]" aptget install uninstallablepkg/experimental --trivial-only -V --solver 3.0
 
 insertinstalledpackage 'libmtp8' 'i386'  '1'
 insertinstalledpackage 'amarok' 'i386' '3' 'Depends: amarok-common (= 3), libmtp8 (>= 1)'
