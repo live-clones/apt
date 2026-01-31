@@ -1053,9 +1053,9 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
       }
       else
       {
-	 auto all = start.AllTargets();
+	 std::unique_ptr<pkgCache::Version *[]> all(start.AllTargets());
 
-	 for (auto tgt = all; *tgt; ++tgt)
+	 for (auto tgt = all.get(); *tgt; ++tgt)
 	 {
 	    pkgCache::VerIterator tgti(cache, *tgt);
 
@@ -1063,7 +1063,6 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
 	       std::cerr << "Adding work to  item " << reason.toString(cache) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
 	    clause.solutions.push_back(Var(pkgCache::VerIterator(cache, *tgt)));
 	 }
-	 delete[] all;
 	 std::stable_sort(clause.solutions.begin() + begin, clause.solutions.end(), CompareProviders3{cache, policy, start.TargetPkg(), *this});
       }
       if (start == end)
