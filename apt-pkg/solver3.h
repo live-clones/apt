@@ -200,6 +200,7 @@ struct Lit
    int32_t value;
 
    public:
+   constexpr Lit() : value{0} {}
    // SAFETY: value must be 31 bit, one bit is needed for the sign.
    constexpr Lit(Var var) : value{static_cast<int32_t>(var.value)} {}
 
@@ -328,6 +329,8 @@ class Solver
    inline State &operator[](Var r);
    inline const State &operator[](Var r) const;
 
+   inline std::vector<const Clause *> &watches(Lit lit);
+
    // \brief Heap of the remaining work.
    //
    // In contrast to MiniSAT which picks undecided literals and decides them,
@@ -364,6 +367,8 @@ class Solver
    virtual void Discover(Var var) = 0;
    // \brief Propagate all pending propagations
    [[nodiscard]] bool Propagate();
+   // \brief Propagate all pending propagations
+   [[nodiscard]] bool Propagate(const Clause *clause, Lit lit);
 
    // \brief Return the current level (.size() with casting)
    level_type decisionLevel()
@@ -442,7 +447,7 @@ class DependencySolver : public Solver
    bool KeepSuggests{_config->FindB("APT::AutoRemove::SuggestsImportant", true)};
 
    // Helper functions for detecting obsolete packages
-   mutable FastContiguousCacheMap<pkgCache::Package, char> pkgObsolete;
+   mutable FastContiguousCacheMap<pkgCache::Package, LiftedBool> pkgObsolete;
    bool Obsolete(pkgCache::PkgIterator pkg, bool AllowManual = false) const;
    bool ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const;
 
@@ -509,9 +514,6 @@ struct APT::Solver::Solver::Work
    /// Number of valid choices at insertion time
    size_t size{0};
 
-   // \brief This item should be removed from the queue.
-   bool erased{false};
-
    bool operator<(APT::Solver::Solver::Work const &b) const;
    std::string toString(pkgCache &cache) const;
    inline Work(const Clause *clause, level_type level) : clause(clause), level(level) {}
@@ -556,8 +558,8 @@ struct APT::Solver::Solver::State
 
    // \brief Clauses owned by this package/version
    std::vector<std::unique_ptr<Clause>> clauses;
-   // \brief Reverse clauses, that is dependencies (or conflicts) from other packages on this one
-   std::vector<const Clause *> rclauses;
+   // \brief Watches watching a clause by sign
+   std::vector<const Clause *> watches[2];
 };
 
 /**
@@ -609,3 +611,8 @@ struct std::hash<APT::Solver::Lit>
    std::hash<decltype(APT::Solver::Lit::value)> hash_value;
    std::size_t operator()(const APT::Solver::Lit &v) const noexcept { return hash_value(v.value); }
 };
+
+inline std::vector<const APT::Solver::Clause *> &APT::Solver::Solver::watches(Lit lit)
+{
+   return (*this)[lit.var()].watches[lit.sign()];
+}
