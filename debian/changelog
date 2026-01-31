@@ -1,3 +1,14 @@
+apt (3.1.15) unstable; urgency=medium
+
+  * solver3: Use classical watchers for propagation
+    This may cause some changes to the solver result due to different
+    tree traversal order.
+  * Refactorings:
+    - Use LiftedBool for Obsolete state
+    - Erased items do not exist anymore
+
+ -- Julian Andres Klode <jak@debian.org>  Sat, 31 Jan 2026 17:55:33 +0100
+
 apt (3.1.14) unstable; urgency=medium
 
   * why: Render info about all providers on virtual packages
