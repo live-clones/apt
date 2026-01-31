@@ -1008,7 +1008,7 @@ void DependencySolver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
       dep.GlobOr(start, end); // advances dep
 
       bool allHaveDep = true;
-      for (auto ver = Pkg.VersionList()++; allHaveDep && not ver.end(); ver++)
+      for (auto ver = ++Pkg.VersionList(); allHaveDep && not ver.end(); ver++)
       {
 	 bool haveDep = false;
 	 for (auto otherDep = ver.DependsList(); not haveDep && not otherDep.end();)
