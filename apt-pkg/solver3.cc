@@ -87,7 +87,7 @@ std::string APT::Solver::Clause::toString(pkgCache &cache, bool pretty, bool sho
 	 out.append(dep.TargetPkg().FullName(true));
 	 if (dep.TargetVer())
 	    out.append(" (").append(dep.CompType()).append(" ").append(dep.TargetVer()).append(")");
-	 if (!(dep->CompareOp & pkgCache::Dep::Or))
+	 if (not(dep->CompareOp & pkgCache::Dep::Or))
 	    break;
 	 out.append(" | ");
       }
@@ -376,7 +376,7 @@ bool Solver::Enqueue(Lit lit, const Clause *reason)
 
 bool Solver::Propagate()
 {
-   while (!propQ.empty())
+   while (not propQ.empty())
    {
       Var var = propQ.front();
       propQ.pop();
@@ -391,11 +391,8 @@ bool Solver::Propagate()
 	 Discover(lit.var());
 
       for (auto clause : watches(lit))
-      {
-	 if (Propagate(clause, lit))
-	    continue;
-	 return false;
-      }
+	 if (not Propagate(clause, lit))
+	    return false;
    }
    return true;
 }
