@@ -425,7 +425,7 @@ class Solver
  * It is a brute force solver with heuristics, conflicts learning, and 2**32 levels
  * of backtracking.
  */
-class DependencySolver : public Solver
+class DependencySolver final : public Solver
 {
    friend class CompareProviders3;
 
