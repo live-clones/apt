@@ -684,13 +684,34 @@ static void * handleClient(int const client, size_t const id)		/*{{{*/
    std::ofstream logfile(logfilepath);
    basic_teeostream<char> log(std::clog, logfile);
 
-   log << "ACCEPT client " << client << std::endl;
    bool closeConnection = false;
+   bool firstHandshake = true;
+   std::array<char, 2> handshake = {'\0', '\0' };
+   if (not FileFd::Read(client, handshake.data(), handshake.size() * sizeof(decltype(handshake)::value_type)))
+   {
+      log << "READ ERROR handshake from client " << client << '\n';
+      closeConnection = true;
+   }
+   // a TLS handshake packet starts with the type 0x16 and a two byte TLS version,
+   // but all versions start with 0x03 and TLS1.3 defines it as a legacy version
+   // hardcoding it to the TLS1.2 value of 0x03 0x03.
+   else if (handshake[0] == 0x16 && handshake[1] == 0x03)
+   {
+      log << "REFUSE TLS-handshaking client " << client << '\n';
+      closeConnection = true;
+   }
+   else
+      log << "ACCEPT client " << client << '\n';
    while (closeConnection == false)
    {
       std::vector<std::string> messages;
       if (ReadMessages(client, messages) == false)
 	 break;
+      if (firstHandshake && not messages.empty())
+      {
+	 messages.front().insert(0, handshake.data(), handshake.size());
+	 firstHandshake = false;
+      }
 
       std::list<std::string> headers;
       for (std::vector<std::string>::const_iterator m = messages.begin();

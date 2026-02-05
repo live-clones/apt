@@ -12,6 +12,11 @@ changetohttpswebserver
 echo 'foo' > aptarchive/foo
 echo 'bar' > aptarchive/foo2
 
+msgtest 'aptwebserver instantly resets connection' 'on HTTP-only TLS'
+# the reported error is currently (but that seems a bit brittle to check for explicitly):
+#  SSL connection failed: error:00000000:lib(0)::reason(0) / Connection reset by peer
+testfailure --nomsg apthelper download-file "https://localhost:${APTHTTPPORT}/foo" './downloaded/foo' -o Acquire::Retries=0
+
 test_apt_helper_download() {
     msgmsg 'Test with' "$1"
 

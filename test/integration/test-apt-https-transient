@@ -24,18 +24,17 @@ testfileequal httpfile 'alright'
 rm -f httpfile httpsfile
 
 # Speak wrong protocols (https on http port and vice versa). We check that they can be retried.
-
 msgtest 'protocol negotiation error is transient for' 'https'
-testfailureequal "Ign:1 https://localhost:${APTHTTPPORT}/working
-  Could not wait for server fd - select (11: Resource temporarily unavailable)
-Err:1 https://localhost:${APTHTTPPORT}/working
-  Could not wait for server fd - select (11: Resource temporarily unavailable)
-E: Failed to fetch https://localhost:${APTHTTPPORT}/working  Could not wait for server fd - select (11: Resource temporarily unavailable)
-E: Download Failed" apthelper download-file "https://localhost:${APTHTTPPORT}/working" httpfile -oAcquire::https::Timeout=1 -oAcquire::Retries=1
+testfailure --nomsg apthelper download-file "https://localhost:${APTHTTPPORT}/working" httpfile -oAcquire::https::Timeout=1 -oAcquire::Retries=1
+cp -a rootdir/tmp/testfailure.output httpsonhttp.output
+# the error details produced seem a bit too internal to hardcode them here:
+#  SSL connection failed: error:00000000:lib(0)::reason(0) / Connection reset by peer
+testsuccess grep "^Ign:1 https://localhost:${APTHTTPPORT}/working$" httpsonhttp.output
+testsuccess grep "^Err:1 https://localhost:${APTHTTPPORT}/working$" httpsonhttp.output
 
 # Speak wrong protocols (https on http port and vice versa)
 msgtest 'protocol negotiation error is transient for' 'http'
-testfailureequal "Ign:1 http://localhost:${APTHTTPSPORT}/working
+testfailureequal --nomsg "Ign:1 http://localhost:${APTHTTPSPORT}/working
   Connection failed
 Err:1 http://localhost:${APTHTTPSPORT}/working
   Connection failed
