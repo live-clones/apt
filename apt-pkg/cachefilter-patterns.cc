@@ -446,7 +446,7 @@ std::unique_ptr<APT::CacheFilter::Matcher> PatternParser::aPattern(std::unique_p
       return std::make_unique<Patterns::PackageIsConfigFiles>();
    if (node->matches("?depends", 1, 1))
       return std::make_unique<Patterns::VersionDepends>(aPattern(node->arguments[0]));
-   if (node->matches("?predepends", 1, 1))
+   if (node->matches("?pre-depends", 1, 1))
       return std::make_unique<Patterns::VersionDepends>(aPattern(node->arguments[0]), pkgCache::Dep::PreDepends);
    if (node->matches("?suggests", 1, 1))
       return std::make_unique<Patterns::VersionDepends>(aPattern(node->arguments[0]), pkgCache::Dep::Suggests);
