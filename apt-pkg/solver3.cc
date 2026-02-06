@@ -18,8 +18,6 @@
  * classic APT solver.
  */
 
-#define APT_COMPILING_APT
-
 #include <config.h>
 
 #include <apt-pkg/algorithms.h>
@@ -59,7 +57,7 @@ Solver::Solver(pkgCache &cache)
 Solver::~Solver() = default;
 
 // This function determines if a work item is less important than another.
-bool Solver::Work::operator<(Solver::Work const &b) const
+constexpr bool Solver::Work::operator<(Solver::Work const &b) const noexcept
 {
    if ((not clause->optional && size < 2) != (not b.clause->optional && b.size < 2))
       return not b.clause->optional && b.size < 2;
@@ -130,7 +128,7 @@ std::string Solver::Work::toString(pkgCache &cache) const
    return out.str();
 }
 
-inline Var Solver::bestReason(Clause const *clause, Var var) const
+constexpr Var Solver::bestReason(Clause const *clause, Var var) const noexcept
 {
    if (not clause)
       return Var{};
@@ -145,7 +143,7 @@ inline Var Solver::bestReason(Clause const *clause, Var var) const
    return clause->reason;
 }
 
-inline LiftedBool Solver::value(Lit lit) const
+constexpr LiftedBool Solver::value(Lit lit) const noexcept
 {
    return lit.sign() ? ~(*this)[lit.var()].assignment : (*this)[lit.var()].assignment;
 }
@@ -417,9 +415,9 @@ bool Solver::Propagate(const Clause *clause, Lit p)
    }
 
    // Check if the clause is unit, conflict, or undecided
-   auto not_false = [&](auto lit) { return value(lit) != LiftedBool::False; };
+   auto not_false = [&](auto lit) noexcept { return value(lit) != LiftedBool::False; };
    auto head = std::ranges::find_if(clause->solutions, not_false);
-   auto find_tail = [&]() { return std::ranges::find_last_if(clause->solutions, not_false); };
+   auto find_tail = [&]() noexcept { return std::ranges::find_last_if(clause->solutions, not_false); };
    if (head == clause->solutions.end())
    {
       // Conflict clause. If this clause is non-optional; reject its "reason".
@@ -773,7 +771,11 @@ DependencySolver::DependencySolver(pkgCache &cache, pkgDepCache::Policy &policy,
 
 DependencySolver::~DependencySolver() = default;
 
-static bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b)
+// This is called in the hot path of Discover() as we are trying to determine if a dependency
+// is the same in all packages.
+// Marking it constexpr causes it to be inlined, which significantly improves solver performance,
+// around 5%; but it produces more LL cache misses.
+constexpr bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b) noexcept
 {
    while (1)
    {
@@ -813,14 +815,14 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 	     earlierDep.end() || (earlierDep->CompareOp & pkgCache::Dep::Or) ||
 	     earlierDep.TargetPkg() != dep.TargetPkg())
 	    continue;
-	 if (std::none_of(earlierClause->solutions.begin(), earlierClause->solutions.end(), [&clause](auto earlierSol)
+	 if (std::none_of(earlierClause->solutions.begin(), earlierClause->solutions.end(), [&clause](auto earlierSol) noexcept
 			  { return std::ranges::contains(clause.solutions,
 							 earlierSol); }))
 	    continue;
 
 	 if (earlierClause->optional == clause.optional)
 	 {
-	    std::erase_if(earlierClause->solutions, [&clause, this](auto earlierSol)
+	    std::erase_if(earlierClause->solutions, [&clause, this](auto earlierSol) noexcept
 			  { return not std::ranges::contains(clause.solutions,
 							     earlierSol); });
 
@@ -830,7 +832,7 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 	 else if (clause.optional)
 	 {
 	    // If say a Depends has fewer solution than a Recommends, remove the Recommend's extranous ones.
-	    std::erase_if(clause.solutions, [&earlierClause, this](auto sol)
+	    std::erase_if(clause.solutions, [&earlierClause, this](auto sol) noexcept
 			  { return not std::ranges::contains(earlierClause->solutions,
 							     sol); });
 
