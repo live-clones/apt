@@ -461,12 +461,12 @@ class DependencySolver final : public Solver
    }
 
    // GetCandidateVer() with caching
-   mutable ContiguousCacheMap<pkgCache::Package, pkgCache::VerIterator> candidates;
+   mutable FastContiguousCacheMap<pkgCache::Package, pkgCache::Version *> candidates;
    pkgCache::VerIterator GetCandidateVer(pkgCache::PkgIterator pkg) const
    {
-      if (candidates[pkg].end())
+      if (candidates[pkg] == 0)
 	 candidates[pkg] = policy.GetCandidateVer(pkg);
-      return candidates[pkg];
+      return pkgCache::VerIterator(cache, candidates[pkg]);
    }
 
    // \brief Discover variables
