@@ -464,7 +464,7 @@ std::unique_ptr<APT::CacheFilter::Matcher> PatternParser::aPattern(std::unique_p
       return std::make_unique<Patterns::VersionDepends>(aPattern(node->arguments[0]), pkgCache::Dep::Enhances);
    if (node->matches("?reverse-depends", 1, 1))
       return std::make_unique<Patterns::PackageReverseDepends>(aPattern(node->arguments[0]));
-   if (node->matches("?reverse-predepends", 1, 1))
+   if (node->matches("?reverse-pre-depends", 1, 1))
       return std::make_unique<Patterns::PackageReverseDepends>(aPattern(node->arguments[0]), pkgCache::Dep::PreDepends);
    if (node->matches("?reverse-suggests", 1, 1))
       return std::make_unique<Patterns::PackageReverseDepends>(aPattern(node->arguments[0]), pkgCache::Dep::Suggests);
