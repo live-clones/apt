@@ -17,8 +17,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.12\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-01-05 22:58+0100\n"
-"PO-Revision-Date: 2025-12-29 11:51+0200\n"
+"POT-Creation-Date: 2026-01-31 17:56+0100\n"
+"PO-Revision-Date: 2026-02-09 15:45+0200\n"
 "Last-Translator: Andriy Pysyk <ep.nestor@gmail.com>\n"
 "Language-Team: Українська <uk@li.org>\n"
 "Language: uk\n"
@@ -1914,10 +1914,9 @@ msgid "Couldn't determine free space in %s"
 msgstr "Не вдалося визначити вільне місце в %s"
 
 #: apt-private/private-download.cc
-#, fuzzy, c-format
-#| msgid "Couldn't determine free space in %s"
+#, c-format
 msgid "Couldn't determine filesystem statistics of %s."
-msgstr "Не вдалося визначити кількість вільного місця в %s"
+msgstr "Не вдалося отримати статистику файлової системи для %s."
 
 #: apt-private/private-download.cc
 #, c-format
