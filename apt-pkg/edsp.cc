@@ -15,6 +15,7 @@
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/packagemanager.h>
+#include <apt-pkg/perf.h>
 #include <apt-pkg/pkgcache.h>
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/prettyprinters.h>
@@ -796,6 +797,7 @@ bool EDSP::ResolveExternal(const char* const solver, pkgDepCache &Cache,
 			 unsigned int const flags, OpProgress *Progress) {
    if (strstr(solver, "3.") == solver)
    {
+      APT::PerformanceContext context{"APT::Solver"};
       APT::Solver::DependencySolver s(Cache.GetCache(), Cache.GetPolicy(), (EDSP::Request::Flags)flags);
       FileFd output;
       bool res = true;

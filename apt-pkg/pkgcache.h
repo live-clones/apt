@@ -98,21 +98,21 @@ typedef uint16_t map_fileid_t;
 template <typename T> class map_pointer {
    uint32_t val;
 public:
-   map_pointer() noexcept : val(0) {}
-   map_pointer(std::nullptr_t) noexcept : val(0) {}
-   explicit map_pointer(uint32_t n) noexcept : val(n) {}
-   explicit operator uint32_t() noexcept { return val; }
-   explicit operator bool() noexcept { return val != 0; }
+   constexpr map_pointer() noexcept : val(0) {}
+   constexpr map_pointer(std::nullptr_t) noexcept : val(0) {}
+   explicit constexpr map_pointer(uint32_t n) noexcept : val(n) {}
+   explicit constexpr operator uint32_t() const noexcept { return val; }
+   explicit constexpr operator bool() const noexcept { return val != 0; }
 };
 
-template<typename T> inline T *operator +(T *p, map_pointer<T> m) { return p + uint32_t(m); }
-template<typename T> inline bool operator ==(map_pointer<T> u, map_pointer<T> m) { return uint32_t(u) == uint32_t(m); }
-template<typename T> inline bool operator !=(map_pointer<T> u, map_pointer<T> m) { return uint32_t(u) != uint32_t(m); }
-template<typename T> inline bool operator <(map_pointer<T> u, map_pointer<T> m) { return uint32_t(u) < uint32_t(m); }
-template<typename T> inline bool operator >(map_pointer<T> u, map_pointer<T> m) { return uint32_t(u) > uint32_t(m); }
-template<typename T> inline uint32_t operator -(map_pointer<T> u, map_pointer<T> m) { return uint32_t(u) - uint32_t(m); }
-template<typename T> bool operator ==(map_pointer<T> m, std::nullptr_t) { return uint32_t(m) == 0; }
-template<typename T> bool operator !=(map_pointer<T> m, std::nullptr_t) { return uint32_t(m) != 0; }
+template<typename T> constexpr T *operator +(T *p, map_pointer<T> m) noexcept { return p + uint32_t(m); }
+template<typename T> constexpr bool operator ==(map_pointer<T> u, map_pointer<T> m)  noexcept{ return uint32_t(u) == uint32_t(m); }
+template<typename T> constexpr bool operator !=(map_pointer<T> u, map_pointer<T> m)  noexcept{ return uint32_t(u) != uint32_t(m); }
+template<typename T> constexpr bool operator <(map_pointer<T> u, map_pointer<T> m) noexcept { return uint32_t(u) < uint32_t(m); }
+template<typename T> constexpr bool operator >(map_pointer<T> u, map_pointer<T> m) noexcept { return uint32_t(u) > uint32_t(m); }
+template<typename T> constexpr uint32_t operator -(map_pointer<T> u, map_pointer<T> m) noexcept { return uint32_t(u) - uint32_t(m); }
+template<typename T> constexpr bool operator ==(map_pointer<T> m, std::nullptr_t) noexcept { return uint32_t(m) == 0; }
+template<typename T> constexpr bool operator !=(map_pointer<T> m, std::nullptr_t) noexcept { return uint32_t(m) != 0; }
 
 // same as the previous, but documented to be to a string item
 typedef map_pointer<char> map_stringitem_t;
@@ -262,18 +262,18 @@ class APT_PUBLIC pkgCache								/*{{{*/
       return {name, len};
    }
 
-   Header &Head() {return *HeaderP;}
-   inline GrpIterator GrpBegin();
-   inline GrpIterator GrpEnd();
-   inline PkgIterator PkgBegin();
-   inline PkgIterator PkgEnd();
-   inline PkgFileIterator FileBegin();
-   inline PkgFileIterator FileEnd();
-   inline RlsFileIterator RlsFileBegin();
-   inline RlsFileIterator RlsFileEnd();
+   constexpr Header &Head() noexcept {return *HeaderP;}
+   inline GrpIterator GrpBegin() noexcept;
+   constexpr GrpIterator GrpEnd() noexcept;
+   inline PkgIterator PkgBegin() noexcept;
+   constexpr PkgIterator PkgEnd() noexcept;
+   inline PkgFileIterator FileBegin() noexcept;
+   constexpr PkgFileIterator FileEnd() noexcept;
+   inline RlsFileIterator RlsFileBegin() noexcept;
+   constexpr RlsFileIterator RlsFileEnd() noexcept;
 
-   inline bool MultiArchCache() const { return MultiArchEnabled; }
-   inline char const * NativeArch();
+   constexpr bool MultiArchCache() const noexcept { return MultiArchEnabled; }
+   constexpr char const * NativeArch() const noexcept;
 
    // Make me a function
    pkgVersioningSystem *VS;
@@ -822,29 +822,29 @@ struct pkgCache::Provides
 };
 									/*}}}*/
 
-inline char const * pkgCache::NativeArch()
+constexpr char const * pkgCache::NativeArch() const noexcept
 	{ return StrP + HeaderP->Architecture; }
 
 #include <apt-pkg/cacheiterators.h>
 
-	inline pkgCache::GrpIterator pkgCache::GrpBegin()
+	inline pkgCache::GrpIterator pkgCache::GrpBegin() noexcept
 	{
 	   return GrpIterator(*this);
 	}
-	inline pkgCache::GrpIterator pkgCache::GrpEnd()
+	constexpr pkgCache::GrpIterator pkgCache::GrpEnd() noexcept
 	{
 	   return GrpIterator(*this, GrpP);}
-inline pkgCache::PkgIterator pkgCache::PkgBegin()
+inline pkgCache::PkgIterator pkgCache::PkgBegin() noexcept
        {return PkgIterator(*this);}
-inline pkgCache::PkgIterator pkgCache::PkgEnd()
+constexpr pkgCache::PkgIterator pkgCache::PkgEnd() noexcept
        {return PkgIterator(*this,PkgP);}
-inline pkgCache::PkgFileIterator pkgCache::FileBegin()
+inline pkgCache::PkgFileIterator pkgCache::FileBegin() noexcept
        {return PkgFileIterator(*this,PkgFileP + HeaderP->FileList);}
-inline pkgCache::PkgFileIterator pkgCache::FileEnd()
+constexpr pkgCache::PkgFileIterator pkgCache::FileEnd() noexcept
        {return PkgFileIterator(*this,PkgFileP);}
-inline pkgCache::RlsFileIterator pkgCache::RlsFileBegin()
+inline pkgCache::RlsFileIterator pkgCache::RlsFileBegin() noexcept
        {return RlsFileIterator(*this,RlsFileP + HeaderP->RlsFileList);}
-inline pkgCache::RlsFileIterator pkgCache::RlsFileEnd()
+constexpr pkgCache::RlsFileIterator pkgCache::RlsFileEnd() noexcept
        {return RlsFileIterator(*this,RlsFileP);}
 
 

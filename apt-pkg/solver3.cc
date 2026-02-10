@@ -18,8 +18,6 @@
  * classic APT solver.
  */
 
-#define APT_COMPILING_APT
-
 #include <config.h>
 
 #include <apt-pkg/algorithms.h>
@@ -59,7 +57,7 @@ Solver::Solver(pkgCache &cache)
 Solver::~Solver() = default;
 
 // This function determines if a work item is less important than another.
-bool Solver::Work::operator<(Solver::Work const &b) const
+constexpr bool Solver::Work::operator<(Solver::Work const &b) const noexcept
 {
    if ((not clause->optional && size < 2) != (not b.clause->optional && b.size < 2))
       return not b.clause->optional && b.size < 2;
@@ -87,7 +85,7 @@ std::string APT::Solver::Clause::toString(pkgCache &cache, bool pretty, bool sho
 	 out.append(dep.TargetPkg().FullName(true));
 	 if (dep.TargetVer())
 	    out.append(" (").append(dep.CompType()).append(" ").append(dep.TargetVer()).append(")");
-	 if (!(dep->CompareOp & pkgCache::Dep::Or))
+	 if (not(dep->CompareOp & pkgCache::Dep::Or))
 	    break;
 	 out.append(" | ");
       }
@@ -130,7 +128,7 @@ std::string Solver::Work::toString(pkgCache &cache) const
    return out.str();
 }
 
-inline Var Solver::bestReason(Clause const *clause, Var var) const
+constexpr Var Solver::bestReason(Clause const *clause, Var var) const noexcept
 {
    if (not clause)
       return Var{};
@@ -145,7 +143,7 @@ inline Var Solver::bestReason(Clause const *clause, Var var) const
    return clause->reason;
 }
 
-inline LiftedBool Solver::value(Lit lit) const
+constexpr LiftedBool Solver::value(Lit lit) const noexcept
 {
    return lit.sign() ? ~(*this)[lit.var()].assignment : (*this)[lit.var()].assignment;
 }
@@ -376,7 +374,7 @@ bool Solver::Enqueue(Lit lit, const Clause *reason)
 
 bool Solver::Propagate()
 {
-   while (!propQ.empty())
+   while (not propQ.empty())
    {
       Var var = propQ.front();
       propQ.pop();
@@ -391,11 +389,8 @@ bool Solver::Propagate()
 	 Discover(lit.var());
 
       for (auto clause : watches(lit))
-      {
-	 if (Propagate(clause, lit))
-	    continue;
-	 return false;
-      }
+	 if (not Propagate(clause, lit))
+	    return false;
    }
    return true;
 }
@@ -420,37 +415,31 @@ bool Solver::Propagate(const Clause *clause, Lit p)
    }
 
    // Check if the clause is unit, conflict, or undecided
-   Lit unit;
-   for (auto sol : clause->solutions)
+   auto not_false = [&](auto lit) noexcept { return value(lit) != LiftedBool::False; };
+   auto head = std::ranges::find_if(clause->solutions, not_false);
+   auto find_tail = [&]() noexcept { return std::ranges::find_last_if(clause->solutions, not_false); };
+   if (head == clause->solutions.end())
    {
-      if (value(sol) == LiftedBool::False)
-	 continue;
-      if (not unit.empty() || clause->optional)
-      {
-	 // We found a second solution, so we are undecided
-	 if (p == clause->reason)
-	    return AddWork(Work{clause, decisionLevel()});
-	 return true;
-      }
-
-      unit = sol;
+      // Conflict clause. If this clause is non-optional; reject its "reason".
+      if (not clause->optional)
+	 return Enqueue(~clause->reason, clause);
    }
-
-   // The clause is now either unit or conflict
-   if (not unit.empty())
+   else if (value(clause->reason) != LiftedBool::True)
    {
-      // Unit clause. If it is an active clause, enqueue the unit literal.
-      if (value(clause->reason) == LiftedBool::True)
-         return Enqueue(unit, clause);
-      return true;
+      // Inactive clause, nothing to do
+   }
+   else if (not clause->optional && head == find_tail().begin())
+   {
+      // Unit clause. Enqueue the only possible solution
+      return Enqueue(*head, clause);
    }
    else
    {
-      // Conflict clause. If this clause is non-optional; reject it's "reason".
-      if (not clause->optional)
-	 return Enqueue(~clause->reason, clause);
-      return true;
+      // Undecided clause. If this is an activation, queue it for solving
+      if (p == clause->reason)
+	 return AddWork(Work{clause, decisionLevel()});
    }
+   return true;
 }
 
 void Solver::UndoOne()
@@ -596,20 +585,11 @@ bool Solver::Solve()
 		      << "(try it: " << candidate->toString(cache) << ")\n";
 	 must_succeed(Assume(*candidate, item.clause));
       }
-      else if (item.clause->optional)
-      {
-	 if (unlikely(debug >= 1))
-	    std::cerr << item.toString(cache) << "\n";
-      }
       else
       {
-	 abort();
+	 assert(item.clause->optional);
 	 if (unlikely(debug >= 1))
 	    std::cerr << item.toString(cache) << "\n";
-	 // Enqueue produces the right error message for us here, given that reason has been assigned true already...
-	 assert(value(item.clause->reason) == LiftedBool::True);
-	 must_succeed(not Enqueue(~item.clause->reason, item.clause));
-	 assert(value(item.clause->reason) == LiftedBool::True);
       }
       // Must push to trail after any Assume() above.
       trail.push_back(Trail{Var(), item});
@@ -791,7 +771,11 @@ DependencySolver::DependencySolver(pkgCache &cache, pkgDepCache::Policy &policy,
 
 DependencySolver::~DependencySolver() = default;
 
-static bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b)
+// This is called in the hot path of Discover() as we are trying to determine if a dependency
+// is the same in all packages.
+// Marking it constexpr causes it to be inlined, which significantly improves solver performance,
+// around 5%; but it produces more LL cache misses.
+constexpr bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b) noexcept
 {
    while (1)
    {
@@ -831,14 +815,14 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 	     earlierDep.end() || (earlierDep->CompareOp & pkgCache::Dep::Or) ||
 	     earlierDep.TargetPkg() != dep.TargetPkg())
 	    continue;
-	 if (std::none_of(earlierClause->solutions.begin(), earlierClause->solutions.end(), [&clause](auto earlierSol)
+	 if (std::none_of(earlierClause->solutions.begin(), earlierClause->solutions.end(), [&clause](auto earlierSol) noexcept
 			  { return std::ranges::contains(clause.solutions,
 							 earlierSol); }))
 	    continue;
 
 	 if (earlierClause->optional == clause.optional)
 	 {
-	    std::erase_if(earlierClause->solutions, [&clause, this](auto earlierSol)
+	    std::erase_if(earlierClause->solutions, [&clause, this](auto earlierSol) noexcept
 			  { return not std::ranges::contains(clause.solutions,
 							     earlierSol); });
 
@@ -848,7 +832,7 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 	 else if (clause.optional)
 	 {
 	    // If say a Depends has fewer solution than a Recommends, remove the Recommend's extranous ones.
-	    std::erase_if(clause.solutions, [&earlierClause, this](auto sol)
+	    std::erase_if(clause.solutions, [&earlierClause, this](auto sol) noexcept
 			  { return not std::ranges::contains(earlierClause->solutions,
 							     sol); });
 
@@ -1023,7 +1007,7 @@ void DependencySolver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
       dep.GlobOr(start, end); // advances dep
 
       bool allHaveDep = true;
-      for (auto ver = Pkg.VersionList()++; allHaveDep && not ver.end(); ver++)
+      for (auto ver = ++Pkg.VersionList(); allHaveDep && not ver.end(); ver++)
       {
 	 bool haveDep = false;
 	 for (auto otherDep = ver.DependsList(); not haveDep && not otherDep.end();)
@@ -1068,9 +1052,9 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
       }
       else
       {
-	 auto all = start.AllTargets();
+	 std::unique_ptr<pkgCache::Version *[]> all(start.AllTargets());
 
-	 for (auto tgt = all; *tgt; ++tgt)
+	 for (auto tgt = all.get(); *tgt; ++tgt)
 	 {
 	    pkgCache::VerIterator tgti(cache, *tgt);
 
@@ -1078,7 +1062,6 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
 	       std::cerr << "Adding work to  item " << reason.toString(cache) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
 	    clause.solutions.push_back(Var(pkgCache::VerIterator(cache, *tgt)));
 	 }
-	 delete[] all;
 	 std::stable_sort(clause.solutions.begin() + begin, clause.solutions.end(), CompareProviders3{cache, policy, start.TargetPkg(), *this});
       }
       if (start == end)
