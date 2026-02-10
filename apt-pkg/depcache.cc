@@ -19,6 +19,7 @@
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/macros.h>
+#include <apt-pkg/perf.h>
 #include <apt-pkg/pkgcache.h>
 #include <apt-pkg/prettyprinters.h>
 #include <apt-pkg/progress.h>
@@ -225,6 +226,7 @@ bool pkgDepCache::CheckConsistency(char const *const msgtag)		/*{{{*/
 /* This allocats the extension buffers and initializes them. */
 bool pkgDepCache::Init(OpProgress * const Prog)
 {
+   APT::PerformanceContext perf{"pkgDepCache::Init"};
    // Suppress mark updates during this operation (just in case) and
    // run a mark operation when Init terminates.
    ActionGroup actions(*this);
