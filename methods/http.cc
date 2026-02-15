@@ -488,6 +488,12 @@ ResultState HttpServerState::Open()
       if (result != ResultState::SUCCESSFUL)
 	 return result;
    }
+   else if(Proxy.Access == "unix")
+   {
+      auto result = ConnectUnixSocket(Proxy.Path, ServerFd, TimeOut, Owner);
+      if (result != ResultState::SUCCESSFUL)
+	 return result;
+   }
    else
    {
       // Determine what host and port to use based on the proxy settings
