@@ -1,0 +1,49 @@
+#!/usr/bin/perl
+#
+# Patched debconf-communicate that opens /dev/tty to stdin, stdout
+# if the frontend needs a tty.
+use warnings;
+use strict;
+use Debconf::Db;
+use Debconf::AutoSelect qw(:all);
+use Debconf::Config;
+use Debconf::Gettext;
+
+Debconf::Db->load;
+
+Debconf::Config->getopt(gettext("Usage: debconf-communicate [options] [package]"));
+
+my $frontend=make_frontend();
+my $confmodule=make_confmodule();
+$confmodule->owner(shift) if @ARGV;
+my $code=127;
+
+open(my $in, "<&STDIN") or die "Can't dup STDIN: $!";
+open(my $out, ">&STDOUT") or die "Can't dup STDOUT: $!";
+
+autoflush $out 1;
+
+# If the frontend needs a tty we need to give it one, otherwise
+# e.g. whiptail and dialog will read from the tty but not print
+# their dialogs, so let's attach stdin and stdout to the tty.
+if ($frontend->need_tty()) {
+    if (-e "/dev/tty") {
+        open(STDIN, "+</dev/tty") or die "Can't dup STDOUT: $!";
+        open(STDOUT, ">&STDIN") or die "Can't dup STDOUT: $!";
+    } else {
+        die("tty not available");
+    }
+}
+
+while (<$in>) {
+	chomp;
+	my $ret=$confmodule->process_command($_);
+	($code, undef)=split(/ /, $ret, 2);
+	print $out "$ret\n";
+}
+
+$frontend->shutdown;
+$confmodule->finish;
+Debconf::Db->save;
+exit $code;
+
