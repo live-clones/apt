@@ -10,6 +10,7 @@ Standards-Version: 4.1.1
 Build-Depends: dpkg-dev (>= 1.22.5) <!pkg.apt.ci>,
                cmake (>= 3.4),
                debhelper-compat (= 12),
+               dh-sequence-installsysusers,
                docbook-xml <!nodoc>,
                docbook-xsl <!nodoc>,
                dpkg-dev (>= 1.20.8),
@@ -38,8 +39,7 @@ Vcs-Browser: https://salsa.debian.org/apt-team/apt
 
 Package: apt
 Architecture: any
-Depends: base-passwd (>= 3.6.1) | adduser,
-         ${openpgp:Depends},
+Depends: ${openpgp:Depends},
          libapt-pkg7.0 (>= ${binary:Version}),
          ${apt:keyring},
          ${misc:Depends},
