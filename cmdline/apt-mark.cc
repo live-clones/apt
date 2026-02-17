@@ -392,10 +392,118 @@ static bool ShowSelection(CommandLine &CmdL)				/*{{{*/
    return true;
 }
 									/*}}}*/
-static bool ShowHelp(CommandLine &)					/*{{{*/
+/* DoSuggestAuto - suggest packages to be marked as auto							{{{*/
+static bool DoSuggestAuto(CommandLine &CmdL)
+{
+   pkgCacheFile CacheFile;
+   pkgDepCache * const DepCache = CacheFile.GetDepCache();
+   if (unlikely(DepCache == nullptr))
+      return false;
+
+   if (CmdL.FileList[1] != nullptr)
+      return _error->Error(_("%s does not take any arguments"), "apt-mark suggest-auto");
+
+   bool const raw = _config->FindB("APT::Mark::SuggestAuto::Raw-List", false);
+   bool const apply = _config->FindB("APT::Mark::SuggestAuto::Apply", false);
+
+   std::vector<pkgCache::PkgIterator> ManualPackages;
+   for (pkgCache::PkgIterator P = DepCache->PkgBegin(); P.end() == false; ++P)
+   {
+      if (P->CurrentVer != 0 &&
+          (((*DepCache)[P].Flags & pkgCache::Flag::Auto) == 0))
+         ManualPackages.push_back(P);
+   }
+
+   if (ManualPackages.empty())
+   {
+      if (raw == false)
+         std::cout << _("No manually installed packages found.") << std::endl;
+      return true;
+   }
+
+   if (raw == false)
+   {
+      ioprintf(c1out, _("Found %lu manually installed packages.\n"), ManualPackages.size());
+      ioprintf(c1out, _("Simulating changes to identify packages that can safely be marked as automatically installed...\n"));
+   }
+
+   std::vector<pkgCache::PkgIterator> SuccessfullyMarkable;
+   std::vector<pkgCache::PkgIterator> RevertedChanges;
+
+   pkgDepCache::Transaction trans(*DepCache, pkgDepCache::Transaction::Behavior::ROLLBACK);
+
+   for (auto const &Pkg : ManualPackages)
+   {
+      /* Try to mark package as auto */
+      DepCache->MarkAuto(Pkg, true);
+      /* If it is now garbage ... */
+      if ((*DepCache)[Pkg].Garbage)
+      {
+         /* Revert it to manual */
+         DepCache->MarkAuto(Pkg, false);
+         RevertedChanges.push_back(Pkg);
+      }
+      else
+      {
+         /* Else keep it auto and move to the next package */
+         SuccessfullyMarkable.push_back(Pkg);
+      }
+   }
+
+   if (raw == true)
+   {
+       for (auto const &Pkg : SuccessfullyMarkable)
+           std::cout << Pkg.Name() << std::endl;
+       return true;
+   }
+
+   if (SuccessfullyMarkable.empty() == false)
+   {
+      ioprintf(c1out, _("Successfully identified %lu packages that can be safely marked as automatic:\n"), SuccessfullyMarkable.size());
+      for (auto const &Pkg : SuccessfullyMarkable)
+         ioprintf(c1out, "  - %s\n", Pkg.Name());
+   } else {
+      ioprintf(c1out, _("No packages could be safely marked as automatic without triggering autoremoval.\n"));
+   }
+
+   if (RevertedChanges.empty() == false)
+   {
+      ioprintf(c1out, _("Need to keep %lu packages as manual to prevent their autoremoval:\n"), RevertedChanges.size());
+      for (auto const &Pkg : RevertedChanges)
+         ioprintf(c1out, "  - %s\n", Pkg.Name());
+   }
+
+   if (apply == false)
+      ioprintf(c1out, "\n*** This was a simulation. No actual changes were made to your system. Run with --apply to apply changes. ***\n");
+
+   if (apply == true && SuccessfullyMarkable.empty() == false)
+   {
+      ioprintf(c1out, _("\nApplying changes...\n"));
+      pkgDepCache::ActionGroup apply_group(*DepCache);
+      for (auto const &Pkg : SuccessfullyMarkable)
+      {
+         DepCache->MarkAuto(Pkg, true);
+         ioprintf(c1out, _("  Marked '%s' as automatically installed.\n"), Pkg.Name());
+      }
+      if (DepCache->writeStateFile(NULL) == true)
+         ioprintf(c1out, _("Changes applied successfully.\n"));
+      else
+         return _error->Error(_("Error applying changes."));
+   }
+   else if (apply == true && SuccessfullyMarkable.empty() == true)
+   {
+      ioprintf(c1out, _("\nNo packages to apply changes for based on simulation.\n"));
+   }
+
+   return true;
+}
+
+									/*}}}*/
+static bool ShowHelp(CommandLine &) 					/*{{{*/
 {
    std::cout <<
-    _("Usage: apt-mark [options] {auto|manual} pkg1 [pkg2 ...]\n"
+    _("Usage: apt-mark [options] {auto|manual|hold|unhold} pkg1 [pkg2 ...]\n"
+      "       apt-mark [options] {showauto|showmanual|suggest-auto|minimize-manual}\n"
       "\n"
       "apt-mark is a simple command line interface for marking packages\n"
       "as manually or automatically installed. It can also be used to\n"
@@ -409,6 +517,7 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
    return {
       {"auto",&DoAuto, _("Mark the given packages as automatically installed")},
       {"manual",&DoAuto, _("Mark the given packages as manually installed")},
+      {"suggest-auto",&DoSuggestAuto, _("Suggests packages to be marked as automatically installed")},
       {"minimize-manual", &DoMinimize, _("Mark all dependencies of meta packages as automatically installed.")},
       {"hold",&DoSelection, _("Mark a package as held back")},
       {"unhold",&DoSelection, _("Unset a package set as held back")},
