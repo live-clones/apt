@@ -1,3 +1,24 @@
+apt (3.1.16) unstable; urgency=medium
+
+  [ Andriy Pysyk ]
+  * Update Ukrainian translation (uk.po)
+
+  [ Julian Andres Klode ]
+  * Introduce JSONL performance counter logging
+  * solver3: Refactorings and some inline tweaking
+  * solver3: Upgrade by source package
+
+  [ Alessandro Astone ]
+  * debian: Trigger apt-daily on AC plug event
+
+  [ Nathan Pratta Teodosio ]
+  * Prevent sleep while running dpkg.
+
+  [ Ville Skyttä ]
+  * bash-complete search patterns for more commands
+
+ -- Julian Andres Klode <jak@debian.org>  Tue, 17 Feb 2026 11:36:12 +0100
+
 apt (3.1.15) unstable; urgency=medium
 
   * solver3: Use classical watchers for propagation
