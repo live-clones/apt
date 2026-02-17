@@ -972,6 +972,25 @@ void DependencySolver::Discover(Var var)
 	    RegisterClause(std::move(clause));
 	 }
 
+	 if (UpgradeBySourcePackage && Ver != Ver.ParentPkg().CurrentVer())
+	 {
+	    // For this version selection, if I have other binaries in the source package that are currently installed,
+	    // mark them for upgrade using an eager optional dependency (which is executed soon, but can be skipped)
+	    for (auto sibling = Ver.SourceVersion().Group().VersionsInSource(); not sibling.end(); sibling = sibling.NextInSource())
+	    {
+	       // Package is the same; not installed or at right version, don't need to upgrade
+	       if (sibling->ParentPkg == Ver->ParentPkg || not sibling.ParentPkg()->CurrentVer || sibling.ParentPkg().CurrentVer() == sibling)
+		  continue;
+	       // Package has a different source version than us, so it's not relevant
+	       if (strcmp(sibling.SourceVersion().VerStr(), Ver.SourceVersion().VerStr()) != 0)
+		  continue;
+	       Clause clause{Var(Ver), Group::SelectVersion, true /* optional */};
+	       clause.eager = true;
+	       clause.solutions = {Var(sibling)};
+	       RegisterClause(std::move(clause));
+	    }
+	 }
+
 	 for (auto dep = Ver.DependsList(); not dep.end();)
 	 {
 	    // Compute a single dependency element (glob or)
