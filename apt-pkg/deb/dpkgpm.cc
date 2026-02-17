@@ -1516,8 +1516,15 @@ bool pkgDPkgPM::Go(APT::Progress::PackageManager *progress)
       int Fd = -1;
       Inhibitor()
       {
-	 if (_config->FindB("DPkg::Inhibit-Shutdown", true))
-	    Fd = Inhibit("shutdown", "APT", "APT is installing or removing packages", "block");
+        std::string to_inhibit;
+        if (_config->FindB("DPkg::Inhibit-Shutdown", true))
+          to_inhibit.append("shutdown:");
+        if (_config->FindB("DPkg::Inhibit-Sleep", true))
+          to_inhibit.append("sleep:");
+        // Remove trailing : separator
+        if (to_inhibit.length() > 0)
+          to_inhibit.pop_back();
+        Fd = Inhibit(to_inhibit.c_str(), "APT", "APT is installing or removing packages", "block");
       }
       ~Inhibitor()
       {
