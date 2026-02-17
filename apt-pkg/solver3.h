@@ -445,6 +445,7 @@ class DependencySolver final : public Solver
    bool DeferVersionSelection{_config->FindB("APT::Solver::Defer-Version-Selection", true)};
    bool KeepRecommends{_config->FindB("APT::AutoRemove::RecommendsImportant", true)};
    bool KeepSuggests{_config->FindB("APT::AutoRemove::SuggestsImportant", true)};
+   bool UpgradeBySourcePackage{_config->FindB("APT::Get::Upgrade-By-Source-Package", true)};
 
    // Helper functions for detecting obsolete packages
    mutable FastContiguousCacheMap<pkgCache::Package, LiftedBool> pkgObsolete;
