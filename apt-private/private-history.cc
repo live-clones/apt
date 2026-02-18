@@ -16,6 +16,7 @@
 #include <apt-private/private-cachefile.h>
 #include <apt-private/private-history.h>
 #include <apt-private/private-install.h>
+#include <apt-private/private-output.h>
 
 #include <cassert>
 #include <iomanip>
@@ -103,10 +104,14 @@ Change APT::Internal::InvertChange(const Change &change)
 static std::string ShortenCommand(const std::string &cmd, const std::size_t maxLen)
 {
    std::string shortenedCmd = cmd;
-   if (shortenedCmd.starts_with("apt "))
+   if (shortenedCmd.starts_with("/usr/bin/"))
+      shortenedCmd = shortenedCmd.substr(9);
+   else if (shortenedCmd.starts_with("apt "))
       shortenedCmd = shortenedCmd.substr(4);
+
    if (shortenedCmd.length() > maxLen - 3)
       return shortenedCmd.substr(0, maxLen - 4) + "...";
+
    return shortenedCmd;
 }
 
@@ -191,48 +196,79 @@ static std::string GetKindString(const Entry &entry)
 
 //
 
-static void PrintHistoryVector(const HistoryBuffer buf, int columnWidth)
+static void PrintHistoryVector(const HistoryBuffer &buf)
 {
-   // Calculate the width of the ID column, esentially the number of digits
-   int id = 0;
-   size_t sizeFrac = buf.size();
-   int idWidth = 2;
-   while (sizeFrac)
+   // TRANSLATORS: a number used as identifier.
+   const std::string idHeader = _("ID");
+   // TRANSLATORS: input on the terminal console.
+   const std::string cmdHeader = _("Command line");
+   // TRANSLATORS: indicates when the entry occurred.
+   const std::string dateHeader = _("Date and Time");
+   // TRANSLATORS: the type of operation that was performed.
+   const std::string actionHeader = _("Action");
+   // TRANSLATORS: changes as a quantity.
+   const std::string changesHeader = _("Changes");
+
+   constexpr size_t pad = 2;
+   size_t idWidth = std::to_string(buf.size()).size();
+   idWidth = std::max(idHeader.size(), idWidth) + pad;
+   size_t cmdLineWidth = cmdHeader.size() + pad;
+   size_t dateWidth = dateHeader.size() + pad;
+   size_t actionWidth = actionHeader.size() + pad;
+   size_t changesWidth = changesHeader.size();
+
+   // Scale to screen width
+   // ID and Changes are numerical and cannot be shortened
+   size_t remainingWidth = ::ScreenWidth - idWidth - changesWidth;
+   size_t minRequiredCmdWidth = cmdLineWidth;
+   std::vector<std::string> kindStrings;
+   std::vector<size_t> changeCounts;
+   kindStrings.reserve(buf.size());
+   changeCounts.reserve(buf.size());
+   if (!buf.empty())
    {
-      sizeFrac /= 10;
-      idWidth++;
+      dateWidth = std::max(buf.front().startDate.size() + pad, dateWidth);
+      for (const auto &entry : buf)
+      {
+	 std::string kindString = GetKindString(entry);
+	 if (kindString.size() > actionWidth)
+	    actionWidth = kindString.size();
+	 kindStrings.push_back(kindString);
+
+	 size_t numChanges = 0;
+	 for (const auto &[_, changes] : entry.changeMap)
+	    numChanges += changes.size();
+	 changeCounts.push_back(numChanges);
+
+	 if (entry.cmdLine.length() > minRequiredCmdWidth)
+	    minRequiredCmdWidth = entry.cmdLine.length() + pad;
+      }
+      remainingWidth -= (dateWidth + actionWidth);
+      cmdLineWidth = std::min(remainingWidth, minRequiredCmdWidth);
    }
 
-   // Print headers
-   auto writeEntry = [](std::string entry, size_t width)
+   constexpr auto writeEntry = [](const auto &entry, size_t width)
    {
       std::cout << std::left << std::setw(width) << entry;
    };
-   writeEntry(_("ID"), idWidth);
-   writeEntry(_("Command line"), columnWidth);
-   // NOTE: if date format is different,
-   // this width needs to change
-   writeEntry(_("Date and Time"), 23); // width for datestring
-   writeEntry(_("Action"), 10);	       // 9 chars longest action type
-   writeEntry(_("Changes"), columnWidth);
+   writeEntry(idHeader, idWidth);
+   writeEntry(cmdHeader, cmdLineWidth);
+   writeEntry(dateHeader, dateWidth);
+   writeEntry(actionHeader, actionWidth);
+   writeEntry(changesHeader, changesWidth);
    std::cout << "\n\n";
 
    // Each entry corresponds to a row
-   for (auto entry : buf)
+   for (size_t id = 0; id < buf.size(); ++id)
    {
-      writeEntry(std::to_string(id), idWidth);
-      writeEntry(ShortenCommand(entry.cmdLine, columnWidth), columnWidth);
-      writeEntry(entry.startDate, 23);
+      const auto &entry = buf[id];
+      writeEntry(id, idWidth);
+      writeEntry(ShortenCommand(entry.cmdLine, cmdLineWidth), cmdLineWidth);
+      writeEntry(entry.startDate, dateWidth);
       // If there are multiple actions, we want to group them
-      writeEntry(GetKindString(entry), 10);
-
-      // Count the number of packages changed
-      size_t numChanges = 0;
-      for (const auto &[_, changes] : entry.changeMap)
-	 numChanges += changes.size();
-      writeEntry(std::to_string(numChanges), columnWidth);
+      writeEntry(kindStrings[id], actionWidth);
+      writeEntry(changeCounts[id], changesWidth);
       std::cout << "\n";
-      id++;
    }
 }
 
@@ -463,7 +499,7 @@ bool DoHistoryList(CommandLine &Cmd)
    if (not ParseLogDir(buf))
       return _error->Error(_("Could not read: %s"),
 			   _config->FindFile("Dir::Log::History").data());
-   PrintHistoryVector(buf, 25);
+   PrintHistoryVector(buf);
 
    return true;
 }
