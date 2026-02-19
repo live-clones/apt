@@ -24,6 +24,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 #include <glob.h>
@@ -101,18 +102,22 @@ Change APT::Internal::InvertChange(const Change &change)
 
 // ShortenCommand - Take a command and shorten it such that it adheres
 // to the given maximum length.
-static std::string ShortenCommand(const std::string &cmd, const std::size_t maxLen)
+static std::string ShortenCommand(std::string cmd, const std::size_t maxLen)
 {
-   std::string shortenedCmd = cmd;
-   if (shortenedCmd.starts_with("/usr/bin/"))
-      shortenedCmd = shortenedCmd.substr(9);
-   else if (shortenedCmd.starts_with("apt "))
-      shortenedCmd = shortenedCmd.substr(4);
+   if (cmd.starts_with("/usr/bin/"))
+      cmd.erase(0,9);
+   else if (cmd.starts_with("apt "))
+      cmd.erase(0, 4);
 
-   if (shortenedCmd.length() > maxLen - 3)
-      return shortenedCmd.substr(0, maxLen - 4) + "...";
+   if (cmd.length() <= maxLen)
+      return cmd;
 
-   return shortenedCmd;
+   if (maxLen <= 3)
+      return cmd.substr(0, maxLen);
+
+   cmd.resize(maxLen - 3);
+   cmd.append("...");
+   return cmd;
 }
 
 static std::string LocalizeKindToString(const Kind &kind)
