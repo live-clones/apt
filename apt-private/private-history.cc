@@ -158,7 +158,7 @@ static std::string GetKindString(const Entry &entry)
 {
    // We want full output if there is only one action
    if (entry.changeMap.size() == 1)
-      return LocalizeKindToString(entry.changeMap.begin()->first).data();
+      return LocalizeKindToString(entry.changeMap.begin()->first);
 
    std::string kindGroup = "";
    // add localization later
