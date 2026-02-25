@@ -329,3 +329,86 @@ function(add_update_po4a target pot header)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 endfunction()
+
+# add_sphinx_manpages(Name [ALL]
+#                    [SOURCE_DIR directory containing conf.py and .rst files]
+#                    [BUILD_DIR directory to build manpages into])
+#                    [MANPAGES list definition: rst name description section])
+#
+# Generate a target called name with all the documents being converted to
+# manpages using Sphinx.
+function(add_sphinx_manpages target)
+    set(options ALL)
+    set(oneValueArgs SOURCE_DIR BUILD_DIR)
+    set(multiValueArgs MANPAGES)
+    cmake_parse_arguments(SPHINX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT SPHINX_SOURCE_DIR)
+        message(FATAL_ERROR "add_sphinx_manpages: SPHINX_SOURCE_DIR is required")
+    endif()
+
+    if(NOT SPHINX_BUILD_DIR)
+        message(FATAL_ERROR "add_sphinx_manpages: SPHINX_BUILD_DIR is required")
+    endif()
+
+    set(MANPAGE_DEFINITIONS "")
+    if(SPHINX_MANPAGES)
+        set(SPHINX_OUTPUT_FILES "")
+
+        list(LENGTH SPHINX_MANPAGES SPHINX_MANPAGES_LENGTH)
+        math(EXPR n_entries "${SPHINX_MANPAGES_LENGTH} / 4")
+        foreach(i RANGE 0 ${n_entries} - 1)
+            math(EXPR idx_rst "${i}*4")
+            math(EXPR idx_name "${i}*4 + 1")
+            math(EXPR idx_desc "${i}*4 + 2")
+            math(EXPR idx_section "${i}*4 + 3")
+
+            list(GET SPHINX_MANPAGES ${idx_rst} rst)
+            list(GET SPHINX_MANPAGES ${idx_name} name)
+            list(GET SPHINX_MANPAGES ${idx_desc} desc)
+            list(GET SPHINX_MANPAGES ${idx_section} section)
+
+            list(APPEND SPHINX_OUTPUT_FILES "${name}.${section}")
+
+            # Construct a manpage data object
+            string(APPEND MANPAGE_DEFINITIONS
+                "     ManPage(\"${rst}\", \"${name}\", \"${desc}\", [],
+                ${section}),\n")
+        endforeach()
+
+        configure_file(
+            ${SPHINX_SOURCE_DIR}/manpages_autogen.py.in
+            ${SPHINX_SOURCE_DIR}/manpages_autogen.py
+            @ONLY
+        )
+    endif()
+
+    find_program(SPHINX_EXECUTABLE sphinx-build REQUIRED)
+
+    set(stamps "")
+    foreach(file ${SPHINX_OUTPUT_FILES})
+        set(out_file "${SPHINX_BUILD_DIR}/${file}")
+
+        add_custom_command(
+            OUTPUT ${out_file}
+            COMMAND ${SPHINX_EXECUTABLE} -b man
+                    ${SPHINX_SOURCE_DIR} ${SPHINX_BUILD_DIR}
+            DEPENDS ${SPHINX_SOURCE_DIR}/conf.py
+                    ${SPHINX_SOURCE_DIR}/manpages_autogen.py
+            WORKING_DIRECTORY ${SPHINX_SOURCE_DIR}
+        )
+
+        get_filename_component(section ${file} EXT)
+        string(REPLACE "." "" section ${section})
+
+        install(FILES ${out_file}
+                DESTINATION ${CMAKE_INSTALL_MANDIR}/man${section})
+        list(APPEND stamps ${out_file})
+    endforeach()
+
+    if(SPHINX_ALL)
+        add_custom_target(${target} ALL DEPENDS ${stamps})
+    else()
+        add_custom_target(${target} DEPENDS ${stamps})
+    endif()
+endfunction()
