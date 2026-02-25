@@ -73,6 +73,13 @@ install(DIRECTORY  ${PROJECT_BINARY_DIR}/doc/doxygen/html
 endif()
 
 if(WITH_DOC OR WITH_DOC_MANPAGES)
+add_sphinx_manpages(apt-man-sphinx ALL
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+    BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}
+    MANPAGES
+        man/apt-history apt-history "history operations for APT" 8
+)
+
 add_docbook(apt-man MANPAGE ALL
     DOCUMENTS
         apt.8.xml
