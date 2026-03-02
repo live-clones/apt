@@ -1,5 +1,5 @@
 # translations.cmake - Translations using APT's translation system.
-# Copyright (C) 2009, 2016 Julian Andres Klode <jak@debian.org>
+# Copyright (C) 2009, 2016 Software Freedom Conservancy
 
 function(apt_add_translation_domain)
     set(options)

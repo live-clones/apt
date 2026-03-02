@@ -1,4 +1,4 @@
-# Copyright (C) 2009, 2016 Julian Andres Klode <jak@debian.org>.
+# Copyright (C) 2009, 2016 Software Freedom Conservancy
 # Licensed under the same terms as APT; i.e. GPL 2 or later.
 
 # set minimum version

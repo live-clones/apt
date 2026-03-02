@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# Copyright (C) 2009, 2016 Julian Andres Klode <jak@debian.org>
+# Copyright (C) 2009, 2016 Software Freedom Conservancy
 #
 # Free Software, licensed under the GPL-2 or (at your option) any later version.
 export DEB_LDFLAGS_MAINT_APPEND := -Wl,--as-needed

@@ -7,7 +7,7 @@
 #  BERKELEY_DEFINITIONS - Compiler switches required for using Berkeley DB
 
 # Copyright (c) 2006, Alexander Dymo, <adymo@kdevelop.org>
-# Copyright (c) 2016, Julian Andres Klode <jak@debian.org>
+# Copyright (c) 2016, Software Freedom Conservancy
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions

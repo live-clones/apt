@@ -1,7 +1,7 @@
 # po4a/docbook documentation support for CMake
 # - see documentation of add_docbook()
 #
-# Copyright (C) 2016 Julian Andres Klode <jak@debian.org>.
+# Copyright (C) 2016 Software Freedom Conservancy
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files

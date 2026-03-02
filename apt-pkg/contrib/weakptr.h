@@ -1,6 +1,6 @@
 /* weakptr.h - An object which supports weak pointers.
  *
- * Copyright (C) 2010 Julian Andres Klode <jak@debian.org>
+ * Copyright (C) 2010 Software Freedom Conservancy
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

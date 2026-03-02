@@ -26,7 +26,7 @@ Comment:
 Files: *
 Copyright: 1997-1999 Jason Gunthorpe and others
            2018, 2019 Canonical Ltd
-           2009, 2010, 2015, 2016 Julian Andres Klode <jak@debian.org>
+           2009, 2010, 2015, 2016 Software Freedom Conservancy
            1998, Ben Gertzfield <che@debian.org>
            2002-2019 Free Software Foundation, Inc.
            2003, 2004, 2005, 2009, 2010, 2012 Software in the Public Interest
@@ -55,7 +55,7 @@ License: GPL-2+ and curl
 
 Files: CMake/FindBerkeley.cmake
 Copyright: 2006, Alexander Dymo, <adymo@kdevelop.org>
-           2016, Julian Andres Klode <jak@debian.org>
+           2016, Software Freedom Conservancy
 License: BSD-3-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
@@ -82,7 +82,7 @@ License: BSD-3-clause
 
 Files: CMake/Documentation.cmake
        CMake/FindLFS.cmake
-Copyright: 2016 Julian Andres Klode <jak@debian.org>
+Copyright: 2016 Software Freedom Conservancy
 License: Expat
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation files
