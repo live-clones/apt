@@ -942,6 +942,22 @@ APT::Compressor::rev {
    </variablelist>
  </refsect1>
 
+ <refsect1><title>Systemd inhibitors</title>
+   <para>APT will communicate with systemd to inhibit conflicting system operations while running &dpkg;, to
+   avoid systems ending up with partial upgrades and broken packages.</para>
+
+   <variablelist>
+     <varlistentry><term><option>DPkg::Inhibit-Shutdown</option></term>
+         <listitem><para>This boolean option, set by default, causes apt to inhbit shutdown</para></listitem>
+     </varlistentry>
+     <varlistentry><term><option>DPkg::Inhibit-Sleep</option></term>
+         <listitem><para>This boolean option, set by default, causes apt to inhbit sleep</para></listitem>
+     </varlistentry>
+   </variablelist>
+
+   <para>See <ulink url="https://systemd.io/INHIBITOR_LOCKS/" /> for further information.</para>
+ </refsect1>
+
  <refsect1>
    <title>Periodic and Archives options</title>
    <para><literal>APT::Periodic</literal> and <literal>APT::Archives</literal>
