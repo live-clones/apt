@@ -173,7 +173,7 @@
    <variablelist>
      <varlistentry>
      <term><code>?depends(PATTERN)</code></term><term><code>~DPATTERN</code></term>
-     <term><code>?pre-depends(PATTERN)</code></term><term><code>~DPre-Depends:PATTERN</code></term>
+     <term><code>?predepends(PATTERN)</code></term><term><code>~DPreDepends:PATTERN</code></term>
      <term><code>?suggests(PATTERN)</code></term><term><code>~DSuggests:PATTERN</code></term>
      <term><code>?recommends(PATTERN)</code></term><term><code>~DRecommends:PATTERN</code></term>
      <term><code>?conflicts(PATTERN)</code></term><term><code>~DConflicts:PATTERN</code></term>
