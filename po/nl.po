@@ -13,10 +13,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.1.5\n"
+"Project-Id-Version: apt 3.1.11\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-01-05 22:58+0100\n"
-"PO-Revision-Date: 2025-08-28 22:15+0200\n"
+"POT-Creation-Date: 2026-02-17 10:38+0000\n"
+"PO-Revision-Date: 2025-10-28 14:36+0100\n"
 "Last-Translator: Frans Spiesschaert <Frans.Spiesschaert@yucom.be>\n"
 "Language-Team: Debian Dutch l10n Team <debian-l10n-dutch@lists.debian.org>\n"
 "Language: nl\n"
@@ -24,7 +24,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Poedit 3.6\n"
 
 #: apt-pkg/acquire-item.cc
 msgid ""
@@ -1396,31 +1396,27 @@ msgstr "Externe planner faalde zonder passende foutmelding"
 #: apt-pkg/history.cc
 #, c-format
 msgid "Unknown flag: %s"
-msgstr ""
+msgstr "Onbekende vlag: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
-#| msgid "Can't find authentication record for: %s"
+#, c-format
 msgid "Cannot find history files: %s"
-msgstr "Kan geen authenticiteitsrecord vinden voor: %s"
+msgstr "Kan geen geschiedenisbestanden vinden: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
-#| msgid "Could not open file %s"
+#, c-format
 msgid "Could not open file: %s"
-msgstr "Kon het bestand %s niet openen"
+msgstr "Kon bestand niet openen: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
-#| msgid "Could not open file %s"
+#, c-format
 msgid "Could not parse file: %s"
-msgstr "Kon het bestand %s niet openen"
+msgstr "Kon bestand niet ontleden: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
-#| msgid "Could not open file %s"
+#, c-format
 msgid "Could not close file: %s"
-msgstr "Kon het bestand %s niet openen"
+msgstr "Kon bestand niet sluiten: %s"
 
 #: apt-pkg/indexcopy.cc
 #, c-format
@@ -1970,147 +1966,128 @@ msgid "Unable to lock the download directory"
 msgstr "Kon de ophaalmap niet vergrendelen"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "Installing:"
 msgid "Install"
-msgstr "Installeren:"
+msgstr "Installeren"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "[installed]"
 msgid "Reinstall"
-msgstr "[geïnstalleerd]"
+msgstr "Opnieuw installeren"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "Upgrading:"
 msgid "Upgrade"
-msgstr "Opwaarderen:"
+msgstr "Upgraden"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "%lu downgraded, "
 msgid "Downgrade"
-msgstr "%lu gedowngraded, "
+msgstr "Downgraden"
 
 #: apt-private/private-history.cc
 msgid "Remove"
-msgstr ""
+msgstr "Verwijderen"
 
 #: apt-private/private-history.cc
 msgid "Purge"
-msgstr ""
+msgstr "Wissen"
 
 #: apt-private/private-history.cc
 msgid "Undefined"
-msgstr ""
+msgstr "Ongedefinieerd"
 
 #: apt-private/private-history.cc
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #: apt-private/private-history.cc
 msgid "Command line"
-msgstr ""
+msgstr "Commandoregel"
 
 #. NOTE: if date format is different,
 #. this width needs to change
 #: apt-private/private-history.cc
 msgid "Date and Time"
-msgstr ""
+msgstr "Datum en Tijd"
 
 #. width for datestring
 #: apt-private/private-history.cc
 msgid "Action"
-msgstr ""
+msgstr "Actie"
 
 #. 9 chars longest action type
 #: apt-private/private-history.cc
 msgid "Changes"
-msgstr ""
+msgstr "Wijzigingen"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "[installed,automatic]"
 msgid "automatic"
-msgstr "[geïnstalleerd,automatisch]"
+msgstr "automatisch"
 
 #: apt-private/private-history.cc
 msgid "Transaction ID"
-msgstr ""
+msgstr "Transactie-ID"
 
 #: apt-private/private-history.cc
 msgid "Start time"
-msgstr ""
+msgstr "Begintijd"
 
 #: apt-private/private-history.cc
 msgid "End time"
-msgstr ""
+msgstr "Eindtijd"
 
 #: apt-private/private-history.cc
 msgid "Requested by"
-msgstr ""
+msgstr "Aangevraagd door"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "Error:"
 msgid "Error"
-msgstr "Fout:"
+msgstr "Fout"
 
 #: apt-private/private-history.cc
 msgid "Comment"
-msgstr ""
+msgstr "Commentaar"
 
 #. For each performed action, print what it did to each package
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "No packages found"
 msgid "Packages changed"
-msgstr "Geen pakketten gevonden"
+msgstr "Pakketten gewijzigd"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Couldn't find package %s"
+#, c-format
 msgid "Could not find package %s"
 msgstr "Kon pakket %s niet vinden"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "but it is not installed"
+#, c-format
 msgid "Tried to remove %s, but it is not installed"
-msgstr "maar het is niet geïnstalleerd"
+msgstr "Probeerde %s te verwijderen, maar het is niet geïnstalleerd"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Can not find version '%s' of package '%s'"
+#, c-format
 msgid "Could not find given version %s of %s"
-msgstr "Kan versie '%s' van pakket '%s' niet vinden"
+msgstr "Kon de opgegeven versie %s van %s niet vinden"
 
 #: apt-private/private-history.cc
 msgid "Incorrect usage, no ID was given."
-msgstr ""
+msgstr "Onjuist gebruik, geen ID opgegeven."
 
 #: apt-private/private-history.cc
 #, c-format
 msgid "'%s' not a valid ID."
-msgstr ""
+msgstr "'%s' is geen geldig ID."
 
 #: apt-private/private-history.cc
 #, c-format
 msgid "Transaction ID '%ld' out of bounds."
-msgstr ""
+msgstr "Transactie-ID '%ld' is buiten bereik."
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Could not resolve '%s'"
+#, c-format
 msgid "Could not read %s"
-msgstr "Kon '%s' niet vinden"
+msgstr "Kon %s niet lezen"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Could not resolve '%s'"
+#, c-format
 msgid "Could not read: %s"
-msgstr "Kon '%s' niet vinden"
+msgstr "Kon niet lezen: %s"
 
 #: apt-private/private-install.cc
 msgid ""
@@ -3650,23 +3627,23 @@ msgstr ""
 #. history stuff
 #: cmdline/apt.cc
 msgid "show list of history"
-msgstr ""
+msgstr "lijst met geschiedenis weergeven"
 
 #: cmdline/apt.cc
 msgid "show info on specific transactions"
-msgstr ""
+msgstr "informatie over specifieke transacties weergeven"
 
 #: cmdline/apt.cc
 msgid "redo transactions"
-msgstr ""
+msgstr "transacties opnieuw uitvoeren"
 
 #: cmdline/apt.cc
 msgid "undo transactions"
-msgstr ""
+msgstr "transacties ongedaan maken"
 
 #: cmdline/apt.cc
 msgid "rollback transactions"
-msgstr ""
+msgstr "transacties terugdraaien"
 
 #. misc
 #: cmdline/apt.cc
