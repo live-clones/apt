@@ -5,10 +5,10 @@
 # SPDX-FileCopyrightText: 2014 to 2025 Américo Monteiro <a_monteiro@gmx.com>
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.1.4\n"
+"Project-Id-Version: apt 3.1.11\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-01-05 22:58+0100\n"
-"PO-Revision-Date: 2025-08-14 23:16+0100\n"
+"POT-Creation-Date: 2026-03-18 18:34+0000\n"
+"PO-Revision-Date: 2025-10-31 22:10+0000\n"
 "Last-Translator: Américo Monteiro <a_monteiro@gmx.com>\n"
 "Language-Team: Portuguese <>\n"
 "Language: pt\n"
@@ -249,6 +249,34 @@ msgid ""
 "     </listitem>\n"
 "     </varlistentry>\n"
 msgstr ""
+"     <varlistentry>\n"
+"      <term><option>--cli-version</option></term>\n"
+"     <listitem><para>Requisita uma versão CLI específica. Isto é um padrão que recebe\n"
+"    uma versão MAJOR.MINOR. Você pode omitir a versão MINOR, que no caso será usado\n"
+"    o nível menor suportado mais recente.\n"
+"     </para>\n"
+"     <para>\n"
+"     Os rastreios de versão são apresentados como se segue: A versão 3.2 tem versões equivalentes\n"
+"     0.32, 1.22, e 2.12, que implementam novas funcionalidades para as suas versões maiores especificadas.\n"
+"     </para>\n"
+"     <para>\n"
+"     Um caso especial é o padrão de versão X.9: Uma versão tipo 2.9 é seguida por 3.0,\n"
+"     mas 2.10 segue diretamente em 2.8; dado que nós usamos números de versão ímpar como série de\n"
+"     desenvolvimento (2.9 é a série de desenvolvimento 3.0).\n"
+"     </para>\n"
+"     <para>\n"
+"     Esta funcionalidade foi introduzida no APT 3.1.10, e substitui a configuração\n"
+"específica de binário. Você pode usar o <option>APT::Version</option> para efeito semelhante em binários\n"
+"mais antigos, por exemplo, <option>-o APT::Version=2</option> para fazer o &apt; comportar-se como\n"
+"a série 2.x.\n"
+"     </para>\n"
+"     <para>\n"
+"     O valor predefinido é a versão APT atual para &apt;e <literal>0.(10 * major + minor)</literal>\n"
+"     para os comandos clássicos. A série 0.X é software descontinuado e os outros comandos irão\n"
+"     rolar sobre a série 2.x no futuro.\n"
+"     </para>\n"
+"     </listitem>\n"
+"     </varlistentry>\n"
 
 #. type: Plain text
 #: apt.ent
@@ -484,7 +512,7 @@ msgid ""
 msgstr ""
 "<!ENTITY file-trustedgpg \"\n"
 "     <varlistentry><term><filename>/etc/apt/trusted.gpg</filename></term>\n"
-"     <listitem><para>Chaveiro de chaves de confiança locais, as novas chaves serão adicionadas aqui.\n"
+"     <listitem><para>Chaveiro de chaves de confiança locais, as novas chavesserão adicionadas aqui.\n"
 "     Item de Configuração: <literal>Dir::Etc::Trusted</literal>.</para></listitem>\n"
 "     </varlistentry>\n"
 
@@ -4970,6 +4998,14 @@ msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
+#, fuzzy
+#| msgid ""
+#| "Try to download indexes via an URI constructed from a hashsum of the "
+#| "expected file rather than downloaded via a well-known stable filename. "
+#| "True by default, but automatically disabled if the source indicates no "
+#| "support for it. Usage can be forced with the special value \"force\". "
+#| "Preferably, this can be set for specific &sources-list; entries or index "
+#| "files by using the <option>By-Hash</option> option there."
 msgid ""
 "Try to download indexes via a URI constructed from a hashsum of the expected "
 "file rather than downloaded via a well-known stable filename. True by "
@@ -5356,6 +5392,33 @@ msgstr "scope"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
+#, fuzzy
+#| msgid ""
+#| "Acquiring changelogs can only be done if an URI is known from where to "
+#| "get them.  Preferable the Release file indicates this in a 'Changelogs' "
+#| "field. If this isn't available the Label/Origin field of the Release file "
+#| "is used to check if a <literal>Acquire::Changelogs::URI::Label::"
+#| "<replaceable>LABEL</replaceable></literal> or "
+#| "<literal>Acquire::Changelogs::URI::Origin::<replaceable>ORIGIN</"
+#| "replaceable></literal> option exists and if so this value is taken. The "
+#| "value in the Release file can be overridden with "
+#| "<literal>Acquire::Changelogs::URI::Override::Label::<replaceable>LABEL</"
+#| "replaceable></literal> or "
+#| "<literal>Acquire::Changelogs::URI::Override::Origin::<replaceable>ORIGIN</"
+#| "replaceable></literal>.  The value should be a normal URI to a text file, "
+#| "except that package specific data is replaced with the placeholder "
+#| "<literal>@CHANGEPATH@</literal>. The value for it is: 1. if the package "
+#| "is from a component (e.g. <literal>main</literal>)  this is the first "
+#| "part otherwise it is omitted, 2. the first letter of source package name, "
+#| "except if the source package name starts with '<literal>lib</literal>' in "
+#| "which case it will be the first four letters. 3. The complete source "
+#| "package name. 4. the complete name again and 5. the source version.  The "
+#| "first (if present), second, third and fourth part are separated by a "
+#| "slash ('<literal>/</literal>')  and between the fourth and fifth part is "
+#| "an underscore ('<literal>_</literal>').  The special value '<literal>no</"
+#| "literal>' is available for this option indicating that this source can't "
+#| "be used to acquire changelog files from. Another source will be tried if "
+#| "available in this case."
 msgid ""
 "Acquiring changelogs can only be done if a URI is known from where to get "
 "them.  Preferable the Release file indicates this in a 'Changelogs' field. "
@@ -5410,6 +5473,25 @@ msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
+#, fuzzy
+#| msgid ""
+#| "Like changelogs, snapshots can only be acquired if an URI is known from "
+#| "where to get them.  Preferable the Release file indicates this in a "
+#| "'Snapshots' field. If this isn't available the Label/Origin field of the "
+#| "Release file is used to check if a "
+#| "<literal>Acquire::Snapshots::URI::Label::<replaceable>LABEL</"
+#| "replaceable></literal> or <literal>Acquire::Snapshots::URI::Origin::"
+#| "<replaceable>ORIGIN</replaceable></literal> option exists and if so this "
+#| "value is taken. The value in the Release file can be overridden with "
+#| "<literal>Acquire::Snapshots::URI::Override::Label::<replaceable>LABEL</"
+#| "replaceable></literal> or "
+#| "<literal>Acquire::Snapshots::URI::Override::Origin::<replaceable>ORIGIN</"
+#| "replaceable></literal>.  The value should be a normal URI to a directory, "
+#| "except that the snapshot ID replaced with the placeholder "
+#| "<literal>@SNAPSHOTID@</literal>.  The special value '<literal>no</"
+#| "literal>' is available for this option indicating that this source cannot "
+#| "be used to acquire snapshots from. Another source will be tried if "
+#| "available in this case."
 msgid ""
 "Like changelogs, snapshots can only be acquired if a URI is known from where "
 "to get them.  Preferable the Release file indicates this in a 'Snapshots' "
@@ -5898,6 +5980,36 @@ msgstr ""
 "desactiva-la pode ser útil se deseja correr o APT múltiplas vezes numa "
 "sequência - ex. numa instalação. Neste cenário você pode desactivar esta "
 "opção em todas excepto na última execução."
+
+#. type: Content of: <refentry><refsect1><title>
+#: apt.conf.5.xml
+msgid "Systemd inhibitors"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para>
+#: apt.conf.5.xml
+msgid ""
+"APT will communicate with systemd to inhibit conflicting system operations "
+"while running &dpkg;, to avoid systems ending up with partial upgrades and "
+"broken packages."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid "This boolean option, set by default, causes apt to inhbit shutdown"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid "This boolean option, set by default, causes apt to inhbit sleep"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para>
+#: apt.conf.5.xml
+msgid ""
+"See <ulink url=\"https://systemd.io/INHIBITOR_LOCKS/\" /> for further "
+"information."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><title>
 #: apt.conf.5.xml
