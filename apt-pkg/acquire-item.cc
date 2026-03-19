@@ -1348,8 +1348,12 @@ void pkgAcqMetaBase::CommitTransaction()
    for (std::vector<pkgAcqTransactionItem*>::iterator I = Transaction.begin();
         I != Transaction.end(); ++I)
    {
-      (*I)->TransactionState(TransactionCommit);
+      if (*I != this)
+         (*I)->TransactionState(TransactionCommit);
    }
+   // commit ourselves last to not end up with fresh InRelease
+   // that doesn't match other files when killed mid-commit
+   TransactionState(TransactionCommit);
    Transaction.clear();
 }
 									/*}}}*/
