@@ -253,6 +253,9 @@ class APT_PUBLIC pkgAcquire::Item : public WeakPointable				/*{{{*/
     */
    virtual std::string ShortDesc() const;
 
+   /** \brief Invoked by the worker when the download is cancelled before completion. */
+   virtual void Cancelled();
+
    /** \brief Invoked by the worker when the download is completely done. */
    virtual void Finished();
 
@@ -575,6 +578,7 @@ class APT_HIDDEN pkgAcqMetaClearSig final : public pkgAcqMetaIndex
    bool VerifyDone(std::string const &Message, pkgAcquire::MethodConfig const *Cnf) override;
    void Done(std::string const &Message, HashStringList const &Hashes,
 		     pkgAcquire::MethodConfig const *Cnf) override;
+   void Cancelled() override;
    void Finished() override;
 
    /** \brief Starts downloading the individual index files.

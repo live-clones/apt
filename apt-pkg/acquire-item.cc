@@ -870,6 +870,10 @@ std::string pkgAcquire::Item::ShortDesc() const				/*{{{*/
    return DescURI();
 }
 									/*}}}*/
+void pkgAcquire::Item::Cancelled()					/*{{{*/
+{
+}
+									/*}}}*/
 void pkgAcquire::Item::Finished()					/*{{{*/
 {
 }
@@ -2004,6 +2008,12 @@ string pkgAcqMetaClearSig::Custom600Headers() const
       Header += "\nSigned-By: " + QuoteString(key, "");
 
    return Header;
+}
+									/*}}}*/
+void pkgAcqMetaClearSig::Cancelled()					/*{{{*/
+{
+   if (TransactionManager->State == TransactionStarted)
+      TransactionManager->AbortTransaction();
 }
 									/*}}}*/
 void pkgAcqMetaClearSig::Finished()					/*{{{*/
