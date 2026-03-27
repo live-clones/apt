@@ -160,7 +160,7 @@ std::string debReleaseIndex::Describe() const
 std::string debReleaseIndex::MetaIndexFile(const char *Type) const
 {
    return _config->FindDir("Dir::State::lists") +
-      URItoFileName(MetaIndexURI(Type));
+      URItoStorageKey(MetaIndexURI(Type));
 }
 static std::string constructMetaIndexURI(std::string URI, std::string const &Dist, char const * const Type)
 {
@@ -1247,7 +1247,7 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
 	 ReleaseOptions.emplace("INRELEASE_PATH", InReleasePath->second);
 
       debReleaseIndex * Deb = nullptr;
-      std::string const FileName = URItoFileName(constructMetaIndexURI(URI, Dist, "Release"));
+      std::string const FileName = URItoStorageKey(constructMetaIndexURI(URI, Dist, "Release"));
       for (auto const &I: List)
       {
 	 // We only worry about debian entries here
@@ -1261,7 +1261,7 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
 	 /* This check ensures that there will be only one Release file
 	    queued for all the Packages files and Sources files it
 	    corresponds to. */
-	 if (URItoFileName(D->MetaIndexURI("Release")) == FileName)
+	 if (URItoStorageKey(D->MetaIndexURI("Release")) == FileName)
 	 {
 	    if (MapsAreEqual(ReleaseOptions, D->GetReleaseOptions(), URI, Dist) == false)
 	       return nullptr;

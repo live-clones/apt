@@ -22,6 +22,8 @@
 
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/hashes.h>
+#include <apt-pkg/configuration.h>
 #include <apt-pkg/strutl.h>
 
 #include <algorithm>
@@ -525,11 +527,39 @@ string URItoFileName(const string &URI)
    U.User.clear();
    U.Password.clear();
    U.Access.clear();
-   
+
    // "\x00-\x20{}|\\\\^\\[\\]<>\"\x7F-\xFF";
    string NewURI = QuoteString(U,"\\|{}[]<>\"^~_=!@#$%^&*");
    replace(NewURI.begin(),NewURI.end(),'/','_');
    return NewURI;
+}
+									/*}}}*/
+// URItoHashKey - Convert the uri into a stable hashed key		/*{{{*/
+// ---------------------------------------------------------------------
+/* This converts a URI into a stable hash key that can be used in places
+   where filename readability is less important than avoiding URI-derived
+   filenames. Sensitive components are stripped before hashing. */
+string URItoHashKey(const string &URI)
+{
+   ::URI U(URI);
+   U.User.clear();
+   U.Password.clear();
+   U.Access.clear();
+
+   std::string const Canonical = U;
+   Hashes Hash(Hashes::SHA256SUM);
+   Hash.Add(reinterpret_cast<unsigned char const *>(Canonical.data()), Canonical.size());
+   return Hash.GetHashString(Hashes::SHA256SUM).HashValue();
+}
+									/*}}}*/
+// URItoStorageKey - select URI key format based on config		/*{{{*/
+// ---------------------------------------------------------------------
+/* This picks the storage key used for apt state/list file naming. */
+string URItoStorageKey(const string &URI)
+{
+   if (_config != nullptr && _config->FindB("Acquire::URItoFileName::SHA256", false))
+      return URItoHashKey(URI);
+   return URItoFileName(URI);
 }
 									/*}}}*/
 // Base64Encode - Base64 Encoding routine for short strings		/*{{{*/

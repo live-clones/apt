@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+insertpackage 'unstable' 'foo' 'all' '1'
+setupaptarchive --no-update
+
+cleanlists() {
+	find rootdir/var/lib/apt/lists -mindepth 1 -maxdepth 1 -type f ! -name 'lock' -delete
+	rm -f rootdir/var/lib/apt/lists/partial/*
+}
+
+testsuccess apt update
+testsuccess sh -ec 'find rootdir/var/lib/apt/lists -maxdepth 1 -type f -printf "%f\n" | grep -Eq "_InRelease$"'
+
+echo 'Acquire::URItoFileName::SHA256 "true";' > rootdir/etc/apt/apt.conf.d/99uri-storage-key
+cleanlists
+
+testsuccess apt update
+testsuccess sh -ec 'find rootdir/var/lib/apt/lists -maxdepth 1 -type f -printf "%f\n" | grep -Eq "^[0-9a-f]{64}$"'
+testfailure sh -ec 'find rootdir/var/lib/apt/lists -maxdepth 1 -type f -printf "%f\n" | grep -Eq "_InRelease$"'

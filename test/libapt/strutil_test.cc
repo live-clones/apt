@@ -1,5 +1,7 @@
 #include <config.h>
+#include <apt-pkg/configuration.h>
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/hashes.h>
 #include <apt-pkg/strutl.h>
 #include <limits>
 #include <string>
@@ -274,6 +276,44 @@ TEST(StrUtilTest,QuoteString)
    EXPECT_EQ("~-_$#|uäöŦ™⅞±Æẞªß", DeQuoteString(QuoteString("~-_$#|uäöŦ™⅞±Æẞªß", "")));
    EXPECT_EQ("%45ltvill%65%2d%45rbach", QuoteString("Eltville-Erbach", "E-Ae"));
    EXPECT_EQ("Eltville-Erbach", DeQuoteString(QuoteString("Eltville-Erbach", "")));
+}
+TEST(StrUtilTest,URItoFileNameDefault)
+{
+   EXPECT_EQ("localhost:8080_dists_stable_main_binary-amd64_Packages.xz",
+	     URItoFileName("http://localhost:8080/dists/stable/main/binary-amd64/Packages.xz"));
+}
+TEST(StrUtilTest,URItoHashKey)
+{
+   std::string const Input = "http://localhost:8080/dists/stable/main/binary-amd64/Packages.xz";
+   ::URI U(Input);
+   U.User.clear();
+   U.Password.clear();
+   U.Access.clear();
+
+   std::string const Canonical = U;
+   Hashes Hash(Hashes::SHA256SUM);
+   Hash.Add(reinterpret_cast<unsigned char const *>(Canonical.data()), Canonical.size());
+   std::string const Expected = Hash.GetHashString(Hashes::SHA256SUM).HashValue();
+
+   EXPECT_EQ(Expected, URItoHashKey(Input));
+}
+TEST(StrUtilTest,URItoStorageKey)
+{
+   std::string const Input = "http://localhost:8080/dists/stable/main/binary-amd64/Packages.xz";
+   _config->Set("Acquire::URItoFileName::SHA256", false);
+   EXPECT_EQ(URItoFileName(Input), URItoStorageKey(Input));
+
+   _config->Set("Acquire::URItoFileName::SHA256", true);
+   EXPECT_EQ(URItoHashKey(Input), URItoStorageKey(Input));
+   _config->Set("Acquire::URItoFileName::SHA256", false);
+}
+TEST(StrUtilTest,URIKeyCanonicalizationIgnoresAccessAndUserInfo)
+{
+   std::string const A = "http://user:secret@localhost:8080/dists/stable/main/binary-amd64/Packages.xz";
+   std::string const B = "https://localhost:8080/dists/stable/main/binary-amd64/Packages.xz";
+
+   EXPECT_EQ(URItoFileName(A), URItoFileName(B));
+   EXPECT_EQ(URItoHashKey(A), URItoHashKey(B));
 }
 
 static void EXPECT_STRTONUM(std::string_view const str, bool const success, unsigned long const expected, unsigned const base)

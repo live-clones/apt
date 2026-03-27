@@ -171,6 +171,7 @@ bool pkgInitConfig(Configuration &Cnf)
    Cnf.CndSet("Acquire::AllowInsecureRepositories", false);
    Cnf.CndSet("Acquire::AllowWeakRepositories", false);
    Cnf.CndSet("Acquire::AllowDowngradeToInsecureRepositories", false);
+   Cnf.CndSet("Acquire::URItoFileName::SHA256", false);
 
    // Default cdrom mount point
    Cnf.CndSet("Acquire::cdrom::mount", "/media/cdrom/");

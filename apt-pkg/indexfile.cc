@@ -127,7 +127,7 @@ std::string IndexTarget::Option(OptionKeys const EnumKey) const		/*{{{*/
       {
 	 auto const M = Options.find("FILENAME");
 	 if (M == Options.end())
-	    return _config->FindDir("Dir::State::lists") + URItoFileName(URI);
+	    return _config->FindDir("Dir::State::lists") + URItoStorageKey(URI);
 	 return M->second;
       }
       case EXISTING_FILENAME:
