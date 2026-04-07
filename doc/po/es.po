@@ -38,7 +38,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt-doc 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-01-05 22:58+0100\n"
+"POT-Creation-Date: 2026-04-07 11:03+0200\n"
 "PO-Revision-Date: 2014-07-04 01:31+0200\n"
 "Last-Translator: Omar Campagne <ocampagne@gmail.com>\n"
 "Language-Team: Debian l10n Spanish <debian-l10n-spanish@lists.debian.org>\n"
@@ -5845,6 +5845,36 @@ msgstr ""
 "literal>, pero desactivarla podría ser útil si se quiere ejecutar APT varias "
 "veces seguidas, por ejemplo: en un instalador. En estas situaciones podría "
 "desactivar esta opción en todas las ejecuciones menos la última."
+
+#. type: Content of: <refentry><refsect1><title>
+#: apt.conf.5.xml
+msgid "Systemd inhibitors"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para>
+#: apt.conf.5.xml
+msgid ""
+"APT will communicate with systemd to inhibit conflicting system operations "
+"while running &dpkg;, to avoid systems ending up with partial upgrades and "
+"broken packages."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid "This boolean option, set by default, causes apt to inhbit shutdown"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid "This boolean option, set by default, causes apt to inhbit sleep"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para>
+#: apt.conf.5.xml
+msgid ""
+"See <ulink url=\"https://systemd.io/INHIBITOR_LOCKS/\" /> for further "
+"information."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><title>
 #: apt.conf.5.xml

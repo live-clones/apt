@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.9.27\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-01-05 22:58+0100\n"
+"POT-Creation-Date: 2026-04-07 11:03+0200\n"
 "PO-Revision-Date: 2025-02-28 15:48+0100\n"
 "Last-Translator: Chris Leick <c.leick@vollbio.de>\n"
 "Language-Team: German <debian-l10n-german@lists.debian.org>\n"
@@ -5950,6 +5950,36 @@ msgstr ""
 "hintereinander ausführen möchten – z.B. in einem Installationsprogramm. In "
 "diesem Szenario könnten Sie diese Option in allen außer der letzten "
 "Ausführung deaktivieren."
+
+#. type: Content of: <refentry><refsect1><title>
+#: apt.conf.5.xml
+msgid "Systemd inhibitors"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para>
+#: apt.conf.5.xml
+msgid ""
+"APT will communicate with systemd to inhibit conflicting system operations "
+"while running &dpkg;, to avoid systems ending up with partial upgrades and "
+"broken packages."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid "This boolean option, set by default, causes apt to inhbit shutdown"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid "This boolean option, set by default, causes apt to inhbit sleep"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para>
+#: apt.conf.5.xml
+msgid ""
+"See <ulink url=\"https://systemd.io/INHIBITOR_LOCKS/\" /> for further "
+"information."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><title>
 #: apt.conf.5.xml

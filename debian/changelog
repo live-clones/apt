@@ -1,3 +1,20 @@
+apt (3.2.0) unstable; urgency=medium
+
+  [ Julian Andres Klode ]
+  * Release 3.2.0 stable release (LP: #2147412)
+  * Copyright changes
+  * Document inhibitors (see Bug#112933)
+
+  [ Frans Spiesschaert ]
+  * Dutch program translation update (Closes: #1120336)
+  * Dutch manpages translation update (Closes: #1120338)
+
+  [ Américo Monteiro ]
+  * Portuguese manpages translation update (Closes: #1119827)
+  * Portuguese program translation update (Closes: #1127086)
+
+ -- Julian Andres Klode <jak@debian.org>  Tue, 07 Apr 2026 11:02:39 +0200
+
 apt (3.1.16) unstable; urgency=medium
 
   [ Andriy Pysyk ]
