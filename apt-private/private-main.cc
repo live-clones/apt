@@ -75,22 +75,3 @@ void CheckIfSimulateMode(CommandLine &CmdL)				/*{{{*/
    }
 }
 									/*}}}*/
-void CheckIfCalledByScript(int argc, const char *argv[])		/*{{{*/
-{
-   if (unlikely(argc < 1)) return;
-
-   if (not IsStdoutAtty() &&
-       not _config->Exists("APT::Version") &&
-       not _config->FindB("Apt::Cmd::Disable-Script-Warning", false))
-   {
-      // NOTE: CLI interface is redundant on the I/interface, this is
-      // intentional to make it easier to read.
-      std::cerr << std::endl
-                << "WARNING: " << flNotDir(argv[0]) << " "
-                << "does not have a stable CLI interface. "
-                << "Use with caution in scripts."
-                << std::endl
-                << std::endl;
-   }
-}
-									/*}}}*/
