@@ -296,7 +296,7 @@ bool HashStringList::operator!=(HashStringList const &other) const
    return !(*this == other);
 }
 									/*}}}*/
-static APT_PURE std::string HexDigest(std::basic_string_view<unsigned char> const &Sum)
+static APT_PURE std::string HexDigest(std::span<unsigned char> const &Sum)
 {
    char Conv[16] =
       {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b',
@@ -360,7 +360,7 @@ class PrivateHashes
       EVP_DigestFinal_ex(tmpContext, Sum, nullptr);
       EVP_MD_CTX_destroy(tmpContext);
 
-      return ::HexDigest(std::basic_string_view<unsigned char>(Sum, Size));
+      return ::HexDigest(std::span<unsigned char>(Sum, Size));
    }
 
    bool Enable(HashAlgo const &algo)
