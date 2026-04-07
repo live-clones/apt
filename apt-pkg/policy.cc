@@ -314,9 +314,9 @@ static inline bool ExcludePhased(std::string machineID, pkgCache::VerIterator co
    std::string seedStr = std::string(Ver.SourcePkgName()) + "-" + Ver.SourceVerStr() + "-" + machineID;
    std::seed_seq seed(seedStr.begin(), seedStr.end());
    std::minstd_rand rand(seed);
-   std::uniform_int_distribution<unsigned int> dist(0, 100);
+   std::uniform_int_distribution<unsigned int> dist(0, 99);
 
-   return dist(rand) > Ver.PhasedUpdatePercentage();
+   return dist(rand) >= Ver.PhasedUpdatePercentage();
 }
 APT_PURE signed short pkgPolicy::GetPriority(pkgCache::VerIterator const &Ver, bool ConsiderFiles)
 {
