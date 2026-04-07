@@ -56,7 +56,6 @@ N: There is 1 additional record. Please use the '-a' switch to see it}"
 	testwarningmsg "$ERR" aptmark manual foo
 	testwarningmsg "$ERR" aptmark auto foo
 }
-echo 'Apt::Cmd::Disable-Script-Warning "true";' >> aptconfig.conf
 
 msgmsg 'Unreadable one-line-style sources file'
 chmod -r rootdir/etc/apt/sources.list.d/apt-test-unstable-deb-src.list

@@ -573,7 +573,6 @@ EOF
 		chown _apt:$(id -gn) "${TMPWORKINGDIRECTORY}/rootdir/etc/webserver.pem"
 	fi
 	echo "Acquire::https::CaInfo \"${TMPWORKINGDIRECTORY}/rootdir/etc/webserver.pem\";" > rootdir/etc/apt/apt.conf.d/99https
-	echo "Apt::Cmd::Disable-Script-Warning \"1\";" > rootdir/etc/apt/apt.conf.d/apt-binary
 	export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=no
 	echo 'Acquire::Connect::AddrConfig "false";' > rootdir/etc/apt/apt.conf.d/connect-addrconfig
 	# Allow release files to be 10 hours in the future, rather than 10 seconds
