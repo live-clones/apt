@@ -69,4 +69,7 @@ map_id_t pkgSystem::GetVersionMapping(map_id_t const in) const
    return (o == d->idmap.end()) ? in : o->second;
 }
 									/*}}}*/
-pkgSystem::~pkgSystem() {}
+pkgSystem::~pkgSystem()
+{
+   delete d;
+}

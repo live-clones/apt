@@ -573,6 +573,7 @@ bool SigVerify::CopyAndVerify(string CDROM,string Name,vector<string> &SigList,	
       pid_t pid = ExecFork();
       if(pid < 0) {
 	 _error->Error("Fork failed");
+	 delete MetaIndex;
 	 return false;
       }
       if(pid == 0)
