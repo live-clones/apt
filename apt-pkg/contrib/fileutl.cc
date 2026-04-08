@@ -3091,7 +3091,7 @@ std::vector<std::string> Glob(std::string const &pattern, int flags)
 
    // append results
    for(i=0;i<globbuf.gl_pathc;i++)
-      result.push_back(string(globbuf.gl_pathv[i]));
+      result.emplace_back(globbuf.gl_pathv[i]);
 
    globfree(&globbuf);
    return result;

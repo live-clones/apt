@@ -266,12 +266,12 @@ bool pkgDPkgPM::Configure(PkgIterator Pkg)
    if (Pkg.end() == true)
       return false;
 
-   List.push_back(Item(Item::Configure, Pkg));
+   List.emplace_back(Item::Configure, Pkg);
 
    // Use triggers for config calls if we configure "smart"
    // as otherwise Pre-Depends will not be satisfied, see #526774
    if (_config->FindB("DPkg::TriggersPending", false) == true)
-      List.push_back(Item(Item::TriggersPending, PkgIterator()));
+      List.emplace_back(Item::TriggersPending, PkgIterator());
 
    return true;
 }
@@ -285,9 +285,9 @@ bool pkgDPkgPM::Remove(PkgIterator Pkg,bool Purge)
       return false;
 
    if (Purge == true)
-      List.push_back(Item(Item::Purge,Pkg));
+      List.emplace_back(Item::Purge,Pkg);
    else
-      List.push_back(Item(Item::Remove,Pkg));
+      List.emplace_back(Item::Remove,Pkg);
    return true;
 }
 									/*}}}*/
@@ -2328,10 +2328,10 @@ void pkgDPkgPM::WriteApportReport(const char *pkgpath, const char *errormsg)
    // do not report dpkg I/O errors, this is a format string, so we compare
    // the prefix and the suffix of the error with the dpkg error message
    vector<string> io_errors;
-   io_errors.push_back(string("failed to read"));
-   io_errors.push_back(string("failed to write"));
-   io_errors.push_back(string("failed to seek"));
-   io_errors.push_back(string("unexpected end of file or stream"));
+   io_errors.emplace_back("failed to read");
+   io_errors.emplace_back("failed to write");
+   io_errors.emplace_back("failed to seek");
+   io_errors.emplace_back("unexpected end of file or stream");
 
    for (vector<string>::iterator I = io_errors.begin(); I != io_errors.end(); ++I)
    {

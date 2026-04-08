@@ -657,7 +657,7 @@ class RredMethod final : public aptMethod {
 	    std::string const FileName = Path + ".ed";
 	    if (ExpectedHashes.usable() == false)
 	       return _error->Error("No hashes found for uncompressed patch: %s", FileName.c_str());
-	    patchfiles.push_back(PDiffFile(FileName, ExpectedHashes));
+	    patchfiles.emplace_back(FileName, ExpectedHashes);
 	 }
 	 else
 	 {
@@ -675,7 +675,7 @@ class RredMethod final : public aptMethod {
 		  HashStringList const ExpectedHashes = ReadExpectedHashesForPatch(seen_patches, Message);
 		  if (ExpectedHashes.usable() == false)
 		     return _error->Error("No hashes found for uncompressed patch %d: %s", seen_patches, p->c_str());
-		  patchfiles.push_back(PDiffFile(*p, ExpectedHashes));
+		  patchfiles.emplace_back(*p, ExpectedHashes);
 		  ++seen_patches;
 	       }
 	    }
