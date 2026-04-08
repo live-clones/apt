@@ -795,8 +795,8 @@ stop:
       I->Shutdown(false);
 
    // Shut down the items
-   for (ItemIterator I = Items.begin(); I != Items.end(); ++I)
-      (*I)->Finished();
+   for (auto &Item : Items)
+      Item->Finished();
 
    bool const newError = _error->PendingError();
    _error->MergeWithStack();
@@ -1191,10 +1191,10 @@ pkgAcquire::Queue::QItem *pkgAcquire::Queue::FindItem(string URI,pkgAcquire::Wor
 bool pkgAcquire::Queue::ItemDone(QItem *Itm)
 {
    PipeDepth--;
-   for (QItem::owner_iterator O = Itm->Owners.begin(); O != Itm->Owners.end(); ++O)
+   for (auto Owner : Itm->Owners)
    {
-      if ((*O)->Status == pkgAcquire::Item::StatFetching)
-	 (*O)->Status = pkgAcquire::Item::StatDone;
+      if (Owner->Status == pkgAcquire::Item::StatFetching)
+	 Owner->Status = pkgAcquire::Item::StatDone;
    }
 
    if (Itm->Owner->QueueCounter <= 1)
@@ -1273,9 +1273,9 @@ HashStringList pkgAcquire::Queue::QItem::GetExpectedHashes() const	/*{{{*/
       failure and still needs this handling: Two owners who expect the same
       file, but one owner only knows the SHA1 while the other only knows SHA256. */
    HashStringList superhsl;
-   for (pkgAcquire::Queue::QItem::owner_iterator O = Owners.begin(); O != Owners.end(); ++O)
+   for (auto Owner : Owners)
    {
-      HashStringList const hsl = (*O)->GetExpectedHashes();
+      HashStringList const hsl = Owner->GetExpectedHashes();
       // we merge both lists - if we find disagreement send no hashes
       HashStringList::const_iterator hs = hsl.begin();
       for (; hs != hsl.end(); ++hs)
@@ -1329,24 +1329,24 @@ void pkgAcquire::Queue::QItem::SyncDestinationFiles() const		/*{{{*/
       everything (like progress reporting) finds it easily */
    std::string superfile = Owner->DestFile;
    off_t supersize = 0;
-   for (pkgAcquire::Queue::QItem::owner_iterator O = Owners.begin(); O != Owners.end(); ++O)
+   for (auto Owner : Owners)
    {
-      if ((*O)->DestFile == superfile)
+      if (Owner->DestFile == superfile)
 	 continue;
       struct stat file;
-      if (lstat((*O)->DestFile.c_str(),&file) == 0)
+      if (lstat(Owner->DestFile.c_str(),&file) == 0)
       {
 	 if ((file.st_mode & S_IFREG) == 0)
-	    RemoveFile("SyncDestinationFiles", (*O)->DestFile);
+	    RemoveFile("SyncDestinationFiles", Owner->DestFile);
 	 else if (supersize < file.st_size)
 	 {
 	    supersize = file.st_size;
 	    RemoveFile("SyncDestinationFiles", superfile);
-	    rename((*O)->DestFile.c_str(), superfile.c_str());
+	    rename(Owner->DestFile.c_str(), superfile.c_str());
 	 }
 	 else
-	    RemoveFile("SyncDestinationFiles", (*O)->DestFile);
-	 if (symlink(superfile.c_str(), (*O)->DestFile.c_str()) != 0)
+	    RemoveFile("SyncDestinationFiles", Owner->DestFile);
+	 if (symlink(superfile.c_str(), Owner->DestFile.c_str()) != 0)
 	 {
 	    ; // not a problem per-se and no real alternative
 	 }
