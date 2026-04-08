@@ -137,8 +137,8 @@ bool pkgOrderList::DoRun()
 {   
    // Temp list
    unsigned long Size = Cache.Head().PackageCount;
-   std::unique_ptr<Package *[]> NList(new Package *[Size]);
-   std::unique_ptr<Package *[]> AfterList(new Package *[Size]);
+   auto NList = std::make_unique<Package *[]>(Size);
+   auto AfterList = std::make_unique<Package *[]>(Size);
    AfterEnd = AfterList.get();
    
    Depth = 0;

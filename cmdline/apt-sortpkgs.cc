@@ -115,7 +115,7 @@ static bool DoIt(string InFile)
    // Emit
    FileFd stdoutfd;
    stdoutfd.OpenDescriptor(STDOUT_FILENO, FileFd::WriteOnly, false);
-   auto const Buffer = std::unique_ptr<unsigned char[]>(new unsigned char[Largest+1]);
+   auto const Buffer = std::make_unique<unsigned char[]>(Largest+1);
    for (vector<PkgName>::iterator I = List.begin(); I != List.end(); ++I)
    {
       // Read in the Record.
