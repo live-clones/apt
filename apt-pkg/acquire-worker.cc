@@ -231,7 +231,7 @@ static void APT_NONNULL(3) ChangeSiteIsMirrorChange(std::string const &NewURI, p
    if (URI::SiteOnly(NewURI) == URI::SiteOnly(desc.URI))
       return;
 
-   auto const firstSpace = desc.Description.find(" ");
+   auto const firstSpace = desc.Description.find(' ');
    if (firstSpace != std::string::npos)
    {
       std::string const OldSite = desc.Description.substr(0, firstSpace);
@@ -277,8 +277,8 @@ bool pkgAcquire::Worker::RunMessages()
 	    for (pkgAcquire::Queue::QItem::owner_iterator O = Itm->Owners.begin(); O != Itm->Owners.end(); ++O)
 	       (*O)->UsedMirror = UsedMirror;
 
-	    if (Itm->Description.find(" ") != string::npos)
-	       Itm->Description.replace(0, Itm->Description.find(" "), UsedMirror);
+	    if (Itm->Description.find(' ') != string::npos)
+	       Itm->Description.replace(0, Itm->Description.find(' '), UsedMirror);
 	 }
       }
 

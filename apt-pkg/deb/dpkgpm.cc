@@ -646,7 +646,7 @@ void pkgDPkgPM::ProcessDpkgStatusLine(char *line)
    }
 
    // At this point we have a pkgname, but it might not be arch-qualified !
-   if (pkgname.find(":") == std::string::npos)
+   if (pkgname.find(':') == std::string::npos)
    {
       pkgCache::GrpIterator const Grp = Cache.FindGrp(pkgname);
       if (unlikely(Grp.end()== true))
@@ -779,7 +779,7 @@ void pkgDPkgPM::ProcessDpkgStatusLine(char *line)
    }
 
    std::string arch = "";
-   if (pkgname.find(":") != string::npos)
+   if (pkgname.find(':') != string::npos)
       arch = StringSplit(pkgname, ":")[1];
    std::string i18n_pkgname = pkgname;
    if (arch.size() != 0)

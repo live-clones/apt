@@ -175,8 +175,8 @@ std::vector<std::string> const Configuration::getLanguages(bool const &All,
 		builtin.push_back("none");
 		for (struct dirent *Ent = readdir(D); Ent != 0; Ent = readdir(D)) {
 			string const name = SubstVar(Ent->d_name, "%5f", "_");
-			size_t const foundDash = name.rfind("-");
-			size_t const foundUnderscore = name.rfind("_", foundDash);
+			size_t const foundDash = name.rfind('-');
+			size_t const foundUnderscore = name.rfind('_', foundDash);
 			if (foundDash == string::npos || foundUnderscore == string::npos ||
 			    foundDash <= foundUnderscore ||
 			    name.substr(foundUnderscore+1, foundDash-(foundUnderscore+1)) != "Translation")
@@ -692,7 +692,7 @@ std::string Configuration::color(std::string const &colorName, std::string const
    //            | \\x1B<word>       ; color escaped.
    //            | <word>	     ; a simple color name
    //            | <color> <color>   ; a sequence of colors
-   if (color.find(" ") != color.npos)
+   if (color.find(' ') != color.npos)
    {
       std::string res;
       for (auto &&colorPart : VectorizeString(color, ' '))

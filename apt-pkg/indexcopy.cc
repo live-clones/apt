@@ -161,7 +161,7 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List,
 	       // Attempt to fix busted symlink support for one instance
 	       string OrigFile = File;
 	       string::size_type Start = File.find("binary-");
-	       string::size_type End = File.find("/",Start+3);
+	       string::size_type End = File.find('/',Start+3);
 	       if (Start != string::npos && End != string::npos)
 	       {
 		  File.replace(Start,End-Start,"binary-all");

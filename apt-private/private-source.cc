@@ -86,21 +86,21 @@ static pkgSrcRecords::Parser *FindSrc(const char *Name,
       TmpSrc = TmpSrc.substr(4);
    }
    // extract release
-   size_t found = TmpSrc.find_last_of("/");
+   size_t found = TmpSrc.find_last_of('/');
    if (found != std::string::npos)
    {
       RelTag = TmpSrc.substr(found+1);
       TmpSrc = TmpSrc.substr(0,found);
    }
    // extract the version
-   found = TmpSrc.find_last_of("=");
+   found = TmpSrc.find_last_of('=');
    if (found != std::string::npos)
    {
       VerTag = UserRequestedVerTag = TmpSrc.substr(found+1);
       TmpSrc = TmpSrc.substr(0,found);
    }
    // extract arch
-   found = TmpSrc.find_last_of(":");
+   found = TmpSrc.find_last_of(':');
    if (found != std::string::npos)
    {
       ArchTag = TmpSrc.substr(found+1);
@@ -359,14 +359,14 @@ bool DoSource(CommandLine &CmdL)
       while (pos != std::string::npos)
       {
 	 pos += strlen("\nVcs-");
-	 std::string vcs = srec.substr(pos,srec.find(":",pos)-pos);
+	 std::string vcs = srec.substr(pos,srec.find(':',pos)-pos);
 	 if(vcs == "Browser") 
 	 {
 	    pos = srec.find("\nVcs-", pos);
 	    continue;
 	 }
 	 pos += vcs.length()+2;
-	 std::string::size_type epos = srec.find("\n", pos);
+	 std::string::size_type epos = srec.find('\n', pos);
 	 std::string const uri = srec.substr(pos,epos-pos);
 	 ioprintf(c1out, _("NOTICE: '%s' packaging is maintained in "
 		  "the '%s' version control system at:\n"
@@ -806,7 +806,7 @@ bool DoBuildDep(CommandLine &CmdL)
 	 WriteBuildDependencyPackage(buildDepsPkgFile, pseudo, pseudoArch,
 	       GetBuildDeps(Last, Src.c_str(), hostArch));
 	 std::string reltag = *I;
-	 size_t found = reltag.find_last_of("/");
+	 size_t found = reltag.find_last_of('/');
 	 if (found == std::string::npos)
 	    reltag.clear();
 	 else

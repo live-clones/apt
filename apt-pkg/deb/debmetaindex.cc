@@ -1318,7 +1318,7 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
    ///        allows you to match a.b.c against itself, .b.c, and .c, but not b.c
    static inline std::string NextLevelDomain(std::string Host)
    {
-      auto nextDot = Host.find(".", 1);
+      auto nextDot = Host.find('.', 1);
       if (nextDot == Host.npos)
 	 return "";
       return Host.substr(nextDot);

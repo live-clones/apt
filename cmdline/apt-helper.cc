@@ -117,7 +117,7 @@ static bool DoSrvLookup(CommandLine &CmdL)				/*{{{*/
       std::vector<SrvRec> srv_records;
       std::string const name = CmdL.FileList[i];
       c0out << "# Target\tPriority\tWeight\tPort # for " << name << std::endl;
-      size_t const found = name.find(":");
+      size_t const found = name.find(':');
       if (found != std::string::npos)
       {
 	 std::string const host = name.substr(0, found);
