@@ -840,7 +840,7 @@ std::string LookupTag(const std::string &Message, const char *TagC, const char *
       // skip the space leading a multiline (Keep all other whitespaces in the value)
       valuestart = std::next(valuestart);
    }
-   auto const valueend = result.find_last_not_of("\n");
+   auto const valueend = result.find_last_not_of('\n');
    if (valueend == std::string::npos)
       result.clear();
    else
@@ -1506,7 +1506,7 @@ char *safe_snprintf(char *Buffer,char *End,const char *Format,...)
 // ---------------------------------------------------------------------
 string StripEpoch(const string &VerStr)
 {
-   size_t i = VerStr.find(":");
+   size_t i = VerStr.find(':');
    if (i == string::npos)
       return VerStr;
    return VerStr.substr(i+1);

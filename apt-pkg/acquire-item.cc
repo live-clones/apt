@@ -477,7 +477,7 @@ bool pkgAcqTransactionItem::QueueURI(pkgAcquire::ItemDesc &Item)
 	 if (unlikely(TargetHash == nullptr))
 	    return false;
 	 ::URI uri{U};
-	 auto const trailing_slash = uri.Path.find_last_of("/");
+	 auto const trailing_slash = uri.Path.find_last_of('/');
 	 if (unlikely(trailing_slash == std::string::npos))
 	    return false;
 	 auto altPath = uri.Path.substr(0, trailing_slash) + "/by-hash/" + TargetHash->HashType() + "/" + TargetHash->HashValue();
@@ -495,8 +495,8 @@ bool pkgAcqTransactionItem::QueueURI(pkgAcquire::ItemDesc &Item)
    if (SameMirrorURI.empty() == false)
    {
       UsedMirror = TransactionManager->UsedMirror;
-      if (Item.Description.find(" ") != string::npos)
-	 Item.Description.replace(0, Item.Description.find(" "), UsedMirror);
+      if (Item.Description.find(' ') != string::npos)
+	 Item.Description.replace(0, Item.Description.find(' '), UsedMirror);
    }
    return pkgAcquire::Item::QueueURI(Item);
 }
