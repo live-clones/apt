@@ -255,6 +255,7 @@ bool IdentCdrom(string CD,string &Res,unsigned int Version)
 
    closedir(D);
    Res = Hash.GetHashString(Hashes::MD5SUM).HashValue().append(std::move(S));
+   close(dirfd);
    return true;
 }
 									/*}}}*/

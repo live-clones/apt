@@ -1011,7 +1011,10 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    if (auto ctx = GetContextForHost(Host, OwnerConf))
       tlsFd->ssl = SSL_new(ctx);
    else
+   {
+      delete tlsFd;
       return ResultState::FATAL_ERROR;
+   }
 
    FdFd *fdfd = dynamic_cast<FdFd *>(Fd.get());
    if (fdfd != nullptr)
