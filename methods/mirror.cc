@@ -334,7 +334,7 @@ std::string MirrorMethod::GetMirrorFileURI(std::string const &Message, FetchItem
 	 auto const colon = uristr.find(':');
 	 if (unlikely(colon == std::string::npos))
 	    continue;
-	 auto const plus = uristr.find("+");
+	 auto const plus = uristr.find('+');
 	 if (plus < colon)
 	 {
 	    // started as tor+mirror+http we want to get the file via tor+http

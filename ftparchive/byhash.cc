@@ -50,7 +50,7 @@ void DeleteAllButMostRecent(std::string dir, int KeepFiles)
 std::string GenByHashFilename(std::string ByHashOutputFile, HashString const &h)
 {
    std::string const ByHash = "/by-hash/" + h.HashType() + "/" + h.HashValue();
-   size_t trailing_slash = ByHashOutputFile.find_last_of("/");
+   size_t trailing_slash = ByHashOutputFile.find_last_of('/');
    if (trailing_slash == std::string::npos)
       trailing_slash = 0;
    ByHashOutputFile = ByHashOutputFile.replace(

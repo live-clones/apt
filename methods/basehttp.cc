@@ -330,7 +330,7 @@ static std::string fixURIEncoding(std::string const &part)
 {
    // if the server sends a space this is not an encoded URI
    // so other clients seem to encode it and we do it as well
-   if (part.find_first_of(" ") != std::string::npos)
+   if (part.find_first_of(' ') != std::string::npos)
       return aptMethod::URIEncode(part);
    return part;
 }

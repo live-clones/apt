@@ -1114,8 +1114,8 @@ static bool AddIfVolatile(pkgSourceList *const SL, std::vector<PseudoPkg> &Volat
       }
       else
       {
-	 auto const found = pkg.name.rfind("/");
-	 if (found == pkg.name.find("/"))
+	 auto const found = pkg.name.rfind('/');
+	 if (found == pkg.name.find('/'))
 	    _error->Error(_("Unsupported file %s given on commandline"), I);
 	 else
 	 {
