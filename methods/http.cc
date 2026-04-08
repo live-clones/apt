@@ -397,7 +397,7 @@ static ResultState UnwrapHTTPConnect(std::string Host, int Port, URI Proxy, std:
    if (In.WriteSpace())
    {
       // Maybe there is actual data already read, if so we need to buffer it
-      std::unique_ptr<HttpConnectFd> NewFd(new HttpConnectFd());
+      auto NewFd = std::make_unique<HttpConnectFd>();
       In.Write(NewFd->Buffer);
       NewFd->UnderlyingFd = std::move(Fd);
       Fd = std::move(NewFd);

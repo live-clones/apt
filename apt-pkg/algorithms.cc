@@ -554,7 +554,7 @@ void pkgProblemResolver::MakeScores()
    }
 
    // Copy the scores to advoid additive looping
-   std::unique_ptr<int[]> OldScores(new int[Size]);
+   auto OldScores = std::make_unique<int[]>(Size);
    memcpy(&OldScores[0],&Scores[0],sizeof(Scores[0])*Size);
       
    /* Now we cause 1 level of dependency inheritance, that is we add the 
@@ -797,7 +797,7 @@ bool pkgProblemResolver::ResolveInternal(bool const BrokenFix)
       operates from highest score to lowest. This prevents problems when
       high score packages cause the removal of lower score packages that
       would cause the removal of even lower score packages. */
-   std::unique_ptr<pkgCache::Package *[]> PList(new pkgCache::Package *[Size]);
+   auto PList = std::make_unique<pkgCache::Package *[]>(Size);
    pkgCache::Package **PEnd = &PList[0];
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
       *PEnd++ = I;
@@ -1291,7 +1291,7 @@ bool pkgProblemResolver::ResolveByKeepInternal()
       high score packages cause the removal of lower score packages that
       would cause the removal of even lower score packages. */
    auto Size = Cache.Head().PackageCount;
-   std::unique_ptr<pkgCache::Package *[]> PList{new pkgCache::Package *[Size]};
+   auto PList = std::make_unique<pkgCache::Package *[]>(Size);
    pkgCache::Package **PEnd = &PList[0];
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
       *PEnd++ = I;

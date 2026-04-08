@@ -3346,7 +3346,7 @@ bool DropPrivileges()							/*{{{*/
    {
       // Verify that the user isn't still in any supplementary groups
       long const ngroups_max = sysconf(_SC_NGROUPS_MAX);
-      std::unique_ptr<gid_t[]> gidlist(new gid_t[ngroups_max]);
+      auto gidlist = std::make_unique<gid_t[]>(ngroups_max);
       if (unlikely(gidlist == NULL))
 	 return _error->Error("Allocation of a list of size %lu for getgroups failed", ngroups_max);
       ssize_t gidlist_nr;
