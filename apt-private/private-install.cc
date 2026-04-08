@@ -860,10 +860,10 @@ bool DoCacheManipulationFromCommandLine(CommandLine &CmdL, std::vector<PseudoPkg
    Cache->MarkAndSweep();
 
    std::list<APT::VersionSet::Modifier> mods;
-   mods.push_back(APT::VersionSet::Modifier(MOD_INSTALL, "+",
-		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::CANDIDATE));
-   mods.push_back(APT::VersionSet::Modifier(MOD_REMOVE, "-",
-		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::NEWEST));
+   mods.emplace_back(MOD_INSTALL, "+",
+		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::CANDIDATE);
+   mods.emplace_back(MOD_REMOVE, "-",
+		APT::VersionSet::Modifier::POSTFIX, APT::CacheSetHelper::NEWEST);
    CacheSetHelperAPTGet helper(c0out);
    verset = APT::VersionVector::GroupedFromCommandLine(Cache,
 		CmdL.FileList + 1, mods, fallback, helper);
