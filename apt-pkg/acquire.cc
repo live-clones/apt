@@ -636,7 +636,7 @@ static void CheckDropPrivsMustBeDisabled(pkgAcquire const &Fetcher)
    gid_t const old_egid = getegid();
 
    long const ngroups_max = sysconf(_SC_NGROUPS_MAX);
-   std::unique_ptr<gid_t[]> old_gidlist(new gid_t[ngroups_max]);
+   auto old_gidlist = std::make_unique<gid_t[]>(ngroups_max);
    if (unlikely(old_gidlist == NULL))
       return;
    ssize_t old_gidlist_nr;

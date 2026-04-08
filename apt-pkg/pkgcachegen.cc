@@ -1502,10 +1502,10 @@ static bool CheckValidity(FileFd &CacheFile, std::string const &CacheFileName,
    }
 
    // Map it
-   std::unique_ptr<MMap> Map(new MMap(CacheFile,0));
+   auto Map = std::make_unique<MMap>(CacheFile,0);
    if (unlikely(Map->validData()) == false)
       return false;
-   std::unique_ptr<pkgCache> CacheP(new pkgCache(Map.get()));
+   auto CacheP = std::make_unique<pkgCache>(Map.get());
    pkgCache &Cache = *CacheP.get();
    if (_error->PendingError() || Map->Size() == 0)
    {
@@ -1514,7 +1514,7 @@ static bool CheckValidity(FileFd &CacheFile, std::string const &CacheFileName,
       return false;
    }
 
-   std::unique_ptr<bool[]> RlsVisited(new bool[Cache.HeaderP->ReleaseFileCount]);
+   auto RlsVisited = std::make_unique<bool[]>(Cache.HeaderP->ReleaseFileCount);
    memset(RlsVisited.get(),0,sizeof(RlsVisited[0])*Cache.HeaderP->ReleaseFileCount);
    std::vector<pkgIndexFile *> Files;
    for (pkgSourceList::const_iterator i = List.begin(); i != List.end(); ++i)
@@ -1549,7 +1549,7 @@ static bool CheckValidity(FileFd &CacheFile, std::string const &CacheFileName,
 
    /* Now we check every index file, see if it is in the cache,
       verify the IMS data and check that it is on the disk too.. */
-   std::unique_ptr<bool[]> Visited(new bool[Cache.HeaderP->PackageFileCount]);
+   auto Visited = std::make_unique<bool[]>(Cache.HeaderP->PackageFileCount);
    memset(Visited.get(),0,sizeof(Visited[0])*Cache.HeaderP->PackageFileCount);
    for (std::vector<pkgIndexFile *>::const_reverse_iterator PkgFile = Files.rbegin(); PkgFile != Files.rend(); ++PkgFile)
    {
@@ -1927,7 +1927,7 @@ bool pkgCacheGenerator::MakeOnlyStatusCache(OpProgress *Progress,DynamicMMap **O
       return false;
 
    ScopedErrorMerge sem;
-   std::unique_ptr<DynamicMMap> Map(CreateDynamicMMap(NULL, 0));
+   auto Map = std::make_unique<DynamicMMap>(NULL, 0);
    if (unlikely(Map->validData()) == false)
       return false;
    map_filesize_t CurrentSize = 0;
