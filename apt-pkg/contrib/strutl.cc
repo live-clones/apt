@@ -1335,7 +1335,7 @@ vector<string> VectorizeString(string_view const &haystack, char const &split)
    auto end = start;
    do {
       for (; end != haystack.end() && *end != split; ++end);
-      exploded.push_back(string(start, end));
+      exploded.emplace_back(start, end);
       start = end + 1;
    } while (end != haystack.end() && (++end) != haystack.end());
    return exploded;

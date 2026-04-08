@@ -949,7 +949,7 @@ void DependencySolver::Discover(Var var)
       {
 	 Clause clause{Var(Pkg), Group::SelectVersion};
 	 for (auto ver = Pkg.VersionList(); not ver.end(); ver++)
-	    clause.solutions.push_back(Var(ver));
+	    clause.solutions.emplace_back(ver);
 
 	 std::stable_sort(clause.solutions.begin(), clause.solutions.end(), CompareProviders3{cache, policy, Pkg, *this});
 	 RegisterClause(std::move(clause));
@@ -1067,7 +1067,7 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
 
       if (DeferVersionSelection && not start.IsNegative() && start.TargetPkg().ProvidesList().end() && start.IsSatisfied(start.TargetPkg()))
       {
-	 clause.solutions.push_back(Var(start.TargetPkg()));
+	 clause.solutions.emplace_back(start.TargetPkg());
       }
       else
       {
@@ -1079,7 +1079,7 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
 
 	    if (unlikely(debug >= 3))
 	       std::cerr << "Adding work to  item " << reason.toString(cache) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
-	    clause.solutions.push_back(Var(pkgCache::VerIterator(cache, *tgt)));
+	    clause.solutions.emplace_back(pkgCache::VerIterator(cache, *tgt));
 	 }
 	 std::stable_sort(clause.solutions.begin() + begin, clause.solutions.end(), CompareProviders3{cache, policy, start.TargetPkg(), *this});
       }
@@ -1259,13 +1259,13 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	 else
 	 {
 	    Clause w{Var(), Group, isOptional};
-	    w.solutions.push_back(Var(P));
+	    w.solutions.emplace_back(P);
 	    auto insertedW = RegisterClause(std::move(w));
 	    if (insertedW && not AddWork(Work{insertedW, decisionLevel()}))
 	       return false;
 
 	    if (not isAuto)
-	       manualPackages.push_back(Var(P));
+	       manualPackages.emplace_back(P);
 
 	    // Given A->A2|A1, B->B1|B2; Bn->An, if we select `not A1`, we
 	    // should try to install A2 before trying B so we end up with
@@ -1274,7 +1274,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	    // Compare test-bug-712116-dpkg-pre-install-pkgs-hook-multiarch
 	    Clause shortcircuit{Var(), Group, isOptional};
 	    for (auto V = P.VersionList(); not V.end(); ++V)
-	       shortcircuit.solutions.push_back(Var(V));
+	       shortcircuit.solutions.emplace_back(V);
 	    std::stable_sort(shortcircuit.solutions.begin(), shortcircuit.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	    auto insertedShort = RegisterClause(std::move(shortcircuit));
 	    if (insertedShort && not AddWork(Work{insertedShort, decisionLevel()}))
@@ -1291,7 +1291,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	 auto G = P.Group();
 	 for (auto P = G.PackageList(); not P.end(); P = G.NextPkg(P))
 	    if (P->Flags & pkgCache::Flag::Essential)
-	       w.solutions.push_back(Var(P));
+	       w.solutions.emplace_back(P);
 	 std::stable_sort(w.solutions.begin(), w.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Install essential package " << P << std::endl;
