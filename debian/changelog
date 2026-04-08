@@ -3,7 +3,7 @@ apt (3.2.0) unstable; urgency=medium
   [ Julian Andres Klode ]
   * Release 3.2.0 stable release (LP: #2147412)
   * Copyright changes
-  * Document inhibitors (see Bug#112933)
+  * Document inhibitors (see Bug#1129339)
 
   [ Frans Spiesschaert ]
   * Dutch program translation update (Closes: #1120336)
