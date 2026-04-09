@@ -442,7 +442,31 @@ Signed-By:
     however support additional types of IDs, and APT does not perform any checks so far.
 		</para>
 	</listitem>
+    </itemizedlist>
+    </para>
 
+    <para>
+    In the deb822 format, it can be useful to describe the sources in more detail.
+    The following options are not directly used by APT,
+    but suggested to be included by third-parties when providing <filename>.sources</filename> files to users.
+    <itemizedlist>
+    <listitem>
+        <para><option>Contact</option>
+            specifies the preferred addresses to reach the repository operators on one or more lines.
+            It should be a comma-separated list of RFC5322 email addresses or  URLs.
+    </para>
+	</listitem>
+    <listitem>
+        <para><option>Bugs</option>
+            specifies an HTTPS URL to a public bug tracker or instructions on how to report bugs.
+    </para>
+	</listitem>
+    <listitem>
+    <para><option>Description</option>
+        specifies a description for the repository. This is a multi-line field, the first line is a summary,
+        the remaining lines may add more description.
+    </para>
+	</listitem>
   </itemizedlist>
 
     </para>
