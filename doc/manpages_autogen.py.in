@@ -1,0 +1,27 @@
+from dataclasses import dataclass
+
+@dataclass
+class ManPage:
+    """
+    A dataclass for representing a Unix manual page.
+    """
+
+    rst_file_name: str
+    name: str
+    short_desc: str
+    authors: list[str]
+    section: int
+
+    def as_tuple(self) -> tuple[str, str, str, list[str], int]:
+        """Convert the ManPage instance into a tuple for Sphinx"""
+        return (
+            self.rst_file_name,
+            self.name,
+            self.short_desc,
+            self.authors,
+            self.section,
+        )
+
+local_man_pages: list[ManPage] = [
+@MANPAGE_DEFINITIONS@
+]

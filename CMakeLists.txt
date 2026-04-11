@@ -243,6 +243,15 @@ set(PAGER_ENV "LESS=FRSXMK\\nMORE=FRX\\nLV=-c" CACHE STRING "Environment to pass
 configure_file(CMake/config.h.in ${PROJECT_BINARY_DIR}/include/config.h)
 configure_file(CMake/apti18n.h.in ${PROJECT_BINARY_DIR}/include/apti18n.h)
 
+# Generate Sphinx configuration
+if (WITH_DOC OR WITH_DOC_MANPAGES)
+configure_file(
+    ${CMAKE_SOURCE_DIR}/doc/conf.py.in
+    ${CMAKE_SOURCE_DIR}/doc/conf.py
+    @ONLY
+)
+endif()
+
 # Add our subdirectories
 add_subdirectory(vendor)
 if (NOT USE_SYSTEM_APTPKG)
