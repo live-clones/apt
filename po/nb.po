@@ -13,13 +13,14 @@
 # Bjorn Steensrud <bjornst@powertech.no>, 2004.
 # Hans Fredrik Nordhaug <hans@nordhaug.priv.no>, 2003, 2005-2010.
 # Petter Reinholdtsen <pere@hungry.com>, 2016, 2018.
+# Andreas Noteng <andreas@noteng.no>, 2026
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 1.0.5\n"
+"Project-Id-Version: apt 3.1.13\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-01-05 22:58+0100\n"
-"PO-Revision-Date: 2018-10-30 20:53+0100\n"
-"Last-Translator: Petter Reinholdtsen <pere@hungry.com>\n"
+"PO-Revision-Date: 2026-04-16 21:18+0200\n"
+"Last-Translator: Andreas Noteng <andreas@noteng.no>\n"
 "Language-Team: Norwegian Bokmål <i18n-no@lister.ping.uio.no>\n"
 "Language: nb\n"
 "MIME-Version: 1.0\n"
@@ -33,7 +34,7 @@ msgid ""
 "Updating from such a repository can't be done securely, and is therefore "
 "disabled by default."
 msgstr ""
-"Oppdatering fra et slikt depot kan ikke gjøres på sikkert vis, og er derfor "
+"Oppdatering fra et slikt depot kan ikke gjøres sikkert, og er derfor "
 "avskrudd som standard."
 
 #: apt-pkg/acquire-item.cc
@@ -41,55 +42,59 @@ msgid ""
 "Data from such a repository can't be authenticated and is therefore "
 "potentially dangerous to use."
 msgstr ""
+"Data fra et slikt depot kan ikke atentiseres og er derfor potensielt "
+"skadelig."
 
 #: apt-pkg/acquire-item.cc
 msgid ""
 "See apt-secure(8) manpage for repository creation and user configuration "
 "details."
 msgstr ""
-"Se manualsiden apt-secure(8) for detaljer om oppretting av depote og "
+"Se manualsiden apt-secure(8) for detaljer om oppretting av depoter og "
 "brukeroppsett."
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
+#, c-format
 msgid "The repository '%s' is no longer signed."
-msgstr "Katalogen %s er avledet"
+msgstr "Depotet «%s» er ikke lenger signert"
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
+#, c-format
 msgid "The repository '%s' no longer has a Release file."
-msgstr "Katalogen %s er avledet"
+msgstr "Depotet «%s» har ikke lenger en Release-fil"
 
 #: apt-pkg/acquire-item.cc
 msgid ""
 "This is normally not allowed, but the option "
 "Acquire::AllowDowngradeToInsecureRepositories was given to override it."
 msgstr ""
+"Dette er vanligvis ikke tillatt, men ble overstyrt av "
+"Acquire::AllowDowngradeToInsecureRepositories."
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
+#, c-format
 msgid "The repository '%s' is not signed."
-msgstr "Katalogen %s er avledet"
+msgstr "Depotet «%s» er ikke lenger signert."
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
+#, c-format
 msgid "The repository '%s' does not have a Release file."
-msgstr "Katalogen %s er avledet"
+msgstr "Depotet «%s» har ikke lenger en Release-fil"
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
+#, c-format
 msgid "The repository '%s' provides only weak security information."
-msgstr "Katalogen %s er avledet"
+msgstr "Depotet «%s» oppgir svak sikkerhetsinformasjon."
 
 #: apt-pkg/acquire-item.cc ftparchive/writer.cc
 #, c-format
 msgid "Failed to readlink %s"
-msgstr "Klarte ikke å lese lenken %s"
+msgstr "Klarte ikke å lese lenken «%s»"
 
 #: apt-pkg/acquire-item.cc ftparchive/cachedb.cc methods/rred.cc
 #, c-format
 msgid "Failed to stat %s"
-msgstr "Klarte ikke å få statusen på %s"
+msgstr "Klarte ikke å få statusen på «%s»"
 
 #: apt-pkg/acquire-item.cc
 msgid "Hash Sum mismatch"
@@ -98,8 +103,8 @@ msgstr "Hashsummen stemmer ikke"
 #: apt-pkg/acquire-item.cc
 msgid "Insufficient information available to perform this download securely"
 msgstr ""
-"Utilstrekkelig informasjon tilgjengelig for å utføre denne nedlastingen på "
-"sikkert vis."
+"Utilstrekkelig informasjon tilgjengelig for å utføre denne nedlastingen "
+"sikkert."
 
 #: apt-pkg/acquire-item.cc apt-pkg/contrib/fileutl.cc
 #, c-format
@@ -111,14 +116,12 @@ msgid "Size mismatch"
 msgstr "Feil størrelse"
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy
 msgid "Invalid file format"
-msgstr "Ugyldig operasjon %s"
+msgstr "Ugyldig filformat"
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy
 msgid "Signature error"
-msgstr "Skrivefeil"
+msgstr "Signaturfeil"
 
 #. TRANSLATORS: %s is a single techy word like 'NODATA'
 #: apt-pkg/acquire-item.cc methods/gpgv.cc
@@ -127,29 +130,34 @@ msgid ""
 "Clearsigned file isn't valid, got '%s' (does the network require "
 "authentication?)"
 msgstr ""
+"Klartekstsignert fil er ikke gyldig, mottok «%s» (krever nettverket "
+"innlogging?)"
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "An error occurred during the signature verification. The repository is not "
 "updated and the previous index files will be used. OpenPGP signature "
 "verification failed: %s: %s"
 msgstr ""
-"En feil oppstod under signaturverifisering. Depotet er ikke oppdatert og den "
-"forrige indeksfilen vil bli brukt. GPG-feil: %s: %s\n"
+"En feil oppstod under signaturverifisering. Depotet er ikke oppdatert, og de"
+" forrige indeksfilene vil bli brukt. OpenPGP-signaturverifisering mislyktes:"
+" %s: %s"
 
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "OpenPGP signature verification failed: %s: %s"
-msgstr ""
+msgstr "OpenPGP-signaturverifisering mislyktes: %s: %s"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid ""
-"Skipping acquire of configured file '%s' as repository '%s' doesn't have the "
-"component '%s' (component misspelt in sources.list?)"
+"Skipping acquire of configured file '%s' as repository '%s' doesn't have the"
+" component '%s' (component misspelt in sources.list?)"
 msgstr ""
+"Hopper over nedlasting av den oppsatte filen «%s» da depotet «%s» ikke har "
+"komponenten «%s» (feilstavet komponent i sources.list?)"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -157,13 +165,17 @@ msgid ""
 "Skipping acquire of configured file '%s' as repository '%s' doesn't support "
 "architecture '%s'"
 msgstr ""
+"Hopper over nedlasting av den oppsatte filen «%s» da depotet «%s» ikke "
+"støtter arkitekturen «%s»"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid ""
-"Skipping acquire of configured file '%s' as repository '%s' does not seem to "
-"provide it (sources.list entry misspelt?)"
+"Skipping acquire of configured file '%s' as repository '%s' does not seem to"
+" provide it (sources.list entry misspelt?)"
 msgstr ""
+"Hopper over nedlasting av den oppsatte filen «%s» da depotet «%s» ikke ser "
+"ut til å tilby den (feilstavet oppføring i sources.list?)"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -171,6 +183,8 @@ msgid ""
 "Skipping acquire of configured file '%s' as repository '%s' provides only "
 "weak security information for it"
 msgstr ""
+"Hopper over nedlasting av den oppsatte filen «%s» da depotet «%s» bare "
+"oppgir svak sikkerhetsinformasjon for den"
 
 #. TRANSLATOR: The first %s is the URL of the bad Release file, the second is
 #. the time since then the file is invalid - formatted in the same way as in
@@ -181,6 +195,8 @@ msgid ""
 "Release file for %s is expired (invalid since %s). Updates for this "
 "repository will not be applied."
 msgstr ""
+"Release-filen for %s er utløpt (ugyldig siden %s). Oppdateringer fra dette "
+"depotet vil ikke bli brukt."
 
 #. TRANSLATOR: The first %s is the URL of the bad Release file, the second is
 #. the time until the file will be valid - formatted in the same way as in
@@ -191,6 +207,8 @@ msgid ""
 "Release file for %s is not valid yet (invalid for another %s). Updates for "
 "this repository will not be applied."
 msgstr ""
+"Release-filen for %s er ikke gyldig ennå (ugyldig i %s til). Oppdateringer "
+"fra dette depotet vil ikke bli brukt."
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -207,7 +225,8 @@ msgstr "Depot «%s» endret sin «%s»-verdi fra «%s» til «%s»."
 msgid "Repository '%s' changed its default priority for %s from %hi to %hi."
 msgstr "Depot «%s» endret sin standardprioritet for %s fra %hi til %hi."
 
-#. TRANSLATOR: the "this" refers to changes in the repository like a new release or owner change
+#. TRANSLATOR: the "this" refers to changes in the repository like a new
+#. release or owner change
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid ""
@@ -233,9 +252,10 @@ msgstr "Klarte ikke å skaffe %s  %s"
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid ""
-"Repositories should provide a clear-signed InRelease file, but none found at "
-"%s."
+"Repositories should provide a clear-signed InRelease file, but none found at"
+" %s."
 msgstr ""
+"Depoter bør tilby en klartekstsignert InRelease-fil, men fant ingen på %s."
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -243,8 +263,8 @@ msgid ""
 "I wasn't able to locate a file for the %s package. This might mean you need "
 "to manually fix this package. (due to missing arch)"
 msgstr ""
-"Klarte ikke å finne en fil for pakken %s. Det kan bety at du må ordne pakken "
-"selv (fordi arkitekturen mangler)."
+"Klarte ikke å finne en fil for pakken %s. Det kan bety at du må ordne pakken"
+" selv (fordi arkitekturen mangler)."
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -253,14 +273,14 @@ msgstr "Klarte ikke finne kilde for å laste ned versjon «%s» av «%s»"
 
 #. TRANSLATOR: %s=%s is sourcename=sourceversion, e.g. apt=1.1
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Changelog unavailable for %s=%s"
-msgstr "Kobler til %s (%s)"
+msgstr "Endringslogg utilgjengelig for %s=%s"
 
 #: apt-pkg/acquire-worker.cc
 #, c-format
 msgid "The method '%s' is explicitly disabled via configuration."
-msgstr "Metoden «%s» er eksplisitt avskrudd via oppsettet."
+msgstr "Metoden «%s» er eksplisitt avslått i oppsettet."
 
 #: apt-pkg/acquire-worker.cc methods/connect.cc
 #, c-format
@@ -283,10 +303,10 @@ msgid "Method %s did not start correctly"
 msgstr "Metoden %s startet ikke korrekt"
 
 #: apt-pkg/acquire-worker.cc
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Please insert the disc labeled: '%s' in the drive '%s' and press [Enter]."
-msgstr "Sett inn disken merket «%s» i lagringsenheten «%s» og trykk Enter."
+msgstr "Sett inn disken merket «%s» i stasjonen «%s» og trykk [Enter]."
 
 #: apt-pkg/acquire.cc apt-pkg/cdrom.cc
 #, c-format
@@ -314,11 +334,13 @@ msgid ""
 "Download is performed unsandboxed as root as file '%s' couldn't be accessed "
 "by user '%s'."
 msgstr ""
+"Nedlasting utføres som root uten sandkasse fordi filen «%s» ikke kunne leses"
+" av brukeren «%s»."
 
 #: apt-pkg/acquire.cc apt-pkg/clean.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Clean of %s is not supported"
-msgstr "Oversiktsfil av typen «%s» støttes ikke"
+msgstr "Opprydding av %s er ikke støttet"
 
 #. Only warn if there are no sources.list.d.
 #. Only warn if there is no sources.list file.
@@ -356,7 +378,8 @@ msgstr ""
 
 #: apt-pkg/algorithms.cc
 msgid "Unable to correct problems, you have held broken packages."
-msgstr "Klarer ikke å rette problemene, noen ødelagte pakker er holdt tilbake."
+msgstr ""
+"Klarer ikke å rette problemene, noen ødelagte pakker er holdt tilbake."
 
 #: apt-pkg/cachefile.cc
 msgid "The package lists or status file could not be parsed or opened."
@@ -369,13 +392,13 @@ msgstr ""
 
 #: apt-pkg/cachefile.cc methods/mirror.cc
 msgid "The list of sources could not be read."
-msgstr "Kan ikke lese kildlista."
+msgstr "Kan ikke lese kildelista."
 
 #: apt-pkg/cachefilter-patterns.cc apt-pkg/cachefilter.cc
 #: apt-private/private-output.cc
 #, c-format
 msgid "Regex compilation error - %s"
-msgstr "Kompileringsfeil i regulært uttrykk - %s"
+msgstr "Kompileringsfeil i regex - %s"
 
 #: apt-pkg/cacheset.cc
 #, c-format
@@ -428,8 +451,8 @@ msgid ""
 "Can't select installed nor candidate version from package '%s' as it has "
 "neither of them"
 msgstr ""
-"Klarte ikke velge installert eller kandidatversjon fra pakken «%s» siden den "
-"har ingen av dem"
+"Klarte ikke velge installert eller kandidatversjon fra pakken «%s» siden den"
+" ikke har noen av delene"
 
 #: apt-pkg/cacheset.cc
 #, c-format
@@ -482,8 +505,8 @@ msgstr ""
 
 #: apt-pkg/cdrom.cc
 msgid ""
-"Unable to locate any package files, perhaps this is not a Debian Disc or the "
-"wrong architecture?"
+"Unable to locate any package files, perhaps this is not a Debian Disc or the"
+" wrong architecture?"
 msgstr ""
 "Klarte ikke finne noen Package-filer. Kanskje dette ikke er en Debian Disc "
 "eller du har valgt feil arkitektur?"
@@ -553,18 +576,21 @@ msgid "Failed to stat the cdrom"
 msgstr "Klarer ikke å få statusen på CD-spilleren"
 
 #: apt-pkg/contrib/cmndline.cc
-#, fuzzy, c-format
+#, c-format
 msgid ""
-"Command line option '%c' [from %s] is not understood in combination with the "
-"other options."
-msgstr "Kjenner ikke kommandolinjevalget «%c» (fra %s)."
+"Command line option '%c' [from %s] is not understood in combination with the"
+" other options."
+msgstr ""
+"Kommandolinjevalget «%c» [fra %s] kan ikke forstås i kombinasjon med de "
+"andre valgene."
 
 #: apt-pkg/contrib/cmndline.cc
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Command line option %s is not understood in combination with the other "
 "options"
-msgstr "Skjønner ikke kommandolinjevalget %s"
+msgstr ""
+"Kommandolinjevalget %s kan ikke forstås i kombinasjon med de andre valgene"
 
 #: apt-pkg/contrib/cmndline.cc
 #, c-format
@@ -643,7 +669,8 @@ msgstr "Syntaksfeil %s:%u: Direktivet «%s» er ikke støttet"
 
 #: apt-pkg/contrib/configuration.cc
 #, c-format
-msgid "Syntax error %s:%u: clear directive requires an option tree as argument"
+msgid ""
+"Syntax error %s:%u: clear directive requires an option tree as argument"
 msgstr "Syntaksfeil %s:%u: clear-direktivet krever et valgtre som argument"
 
 #: apt-pkg/contrib/configuration.cc
@@ -653,27 +680,32 @@ msgstr "Syntaksfeil %s:%u: Ugyldige angivelser på slutten av fila"
 
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
+#, 
 msgid "Error:"
-msgstr ""
+msgstr "Feil:"
 
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
+#, 
 msgid "Warning:"
-msgstr ""
+msgstr "Advarsel:"
 
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
+#, 
 msgid "Notice:"
-msgstr ""
+msgstr "Merk:"
 
 #: apt-pkg/contrib/error.cc
+#, 
 msgid "Audit:"
-msgstr ""
+msgstr "Revisjon:"
 
 #. TRANSLATOR: This is a warning level displayed before the message
 #: apt-pkg/contrib/error.cc
+#, 
 msgid "Debug:"
-msgstr ""
+msgstr "Feilsøk:"
 
 #: apt-pkg/contrib/extracttar.cc
 #, c-format
@@ -689,10 +721,10 @@ msgid "Tar checksum failed, archive corrupted"
 msgstr "Tar-sjekksummen mislykkes, arkivet er ødelagt"
 
 #: apt-pkg/contrib/extracttar.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Unknown TAR header type %u, member %s"
 msgid "Unknown TAR header type %u"
-msgstr "Ukjent TAR-hode: type %u, medlem %s"
+msgstr "Ukjent TAR-hodetype %u"
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
@@ -718,44 +750,46 @@ msgstr "Bruker ikke låsing på den nfs-monterte låsefila %s"
 #, fuzzy, c-format
 #| msgid "Could not get lock %s"
 msgid "Could not get lock %s. It is held by process %d"
-msgstr "Får ikke låst %s"
+msgstr "Klarte ikke å låse %s. Det holdes av prosess %d"
 
 #: apt-pkg/contrib/fileutl.cc
-#, c-format
+#, c-format, fuzzy
 msgid "Could not get lock %s. It is held by process %d (%s)"
-msgstr ""
+msgstr "Klarte ikke å låse %s. Det holdes av prosess %d (%s)"
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
 msgid "Could not get lock %s"
-msgstr "Får ikke låst %s"
+msgstr "Kan ikke låse %s"
 
 #: apt-pkg/contrib/fileutl.cc
+#, 
 msgid ""
 "Be aware that removing the lock file is not a solution and may break your "
 "system."
 msgstr ""
+"Merk at å fjerne låsefilen ikke er en løsning og kan ødelegge systemet."
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
 msgid "List of files can't be created as '%s' is not a directory"
-msgstr ""
+msgstr "Klarte ikke å lage filliste fordi «%s» ikke er en katalog"
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
 msgid "Ignoring '%s' in directory '%s' as it is not a regular file"
-msgstr ""
+msgstr "Ignorerer «%s» i katalogen «%s» da det ikke er en vanlig fil"
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
 msgid "Ignoring file '%s' in directory '%s' as it has no filename extension"
-msgstr ""
+msgstr "Ignorerer filen «%s» i katalogen «%s» da den ikke har filetternavn"
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
 msgid ""
 "Ignoring file '%s' in directory '%s' as it has an invalid filename extension"
-msgstr ""
+msgstr "Ignorerer filen «%s» i katalogen «%s» da den har ugyldig filetternavn"
 
 #: apt-pkg/contrib/fileutl.cc apt-pkg/contrib/gpgv.cc apt-pkg/deb/debsystem.cc
 #: cmdline/apt-dump-solver.cc
@@ -773,7 +807,8 @@ msgstr "Underprosessen %s mottok et minnefeilsignal."
 msgid "Sub-process %s received signal %u."
 msgstr "Underprosessen %s mottok signalet %u."
 
-#. we forward the statuscode, so don't generate a message on the fd in this case
+#. we forward the statuscode, so don't generate a message on the fd in this
+#. case
 #: apt-pkg/contrib/fileutl.cc apt-pkg/contrib/gpgv.cc
 #, c-format
 msgid "Sub-process %s returned an error code (%u)"
@@ -844,9 +879,9 @@ msgid "Problem syncing the file"
 msgstr "Problem ved oppdatering av fila"
 
 #: apt-pkg/contrib/fileutl.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Unable to mkstemp %s"
-msgstr "Klarte ikke å få statusen på %s"
+msgstr "Klarte ikke å kjøre mkstemp %s"
 
 #: apt-pkg/contrib/fileutl.cc
 #, c-format
@@ -896,18 +931,19 @@ msgstr ""
 #: apt-pkg/contrib/mmap.cc
 #, c-format
 msgid ""
-"Unable to increase the size of the MMap as the limit of %lu bytes is already "
-"reached."
+"Unable to increase the size of the MMap as the limit of %lu bytes is already"
+" reached."
 msgstr ""
 "Klarte ikke øke størrelsen på MMap-en siden grensen på %lu byte allerede er "
 "nådd."
 
 #: apt-pkg/contrib/mmap.cc
 msgid ""
-"Unable to increase size of the MMap as automatic growing is disabled by user."
+"Unable to increase size of the MMap as automatic growing is disabled by "
+"user."
 msgstr ""
-"Klarte ikke øke størrelsen på MMap-en siden automatisk voksing er deaktivert "
-"av brukeren."
+"Klarte ikke øke størrelsen på MMap-en siden automatisk voksing er deaktivert"
+" av brukeren."
 
 #: apt-pkg/contrib/netrc.cc
 #, c-format
@@ -915,6 +951,8 @@ msgid ""
 "%s: Credentials for %s match, but the protocol is not encrypted. Annotate "
 "with %s:// to use."
 msgstr ""
+"%s: Legitimasjon for %s stemmer, men protokollen er ikke kryptert. Angi %s://"
+" for å bruke den."
 
 #: apt-pkg/contrib/progress.cc
 #, c-format
@@ -934,13 +972,13 @@ msgstr "..."
 #, fuzzy, c-format
 #| msgid "%c%s... %u%%"
 msgid "%c%s... %llu/%llus"
-msgstr "%c%s ... %u%%"
+msgstr "%c%s… %llu/%llus"
 
 #: apt-pkg/contrib/progress.cc
 #, fuzzy, c-format
 #| msgid "%c%s... %u%%"
 msgid "%c%s... %llus"
-msgstr "%c%s ... %u%%"
+msgstr "%c%s… %llus"
 
 #: apt-pkg/contrib/progress.cc
 #, c-format
@@ -991,10 +1029,10 @@ msgid "Unparsable control file"
 msgstr "Kontrollfila kan ikke tolkes"
 
 #: apt-pkg/deb/debindexfile.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
-msgstr "Får ikke låst %s"
+msgstr "Klarte ikke å lese metadata fra %s"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;
@@ -1002,7 +1040,7 @@ msgstr "Får ikke låst %s"
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Target %s wants to acquire the same file (%s) as %s from source %s"
-msgstr ""
+msgstr "Målet %s ønsker å hente samme fil (%s) som %s fra kilde %s"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; filename and linenumber of
@@ -1010,7 +1048,7 @@ msgstr ""
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Target %s (%s) is configured multiple times in %s and %s"
-msgstr ""
+msgstr "Målet %s (%s) er satt opp flere ganger i %s og %s"
 
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
@@ -1033,27 +1071,30 @@ msgid ""
 "No Hash entry in Release file %s which is considered strong enough for "
 "security purposes"
 msgstr ""
+"Ingen hash-oppføring i Release-filen %s ansees å ha sterk god nok "
+"sikkerhet"
 
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Invalid '%s' entry in Release file %s"
 msgstr "Ugyldig «%s»-oppføring i Release-fila %s"
 
-#. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
+#. TRANSLATOR: The first is an option name from sources.list manpage, the
+#. other two URI and Suite
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Conflicting values set for option %s regarding source %s %s"
-msgstr ""
+msgstr "Motstridende verdier satt for valg %s for kilden %s %s"
 
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Invalid value set for option %s regarding source %s %s (%s)"
-msgstr ""
+msgstr "Ugyldig verdi satt for valg %s for kilden %s %s (%s)"
 
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Conflicting values set for option %s regarding source %s %s: %s != %s"
-msgstr ""
+msgstr "Motstridende verdier satt for valg %s for kilden %s %s: %s != %s"
 
 #: apt-pkg/deb/debrecords.cc apt-pkg/tagfile.cc
 #, c-format
@@ -1061,26 +1102,27 @@ msgid "Unable to parse package file %s (%d)"
 msgstr "Klarer ikke å fortolke pakkefila %s (%d)"
 
 #: apt-pkg/deb/debsystem.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Waiting for headers"
 msgid "Waiting for cache lock: %s"
-msgstr "Venter på hoder"
+msgstr "Venter på lagerlås: %s"
 
 #: apt-pkg/deb/debsystem.cc
 #, fuzzy, c-format
 #| msgid ""
-#| "Unable to lock the administration directory (%s), is another process "
-#| "using it?"
+#| "Unable to lock the administration directory (%s), is another process using "
+#| "it?"
 msgid ""
 "Unable to acquire the dpkg frontend lock (%s), is another process using it?"
 msgstr ""
-"Klarte ikke låse den administrative mappen (%s). Bruker en annen prosess den?"
+"Klarte ikke å ta dpkg-frontend-låsen (%s). Bruker en annen prosess den?"
 
 #: apt-pkg/deb/debsystem.cc
 #, fuzzy, c-format
-#| msgid "Unable to lock the administration directory (%s), are you root?"
+#| msgid ""
+#| "Unable to lock the administration directory (%s), are you root?"
 msgid "Unable to acquire the dpkg frontend lock (%s), are you root?"
-msgstr "Klarte ikke låse den administrative mappen (%s). Er du root?"
+msgstr "Klarte ikke å ta dpkg-frontend-låsen (%s). Er du root?"
 
 #. TRANSLATORS: the %s contains the recovery command, usually
 #. dpkg --configure -a
@@ -1096,7 +1138,8 @@ msgid ""
 "Unable to lock the administration directory (%s), is another process using "
 "it?"
 msgstr ""
-"Klarte ikke låse den administrative mappen (%s). Bruker en annen prosess den?"
+"Klarte ikke låse den administrative mappen (%s). Bruker en annen prosess "
+"den?"
 
 #: apt-pkg/deb/debsystem.cc
 #, c-format
@@ -1108,10 +1151,13 @@ msgid "Not locked"
 msgstr "Ikke låst"
 
 #: apt-pkg/deb/debsystem.cc
+#, 
 msgid ""
 "The dpkg executable set in Dir::Bin::dpkg is missing, falling back to using "
 "default dpkg."
 msgstr ""
+"dpkg-programmet angitt i Dir::Bin::dpkg mangler, faller tilbake til standard"
+" dpkg."
 
 #. we don't care for the difference
 #: apt-pkg/deb/dpkgpm.cc
@@ -1200,8 +1246,9 @@ msgid "Is /dev/pts mounted?"
 msgstr "Er /dev/pts montert?"
 
 #: apt-pkg/deb/dpkgpm.cc
+#, 
 msgid "Operation was interrupted before it could finish"
-msgstr ""
+msgstr "Operasjonen ble avbrutt før den kunne fullføres"
 
 #: apt-pkg/deb/dpkgpm.cc
 msgid "No apport report written because MaxReports is reached already"
@@ -1225,30 +1272,32 @@ msgid ""
 "No apport report written because the error message indicates a disk full "
 "error"
 msgstr ""
-"Ingen apport-rapport skrevet fordi feilmeldingen indikerer en «full disk»-"
-"feil"
+"Ingen apport-rapport skrevet fordi feilmeldingen indikerer en «full "
+"disk»-feil"
 
 #: apt-pkg/deb/dpkgpm.cc
 msgid ""
-"No apport report written because the error message indicates a out of memory "
-"error"
+"No apport report written because the error message indicates a out of memory"
+" error"
 msgstr ""
 "Ingen apport-rapport skrevet fordi feilmeldingen indikerer en «tom for "
 "minne»-feil"
 
 #: apt-pkg/deb/dpkgpm.cc
 msgid ""
-"No apport report written because the error message indicates an issue on the "
-"local system"
+"No apport report written because the error message indicates an issue on the"
+" local system"
 msgstr ""
-"Ingen apport-rapport skrevet fordi feilmeldingen indikerer et problem på det "
-"lokale systemet."
+"Ingen apport-rapport skrevet fordi feilmeldingen indikerer et problem på det"
+" lokale systemet."
 
 #: apt-pkg/deb/dpkgpm.cc
 msgid ""
-"No apport report written because the error message indicates a dpkg I/O error"
+"No apport report written because the error message indicates a dpkg I/O "
+"error"
 msgstr ""
-"Ingen apport-rapport skrevet fordi feilmeldingen indikerer en «dpkg I/O»-feil"
+"Ingen apport-rapport skrevet fordi feilmeldingen indikerer en «dpkg "
+"I/O»-feil"
 
 #: apt-pkg/depcache.cc
 msgid "Building dependency tree"
@@ -1287,78 +1336,87 @@ msgid "Failed to close file %s"
 msgstr "Klarte ikke å lukke fila %s"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "Send scenario to solver"
-msgstr ""
+msgstr "Send scenario til problemløser"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "Send request to solver"
-msgstr ""
+msgstr "Send forespørsel til problemløser"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "Prepare for receiving solution"
-msgstr ""
+msgstr "Forbered mottak av løsning"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "External solver failed without a proper error message"
-msgstr ""
+msgstr "Ekstern problemløser feilet uten en ordentlig feilmelding"
 
 #: apt-pkg/edsp.cc apt-pkg/upgrade.cc
 msgid "Calculating upgrade"
 msgstr "Beregner oppgradering"
 
 #: apt-pkg/edsp.cc
-#, fuzzy
+#,
 #| msgid "Total dependencies: "
 msgid "Solving dependencies"
-msgstr "Antall avhengighetsforhold: "
+msgstr "Løser avhengigheter"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "Execute external solver"
-msgstr ""
+msgstr "Kjør ekstern problemløser"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "Execute external planner"
-msgstr ""
+msgstr "Kjør ekstern planlegger"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "Send request to planner"
-msgstr ""
+msgstr "Send forespørsel til planlegger"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "Send scenario to planner"
-msgstr ""
+msgstr "Send scenario til planlegger"
 
 #: apt-pkg/edsp.cc
+#,
 msgid "External planner failed without a proper error message"
-msgstr ""
+msgstr "Ekstern planlegger feilet uten en ordentlig feilmelding"
 
 #: apt-pkg/history.cc
 #, c-format
 msgid "Unknown flag: %s"
-msgstr ""
+msgstr "Ukjent flagg: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot find history files: %s"
-msgstr "Ingen speilfil «%s» funnet"
+msgstr "Finner ikke historikkfiler: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Could not open file %s"
 msgid "Could not open file: %s"
-msgstr "Klarte ikke åpne fila %s"
+msgstr "Klarte ikke å åpne filen: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Could not open file %s"
 msgid "Could not parse file: %s"
-msgstr "Klarte ikke åpne fila %s"
+msgstr "Klarte ikke å tolke filen: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Could not open file %s"
 msgid "Could not close file: %s"
-msgstr "Klarte ikke åpne fila %s"
+msgstr "Klarte ikke å lukke filen: %s"
 
 #: apt-pkg/indexcopy.cc
 #, c-format
@@ -1412,16 +1470,16 @@ msgstr "Kjører dpkg"
 #: apt-pkg/packagemanager.cc
 #, c-format
 msgid ""
-"Could not perform immediate configuration on '%s'. Please see man 5 apt.conf "
-"under APT::Immediate-Configure for details. (%d)"
+"Could not perform immediate configuration on '%s'. Please see man 5 apt.conf"
+" under APT::Immediate-Configure for details. (%d)"
 msgstr ""
 "Klarte ikke gjennomføre umiddelbar konfigurasjon av «%s». Se man 5 apt.conf "
 "under APT::Immediate-Configure for detaljer. (%d)"
 
 #: apt-pkg/packagemanager.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Could not configure '%s'. "
-msgstr "Klarte ikke åpne fila «%s»"
+msgstr "Klarte ikke å sette opp «%s». "
 
 #: apt-pkg/packagemanager.cc
 #, c-format
@@ -1452,14 +1510,13 @@ msgid "This APT does not support the versioning system '%s'"
 msgstr "Denne APT støtter ikke versjonssystemet «%s»"
 
 #: apt-pkg/pkgcache.cc
-#, fuzzy, c-format
+#, c-format
 msgid "The package cache was built for different architectures: %s vs %s"
-msgstr "Pakkelageret ble bygd for en annen arkitektur"
+msgstr "Pakkelageret ble bygd for andre arkitekturer: %s vs %s"
 
 #: apt-pkg/pkgcache.cc
-#, fuzzy
 msgid "The package cache file is corrupted, it has the wrong hash"
-msgstr "Pakkens lagerfil er ødelagt"
+msgstr "Pakkens lagerfil er skadet, den har feil hash"
 
 #: apt-pkg/pkgcache.cc
 msgid "Depends"
@@ -1524,25 +1581,25 @@ msgstr "Lageret har et uoverensstemmende versjonssystem"
 #. TRANSLATOR: The first placeholder is a package name,
 #. the other two should be copied verbatim as they include debug info
 #: apt-pkg/pkgcachegen.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Error occurred while processing %s (%s%d)"
-msgstr "Feil oppsto under behandling av %s (FindPkg)"
+msgstr "Feil oppsto under behandling av %s (%s%d)"
 
 #: apt-pkg/pkgcachegen.cc
 msgid "Wow, you exceeded the number of package names this APT is capable of."
-msgstr "Jøss, du har overgått antallet pakkenavn denne APT klarer."
+msgstr "Jøss, du har overgått antallet pakkenavn APT klarer."
 
 #: apt-pkg/pkgcachegen.cc
 msgid "Wow, you exceeded the number of versions this APT is capable of."
-msgstr "Jøss, du har overgått antallet versjoner denne APT klarer."
+msgstr "Jøss, du har overgått antallet versjoner APT klarer."
 
 #: apt-pkg/pkgcachegen.cc
 msgid "Wow, you exceeded the number of descriptions this APT is capable of."
-msgstr "Jøss, du har overgått antallet beskrivelser denne APT klarer."
+msgstr "Jøss, du har overgått antallet beskrivelser APT klarer."
 
 #: apt-pkg/pkgcachegen.cc
 msgid "Wow, you exceeded the number of dependencies this APT is capable of."
-msgstr "Jøss, du har overgått antallet avhengighetsforhold denne APT klarer."
+msgstr "Jøss, du har overgått antallet avhengighetsforhold APT klarer."
 
 #: apt-pkg/pkgcachegen.cc
 msgid "Reading package lists"
@@ -1563,6 +1620,8 @@ msgid ""
 "The value '%s' is invalid for APT::Default-Release as such a release is not "
 "available in the sources"
 msgstr ""
+"Verdien «%s» er ugyldig for APT::Default-Release ettersom en slik utgivelse "
+"ikke er tilgjengelig i kildene"
 
 #: apt-pkg/policy.cc
 #, c-format
@@ -1579,21 +1638,26 @@ msgstr "Forsto ikke spikring av typen %s"
 msgid ""
 "%s: The special 'Pin-Priority: %s' can only be used for 'Package: *' records"
 msgstr ""
+"%s: Den spesielle «Pin-Priority: %s» kan bare brukes for «Package: "
+"*»-oppføringer"
 
 #: apt-pkg/policy.cc
 #, c-format
 msgid "%s: Value %s is outside the range of valid pin priorities (%d to %d)"
 msgstr ""
+"%s: Verdien %s er utenfor gyldig område for pin-prioriteter (%d til %d)"
 
 #: apt-pkg/policy.cc
 msgid "No priority (or zero) specified for pin"
 msgstr "Ingen prioritet (eller null) spesifisert for pin"
 
-#. TRANSLATOR: %u is a line number, the first %s is a filename of a file with the extension "second %s" and the third %s is a unique identifier for bugreports
+#. TRANSLATOR: %u is a line number, the first %s is a filename of a file with
+#. the extension "second %s" and the third %s is a unique identifier for
+#. bugreports
 #: apt-pkg/sourcelist.cc
 #, fuzzy, c-format
 msgid "Malformed entry %u in %s file %s (%s)"
-msgstr "Ugyldig overstyring %s linje %lu #1"
+msgstr "Ugyldig oppføring %u i filen %s.%s (%s)"
 
 #: apt-pkg/sourcelist.cc
 #, c-format
@@ -1606,26 +1670,25 @@ msgid "Type '%s' is not known on line %u in source list %s"
 msgstr "Typen «%s» er ukjent i linje %u i kildelista %s"
 
 #: apt-pkg/sourcelist.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Malformed stanza %u in source list %s (type)"
-msgstr "Feil på %u i kildelista %s (type)"
+msgstr "Ugyldig strofe %u i kildelisten %s (type)"
 
 #: apt-pkg/sourcelist.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Type '%s' is not known on stanza %u in source list %s"
-msgstr "Typen «%s» er ukjent i linje %u i kildelista %s"
+msgstr "Typen «%s» er ukjent i strofe %u i kildelisten %s"
 
 #: apt-pkg/sourcelist.cc apt-private/private-install.cc
 #, c-format
 msgid "Unsupported file %s given on commandline"
-msgstr ""
+msgstr "Ikke støttet fil %s angitt på kommandolinjen"
 
 #: apt-pkg/srcrecords.cc
-#, fuzzy
+#,
 #| msgid "You must put some 'source' URIs in your sources.list"
 msgid "You must put some 'deb-src' URIs in your sources.list"
-msgstr ""
-"Beklager, du må legge inn noen kilder (nettadresser) i din «sources.list»."
+msgstr "Du må legge til noen «deb-src»-URI-er i sources.list"
 
 #: apt-pkg/tagfile.cc
 #, c-format
@@ -1633,22 +1696,24 @@ msgid "Cannot convert %s to integer: out of range"
 msgstr "Kan ikke gjøre om %s til heltall: utenfor rekkevidde"
 
 #: apt-pkg/update.cc
-#, fuzzy
 msgid ""
 "Some index files failed to download. They have been ignored, or old ones "
 "used instead."
 msgstr ""
-"Klarte ikke å laste ned alle oversiktfilene. De ble ignorerte, eller gamle "
-"ble brukt isteden. "
+"Noen indeksfiler lot seg ikke laste ned. De er ignorert, eller gamle er "
+"brukt i stedet."
 
-#. TRANSLATOR: Very short word to be displayed before unchanged files in 'apt-get update'
+#. TRANSLATOR: Very short word to be displayed before unchanged files in 'apt-
+#. get update'
 #: apt-private/acqprogress.cc
 #, c-format
 msgid "Hit:%lu %s"
 msgstr "Funnet:%lu %s"
 
-#. TRANSLATOR: Very short word to be displayed for files processed in 'apt-get update'
-#. Potentially replaced later by "Hit:", "Ign:" or "Err:" if something (bad) happens
+#. TRANSLATOR: Very short word to be displayed for files processed in 'apt-get
+#. update'
+#. Potentially replaced later by "Hit:", "Ign:" or "Err:" if something (bad)
+#. happens
 #: apt-private/acqprogress.cc
 #, c-format
 msgid "Get:%lu %s"
@@ -1678,21 +1743,22 @@ msgid " [Working]"
 msgstr " [Arbeider]"
 
 #: apt-private/acqprogress.cc
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Media change: please insert the disc labeled\n"
 " '%s'\n"
 "in the drive '%s' and press [Enter]\n"
 msgstr ""
-"Bytte av media: sett inn CD-en som er merket\n"
-"  «%s»\n"
-"i «%s» og trykk «Enter»\n"
+"Medieskift: sett inn disken merket\n"
+" «%s»\n"
+"i stasjonen «%s» og trykk [Enter]\n"
 
 #: apt-private/acqprogress.cc
 msgid ""
 "Do you want to accept these changes and continue updating from this "
 "repository?"
 msgstr ""
+"Vil du godta disse endringene og fortsette å oppdatere fra dette depotet?"
 
 #: apt-private/private-cachefile.cc
 msgid "Correcting dependencies..."
@@ -1738,7 +1804,7 @@ msgstr "Merk, velger «%s» for oppgaven «%s»\n"
 #: apt-private/private-cacheset.cc
 #, fuzzy, c-format
 msgid "Note, selecting '%s' for glob '%s'\n"
-msgstr "Merk, velger «%s» for det regulære uttrykket «%s»\n"
+msgstr "Merk, velger «%s» for glob-mønsteret «%s»\n"
 
 #: apt-private/private-cacheset.cc
 #, c-format
@@ -1798,7 +1864,7 @@ msgstr ""
 #: apt-private/private-cacheset.cc apt-private/private-install.cc
 #, fuzzy, c-format
 msgid "Package '%s' is not installed, so not removed\n"
-msgstr "Pakken %s er ikke installert, og derfor heller ikke fjernet\n"
+msgstr "Pakken «%s» er ikke installert, og derfor heller ikke fjernet\n"
 
 #: apt-private/private-cacheset.cc
 #, c-format
@@ -1830,8 +1896,9 @@ msgid "This APT has Super Cow Powers."
 msgstr "Denne APT har kraften til en Superku."
 
 #: apt-private/private-cmndline.cc
+#,
 msgid "This APT helper has Super Meep Powers."
-msgstr ""
+msgstr "Denne APT-hjelperen har Super Meep-krefter."
 
 #: apt-private/private-cmndline.cc
 msgid ""
@@ -1862,11 +1929,13 @@ msgid "Install these packages without verification?"
 msgstr "Installer disse pakkene uten verifikasjon?"
 
 #: apt-private/private-download.cc
-#, fuzzy
+#,
 msgid ""
 "There were unauthenticated packages and -y was used without --allow-"
 "unauthenticated"
-msgstr "Det oppsto problemer og «-y» ble brukt uten «--force-yes»"
+msgstr ""
+"Det fantes uautentiserte pakker og «-y» ble brukt uten «--allow-"
+"unauthenticated»"
 
 #: apt-private/private-download.cc
 #, c-format
@@ -1874,10 +1943,10 @@ msgid "Couldn't determine free space in %s"
 msgstr "Klarte ikke bestemme ledig plass i %s"
 
 #: apt-private/private-download.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Couldn't determine free space in %s"
 msgid "Couldn't determine filesystem statistics of %s."
-msgstr "Klarte ikke bestemme ledig plass i %s"
+msgstr "Klarte ikke å finne filsystemstatistikk for %s."
 
 #: apt-private/private-download.cc
 #, c-format
@@ -1889,143 +1958,137 @@ msgid "Unable to lock the download directory"
 msgstr "Klarer ikke å låse nedlastingsmappa"
 
 #: apt-private/private-history.cc
-#, fuzzy
 #| msgid "Installing %s"
 msgid "Install"
-msgstr "Installerer %s"
+msgstr "Installer"
 
 #: apt-private/private-history.cc
-#, fuzzy
 msgid "Reinstall"
-msgstr " [Installert]"
+msgstr "Installer på nytt"
 
 #: apt-private/private-history.cc
 msgid "Upgrade"
-msgstr ""
+msgstr "Oppgrader"
 
 #: apt-private/private-history.cc
-#, fuzzy
 #| msgid "%lu downgraded, "
 msgid "Downgrade"
-msgstr "%lu nedgraderte, "
+msgstr "Nedgrader"
 
 #: apt-private/private-history.cc
-#, fuzzy
 #| msgid "Removed %s"
 msgid "Remove"
-msgstr "Fjernet %s"
+msgstr "Fjern"
 
 #: apt-private/private-history.cc
 msgid "Purge"
-msgstr ""
+msgstr "Fullstendig fjerning"
 
 #: apt-private/private-history.cc
 msgid "Undefined"
-msgstr ""
+msgstr "Udefinert"
 
 #: apt-private/private-history.cc
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #: apt-private/private-history.cc
 msgid "Command line"
-msgstr ""
+msgstr "Kommandolinje"
 
 #. NOTE: if date format is different,
 #. this width needs to change
 #: apt-private/private-history.cc
 msgid "Date and Time"
-msgstr ""
+msgstr "Dato og klokkeslett"
 
 #. width for datestring
 #: apt-private/private-history.cc
 msgid "Action"
-msgstr ""
+msgstr "Handling"
 
 #. 9 chars longest action type
 #: apt-private/private-history.cc
 msgid "Changes"
-msgstr ""
+msgstr "Endringer"
 
 #: apt-private/private-history.cc
-#, fuzzy
 msgid "automatic"
-msgstr " [Installert]"
+msgstr "automatisk"
 
 #: apt-private/private-history.cc
 msgid "Transaction ID"
-msgstr ""
+msgstr "Transaksjons-ID"
 
 #: apt-private/private-history.cc
 msgid "Start time"
-msgstr ""
+msgstr "Starttid"
 
 #: apt-private/private-history.cc
 msgid "End time"
-msgstr ""
+msgstr "Sluttid"
 
 #: apt-private/private-history.cc
 msgid "Requested by"
-msgstr ""
+msgstr "Forespurt av"
 
 #: apt-private/private-history.cc
 msgid "Error"
-msgstr ""
+msgstr "Feil"
 
 #: apt-private/private-history.cc
 msgid "Comment"
-msgstr ""
+msgstr "Kommentar"
 
 #. For each performed action, print what it did to each package
 #: apt-private/private-history.cc
-#, fuzzy
 #| msgid "No packages found"
 msgid "Packages changed"
-msgstr "Fant ingen pakker"
+msgstr "Pakker endret"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Couldn't find package %s"
 msgid "Could not find package %s"
 msgstr "Klarte ikke å finne pakken %s"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "but it is not installed"
 msgid "Tried to remove %s, but it is not installed"
-msgstr "men er ikke installert"
+msgstr "Prøvde å fjerne %s, men den er ikke installert"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Could not find given version %s of %s"
-msgstr "Ignorer utilgjengelig versjon «%s» av pakke «%s»"
+msgstr "Klarte ikke å finne versjon %s av %s"
 
 #: apt-private/private-history.cc
 msgid "Incorrect usage, no ID was given."
-msgstr ""
+msgstr "Feil bruk, ingen ID ble angitt."
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "%s not a valid DEB package."
 msgid "'%s' not a valid ID."
-msgstr "%s er ikke en gyldig debianpakke."
+msgstr "«%s» er ikke en gyldig ID."
 
 #: apt-private/private-history.cc
 #, c-format
 msgid "Transaction ID '%ld' out of bounds."
-msgstr ""
+msgstr "Transaksjons-ID «%ld» er utenfor gyldig område."
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Could not resolve '%s'"
 msgid "Could not read %s"
-msgstr "Klarte ikke å slå opp «%s»"
+msgstr "Klarte ikke å lese %s"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Could not resolve '%s'"
 msgid "Could not read: %s"
-msgstr "Klarte ikke å slå opp «%s»"
+msgstr "Klarte ikke å lese: %s"
 
 #: apt-private/private-install.cc
 msgid ""
@@ -2039,16 +2102,15 @@ msgstr ""
 "at visse kjernepakker ennå ikke er laget eller flyttet ut av «Incoming» for\n"
 "distribusjonen."
 
-#.
 #. if (Packages == 1)
 #. {
 #. c1out << std::endl;
 #. c1out <<
-#. _("Since you only requested a single operation it is extremely likely that\n"
+#. _("Since you only requested a single operation it is extremely likely
+#. that\n"
 #. "the package is simply not installable and a bug report against\n"
 #. "that package should be filed.") << std::endl;
 #. }
-#.
 #: apt-private/private-install.cc
 msgid "The following information may help to resolve the situation:"
 msgstr "Følgende informasjon kan være til hjelp med å løse problemet:"
@@ -2058,31 +2120,33 @@ msgid "Broken packages"
 msgstr "Ødelagte pakker"
 
 #: apt-private/private-install.cc
-#, fuzzy
 #| msgid "Write error"
 msgid "Writing error report"
-msgstr "Skrivefeil"
+msgstr "Skriver feilrapport"
 
 #: apt-private/private-install.cc
 msgid ""
-"Unmerged usr is no longer supported, use usrmerge to convert to a merged-usr "
-"system."
+"Unmerged usr is no longer supported, use usrmerge to convert to a merged-usr"
+" system."
 msgstr ""
+"Usammenslått usr er ikke lenger støttet, bruk usrmerge for å konvertere til "
+"et merged-usr-system."
 
-#. TRANSLATORS: %s is a url to a page describing merged-usr (bookworm release notes)
+#. TRANSLATORS: %s is a url to a page describing merged-usr (bookworm release
+#. notes)
 #: apt-private/private-install.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Selected %s for removal.\n"
 msgid "See %s for more details."
-msgstr "Valgte %s for fjerning.\n"
+msgstr "Se %s for flere detaljer."
 
 #: apt-private/private-install.cc
 msgid ""
 "Unable to fetch some archives, maybe run apt update or try with --fix-"
 "missing?"
 msgstr ""
-"Klarte ikke å hente alle arkivene. Du kan prøve med «apt update» eller «--"
-"fix-missing»."
+"Klarte ikke å hente alle arkivene. Du kan prøve med «apt update» eller "
+"«--fix-missing»."
 
 #: apt-private/private-install.cc
 msgid "Internal error, InstallPackages was called with broken packages!"
@@ -2093,16 +2157,16 @@ msgid "Packages need to be removed but remove is disabled."
 msgstr "Pakker trenges å fjernes, men funksjonen er slått av."
 
 #: apt-private/private-install.cc
-#, fuzzy
 msgid ""
 "Essential packages were removed and -y was used without --allow-remove-"
 "essential."
-msgstr "Det oppsto problemer og «-y» ble brukt uten «--force-yes»"
+msgstr ""
+"Viktige pakker ble fjernet og «-y» ble brukt uten «--allow-remove-"
+"essential»."
 
 #: apt-private/private-install.cc
-#, fuzzy
 msgid "Packages were downgraded and -y was used without --allow-downgrades."
-msgstr "Det oppsto problemer og «-y» ble brukt uten «--force-yes»"
+msgstr "Pakker ble nedgradert og «-y» ble brukt uten «--allow-downgrades»."
 
 #: apt-private/private-install.cc
 msgid ""
@@ -2123,26 +2187,28 @@ msgstr ""
 "apt@packages.debian.org"
 
 #: apt-private/private-install.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Download Failed"
 msgid "  Download size: %sB / %sB\n"
-msgstr "Nedlasting feilet"
+msgstr "  Nedlastingsstørrelse: %sB / %sB\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement strings, so %sB will be correctly translate in e.g. 1,5 MB
+#. in the replacement strings, so %sB will be correctly translate in e.g. 1,5
+#. MB
 #: apt-private/private-install.cc
 #, c-format
 msgid "Need to get %sB/%sB of archives.\n"
 msgstr "Må hente %sB/%sB med arkiver.\n"
 
 #: apt-private/private-install.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Download Failed"
 msgid "  Download size: %sB\n"
-msgstr "Nedlasting feilet"
+msgstr "  Nedlastingsstørrelse: %sB\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5
+#. MB
 #: apt-private/private-install.cc
 #, c-format
 msgid "Need to get %sB of archives.\n"
@@ -2154,51 +2220,61 @@ msgid "After this operation, %sB of additional disk space will be used.\n"
 msgstr "Etter denne operasjonen vil %sB ekstra diskplass bli brukt.\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5
+#. MB
 #: apt-private/private-install.cc
 #, c-format
 msgid "Space needed: %sB / %sB available\n"
-msgstr ""
+msgstr "Nødvendig plass: %sB / %sB tilgjengelig\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5
+#. MB
 #: apt-private/private-install.cc
 #, c-format
 msgid "More space needed than available: %sB > %sB, installation may fail"
 msgstr ""
+"Mer plass trengs enn tilgjengelig: %sB > %sB, installasjonen kan mislykkes"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB -
-#. The first %s is the location of the boot directory (determined from Dir::Boot),
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5
+#. MB -
+#. The first %s is the location of the boot directory (determined from
+#. Dir::Boot),
 #. and it tells the space being needed there.
 #. (We have two spaces to align with parent "space needed:"for /boot)
 #: apt-private/private-install.cc
 #, c-format
 msgid "in %s:  %sB / %sB available\n"
-msgstr ""
+msgstr "i %s:  %sB / %sB tilgjengelig\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
-#. The first %s is the location of the boot directory (determined from Dir::Boot)
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5
+#. MB
+#. The first %s is the location of the boot directory (determined from
+#. Dir::Boot)
 #: apt-private/private-install.cc
 #, c-format
 msgid ""
 "More space needed in %s than available: %sB > %sB, installation may fail"
 msgstr ""
+"Mer plass trengs i %s enn tilgjengelig: %sB > %sB, installasjonen kan "
+"mislykkes"
 
 #: apt-private/private-install.cc
 #, c-format
 msgid "Space needed: %sB\n"
-msgstr ""
+msgstr "Nødvendig plass: %sB\n"
 
 #: apt-private/private-install.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Stored label: %s\n"
 msgid "  Freed space: %sB\n"
-msgstr "Lagret merkelapp: %s \n"
+msgstr "  Frigjort plass: %sB\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5
+#. MB
 #: apt-private/private-install.cc
 #, c-format
 msgid "After this operation, %sB disk space will be freed.\n"
@@ -2207,21 +2283,24 @@ msgstr "Etter denne operasjonen vil %sB diskplass bli ledig.\n"
 #: apt-private/private-install.cc
 msgid "Trivial Only specified but this is not a trivial operation."
 msgstr ""
-"«Bare trivielle endringer» ble angitt, men dette er ikke en triviell endring."
+"«Bare trivielle endringer» ble angitt, men dette er ikke en triviell "
+"endring."
 
 #: apt-private/private-install.cc
 msgid ""
 "Removing essential system-critical packages is not permitted. This might "
 "break the system."
 msgstr ""
+"Fjerning av essensielle systemkritiske pakker er ikke tillatt. Dette kan "
+"ødelegge systemet."
 
 #: apt-private/private-install.cc
 msgid "Continue anyway?"
-msgstr ""
+msgstr "Fortsette likevel?"
 
 #: apt-private/private-install.cc
 msgid "Continue?"
-msgstr ""
+msgstr "Fortsette?"
 
 #: apt-private/private-install.cc cmdline/apt-mark.cc
 msgid "Do you want to continue?"
@@ -2259,10 +2338,10 @@ msgid_plural ""
 "The following packages disappeared from your system as\n"
 "all files have been overwritten by other packages:"
 msgstr[0] ""
-"Den følgende pakken forsvant fra systemet ditt siden\n"
+"Følgende pakke forsvant fra systemet ditt ettersom\n"
 "alle filene er overskrevet av andre pakker:"
 msgstr[1] ""
-"De følgende pakkene forsvant fra systemet ditt siden\n"
+"Følgende pakker forsvant fra systemet ditt ettersom\n"
 "alle filene er overskrevet av andre pakker:"
 
 #: apt-private/private-install.cc
@@ -2286,7 +2365,7 @@ msgid "Internal Error, AutoRemover broke stuff"
 msgstr "Intern feil, autofjerneren (AutoRemover) ødela noe"
 
 #: apt-private/private-install.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Use '%s' to remove it."
 msgid_plural "Use '%s' to remove them."
 msgstr[0] "Bruk «%s» for å fjerne den."
@@ -2299,21 +2378,21 @@ msgid_plural ""
 "The following packages were automatically installed and are no longer "
 "required:"
 msgstr[0] ""
-"Følgende pakke ble automatisk installert og er ikke lenger påkrevet:"
+"Følgende pakke ble automatisk installert og er ikke lenger nødvendig:"
 msgstr[1] ""
-"Følgende pakker ble automatisk installert og er ikke lenger påkrevet:"
+"Følgende pakker ble automatisk installert og er ikke lenger nødvendige:"
 
 #: apt-private/private-install.cc
 #, c-format
 msgid "%lu package was automatically installed and is no longer required.\n"
 msgid_plural ""
 "%lu packages were automatically installed and are no longer required.\n"
-msgstr[0] "%lu pakke ble automatisk installert og er ikke lenger påkrevet.\n"
-msgstr[1] "%lu pakker ble automatisk installert og er ikke lenger påkrevet.\n"
+msgstr[0] "%lu pakke ble automatisk installert og er ikke lenger nødvendig.\n"
+msgstr[1] "%lu pakker ble automatisk installert og er ikke lenger nødvendige.\n"
 
 #: apt-private/private-install.cc
 msgid "Result calculated by the 3.0 solver."
-msgstr ""
+msgstr "Resultat beregnet av problemløser 3-0."
 
 #: apt-private/private-install.cc
 msgid "Suggested packages:"
@@ -2347,9 +2426,9 @@ msgstr "Det er ikke mulig å installere %s på nytt - den kan ikke nedlastes.\n"
 
 #. TRANSLATORS: First string is package name, second is version
 #: apt-private/private-install.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s is already the newest version (%s).\n"
-msgstr "%s er allerede nyeste versjon.\n"
+msgstr "%s er allerede nyeste versjon (%s).\n"
 
 #: apt-private/private-install.cc cmdline/apt-get.cc cmdline/apt-mark.cc
 #, c-format
@@ -2362,9 +2441,9 @@ msgid "Selected version '%s' (%s) for '%s'\n"
 msgstr "Utvalgt versjon «%s» (%s) for «%s»\n"
 
 #: apt-private/private-install.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Selected version '%s' (%s) for '%s' because of '%s'\n"
-msgstr "Utvalgt versjon «%s» (%s) for «%s»\n"
+msgstr "Valgte versjon «%s» (%s) for «%s» på grunn av «%s»\n"
 
 #: apt-private/private-list.cc
 msgid "Listing"
@@ -2375,10 +2454,8 @@ msgstr "Lister opp"
 msgid "There is %i additional version. Please use the '-a' switch to see it"
 msgid_plural ""
 "There are %i additional versions. Please use the '-a' switch to see them."
-msgstr[0] ""
-"Det er %i ekstra versjon.  Vær så snill å bruk '-a'-bryteren for å se den"
-msgstr[1] ""
-"Det er %i ekstra versjoner.  Vær så snill å bruk '-a'-bryteren for å se dem."
+msgstr[0] "Det er %i ekstra versjon. Bruk «-a»-bryteren for å se den"
+msgstr[1] "Det er %i ekstra versjoner. Bruk «-a»-bryteren for å se dem."
 
 #. TRANSLATORS: placeholder is a binary name like apt or apt-get
 #: apt-private/private-main.cc
@@ -2399,28 +2476,25 @@ msgid "unknown"
 msgstr "ukjent"
 
 #: apt-private/private-output.cc
-#, fuzzy, c-format
+#, c-format
 msgid "[installed,upgradable to: %s]"
-msgstr " [Installert]"
+msgstr "[installert, kan oppgraderes til: %s]"
 
 #: apt-private/private-output.cc
-#, fuzzy
 msgid "[installed,local]"
-msgstr " [Installert]"
+msgstr "[installert, lokal]"
 
 #: apt-private/private-output.cc
 msgid "[installed,auto-removable]"
 msgstr "[installert,auto-fjernbar]"
 
 #: apt-private/private-output.cc
-#, fuzzy
 msgid "[installed,automatic]"
-msgstr " [Installert]"
+msgstr "[installert, automatisk]"
 
 #: apt-private/private-output.cc
-#, fuzzy
 msgid "[installed]"
-msgstr " [Installert]"
+msgstr "[installert]"
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2429,7 +2503,7 @@ msgstr "[oppgraderbar fra: %s]"
 
 #: apt-private/private-output.cc
 msgid "[residual-config]"
-msgstr ""
+msgstr "[gjenværende konfig]"
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2466,50 +2540,45 @@ msgid "The following packages have unmet dependencies:"
 msgstr "Følgende pakker har uinnfridde avhengighetsforhold:"
 
 #: apt-private/private-output.cc
-#, fuzzy
 #| msgid "Failed to satisfy %s dependency for %s: %s"
 msgid "Unsatisfied dependencies:"
-msgstr "Klarte ikke å tilfredsstille %s avhengighet for %s: %s"
+msgstr "Utilfredsstilte avhengigheter:"
 
 #: apt-private/private-output.cc
 msgid "The following NEW packages will be installed:"
 msgstr "Følgende NYE pakker vil bli installert:"
 
 #: apt-private/private-output.cc
-#, fuzzy
 #| msgid "Installing %s"
 msgid "Installing:"
-msgstr "Installerer %s"
+msgstr "Installerer:"
 
 #: apt-private/private-output.cc
-#, fuzzy
 #| msgid "Total dependencies: "
 msgid "Installing dependencies:"
-msgstr "Antall avhengighetsforhold: "
+msgstr "Installerer avhengigheter:"
 
 #: apt-private/private-output.cc
 msgid "REMOVING:"
-msgstr ""
+msgstr "FJERNER:"
 
 #: apt-private/private-output.cc
 msgid "The following packages will be REMOVED:"
 msgstr "Følgende pakker vil bli FJERNET:"
 
 #: apt-private/private-output.cc
-#, fuzzy
 #| msgid "The following packages have been kept back:"
 msgid "The following upgrades have been deferred due to phasing:"
-msgstr "Følgende pakker er holdt tilbake:"
+msgstr "Følgende oppgraderinger er utsatt på grunn av gradvis utrulling:"
 
 #: apt-private/private-output.cc
-#, fuzzy
 #| msgid "The following packages have been kept back:"
 msgid "Not upgrading yet due to phasing:"
-msgstr "Følgende pakker er holdt tilbake:"
+msgstr "Oppgraderer ikke ennå på grunn av gradvis utrulling:"
 
 #: apt-private/private-output.cc
 msgid "Not upgrading:"
-msgstr ""
+msgstr "Oppgraderer ikke:"
 
 #: apt-private/private-output.cc
 msgid "The following packages have been kept back:"
@@ -2521,21 +2590,20 @@ msgstr "Følgende pakker vil bli oppgradert:"
 
 #: apt-private/private-output.cc
 msgid "Upgrading:"
-msgstr ""
+msgstr "Oppgraderer:"
 
 #: apt-private/private-output.cc
 msgid "DOWNGRADING:"
-msgstr ""
+msgstr "NEDGRADERER:"
 
 #: apt-private/private-output.cc
 msgid "The following packages will be DOWNGRADED:"
 msgstr "Følgende pakker vil bli NEDGRADERT:"
 
 #: apt-private/private-output.cc
-#, fuzzy
 #| msgid "Pinned packages:"
 msgid "Changing held packages:"
-msgstr "Låste pakker:"
+msgstr "Endrer tilbakeholdte pakker:"
 
 #: apt-private/private-output.cc
 msgid "The following held packages will be changed:"
@@ -2556,7 +2624,7 @@ msgstr ""
 
 #: apt-private/private-output.cc
 msgid "Summary:"
-msgstr ""
+msgstr "Sammendrag:"
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2564,10 +2632,10 @@ msgid "%lu upgraded, %lu newly installed, "
 msgstr "%lu oppgraderte, %lu nylig installerte, "
 
 #: apt-private/private-output.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Installing %s"
 msgid "Upgrading: %lu, Installing: %lu, "
-msgstr "Installerer %s"
+msgstr "Oppgraderer: %lu, Installerer: %lu, "
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2575,10 +2643,10 @@ msgid "%lu reinstalled, "
 msgstr "%lu installert på nytt, "
 
 #: apt-private/private-output.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Installing %s"
 msgid "Reinstalling: %lu, "
-msgstr "Installerer %s"
+msgstr "Reinstallerer: %lu, "
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2588,7 +2656,7 @@ msgstr "%lu nedgraderte, "
 #: apt-private/private-output.cc
 #, c-format
 msgid "Downgrading: %lu, "
-msgstr ""
+msgstr "Nedgraderer: %lu, "
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2598,7 +2666,7 @@ msgstr "%lu å fjerne og %lu ikke oppgradert.\n"
 #: apt-private/private-output.cc
 #, c-format
 msgid "Removing: %lu, Not Upgrading: %lu\n"
-msgstr ""
+msgstr "Fjerner: %lu, Oppgraderer ikke: %lu\n"
 
 #: apt-private/private-output.cc
 #, c-format
@@ -2621,7 +2689,8 @@ msgstr "[J/n]"
 msgid "[y/N]"
 msgstr "[j/N]"
 
-#. TRANSLATOR: "Yes" answer printed for a yes/no question if --assume-yes is set
+#. TRANSLATOR: "Yes" answer printed for a yes/no question if --assume-yes is
+#. set
 #: apt-private/private-output.cc
 msgid "Y"
 msgstr "J"
@@ -2644,11 +2713,8 @@ msgstr "Fulltekstsøk"
 msgid "There is %i additional record. Please use the '-a' switch to see it"
 msgid_plural ""
 "There are %i additional records. Please use the '-a' switch to see them."
-msgstr[0] ""
-"Det er %i ekstra oppføring.  Vær så snill å bruk '-a'-bryteren for å se den"
-msgstr[1] ""
-"Det er %i ekstra oppføringer.  Vær så snill å bruk '-a'-bryteren for å se "
-"dem."
+msgstr[0] "Det er %i ekstra oppføring. Bruk «-a»-bryteren for å se den"
+msgstr[1] "Det er %i ekstra oppføringer. Bruk «-a»-bryteren for å se dem."
 
 #: apt-private/private-show.cc
 msgid "not a real package (virtual)"
@@ -2693,22 +2759,22 @@ msgstr "  Versjonstabell:"
 
 #: apt-private/private-show.cc
 msgid "phased"
-msgstr ""
+msgstr "gradvis utrullet"
 
 #: apt-private/private-source.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Can not find a package for architecture '%s'"
-msgstr "Klarte ikke finne noen pakken med regex «%s»"
+msgstr "Finner ikke en pakke for arkitekturen «%s»"
 
 #: apt-private/private-source.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Can not find a package '%s' with version '%s'"
-msgstr "Klarte ikke finne noen pakken med regex «%s»"
+msgstr "Finner ikke pakken «%s» med versjon «%s»"
 
 #: apt-private/private-source.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Can not find a package '%s' with release '%s'"
-msgstr "Klarte ikke finne noen pakken med regex «%s»"
+msgstr "Finner ikke pakken «%s» med utgivelse «%s»"
 
 #: apt-private/private-source.cc
 #, c-format
@@ -2716,9 +2782,9 @@ msgid "Picking '%s' as source package instead of '%s'\n"
 msgstr "Velger «%s» som kildepakke istedenfor «%s»\n"
 
 #: apt-private/private-source.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Can not find version '%s' of package '%s'"
-msgstr "Ignorer utilgjengelig versjon «%s» av pakke «%s»"
+msgstr "Finner ikke versjon «%s» av pakken «%s»"
 
 #: apt-private/private-source.cc
 msgid "Must specify at least one package to fetch source for"
@@ -2739,7 +2805,7 @@ msgstr ""
 "%s\n"
 
 #: apt-private/private-source.cc
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Please use:\n"
 "%s\n"
@@ -2747,7 +2813,7 @@ msgid ""
 msgstr ""
 "Bruk:\n"
 "%s\n"
-"for å hente siste (muligens ikke utgitte) oppdateringer for pakken.\n"
+"for å hente de siste (muligens ikke utgitte) oppdateringene for pakken.\n"
 
 #: apt-private/private-source.cc
 #, c-format
@@ -2755,14 +2821,16 @@ msgid "Skipping already downloaded file '%s'\n"
 msgstr "Hopper over allerede nedlastet fil «%s»\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement strings, so %sB will be correctly translate in e.g. 1,5 MB
+#. in the replacement strings, so %sB will be correctly translate in e.g. 1,5
+#. MB
 #: apt-private/private-source.cc
 #, c-format
 msgid "Need to get %sB/%sB of source archives.\n"
 msgstr "Trenger å skaffe %sB av %sB fra kildekodearkivet.\n"
 
 #. TRANSLATOR: The required space between number and unit is already included
-#. in the replacement string, so %sB will be correctly translate in e.g. 1,5 MB
+#. in the replacement string, so %sB will be correctly translate in e.g. 1,5
+#. MB
 #: apt-private/private-source.cc
 #, c-format
 msgid "Need to get %sB of source archives.\n"
@@ -2824,6 +2892,7 @@ msgstr "Du må angi minst en pakke du vil sjekke «builddeps» for"
 msgid ""
 "Invalid operator '%c' at offset %d, did you mean '%c%c' or '%c='? - in: %s"
 msgstr ""
+"Ugyldig operator «%c» på posisjon %d, mente du «%c%c» eller «%c=»? – i: %s"
 
 #: apt-private/private-source.cc
 #, c-format
@@ -2831,18 +2900,18 @@ msgid "Note, using directory '%s' to get the build dependencies\n"
 msgstr "Merk, bruker '%s'-katalogen for å få tak i byggavhengigheter\n"
 
 #: apt-private/private-source.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Note, using file '%s' to get the build dependencies\n"
-msgstr "Klarte ikke å behandle forutsetningene for bygging"
+msgstr "Merk, bruker filen «%s» for å finne byggeavhengigheter\n"
 
 #: apt-private/private-source.cc
 msgid "Failed to process build dependencies"
 msgstr "Klarte ikke å behandle forutsetningene for bygging"
 
 #: apt-private/private-sources.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to parse %s. Edit again? "
-msgstr "Klarte ikke å endre navnet på %s til %s"
+msgstr "Klarte ikke å tolke %s. Redigere på nytt? "
 
 #: apt-private/private-sources.cc
 #, c-format
@@ -2852,7 +2921,7 @@ msgstr "'%s'-filen din ble endret, vær så snill å kjør 'apt-get update'.\n"
 #: apt-private/private-sources.cc
 #, c-format
 msgid "Rewrite %zu sources?"
-msgstr ""
+msgstr "Skrive om %zu kilder?"
 
 #: apt-private/private-unmet.cc
 #, c-format
@@ -2863,50 +2932,57 @@ msgstr "Pakken %s versjon %s har et uinnfridd avhengighetsforhold:\n"
 msgid "The update command takes no arguments"
 msgstr "Oppdaterings-kommandoen tar ingen argumenter"
 
-#. TRANSLATOR: the first two are manpage references, the last the URI from a sources.list
+#. TRANSLATOR: the first two are manpage references, the last the URI from a
+#. sources.list
 #: apt-private/private-update.cc
 #, c-format
 msgid ""
-"Usage of %s should be preferred over embedding login information directly in "
-"the %s entry for '%s'"
+"Usage of %s should be preferred over embedding login information directly in"
+" the %s entry for '%s'"
 msgstr ""
+"Bruk av %s bør foretrekkes fremfor å legge inn innloggingsinformasjon "
+"direkte i %s-oppføringen for «%s»"
 
-#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#. TRANSLATOR: the first is manpage reference, the last the URI from a
+#. sources.list
 #: apt-private/private-update.cc
 #, c-format
 msgid "The %s entry for '%s' should be upgraded to deb822 .sources"
-msgstr ""
+msgstr "%s-oppføringen for «%s» bør oppgraderes til deb822 .sources"
 
-#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#. TRANSLATOR: the first is manpage reference, the last the URI from a
+#. sources.list
 #: apt-private/private-update.cc
 #, c-format
 msgid "Missing Signed-By in the %s entry for '%s'"
-msgstr ""
+msgstr "Mangler Signed-By i %s-oppføringen for «%s»"
 
 #: apt-private/private-update.cc
 msgid ""
 "Consider migrating all sources.list(5) entries to the deb822 .sources format"
 msgstr ""
+"Vurder å flytte alle sources.list(5)-oppføringer til deb822 .sources-"
+"formatet"
 
 #: apt-private/private-update.cc
 msgid ""
 "The deb822 .sources format supports both embedded as well as external "
 "OpenPGP keys"
 msgstr ""
+"deb822 .sources-formatet støtter både innebygde og eksterne OpenPGP-nøkler"
 
 #: apt-private/private-update.cc
-#, fuzzy
 #| msgid ""
 #| "See apt-secure(8) manpage for repository creation and user configuration "
 #| "details."
-msgid "See apt-secure(8) for best practices in configuring repository signing."
-msgstr ""
-"Se manualsiden apt-secure(8) for detaljer om oppretting av depote og "
-"brukeroppsett."
+msgid ""
+"See apt-secure(8) for best practices in configuring repository signing."
+msgstr "Se apt-secure(8) for anbefalt praksis for signering av depoter."
 
 #: apt-private/private-update.cc
 msgid "Some sources can be modernized. Run 'apt modernize-sources' to do so."
 msgstr ""
+"Noen kilder kan moderniseres. Kjør «apt modernize-sources» for å gjøre det."
 
 #: apt-private/private-update.cc
 #, c-format
@@ -2914,18 +2990,18 @@ msgid "%i package can be upgraded. Run 'apt list --upgradable' to see it.\n"
 msgid_plural ""
 "%i packages can be upgraded. Run 'apt list --upgradable' to see them.\n"
 msgstr[0] ""
-"%i pakke kan oppgraderes.  Kjør 'apt list --upgradable' for å se den.\n"
+"%i pakke kan oppgraderes. Kjør «apt list --upgradable» for å se den.\n"
 msgstr[1] ""
-"%i pakker kan oppgraderes.  Kjør 'apt list --upgradable' for å se dem.\n"
+"%i pakker kan oppgraderes. Kjør «apt list --upgradable» for å se dem.\n"
 
 #: apt-private/private-update.cc
 msgid "All packages are up to date."
 msgstr "Alle pakkene er oppdatert."
 
 #: cmdline/apt-cache.cc cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s does not take any arguments"
-msgstr "Oppdaterings-kommandoen tar ingen argumenter"
+msgstr "%s tar ingen argumenter"
 
 #: cmdline/apt-cache.cc
 msgid "Total package names: "
@@ -2956,10 +3032,9 @@ msgid "  Missing: "
 msgstr "  Mangler: "
 
 #: cmdline/apt-cache.cc
-#, fuzzy
 #| msgid "Total distinct versions: "
 msgid "Total distinct source versions: "
-msgstr "Antall unike versjoner: "
+msgstr "Totalt unike kildeversjoner: "
 
 #: cmdline/apt-cache.cc
 msgid "Total distinct versions: "
@@ -3015,6 +3090,15 @@ msgid ""
 "too long ago, but in exchange apt-cache works independently of the\n"
 "availability of the configured sources (e.g. offline).\n"
 msgstr ""
+"Bruk: apt-cache [valg] kommando\n"
+"       apt-cache [valg] show pakke1 [pakke2 …]\n"
+"\n"
+"apt-cache spør etter og viser tilgjengelig informasjon om installerte\n"
+"og installerbare pakker. Den arbeider utelukkende mot dataene som er hentet\n"
+"til det lokale lageret via «update»-kommandoen til f.eks. apt-get.\n"
+"Informasjonen kan derfor være utdatert hvis siste oppdatering var for lenge\n"
+"siden, men til gjengjeld virker apt-cache uavhengig av om de oppsatte\n"
+"kildene er tilgjengelige (f.eks. uten nettverk).\n"
 
 #: cmdline/apt-cache.cc
 msgid "Show source records"
@@ -3049,9 +3133,8 @@ msgid "Please provide a name for this Disc, such as 'Debian 5.0.3 Disk 1'"
 msgstr "Oppgi et navn for disken, for eksempel «Debian 5.0.3 Disk 1»"
 
 #: cmdline/apt-cdrom.cc
-#, fuzzy
 msgid "Please insert a Disc in the drive and press [Enter]"
-msgstr "Sett inn en disk i lagringsenheten og trykk Enter"
+msgstr "Sett inn en disk i stasjonen og trykk [Enter]"
 
 #: cmdline/apt-cdrom.cc
 #, c-format
@@ -3062,9 +3145,11 @@ msgstr "Klarte ikke montere «%s» på «%s»"
 msgid ""
 "No CD-ROM could be auto-detected or found using the default mount point.\n"
 "You may try the --cdrom option to set the CD-ROM mount point.\n"
-"See 'man apt-cdrom' for more information about the CD-ROM auto-detection and "
-"mount point."
+"See 'man apt-cdrom' for more information about the CD-ROM auto-detection and mount point."
 msgstr ""
+"Ingen CD-ROM kunne automatisk oppdages eller finnes på standard monteringspunkt.\n"
+"Du kan prøve «--cdrom»-valget for å sette CD-ROM-monteringspunktet.\n"
+"Se «man apt-cdrom» for mer informasjon om automatisk oppdagelse og monteringspunkt for CD-ROM."
 
 #: cmdline/apt-cdrom.cc
 msgid "Repeat this process for the rest of the CDs in your set."
@@ -3078,30 +3163,35 @@ msgid ""
 "media types as package sources to APT. The mount point and device\n"
 "information is taken from apt.conf(5), udev(7) and fstab(5).\n"
 msgstr ""
+"Bruk: apt-cdrom [valg] kommando\n"
+"\n"
+"apt-cdrom brukes til å legge til CD-plater, USB-minnepinner og andre\n"
+"flyttbare medietyper som pakkekilder for APT. Monteringspunkt og\n"
+"enhetsinformasjon hentes fra apt.conf(5), udev(7) og fstab(5).\n"
 
 #: cmdline/apt-config.cc
 msgid "Arguments not in pairs"
 msgstr "Ikke parvise argumenter"
 
 #: cmdline/apt-config.cc
-#, fuzzy
 msgid ""
 "Usage: apt-config [options] command\n"
 "\n"
 "apt-config is an interface to the configuration settings used by\n"
 "all APT tools, mainly intended for debugging and shell scripting.\n"
 msgstr ""
-"Bruk: apt-config [innstillinger] kommando\n"
+"Bruk: apt-config [valg] kommando\n"
 "\n"
-"apt-config er et enkelt verktøy til å lese APTs innstillingsfil\n"
+"apt-config er et grensesnitt til innstillingene som brukes av alle\n"
+"APT-verktøy, hovedsakelig ment for feilsøking og skall-skripting.\n"
 
 #: cmdline/apt-config.cc
 msgid "get configuration values via shell evaluation"
-msgstr ""
+msgstr "hent oppsettsverdier via skall-evaluering"
 
 #: cmdline/apt-config.cc
 msgid "show the active configuration setting"
-msgstr ""
+msgstr "vis aktiv oppsettsinnstilling"
 
 #: cmdline/apt-dump-solver.cc
 msgid ""
@@ -3110,9 +3200,12 @@ msgid ""
 "apt-dump-solver is an interface to store an EDSP scenario in\n"
 "a file and optionally forwards it to another solver.\n"
 msgstr ""
+"Bruk: apt-dump-solver\n"
+"\n"
+"apt-dump-solver er et grensesnitt for å lagre et EDSP-scenario i\n"
+"en fil og eventuelt videresende det til en annen problemløser.\n"
 
 #: cmdline/apt-extracttemplates.cc
-#, fuzzy
 msgid ""
 "Usage: apt-extracttemplates file1 [file2 ...]\n"
 "\n"
@@ -3120,17 +3213,11 @@ msgid ""
 "from debian packages. It is used mainly by debconf(1) to prompt for\n"
 "configuration questions before installation of packages.\n"
 msgstr ""
-"Bruk: apt-extracttemplates fil1 [fil2 ...]\n"
+"Bruk: apt-extracttemplates fil1 [fil2 …]\n"
 "\n"
-"apt-extracttemplates er et verktøy til å hente ut informasjon om "
-"innstillinger\n"
-"og maler fra debianpakker.\n"
-"\n"
-"Innstillinger:\n"
-"  -h   Denne hjelpeteksten\n"
-"  -t   Lag en midlertidig mappe\n"
-"  -c=? Les denne innstillingsfila.\n"
-"  -o=? Sett en vilkårlig innstilling, f.eks. -o dir::cache=/tmp\n"
+"apt-extracttemplates brukes til å hente ut oppsetts- og malfiler\n"
+"fra debianpakker. Verktøyet brukes hovedsakelig av debconf(1) for å\n"
+"stille spørsmål om oppsett før pakker installeres.\n"
 
 #: cmdline/apt-extracttemplates.cc
 msgid "Cannot get debconf version. Is debconf installed?"
@@ -3148,8 +3235,8 @@ msgstr "%s satt til automatisk installasjon.\n"
 
 #: cmdline/apt-get.cc cmdline/apt-mark.cc
 msgid ""
-"This command is deprecated. Please use 'apt-mark auto' and 'apt-mark manual' "
-"instead."
+"This command is deprecated. Please use 'apt-mark auto' and 'apt-mark manual'"
+" instead."
 msgstr ""
 "Denne kommandoen er utdatert. Vær så snill å bruk 'apt-mark auto' og 'apt-"
 "mark manual' istedet."
@@ -3163,7 +3250,6 @@ msgid "Supported modules:"
 msgstr "Støttede moduler:"
 
 #: cmdline/apt-get.cc
-#, fuzzy
 msgid ""
 "Usage: apt-get [options] command\n"
 "       apt-get [options] install|remove pkg1 [pkg2 ...]\n"
@@ -3175,12 +3261,12 @@ msgid ""
 "with their dependencies.\n"
 msgstr ""
 "Bruk: apt-get [valg] kommando\n"
-"      apt-get [valg] install|remove pakke1 [pakke2 ...]\n"
-"      apt-get [valg] source pakke1 [pakke2 ...]\n"
+"       apt-get [valg] install|remove pakke1 [pakke2 …]\n"
+"       apt-get [valg] source pakke1 [pakke2 …]\n"
 "\n"
-"apt-get er et enkelt grensesnitt som kan brukes fra kommandolinja\n"
-"for å laste ned og installere pakker. De mest brukte kommandoene \n"
-"er «update» og «install».\n"
+"apt-get er et kommandolinjegrensesnitt for å hente pakker\n"
+"og informasjon om dem fra autentiserte kilder, og for installasjon,\n"
+"oppgradering og fjerning av pakker sammen med deres avhengigheter.\n"
 
 #: cmdline/apt-get.cc
 msgid "Retrieve new lists of packages"
@@ -3195,10 +3281,9 @@ msgid "Install new packages (pkg is libc6 not libc6.deb)"
 msgstr "Installér nye pakker (Pakke er «foo», ikke «foo.deb»)"
 
 #: cmdline/apt-get.cc
-#, fuzzy
 #| msgid "Install new packages (pkg is libc6 not libc6.deb)"
 msgid "Reinstall packages (pkg is libc6 not libc6.deb)"
-msgstr "Installér nye pakker (Pakke er «foo», ikke «foo.deb»)"
+msgstr "Installer pakker på nytt (pakke er libc6, ikke libc6.deb)"
 
 #: cmdline/apt-get.cc
 msgid "Remove packages"
@@ -3225,10 +3310,9 @@ msgid "Configure build-dependencies for source packages"
 msgstr "Sett opp bygge-forutsetninger for kildekodepakker"
 
 #: cmdline/apt-get.cc
-#, fuzzy
 #| msgid "Building dependency tree"
 msgid "Satisfy dependency strings"
-msgstr "Skaper oversikt over avhengighetsforhold"
+msgstr "Tilfredsstill avhengighetsstrenger"
 
 #: cmdline/apt-get.cc
 msgid "Erase downloaded archive files"
@@ -3259,9 +3343,8 @@ msgid "Need one URL as argument"
 msgstr "Trenger en URL som argument"
 
 #: cmdline/apt-helper.cc
-#, fuzzy
 msgid "Must specify at least one pair url/filename"
-msgstr "Du må angi minst en pakke du vil ha kildekoden til"
+msgstr "Du må angi minst ett par URL/filnavn"
 
 #: cmdline/apt-helper.cc
 msgid "Download Failed"
@@ -3281,10 +3364,16 @@ msgid ""
 "apt-helper bundles a variety of commands for shell scripts to use\n"
 "e.g. the same proxy configuration or acquire system as APT would.\n"
 msgstr ""
+"Bruk: apt-helper [valg] kommando\n"
+"       apt-helper [valg] cat-file fil …\n"
+"       apt-helper [valg] download-file URI målsti\n"
+"\n"
+"apt-helper samler flere kommandoer som skall-skript kan bruke for f.eks.\n"
+"samme proxy-oppsett eller innhentingssystem som APT ville brukt.\n"
 
 #: cmdline/apt-helper.cc
 msgid "download the given uri to the target-path"
-msgstr ""
+msgstr "last ned den oppgitte URI-en til målstien"
 
 #: cmdline/apt-helper.cc
 msgid "lookup a SRV record (e.g. _http._tcp.ftp.debian.org)"
@@ -3298,26 +3387,25 @@ msgstr "slå sammen filer, med automatisk utpakking"
 #, fuzzy
 #| msgid "Problem hashing file"
 msgid "hash file"
-msgstr "Problem ved oppretting av nøkkel for fil"
+msgstr "lag hash av fil"
 
 #: cmdline/apt-helper.cc
 msgid "detect proxy using apt.conf"
-msgstr ""
+msgstr "oppdag proxy ved hjelp av apt.conf"
 
 #: cmdline/apt-helper.cc
 msgid "wait for system to be online"
-msgstr ""
+msgstr "vent til systemet er på nett"
 
 #: cmdline/apt-helper.cc
 msgid "drop privileges before running given command"
-msgstr ""
+msgstr "dropp privilegier før angitt kommando kjøres"
 
 #: cmdline/apt-helper.cc
 msgid "analyse a pattern"
-msgstr ""
+msgstr "analyser et mønster"
 
 #: cmdline/apt-internal-planner.cc
-#, fuzzy
 msgid ""
 "Usage: apt-internal-planner\n"
 "\n"
@@ -3325,20 +3413,13 @@ msgid ""
 "installation planner for the APT family like an external one,\n"
 "for debugging or the like.\n"
 msgstr ""
-"Bruk: apt-extracttemplates fil1 [fil2 ...]\n"
+"Bruk: apt-internal-planner\n"
 "\n"
-"apt-extracttemplates er et verktøy til å hente ut informasjon om "
-"innstillinger\n"
-"og maler fra debianpakker.\n"
-"\n"
-"Innstillinger:\n"
-"  -h   Denne hjelpeteksten\n"
-"  -t   Lag en midlertidig mappe\n"
-"  -c=? Les denne innstillingsfila.\n"
-"  -o=? Sett en vilkårlig innstilling, f.eks. -o dir::cache=/tmp\n"
+"apt-internal-planner er et grensesnitt for å bruke den nåværende interne\n"
+"installasjonsplanleggeren til APT-familien som om den var ekstern,\n"
+"for feilsøking eller lignende.\n"
 
 #: cmdline/apt-internal-solver.cc
-#, fuzzy
 msgid ""
 "Usage: apt-internal-solver\n"
 "\n"
@@ -3346,71 +3427,64 @@ msgid ""
 "resolver for the APT family like an external one, for debugging or\n"
 "the like.\n"
 msgstr ""
-"Bruk: apt-extracttemplates fil1 [fil2 ...]\n"
+"Bruk: apt-internal-solver\n"
 "\n"
-"apt-extracttemplates er et verktøy til å hente ut informasjon om "
-"innstillinger\n"
-"og maler fra debianpakker.\n"
-"\n"
-"Innstillinger:\n"
-"  -h   Denne hjelpeteksten\n"
-"  -t   Lag en midlertidig mappe\n"
-"  -c=? Les denne innstillingsfila.\n"
-"  -o=? Sett en vilkårlig innstilling, f.eks. -o dir::cache=/tmp\n"
+"apt-internal-solver er et grensesnitt for å bruke den nåværende interne\n"
+"problemløseren til APT-familien som om den var ekstern, for feilsøking\n"
+"eller lignende.\n"
 
 #: cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s can not be marked as it is not installed.\n"
-msgstr "men er ikke installert"
+msgstr "%s kan ikke markeres da den ikke er installert.\n"
 
 #: cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s was already set to manually installed.\n"
-msgstr "%s satt til manuell installasjon.\n"
+msgstr "%s er allerede satt til manuelt installert.\n"
 
 #: cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s was already set to automatically installed.\n"
-msgstr "%s satt til automatisk installasjon.\n"
+msgstr "%s er allerede satt til automatisk installert.\n"
 
 #: cmdline/apt-mark.cc
 msgid "No changes necessary"
-msgstr ""
+msgstr "Ingen endringer nødvendig"
 
 #: cmdline/apt-mark.cc
-#, fuzzy
 #| msgid "The following NEW packages will be installed:"
 msgid "The following packages will be marked as automatically installed:"
-msgstr "Følgende NYE pakker vil bli installert:"
+msgstr "Følgende pakker vil bli markert som automatisk installert:"
 
 #: cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s was already set on hold.\n"
-msgstr "%s er allerede nyeste versjon.\n"
+msgstr "%s er allerede satt på hold.\n"
 
 #: cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s was already not on hold.\n"
-msgstr "%s er allerede nyeste versjon.\n"
+msgstr "%s var allerede ikke på hold.\n"
 
 #: cmdline/apt-mark.cc
 msgid "Executing dpkg failed. Are you root?"
 msgstr "Klarte ikke kjøre dpkg.  Er du root?"
 
 #: cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "%s set on hold.\n"
-msgstr "%s satt til manuell installasjon.\n"
+msgstr "%s satt på hold.\n"
 
 #: cmdline/apt-mark.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Canceled hold on %s.\n"
-msgstr "Klarte ikke å åpne %s"
+msgstr "Opphevet hold på %s.\n"
 
 #: cmdline/apt-mark.cc
 #, c-format
 msgid "Selected %s for purge.\n"
-msgstr ""
+msgstr "Valgte %s for fullstendig fjerning.\n"
 
 #: cmdline/apt-mark.cc
 #, c-format
@@ -3431,21 +3505,25 @@ msgid ""
 "manipulate the dpkg(1) selection states of packages, and to list\n"
 "all packages with or without a certain marking.\n"
 msgstr ""
+"Bruk: apt-mark [valg] {auto|manual} pakke1 [pakke2 …]\n"
+"\n"
+"apt-mark er et enkelt kommandolinjegrensesnitt for å markere pakker\n"
+"som manuelt eller automatisk installert. Det kan også brukes til å\n"
+"endre dpkg(1)-valgstatus for pakker og til å liste opp\n"
+"alle pakker med eller uten en bestemt markering.\n"
 
 #: cmdline/apt-mark.cc
 msgid "Mark the given packages as automatically installed"
 msgstr "Marker den angitte pakken som automatisk installert"
 
 #: cmdline/apt-mark.cc
-#, fuzzy
 msgid "Mark the given packages as manually installed"
-msgstr "Sjekk om pakken «dpkg-dev» er installert.\n"
+msgstr "Marker de oppgitte pakkene som manuelt installert"
 
 #: cmdline/apt-mark.cc
-#, fuzzy
 #| msgid "Mark the given packages as automatically installed"
 msgid "Mark all dependencies of meta packages as automatically installed."
-msgstr "Marker den angitte pakken som automatisk installert"
+msgstr "Marker alle avhengigheter av metapakker som automatisk installert."
 
 #: cmdline/apt-mark.cc
 msgid "Mark a package as held back"
@@ -3456,14 +3534,12 @@ msgid "Unset a package set as held back"
 msgstr "Fjern markering som holdt tilbake for en pakke"
 
 #: cmdline/apt-mark.cc
-#, fuzzy
 msgid "Print the list of automatically installed packages"
-msgstr "%s satt til automatisk installasjon.\n"
+msgstr "Skriv ut listen over automatisk installerte pakker"
 
 #: cmdline/apt-mark.cc
-#, fuzzy
 msgid "Print the list of manually installed packages"
-msgstr "%s satt til manuell installasjon.\n"
+msgstr "Skriv ut listen over manuelt installerte pakker"
 
 #: cmdline/apt-mark.cc
 msgid "Print the list of packages on hold"
@@ -3481,6 +3557,11 @@ msgid ""
 "By default it sorts by binary package information, but the -s option\n"
 "can be used to switch to source package ordering instead.\n"
 msgstr ""
+"Bruk: apt-sortpkgs [valg] fil1 [fil2 …]\n"
+"\n"
+"apt-sortpkgs er et enkelt verktøy for å sortere pakkeinformasjonsfiler.\n"
+"Standard er å sortere etter binærpakkeinformasjon, men «-s»-valget\n"
+"kan brukes for å sortere etter kildepakke i stedet.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -3492,6 +3573,13 @@ msgid ""
 "like apt-get and apt-cache, but enables options more suitable for\n"
 "interactive use by default.\n"
 msgstr ""
+"Bruk: apt [valg] kommando\n"
+"\n"
+"apt er en kommandolinjebasert pakkebehandler og tilbyr kommandoer for\n"
+"å søke etter og forvalte pakker samt hente informasjon om dem.\n"
+"Den har samme funksjonalitet som de spesialiserte APT-verktøyene,\n"
+"som apt-get og apt-cache, men har som standard valg som er bedre\n"
+"egnet for interaktiv bruk.\n"
 
 #. query
 #: cmdline/apt.cc
@@ -3499,9 +3587,8 @@ msgid "list packages based on package names"
 msgstr "list pakker basert på pakkenavn"
 
 #: cmdline/apt.cc
-#, fuzzy
 msgid "search in package descriptions"
-msgstr "Leser pakkelister"
+msgstr "søk i pakkebeskrivelser"
 
 #: cmdline/apt.cc
 msgid "show package details"
@@ -3509,31 +3596,26 @@ msgstr "vis pakkedetaljer"
 
 #. package stuff
 #: cmdline/apt.cc
-#, fuzzy
 msgid "install packages"
-msgstr "Låste pakker:"
+msgstr "installer pakker"
 
 #: cmdline/apt.cc
-#, fuzzy
 msgid "reinstall packages"
-msgstr "Låste pakker:"
+msgstr "installer pakker på nytt"
 
 #: cmdline/apt.cc
-#, fuzzy
 msgid "remove packages"
-msgstr "Ødelagte pakker"
+msgstr "fjern pakker"
 
 #: cmdline/apt.cc
-#, fuzzy
 #| msgid "Remove automatically all unused packages"
 msgid "automatically remove all unused packages"
-msgstr "Fjern alle automatisk ubrukte pakker"
+msgstr "fjern automatisk alle ubrukte pakker"
 
 #. system wide stuff
 #: cmdline/apt.cc
-#, fuzzy
 msgid "update list of available packages"
-msgstr "%s satt til manuell installasjon.\n"
+msgstr "oppdater listen over tilgjengelige pakker"
 
 #: cmdline/apt.cc
 msgid "upgrade the system by installing/upgrading packages"
@@ -3546,59 +3628,57 @@ msgstr "oppgrader systemet ved å fjerne/installere/oppgradere pakker"
 #. history stuff
 #: cmdline/apt.cc
 msgid "show list of history"
-msgstr ""
+msgstr "vis historikk"
 
 #: cmdline/apt.cc
 msgid "show info on specific transactions"
-msgstr ""
+msgstr "vis informasjon om bestemte transaksjoner"
 
 #: cmdline/apt.cc
 msgid "redo transactions"
-msgstr ""
+msgstr "gjør om transaksjoner"
 
 #: cmdline/apt.cc
 msgid "undo transactions"
-msgstr ""
+msgstr "angre transaksjoner"
 
 #: cmdline/apt.cc
 msgid "rollback transactions"
-msgstr ""
+msgstr "rull tilbake transaksjoner"
 
 #. misc
 #: cmdline/apt.cc
-#, fuzzy
 msgid "edit the source information file"
-msgstr "Leser tilstandsinformasjon"
+msgstr "rediger kildeinformasjonsfilen"
 
 #: cmdline/apt.cc
 msgid "modernize .list files to .sources files"
-msgstr ""
+msgstr "moderniser .list-filer til .sources-filer"
 
 #: cmdline/apt.cc
-#, fuzzy
 #| msgid "Failed to satisfy %s dependency for %s: %s"
 msgid "satisfy dependency strings"
-msgstr "Klarte ikke å tilfredsstille %s avhengighet for %s: %s"
+msgstr "tilfredsstill avhengighetsstrenger"
 
 #: cmdline/apt.cc
 msgid "produce a reason trace for the current state of the package"
-msgstr ""
+msgstr "produser en begrunnelsessporing for pakkens nåværende tilstand"
 
 #: dselect/install
 msgid "Bad default setting!"
 msgstr "Feil standardinnstilling!"
 
 #: dselect/install dselect/update
-#, fuzzy
 msgid "Press [Enter] to continue."
-msgstr "Trykk «Enter» og fortsett"
+msgstr "Trykk [Enter] for å fortsette."
 
 #: dselect/install
 msgid "Do you want to erase any previously downloaded .deb files?"
 msgstr "Vil du slettet alle tidligere nedlastede .deb-filer?"
 
 # Note to translators: The following four messages belong together. It doesn't
-# matter where sentences start, but it has to fit in just these four lines, and
+# matter where sentences start, but it has to fit in just these four lines,
+# and
 # at only 80 characters per line, if possible.
 #: dselect/install
 msgid "Some errors occurred while unpacking. Packages that were installed"
@@ -3697,8 +3777,7 @@ msgstr ""
 "erstatninger for dpkg-scanpackages og dpkg-scansources.\n"
 "\n"
 "apt-ftparchive oppretter «Packages»-filer fra et tre med debianpakker.\n"
-"«Packages»-fila inneholder alle kontrollfeltene fra hver pakke i tillegg "
-"til\n"
+"«Packages»-fila inneholder alle kontrollfeltene fra hver pakke i tillegg til\n"
 "MD5-nøkkel og filstørrelse. Du kan bruke en overstyringsfil for å tvinge\n"
 "gjennom verdier for prioritet og kategori.\n"
 "\n"
@@ -3708,8 +3787,7 @@ msgstr ""
 "Kommandoene «packages» og «sources» skal kjøres i rota av katalogtreet.\n"
 "«Binærsti» skal peke til toppkatalogen for det rekursive søket, og\n"
 "overstyringsfila skal inneholde innstillinger for overstyring.\n"
-"Sti-prefikset blir lagt til feltene for filnavn, dersom det er oppgitt. Her "
-"er\n"
+"Sti-prefikset blir lagt til feltene for filnavn, dersom det er oppgitt. Her er\n"
 "et eksempel på bruk i debianarkivet:\n"
 "   apt-ftparchive packages dists/potato/main/binary-i386/ > \\\n"
 "               dists/potato/main/binary-i386/Packages\n"
@@ -3758,9 +3836,8 @@ msgid "Unable to open DB file %s: %s"
 msgstr "Klarte ikke å åpne Databasefila %s: %s"
 
 #: ftparchive/cachedb.cc
-#, fuzzy
 msgid "Failed to read .dsc"
-msgstr "Klarte ikke å lese lenken %s"
+msgstr "Klarte ikke å lese .dsc"
 
 #: ftparchive/cachedb.cc
 msgid "Archive has no control record"
@@ -3822,9 +3899,9 @@ msgstr "Klarte ikke å åpne %s"
 #. skip spaces
 #. find end of word
 #: ftparchive/override.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Malformed override %s line %llu (%s)"
-msgstr "Ugyldig overstyring %s linje %lu #1"
+msgstr "Ugyldig overstyring %s linje %llu (%s)"
 
 #: ftparchive/override.cc
 #, c-format
@@ -3832,19 +3909,19 @@ msgid "Failed to read the override file %s"
 msgstr "Klarte ikke å lese overstyringsfila %s"
 
 #: ftparchive/override.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Malformed override %s line %llu #1"
-msgstr "Ugyldig overstyring %s linje %lu #1"
+msgstr "Ugyldig overstyring %s linje %llu #1"
 
 #: ftparchive/override.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Malformed override %s line %llu #2"
-msgstr "Ugyldig overstyring %s linje %lu #2"
+msgstr "Ugyldig overstyring %s linje %llu #2"
 
 #: ftparchive/override.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Malformed override %s line %llu #3"
-msgstr "Ugyldig overstyring %s linje %lu #3"
+msgstr "Ugyldig overstyring %s linje %llu #3"
 
 #: ftparchive/writer.cc
 #, c-format
@@ -3961,6 +4038,7 @@ msgstr "Forbindelsen mislykkes"
 #, c-format
 msgid "File has unexpected size (%llu != %llu). Mirror sync in progress?"
 msgstr ""
+"Filen har uventet størrelse (%llu != %llu). Pågår en speilsynkronisering?"
 
 #: methods/basehttp.cc
 #, c-format
@@ -3968,6 +4046,8 @@ msgid ""
 "Automatically disabled %s due to incorrect response from server/proxy. (man "
 "5 apt.conf)"
 msgstr ""
+"Skrudde av %s automatisk på grunn av feil svar fra tjener/proxy. (man 5 "
+"apt.conf)"
 
 #: methods/basehttp.cc
 msgid "Internal error"
@@ -4005,11 +4085,12 @@ msgstr "Disk ikke funnet."
 msgid "File not found"
 msgstr "Fant ikke fila"
 
-#. TRANSLATOR: %s is e.g. Tor's ".onion" which would likely fail or leak info (RFC7686)
+#. TRANSLATOR: %s is e.g. Tor's ".onion" which would likely fail or leak info
+#. (RFC7686)
 #: methods/connect.cc
 #, c-format
 msgid "Direct connection to %s domains is blocked by default."
-msgstr ""
+msgstr "Direkte tilkobling til %s-domener er blokkert som standard."
 
 #: methods/connect.cc
 #, c-format
@@ -4017,10 +4098,10 @@ msgid "[IP: %s %s]"
 msgstr "[IP: %s %s]"
 
 #: methods/connect.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Connecting to %s (%s)"
 msgid "Connected to %s (%s)"
-msgstr "Kobler til %s (%s)"
+msgstr "Tilkoblet til %s (%s)"
 
 #: methods/connect.cc methods/http.cc
 #, c-format
@@ -4067,9 +4148,9 @@ msgid "Temporary failure resolving '%s'"
 msgstr "Midlertidig feil ved oppslag av «%s»"
 
 #: methods/connect.cc
-#, fuzzy, c-format
+#, c-format
 msgid "System error resolving '%s:%s'"
-msgstr "Noe galt skjedde ved oppslag av «%s:%s» (%i - %s)"
+msgstr "Systemfeil ved oppslag av «%s:%s»"
 
 #: methods/connect.cc
 #, c-format
@@ -4092,12 +4173,12 @@ msgstr "Ugyldig adresse. Lokale adresser kan ikke starte med //"
 #: methods/gpgv.cc
 #, c-format
 msgid "untrusted public key algorithm: %s"
-msgstr ""
+msgstr "ikke-tiltrodd algoritme for offentlig nøkkel: %s"
 
 #: methods/gpgv.cc
 #, c-format
 msgid "%s will be deprecated in a future release"
-msgstr ""
+msgstr "%s vil bli utfaset i en fremtidig utgivelse"
 
 #. TRANSLATORS: %s is a single techy word like 'NODATA'
 #: methods/gpgv.cc
@@ -4105,6 +4186,7 @@ msgstr ""
 msgid ""
 "Signed file isn't valid, got '%s' (does the network require authentication?)"
 msgstr ""
+"Signert fil er ikke gyldig, mottok «%s» (krever nettverket innlogging?)"
 
 #: methods/gpgv.cc
 msgid "At least one invalid signature was encountered."
@@ -4116,26 +4198,25 @@ msgid ""
 msgstr "Intern feil: God signatur, men kunne bestemme nøkkelfingeravtrykk?!"
 
 #: methods/gpgv.cc
-#, fuzzy
 #| msgid ""
 #| "Could not execute 'apt-key' to verify signature (is gnupg installed?)"
 msgid "Could not execute 'gpgv' to verify signature (is gnupg installed?)"
 msgstr ""
-"Klarte ikke kjøre «apt-key» for å verifisere signaturen (er gnupg "
+"Klarte ikke å kjøre «gpgv» for å verifisere signaturen (er gnupg "
 "installert?)"
 
 #: methods/gpgv.cc
-#, fuzzy
 #| msgid "Unknown error executing apt-key"
 msgid "Unknown error executing gpgv"
-msgstr "Ukjent feil ved kjøring av apt-key"
+msgstr "Ukjent feil ved kjøring av gpgv"
 
-#. TRANSLATORS: The second %s is the reason and is untranslated for repository owners.
+#. TRANSLATORS: The second %s is the reason and is untranslated for repository
+#. owners.
 #: methods/gpgv.cc
-#, fuzzy, c-format
+#, c-format
 #| msgid "Signature by key %s uses weak digest algorithm (%s)"
 msgid "Signature by key %s uses weak algorithm (%s)"
-msgstr "Signatur med nøkkel %s bruker svak oppsummeringsalgoritme (%s)"
+msgstr "Signatur med nøkkel %s bruker svak algoritme (%s)"
 
 #: methods/gpgv.cc
 msgid "The following signatures were invalid:\n"
@@ -4146,8 +4227,8 @@ msgid ""
 "The following signatures couldn't be verified because the public key is not "
 "available:\n"
 msgstr ""
-"De følgende signaturene kunne ikke verifiseres fordi den offentlige nøkkelen "
-"ikke er tilgjengelig:\n"
+"De følgende signaturene kunne ikke verifiseres fordi den offentlige nøkkelen"
+" ikke er tilgjengelig:\n"
 
 #: methods/http.cc
 msgid "Error reading from server. Remote end closed connection"
@@ -4207,8 +4288,8 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ msgstr "PASS mislykkes, tjeneren sa: %s"
 
 #~ msgid ""
-#~ "A proxy server was specified but no login script, "
-#~ "Acquire::ftp::ProxyLogin is empty."
+#~ "A proxy server was specified but no login script, Acquire::ftp::ProxyLogin "
+#~ "is empty."
 #~ msgstr ""
 #~ "En mellomtjener er oppgitt, men ikke noe innloggingsskript. Feltet "
 #~ "«Acquire::ftp::ProxyLogin» er tomt."
@@ -4292,12 +4373,10 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ msgstr "Forbindelsen ble uventet stengt"
 
 #, fuzzy, c-format
-#~| msgid "  Installed: "
 #~ msgid "  Installed size: %sB\n"
 #~ msgstr "  Installert: "
 
 #, fuzzy
-#~| msgid "The following held packages will be changed:"
 #~ msgid "Changing held packages:Changing held packages:"
 #~ msgstr "Følgende pakker vil bli endret:"
 
@@ -4429,8 +4508,7 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 
 #~ msgid "There is no public key available for the following key IDs:\n"
 #~ msgstr ""
-#~ "Det er ingen offentlig nøkkel tilgjengelig for de følgende nøkkel-ID-"
-#~ "ene:\n"
+#~ "Det er ingen offentlig nøkkel tilgjengelig for de følgende nøkkel-ID-ene:\n"
 
 #, fuzzy
 #~ msgid "The repository is insufficiently signed by key %s (%s)"
@@ -4450,21 +4528,21 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ msgid ""
 #~ "Failed to satisfy %s dependency for %s: Installed package %s is too new"
 #~ msgstr ""
-#~ "Klarte ikke å tilfredsstille %s avhengighet for %s: den installerte "
-#~ "pakken %s er for ny"
+#~ "Klarte ikke å tilfredsstille %s avhengighet for %s: den installerte pakken "
+#~ "%s er for ny"
 
 #, fuzzy
 #~ msgid ""
 #~ "%s dependency for %s cannot be satisfied because candidate version of "
 #~ "package %s can't satisfy version requirements"
 #~ msgstr ""
-#~ "Kravet %s for %s kan ikke oppfylles fordi det ikke finnes noen "
-#~ "tilgjengelige versjoner av pakken %s som oppfyller versjonskravene"
+#~ "Kravet %s for %s kan ikke oppfylles fordi det ikke finnes noen tilgjengelige"
+#~ " versjoner av pakken %s som oppfyller versjonskravene"
 
 #, fuzzy
 #~ msgid ""
-#~ "%s dependency for %s cannot be satisfied because package %s has no "
-#~ "candidate version"
+#~ "%s dependency for %s cannot be satisfied because package %s has no candidate"
+#~ " version"
 #~ msgstr "Kravet %s for %s kan ikke oppfylles fordi pakken %s ikke finnes"
 
 #~ msgid "Build-dependencies for %s could not be satisfied."
@@ -4486,8 +4564,7 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ "Bruk: apt-cache [valg] kommando\n"
 #~ "      apt-cache [valg] show pakke1 [pakke2 ...]\n"
 #~ "\n"
-#~ "apt-cache er et lavnivå-verktøy, som brukes til å håndtere APT sine "
-#~ "binære\n"
+#~ "apt-cache er et lavnivå-verktøy, som brukes til å håndtere APT sine binære\n"
 #~ "lagerfiler, og spørre dem om informasjon.\n"
 
 #~ msgid ""
@@ -4525,8 +4602,7 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ msgid ""
 #~ "Usage: apt-sortpkgs [options] file1 [file2 ...]\n"
 #~ "\n"
-#~ "apt-sortpkgs is a simple tool to sort package files. The -s option is "
-#~ "used\n"
+#~ "apt-sortpkgs is a simple tool to sort package files. The -s option is used\n"
 #~ "to indicate what kind of file it is.\n"
 #~ "\n"
 #~ "Options:\n"
@@ -4537,8 +4613,7 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ msgstr ""
 #~ "Bruk: apt-sortpkgs [innstillinger] fil1 [fil2 ...]\n"
 #~ "\n"
-#~ "apt-sortpkgs er et enkelt redskap til å sortere pakkefiler. "
-#~ "Innstillingen\n"
+#~ "apt-sortpkgs er et enkelt redskap til å sortere pakkefiler. Innstillingen\n"
 #~ "-s brukes til å angi hvilken filtype det er.\n"
 #~ "\n"
 #~ "Innstillinger:\n"
@@ -4640,15 +4715,15 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ "Monterer CD-ROM\n"
 
 #~ msgid ""
-#~ "Could not patch %s with mmap and with file operation usage - the patch "
-#~ "seems to be corrupt."
+#~ "Could not patch %s with mmap and with file operation usage - the patch seems"
+#~ " to be corrupt."
 #~ msgstr ""
-#~ "Klarte ikke rette %s med mmap og med filoperasjonbruk - programrettelsen "
-#~ "ser ut til å være korrupt."
+#~ "Klarte ikke rette %s med mmap og med filoperasjonbruk - programrettelsen ser"
+#~ " ut til å være korrupt."
 
 #~ msgid ""
-#~ "Could not patch %s with mmap (but no mmap specific fail) - the patch "
-#~ "seems to be corrupt."
+#~ "Could not patch %s with mmap (but no mmap specific fail) - the patch seems "
+#~ "to be corrupt."
 #~ msgstr ""
 #~ "Klarte ikke rette %s med mmap (men ingen mmap-spesifikk feil) - "
 #~ "programrettelsen ser ut til å være korrupt."
@@ -4665,15 +4740,14 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ msgstr "Feil MD5sum"
 
 #~ msgid ""
-#~ "I wasn't able to locate a file for the %s package. This might mean you "
-#~ "need to manually fix this package."
+#~ "I wasn't able to locate a file for the %s package. This might mean you need "
+#~ "to manually fix this package."
 #~ msgstr ""
-#~ "Klarte ikke å finne en fil for pakken %s. Det kan bety at du må ordne "
-#~ "denne pakken selv."
+#~ "Klarte ikke å finne en fil for pakken %s. Det kan bety at du må ordne denne "
+#~ "pakken selv."
 
 #~ msgid "Can not write log, openpty() failed (/dev/pts not mounted?)\n"
-#~ msgstr ""
-#~ "Klarte ikke skrive logg, openpty() feilet (/dev/pts ikke montert?)\n"
+#~ msgstr "Klarte ikke skrive logg, openpty() feilet (/dev/pts ikke montert?)\n"
 
 #~ msgid "Skipping nonexistent file %s"
 #~ msgstr "Hopper over den ikke-eksisterende fila %s"
@@ -4689,8 +4763,7 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 
 #~ msgid "The info and temp directories need to be on the same filesystem"
 #~ msgstr ""
-#~ "Infokatalogen og den midlertidige katalogen må være på det samme "
-#~ "filsystemet"
+#~ "Infokatalogen og den midlertidige katalogen må være på det samme filsystemet"
 
 #~ msgid "Failed to change to the admin dir %sinfo"
 #~ msgstr "Klarte ikke å bytte til adminkatalogen %sinfo"
@@ -4777,11 +4850,11 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ msgstr "skrive, har fremdeles %lu igjen å skrive, men klarte ikke å"
 
 #~ msgid ""
-#~ "Could not perform immediate configuration on already unpacked '%s'. "
-#~ "Please see man 5 apt.conf under APT::Immediate-Configure for details."
+#~ "Could not perform immediate configuration on already unpacked '%s'. Please "
+#~ "see man 5 apt.conf under APT::Immediate-Configure for details."
 #~ msgstr ""
-#~ "Klarte ikke gjennomføre umiddelbar konfigurasjon av allerede utpakket "
-#~ "«%s». Se man 5 apt.conf under APT::Immediate-Configure for detaljer."
+#~ "Klarte ikke gjennomføre umiddelbar konfigurasjon av allerede utpakket «%s». "
+#~ "Se man 5 apt.conf under APT::Immediate-Configure for detaljer."
 
 #~ msgid "Error occurred while processing %s (NewPackage)"
 #~ msgstr "Feil oppsto under behandling av %s (NewPackage)"
@@ -4854,10 +4927,8 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 #~ "the package is simply not installable and a bug report against\n"
 #~ "that package should be filed."
 #~ msgstr ""
-#~ "Ettersom du bare bestilte et enkelt inngrep er det overveiende "
-#~ "sannsynlig\n"
-#~ "at pakken helt enkelt ikke kan installeres, og du bør fylle ut en "
-#~ "feilmelding."
+#~ "Ettersom du bare bestilte et enkelt inngrep er det overveiende sannsynlig\n"
+#~ "at pakken helt enkelt ikke kan installeres, og du bør fylle ut en feilmelding."
 
 #~ msgid "Line %d too long (max %lu)"
 #~ msgstr "Linje %d er for lang (maks %lu)"
@@ -4880,8 +4951,8 @@ msgstr "Tomme filer kan ikke være gyldige arkiver"
 
 #, fuzzy
 #~ msgid ""
-#~ "Found %i package indexes, %i source indexes, %i translation indexes and "
-#~ "%i signatures\n"
+#~ "Found %i package indexes, %i source indexes, %i translation indexes and %i "
+#~ "signatures\n"
 #~ msgstr "Fant %i pakkeindekser, %i kildeindekser og %i signaturer\n"
 
 #, fuzzy
