@@ -467,7 +467,7 @@ Signed-By:
     communication with the remote server (or proxy) is not encrypted so a
     sufficiently capable attacker can observe and record login as well as all
     other interactions. The attacker can <emphasis>not</emphasis> modify the
-    communication through as APT's data security model is independent of the
+    communication though as APT's data security model is independent of the
     chosen transport method. See &apt-secure; for details.</para></listitem>
     </varlistentry>
 
