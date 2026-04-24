@@ -31,12 +31,12 @@ testrun() {
 	cp "$TESTFILE" ./downloaded/foo1
 	cp "$TESTFILE" ./downloaded/foo2
 	$1 'complete partial 1+2'
-	dd if="$TESTFILE" of=./downloaded/foo1 bs=500 count=1 2>/dev/null
+	head -c 500 < "$TESTFILE" > ./downloaded/foo1
 	$1 'partial partial 1'
-	dd if="$TESTFILE" of=./downloaded/foo2 bs=500 count=1 2>/dev/null
+	head -c 500 < "$TESTFILE" > ./downloaded/foo2
 	$1 'partial partial 2'
-	dd if="$TESTFILE" of=./downloaded/foo1 bs=500 count=1 2>/dev/null
-	dd if="$TESTFILE" of=./downloaded/foo2 bs=500 count=1 2>/dev/null
+	head -c 500 < "$TESTFILE" > ./downloaded/foo1
+	head -c 500 < "$TESTFILE" > ./downloaded/foo2
 	$1 'partial partial 1+2'
 }
 testrun 'filedown'
