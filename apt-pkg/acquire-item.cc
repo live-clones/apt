@@ -66,12 +66,12 @@ static std::string GetPartialFileName(std::string const &file)		/*{{{*/
 									/*}}}*/
 static std::string GetPartialFileNameFromURI(std::string const &uri)	/*{{{*/
 {
-   return GetPartialFileName(URItoFileName(uri));
+   return GetPartialFileName(URItoStorageKey(uri));
 }
 									/*}}}*/
 static std::string GetFinalFileNameFromURI(std::string const &uri)	/*{{{*/
 {
-   return _config->FindDir("Dir::State::lists") + URItoFileName(uri);
+   return _config->FindDir("Dir::State::lists") + URItoStorageKey(uri);
 }
 									/*}}}*/
 static std::string GetKeepCompressedFileName(std::string file, IndexTarget const &Target)/*{{{*/
@@ -4168,7 +4168,7 @@ static std::string GetAuxFileNameFromURIInLists(std::string const &uri)
       return "";
    RemoveFile("GetAuxFileNameFromURI", tmpfile.get());
    close(fd);
-   return flCombine(dirname, URItoFileName(uri));
+   return flCombine(dirname, URItoStorageKey(uri));
 }
 static std::string GetAuxFileNameFromURI(std::string const &uri)
 {
@@ -4182,12 +4182,12 @@ static std::string GetAuxFileNameFromURI(std::string const &uri)
    if (mkdtemp(tmpdir.get()) == nullptr)
    {
       _error->Errno("GetAuxFileNameFromURI", "mkdtemp of %s failed", tmpdir.get());
-      return flCombine("/nonexistent/auxfiles/", URItoFileName(uri));
+      return flCombine("/nonexistent/auxfiles/", URItoStorageKey(uri));
    }
    chmod(tmpdir.get(), 0755);
-   auto const filename = flCombine(tmpdir.get(), URItoFileName(uri));
+   auto const filename = flCombine(tmpdir.get(), URItoStorageKey(uri));
    _error->PushToStack();
-   FileFd in(flCombine(flCombine(_config->FindDir("Dir::State::lists"), "auxfiles/"), URItoFileName(uri)), FileFd::ReadOnly);
+   FileFd in(flCombine(flCombine(_config->FindDir("Dir::State::lists"), "auxfiles/"), URItoStorageKey(uri)), FileFd::ReadOnly);
    if (in.IsOpen())
    {
       FileFd out(filename, FileFd::WriteOnly | FileFd::Create | FileFd::Exclusive);

@@ -97,7 +97,7 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List,
       snprintf(S,sizeof(S),"cdrom:[%s]/%s%s",Name.c_str(),
 	       (*I).c_str() + CDROM.length(),GetFileName());
       string TargetF = _config->FindDir("Dir::State::lists") + "partial/";
-      TargetF += URItoFileName(S);
+      TargetF += URItoStorageKey(S);
       FileFd Target;
       if (_config->FindB("APT::CDROM::NoAct",false) == true)
       {
@@ -203,7 +203,7 @@ bool IndexCopy::CopyPackages(string CDROM,string Name,vector<string> &List,
 	 // Move out of the partial directory
 	 Target.Close();
 	 string FinalF = _config->FindDir("Dir::State::lists");
-	 FinalF += URItoFileName(S);
+	 FinalF += URItoStorageKey(S);
 	 if (rename(TargetF.c_str(),FinalF.c_str()) != 0)
 	    return _error->Errno("rename","Failed to rename");
 	 ChangeOwnerAndPermissionOfFile("CopyPackages", FinalF.c_str(), "root", ROOT_GROUP, 0644);
@@ -524,7 +524,7 @@ bool SigVerify::CopyMetaIndex(string CDROM, string CDName,		/*{{{*/
       snprintf(S,sizeof(S),"cdrom:[%s]/%s%s",CDName.c_str(),
 	       (prefix).c_str() + CDROM.length(),file.c_str());
       string TargetF = _config->FindDir("Dir::State::lists");
-      TargetF += URItoFileName(S);
+      TargetF += URItoStorageKey(S);
 
       FileFd Target;
       FileFd Rel;
@@ -683,7 +683,7 @@ bool TranslationsCopy::CopyTranslations(string CDROM,string Name,	/*{{{*/
       snprintf(S,sizeof(S),"cdrom:[%s]/%s",Name.c_str(),
 	       (*I).c_str() + CDROM.length());
       string TargetF = _config->FindDir("Dir::State::lists") + "partial/";
-      TargetF += URItoFileName(S);
+      TargetF += URItoStorageKey(S);
       FileFd Target;
       if (_config->FindB("APT::CDROM::NoAct",false) == true)
       {
@@ -727,7 +727,7 @@ bool TranslationsCopy::CopyTranslations(string CDROM,string Name,	/*{{{*/
 	 // Move out of the partial directory
 	 Target.Close();
 	 string FinalF = _config->FindDir("Dir::State::lists");
-	 FinalF += URItoFileName(S);
+	 FinalF += URItoStorageKey(S);
 	 if (rename(TargetF.c_str(),FinalF.c_str()) != 0)
 	    return _error->Errno("rename","Failed to rename");
 	 ChangeOwnerAndPermissionOfFile("CopyTranslations", FinalF.c_str(), "root", ROOT_GROUP, 0644);

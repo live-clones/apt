@@ -511,6 +511,15 @@ APT::Compressor::rev {
 	 </para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>URItoFileName::SHA256</option></term>
+	 <listitem><para>
+	 If set to true, APT stores acquired state files in
+	 <filename>/var/lib/apt/lists/</filename> and related state directories
+	 using the SHA256 digest of the canonicalized URI instead of the
+	 human-readable URI-derived filename. The default is false.
+	 </para></listitem>
+     </varlistentry>
+
      <varlistentry><term><option>Queue-Mode</option></term>
      <listitem><para>Queuing mode; <literal>Queue-Mode</literal> can be one of <literal>host</literal> or 
      <literal>access</literal> which determines how  APT parallelizes outgoing 
@@ -1342,4 +1351,3 @@ is commented.
  &manbugs;
  
 </refentry>
-

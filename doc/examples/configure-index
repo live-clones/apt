@@ -256,6 +256,7 @@ Acquire
   ForceHash "<STRING>"; // hashmethod used for expected hash: sha256, sha1 or md5sum
   Send-URI-Encoded "<BOOL>"; // false does the old encode/decode dance even if we could avoid it
   URIEncode "<STRING>"; // characters to encode with percent encoding
+  URItoFileName::SHA256 "<BOOL>"; // store state/list files using sha256(uri) instead of URI-derived names
 
   AllowTLS "<BOOL>";    // whether support for tls is enabled
 
