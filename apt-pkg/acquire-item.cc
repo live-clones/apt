@@ -872,6 +872,8 @@ std::string pkgAcquire::Item::ShortDesc() const				/*{{{*/
 									/*}}}*/
 void pkgAcquire::Item::Cancelled()					/*{{{*/
 {
+   if (auto Self = dynamic_cast<pkgAcqMetaClearSig*>(this))
+      Self->DoCancelled();
 }
 									/*}}}*/
 void pkgAcquire::Item::Finished()					/*{{{*/
@@ -2014,7 +2016,7 @@ string pkgAcqMetaClearSig::Custom600Headers() const
    return Header;
 }
 									/*}}}*/
-void pkgAcqMetaClearSig::Cancelled()					/*{{{*/
+void pkgAcqMetaClearSig::DoCancelled()					/*{{{*/
 {
    if (TransactionManager->State == TransactionStarted)
       TransactionManager->AbortTransaction();
