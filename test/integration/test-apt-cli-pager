@@ -74,7 +74,7 @@ Description: Some description
 
 W: Could not execute pager - PagerSetup (2: No such file or directory)
 N: There is 1 additional record. Please use the '-a' switch to see it" runapt --unbuffer apt $show multi -o TestPager="not-a-valid-pager"
-PAGER="dd status=none of=/dev/null" testsuccessequal "" runapt --unbuffer apt $show multi  -o Test="everything is paged"
+PAGER="> /dev/null cat" testsuccessequal "" runapt --unbuffer apt $show multi  -o Test="everything is paged"
 done
 
 msgmsg "list supports pager"
@@ -82,7 +82,7 @@ PAGER="head -1" testsuccessequal "foo/unstable 1.0 all
 multi/unstable 2.0 all" apt list -qq
 PAGER="head -1" testsuccessequal "foo/unstable 1.0 all" runapt --unbuffer apt list -qq -o TestPager="head -1"
 
-PAGER="dd status=none of=/dev/null" testsuccessequal "Listing..." runapt --unbuffer apt list  -o Test="progress is not paged"
+PAGER="> /dev/null cat" testsuccessequal "Listing..." runapt --unbuffer apt list  -o Test="progress is not paged"
 
 msgmsg "search supports pager"
 PAGER="head -1" testsuccessequal "foo/unstable 1.0 all
@@ -94,7 +94,7 @@ multi/unstable 2.0 all
 
 PAGER="head -1" testsuccessequal "foo/unstable 1.0 all" runapt --unbuffer apt search -qq . -o TestPager="head -1"
 
-PAGER="dd status=none of=/dev/null" testsuccessequal "Sorting...
+PAGER="> /dev/null cat" testsuccessequal "Sorting...
 Full Text Search..." runapt --unbuffer apt search .  -o Test="progress is not paged"
 
 msgmsg "policy supports pager"
@@ -107,7 +107,7 @@ PAGER="head -1" testsuccessequal "foo:
 
 PAGER="head -1" testsuccessequal "foo:" runapt --unbuffer apt policy foo -o TestPager="head -1"
 
-PAGER="dd status=none of=/dev/null" testsuccessequal "" runapt --unbuffer apt policy foo  -o Test="everything is paged"
+PAGER="> /dev/null cat" testsuccessequal "" runapt --unbuffer apt policy foo  -o Test="everything is paged"
 
 msgmsg "showsrc supports pager"
 PAGER="head -2" testsuccessequal "Package: foo

@@ -16,7 +16,7 @@ cp -a aptarchive/dists aptarchive/dists.good
 
 test_inreleasetoobig() {
 	# make InRelease really big to trigger fallback
-	dd if=/dev/zero of=aptarchive/dists/unstable/InRelease bs=1M count=2 2>/dev/null
+	truncate -s 2M aptarchive/dists/unstable/InRelease
 	touch -d '+1hour' aptarchive/dists/unstable/InRelease
 	testsuccess aptget update -o Apt::Get::List-Cleanup=0  -o acquire::MaxReleaseFileSize=$((1*1000*1000)) -o Debug::pkgAcquire::worker=0
 	msgtest 'Check that the max write warning is triggered'
