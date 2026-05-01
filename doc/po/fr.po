@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt-doc 2.9.14\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-04-07 11:03+0200\n"
+"POT-Creation-Date: 2026-05-01 16:41+0000\n"
 "PO-Revision-Date: 2025-04-15 13:14+0200\n"
 "Last-Translator: bubu <bubub@no-log.org>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -8804,6 +8804,38 @@ msgstr ""
 "prendre en charge d'autres formats d'identifiant et, jusqu'à présent, APT ne "
 "fait pas de vérification."
 
+#. type: Content of: <refentry><refsect1><para>
+#: sources.list.5.xml
+msgid ""
+"In the deb822 format, it can be useful to describe the sources in more "
+"detail.  The following options are not directly used by APT, but suggested "
+"to be included by third-parties when providing <filename>.sources</filename> "
+"files to users."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para><itemizedlist><listitem><para>
+#: sources.list.5.xml
+msgid ""
+"<option>Contact</option> specifies the preferred addresses to reach the "
+"repository operators on one or more lines.  It should be a comma-separated "
+"list of RFC5322 email addresses or URLs."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para><itemizedlist><listitem><para>
+#: sources.list.5.xml
+msgid ""
+"<option>Bugs</option> specifies an HTTPS URL to a public bug tracker or "
+"instructions on how to report bugs."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><para><itemizedlist><listitem><para>
+#: sources.list.5.xml
+msgid ""
+"<option>Description</option> specifies a description for the repository. "
+"This is a multi-line field, the first line is a summary, the remaining lines "
+"may add more description."
+msgstr ""
+
 #. type: Content of: <refentry><refsect1><title>
 #: sources.list.5.xml
 msgid "URI Specification"
@@ -8845,12 +8877,20 @@ msgstr ""
 
 #. type: Content of: <refentry><refsect1><para><variablelist><varlistentry><listitem><para>
 #: sources.list.5.xml
+#, fuzzy
+#| msgid ""
+#| "Note that these forms of authentication are insecure as the whole "
+#| "communication with the remote server (or proxy) is not encrypted so a "
+#| "sufficiently capable attacker can observe and record login as well as all "
+#| "other interactions. The attacker can <emphasis>not</emphasis> modify the "
+#| "communication through as APT's data security model is independent of the "
+#| "chosen transport method. See &apt-secure; for details."
 msgid ""
 "Note that these forms of authentication are insecure as the whole "
 "communication with the remote server (or proxy) is not encrypted so a "
 "sufficiently capable attacker can observe and record login as well as all "
 "other interactions. The attacker can <emphasis>not</emphasis> modify the "
-"communication through as APT's data security model is independent of the "
+"communication though as APT's data security model is independent of the "
 "chosen transport method. See &apt-secure; for details."
 msgstr ""
 "Veuillez noter que ces formes d'authentification ne sont pas sûres puisque "
@@ -12247,12 +12287,16 @@ msgstr "<code>~DMOTIF</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
-msgid "<code>?pre-depends(PATTERN)</code>"
+#, fuzzy
+#| msgid "<code>?pre-depends(PATTERN)</code>"
+msgid "<code>?predepends(PATTERN)</code>"
 msgstr "<code>?pre-depends(MOTIF)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
-msgid "<code>~DPre-Depends:PATTERN</code>"
+#, fuzzy
+#| msgid "<code>~DPre-Depends:PATTERN</code>"
+msgid "<code>~DPreDepends:PATTERN</code>"
 msgstr "<code>~DPre-Depends:MOTIF</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>

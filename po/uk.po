@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.12\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-01-31 17:56+0100\n"
+"POT-Creation-Date: 2026-05-01 16:41+0000\n"
 "PO-Revision-Date: 2026-02-09 15:45+0200\n"
 "Last-Translator: Andriy Pysyk <ep.nestor@gmail.com>\n"
 "Language-Team: Українська <uk@li.org>\n"
@@ -1955,26 +1955,27 @@ msgstr "Повністю видалити"
 msgid "Undefined"
 msgstr "Невизначено"
 
+#. TRANSLATORS: a number used as identifier.
 #: apt-private/private-history.cc
 msgid "ID"
 msgstr "ID"
 
+#. TRANSLATORS: input on the terminal console.
 #: apt-private/private-history.cc
 msgid "Command line"
 msgstr "Командний рядок"
 
-#. NOTE: if date format is different,
-#. this width needs to change
+#. TRANSLATORS: indicates when the entry occurred.
 #: apt-private/private-history.cc
 msgid "Date and Time"
 msgstr "Дата й час"
 
-#. width for datestring
+#. TRANSLATORS: the type of operation that was performed.
 #: apt-private/private-history.cc
 msgid "Action"
 msgstr "Дія"
 
-#. 9 chars longest action type
+#. TRANSLATORS: changes as a quantity.
 #: apt-private/private-history.cc
 msgid "Changes"
 msgstr "Зміни"

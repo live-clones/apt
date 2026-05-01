@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.11\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-02-17 10:38+0000\n"
+"POT-Creation-Date: 2026-05-01 16:41+0000\n"
 "PO-Revision-Date: 2025-10-28 14:36+0100\n"
 "Last-Translator: Frans Spiesschaert <Frans.Spiesschaert@yucom.be>\n"
 "Language-Team: Debian Dutch l10n Team <debian-l10n-dutch@lists.debian.org>\n"
@@ -1993,26 +1993,27 @@ msgstr "Wissen"
 msgid "Undefined"
 msgstr "Ongedefinieerd"
 
+#. TRANSLATORS: a number used as identifier.
 #: apt-private/private-history.cc
 msgid "ID"
 msgstr "ID"
 
+#. TRANSLATORS: input on the terminal console.
 #: apt-private/private-history.cc
 msgid "Command line"
 msgstr "Commandoregel"
 
-#. NOTE: if date format is different,
-#. this width needs to change
+#. TRANSLATORS: indicates when the entry occurred.
 #: apt-private/private-history.cc
 msgid "Date and Time"
 msgstr "Datum en Tijd"
 
-#. width for datestring
+#. TRANSLATORS: the type of operation that was performed.
 #: apt-private/private-history.cc
 msgid "Action"
 msgstr "Actie"
 
-#. 9 chars longest action type
+#. TRANSLATORS: changes as a quantity.
 #: apt-private/private-history.cc
 msgid "Changes"
 msgstr "Wijzigingen"

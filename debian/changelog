@@ -1,3 +1,48 @@
+apt (3.3.0) unstable; urgency=medium
+
+  [ Anders Kaseorg ]
+  * Fix Phased-Update-Percentage probability mistake
+
+  [ Simon Johnsson ]
+  * Scale history-list to screen width
+  * Optimize ShortenCommand
+  * Change GetKindString to not use .data() call
+
+  [ Julian Andres Klode ]
+  * Drop warning about unstable CLI interface.
+    A specific CLI version can now be requested using the --cli-version
+    flag, and old versions can be deprecated on a reasonable cadence.
+    Therefore, a warning is no longer necessary.
+  * hashes: Use std::span instead of std::basic_string_view
+  * sources.list(5): Document Contact/Bugs/Description fields.
+    Thanks to josch for the suggestion
+  * Require sqv for builds on supported archs and !pkg.apt.nosqv
+
+  [ Zheyu Shen ]
+  * fix apt patterns parsing bug for pre-depends
+
+  [ Herman Semenoff ]
+  * apt: funcs called with a string literal consisting of a single character
+  * apt-pkg/acquire: use range based for loop C++17
+  * apt: push to emplace C++11 if possible
+  * apt: modernize to make_unique C++17
+  * apt-pkg: methods: fixed many minor memleaks
+
+  [ наб ]
+  * sources.list(5): th[r]ough typo
+
+  [ Sebastian Krzyszkowiak ]
+  * acquire-item: Fix up the error message on committing aborted transaction
+  * pkgAcqMetaClearSig: Abort transaction when pkgAcquire::Run has been cancelled
+    (Closes: #1078608)
+  * pkgAcqMetaBase: Commit InRelease after other transaction items
+    (Closes: #1078608)
+
+  [ Daniel Lewart ]
+  * Fix bug reference
+
+ -- Julian Andres Klode <jak@debian.org>  Fri, 01 May 2026 18:40:52 +0200
+
 apt (3.2.0) unstable; urgency=medium
 
   [ Julian Andres Klode ]
