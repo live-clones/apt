@@ -53,6 +53,7 @@ bool pkgDirStream::DoItem(Item &Itm,int &Fd)
 	    return _error->Errno("fchown",_("Failed to write file %s"), Itm.Name);
 	 }
 	 Fd = iFd;
+	 close(iFd);
 	 return true;
       }
       
