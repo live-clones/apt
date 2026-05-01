@@ -794,6 +794,10 @@ stop:
    for (Queue *I = Queues; I != 0; I = I->Next)
       I->Shutdown(false);
 
+   if (WasCancelled)
+      for (ItemIterator I = Items.begin(); I != Items.end(); ++I)
+         (*I)->Cancelled();
+
    // Shut down the items
    for (auto &Item : Items)
       Item->Finished();
