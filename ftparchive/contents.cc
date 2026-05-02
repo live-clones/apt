@@ -104,6 +104,9 @@ void GenContents::WriteSpace(std::string &out, size_t Current, size_t Target)
    if (Target <= Current)
       Target = Current + 1;
 
+   // Reserve space for the characters to be appended
+   out.reserve(out.length() + (Target - Current));
+
    /* Now we write tabs so long as the next tab stop would not pass
       the target */
    for (; (Current/8 + 1)*8 < Target; Current = (Current/8 + 1)*8)
