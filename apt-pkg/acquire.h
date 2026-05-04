@@ -319,7 +319,7 @@ class APT_PUBLIC pkgAcquire
     */
    UriIterator UriBegin();
    /** \brief Get the end iterator of the list of enqueued item URIs. */
-   UriIterator UriEnd();
+   static UriIterator UriEnd();
    
    /** Deletes each entry in the given directory that is not being
     *  downloaded by this object.  For instance, when downloading new
@@ -337,7 +337,7 @@ class APT_PUBLIC pkgAcquire
     *
     *  \return \b true if the directory exists and is readable.
     */
-   bool CleanLists(std::string const &Dir);
+   static bool CleanLists(std::string const &Dir);
 
    /** \return the total size in bytes of all the items included in
     *  this download.
