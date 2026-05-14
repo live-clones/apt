@@ -1,0 +1,37 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture "amd64"
+
+if [ "$(id -u)" = '0' ]; then
+	msgskip "Tests for unreadable auth.conf files do not work as root"
+	exit 0
+fi
+
+buildsimplenativepackage "foo" "all" "1"
+setupaptarchive --no-update
+
+changetohttpswebserver --authorization="$(printf '%s' 'star@irc:hunter2' | base64 )"
+rewritesourceslist "https://localhost:${APTHTTPSPORT}/"
+
+AUTHCONF="${TMPWORKINGDIRECTORY}/rootdir/etc/apt/auth.conf.d/private.conf"
+mkdir -p "$(dirname "$AUTHCONF")"
+printf '%s\n' \
+	"machine https://localhost" \
+	"login star@irc" \
+	"password hunter2" > "$AUTHCONF"
+chmod 600 "$AUTHCONF"
+
+testsuccess aptget update
+
+chmod 000 "$AUTHCONF"
+testfailure aptget source -d foo
+
+OUTPUT="${TMPWORKINGDIRECTORY}/rootdir/tmp/testfailure.output"
+testsuccess grep -F "Authentication credentials may be configured in ${AUTHCONF}" "$OUTPUT"
+testsuccess grep -F "not readable by the current user. Try running this command as root." "$OUTPUT"
+testsuccess grep -E "401[[:space:]]+Unauthorized" "$OUTPUT"
