@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.8\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-01 16:41+0000\n"
+"POT-Creation-Date: 2026-05-17 19:22+0000\n"
 "PO-Revision-Date: 2014-09-12 13:48+0700\n"
 "Last-Translator: Trần Ngọc Quân <vnwildman@gmail.com>\n"
 "Language-Team: Vietnamese <translation-team-vi@lists.sourceforge.net>\n"
@@ -3978,6 +3978,13 @@ msgstr "Máy phục vụ HTTP không hỗ trợ tải một phần tập tin"
 #: methods/basehttp.cc
 msgid "Unknown date format"
 msgstr "Không rõ định dạng ngày"
+
+#: methods/basehttp.cc
+#, c-format
+msgid ""
+"Authentication credentials may be configured in %s, but the file(s) are not "
+"readable by the current user. Try running this command as root."
+msgstr ""
 
 #: methods/basehttp.cc
 msgid "Bad header data"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.5.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-01 16:41+0000\n"
+"POT-Creation-Date: 2026-05-17 19:22+0000\n"
 "PO-Revision-Date: 2012-06-27 21:29+0000\n"
 "Last-Translator: Andrej Znidarsic <andrej.znidarsic@gmail.com>\n"
 "Language-Team: Slovenian <sl@li.org>\n"
@@ -3943,6 +3943,13 @@ msgstr "Ta strežnik HTTP ima pokvarjen obseg podpore"
 #: methods/basehttp.cc
 msgid "Unknown date format"
 msgstr "Neznana oblika datuma"
+
+#: methods/basehttp.cc
+#, c-format
+msgid ""
+"Authentication credentials may be configured in %s, but the file(s) are not "
+"readable by the current user. Try running this command as root."
+msgstr ""
 
 #: methods/basehttp.cc
 msgid "Bad header data"

@@ -1,3 +1,16 @@
+apt (3.3.1) unstable; urgency=medium
+
+  [ Julian Andres Klode ]
+  * solver3: Follow installed Suggests earlier
+  * Fix `noexcept` as pointed out by gcc
+  * Fix wrongful std::make_unique conversion
+  * Fix regression in dirstream (Closes: #1136441)
+
+  [ Varun Varma ]
+  * Warn if auth.conf is unreadable (LP: #2150631)
+
+ -- Julian Andres Klode <jak@debian.org>  Sun, 17 May 2026 21:21:50 +0200
+
 apt (3.3.0) unstable; urgency=medium
 
   [ Anders Kaseorg ]

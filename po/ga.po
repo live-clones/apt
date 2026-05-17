@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.4\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-01 16:41+0000\n"
+"POT-Creation-Date: 2026-05-17 19:22+0000\n"
 "PO-Revision-Date: 2025-12-27 12:56+0000\n"
 "Last-Translator: Aindriú Mac Giolla Eoin <aindriu80@gmail.com>\n"
 "Language-Team: Irish\n"
@@ -4064,6 +4064,13 @@ msgstr "Tá tacaíocht raon briste ag an bhfreastalaí HTTP seo"
 #: methods/basehttp.cc
 msgid "Unknown date format"
 msgstr "Formáid dáta anaithnid"
+
+#: methods/basehttp.cc
+#, c-format
+msgid ""
+"Authentication credentials may be configured in %s, but the file(s) are not "
+"readable by the current user. Try running this command as root."
+msgstr ""
 
 #: methods/basehttp.cc
 msgid "Bad header data"
