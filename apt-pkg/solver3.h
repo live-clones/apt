@@ -102,15 +102,15 @@ enum class Group : uint8_t
    InstallManual,
    ObsoleteManual,
 
+   // Satisfy optional dependencies that were previously satisfied but won't otherwise be installed
+   SatisfySuggests,
+
    // Automatically installed packages must come last in the group, this allows
    // us to see if they were installed as a dependency of a manually installed package,
    // allowing a simple implementation of an autoremoval code.
    UpgradeAuto,
    KeepAuto,
    ObsoleteAuto,
-
-   // Satisfy optional dependencies that were previously satisfied but won't otherwise be installed
-   SatisfySuggests,
 };
 
 // \brief This essentially describes the install state in RFC2119 terms.
