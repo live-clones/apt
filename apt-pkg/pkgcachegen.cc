@@ -1700,7 +1700,7 @@ static bool BuildCache(pkgCacheGenerator &Gen,
    the cache will be stored there. This is pretty much mandatory if you
    are using AllowMem. AllowMem lets the function be run as non-root
    where it builds the cache 'fast' into a memory buffer. */
-static DynamicMMap* CreateDynamicMMap(FileFd * const CacheF, unsigned long Flags)
+static std::unique_ptr<DynamicMMap> CreateDynamicMMap(FileFd * const CacheF, unsigned long Flags)
 {
    map_filesize_t const MapStart = _config->FindI("APT::Cache-Start", APT_CACHE_START_DEFAULT);
    map_filesize_t const MapGrow = _config->FindI("APT::Cache-Grow", 1*1024*1024);
@@ -1709,9 +1709,9 @@ static DynamicMMap* CreateDynamicMMap(FileFd * const CacheF, unsigned long Flags
    if (_config->FindB("APT::Cache-Fallback", false) == true)
       Flags |= MMap::Fallback;
    if (CacheF != NULL)
-      return new DynamicMMap(*CacheF, Flags, MapStart, MapGrow, MapLimit);
+      return std::make_unique<DynamicMMap>(*CacheF, Flags, MapStart, MapGrow, MapLimit);
    else
-      return new DynamicMMap(Flags, MapStart, MapGrow, MapLimit);
+      return std::make_unique<DynamicMMap>(Flags, MapStart, MapGrow, MapLimit);
 }
 static bool writeBackMMapToFile(pkgCacheGenerator * const Gen, DynamicMMap * const Map,
       std::string const &FileName)
@@ -1742,7 +1742,7 @@ static bool writeBackMMapToFile(pkgCacheGenerator * const Gen, DynamicMMap * con
 static bool loadBackMMapFromFile(std::unique_ptr<pkgCacheGenerator> &Gen,
       std::unique_ptr<DynamicMMap> &Map, OpProgress * const Progress, FileFd &CacheF)
 {
-   Map.reset(CreateDynamicMMap(NULL, 0));
+   Map = CreateDynamicMMap(nullptr, 0);
    if (unlikely(Map->validData()) == false)
       return false;
    if (CacheF.IsOpen() == false || CacheF.Seek(0) == false || CacheF.Failed())
@@ -1927,7 +1927,7 @@ bool pkgCacheGenerator::MakeOnlyStatusCache(OpProgress *Progress,DynamicMMap **O
       return false;
 
    ScopedErrorMerge sem;
-   auto Map = std::make_unique<DynamicMMap>(NULL, 0);
+   auto Map = CreateDynamicMMap(nullptr, 0);
    if (unlikely(Map->validData()) == false)
       return false;
    map_filesize_t CurrentSize = 0;
