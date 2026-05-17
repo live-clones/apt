@@ -506,6 +506,18 @@ BaseHttpMethod::DealWithHeaders(FetchResult &Res, RequestState &Req)
 	 std::string err;
 	 strprintf(err, "HttpError%u", Req.Result);
 	 SetFailReason(err);
+	 if (Req.Result == 401 && inaccessibleAuthConfs.empty() == false)
+	 {
+	    std::string conflist;
+	    std::string msg;
+	    for (auto const &path : inaccessibleAuthConfs)
+	       conflist += (conflist.empty() ? "" : ", ") + path;
+	    strprintf(msg, _("Authentication credentials may be configured in %s, "
+			     "but the file(s) are not readable by the current user. "
+			     "Try running this command as root."),
+		      conflist.c_str());
+	    Warning(std::move(msg));
+	 }
 	 _error->Error("%u %s", Req.Result, Req.Code);
       }
       if (Req.haveContent == HaveContent::TRI_TRUE)

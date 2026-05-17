@@ -539,6 +539,9 @@ class aptAuthConfMethod : public aptMethod
 {
    std::vector<std::unique_ptr<FileFd>> authconfs;
 
+   protected:
+   std::vector<std::string> inaccessibleAuthConfs;
+
    public:
    bool Configuration(std::string Message) override
    {
@@ -555,6 +558,12 @@ class aptAuthConfMethod : public aptMethod
       {
 	 authconfs.emplace_back(new FileFd());
 	 authconfs.back()->Open(netrc, FileFd::ReadOnly);
+	 if (authconfs.back()->IsOpen() == false)
+	 {
+	    struct stat st;
+	    if (stat(netrc.c_str(), &st) == 0)
+	       inaccessibleAuthConfs.push_back(netrc);
+	 }
       }
 
       auto const netrcparts = _config->FindDir("Dir::Etc::netrcparts");
@@ -564,6 +573,12 @@ class aptAuthConfMethod : public aptMethod
 	 {
 	    authconfs.emplace_back(new FileFd());
 	    authconfs.back()->Open(netrcpart, FileFd::ReadOnly);
+	    if (authconfs.back()->IsOpen() == false)
+	    {
+	       struct stat st;
+	       if (stat(netrcpart.c_str(), &st) == 0)
+		  inaccessibleAuthConfs.push_back(netrcpart);
+	    }
 	 }
       }
       _error->RevertToStack();
