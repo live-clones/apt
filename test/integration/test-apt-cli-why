@@ -6,9 +6,11 @@ TESTDIR="$(readlink -f "$(dirname "$0")")"
 setupenvironment
 configarchitecture 'amd64'
 
-insertinstalledpackage 'root' 'all' '1' 'Depends: level-1'
+insertinstalledpackage 'root' 'all' '1' 'Depends: level-1
+Suggests: level-2-suggests'
 insertinstalledpackage 'level-1' 'all' '1' 'Depends: level-2'
 insertinstalledpackage 'level-2' 'all' '1' 'Depends: level-2'
+insertinstalledpackage 'level-2-suggests' 'all' '1' 'Suggests: level-2-suggests'
 insertpackage 'unstable' 'other-level-2' 'all' '1' 'Conflicts: level-2
 Provides: level-2'
 insertpackage 'unstable' 'almost-level-2' 'all' '1' 'Conflicts: level-2'
@@ -17,7 +19,7 @@ insertpackage 'unstable' 'provider-for-virtual-package' 'all' '1' 'Provides: vir
 insertpackage 'unstable' 'depends-on-not-really-virtual-package' 'all' '1' 'Depends: not-really-virtual-package'
 setupaptarchive
 
-testsuccess aptmark auto level-1 level-2
+testsuccess aptmark auto level-1 level-2 level-2-suggests
 
 
 testsuccessequal "level-2:amd64=1 is selected for install because:
@@ -76,3 +78,6 @@ testsuccessequal "virtual-package:amd64 is a virtual package, printing all provi
 provider-for-virtual-package:amd64=1 is undecided" apt why virtual-package
 testsuccessequal "not-really-virtual-package:amd64 is a virtual package without a provider" apt why not-really-virtual-package
 
+testsuccessequal "level-2-suggests:amd64 is selected for install because:
+1. root:amd64 is selected for install
+2. root:amd64 Suggests level-2-suggests" apt why level-2-suggests
