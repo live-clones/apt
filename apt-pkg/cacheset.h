@@ -63,7 +63,7 @@ public:									/*{{{*/
 		unsigned short ID;
 		const char * const Alias;
 		Position Pos;
-		PkgModifier (unsigned short const &id, const char * const alias, Position const &pos) : ID(id), Alias(alias), Pos(pos) {}
+		PkgModifier (unsigned short const &id, const char * const alias, Position const &pos) noexcept : ID(id), Alias(alias), Pos(pos) {}
 	};
 	virtual bool PackageFromModifierCommandLine(unsigned short &modID, PackageContainerInterface * const pci,
 					    pkgCacheFile &Cache, const char * cmdline,
@@ -739,7 +739,7 @@ public:
 		enum Position { NONE, PREFIX, POSTFIX } const Pos;
 		enum CacheSetHelper::VerSelector const SelectVersion;
 		Modifier (unsigned short const &id, const char * const alias, Position const &pos,
-			  enum CacheSetHelper::VerSelector const select) : ID(id), Alias(alias), Pos(pos),
+			  enum CacheSetHelper::VerSelector const select) noexcept : ID(id), Alias(alias), Pos(pos),
 			 SelectVersion(select) {}
 	};
 
