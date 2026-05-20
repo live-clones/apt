@@ -634,6 +634,11 @@
      Configuration Item: <literal>APT::Get::Indep-Only</literal>.</para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>--arch-only</option> <option>--indep-only</option></term>
+         <listitem><para>Only process build-dependencies that are neither architecture-dependent nor architecture-independent;
+         intersection of the previous two options.</para></listitem>
+     </varlistentry>
+
      <varlistentry><term><option>--allow-unauthenticated</option></term>
      <listitem><para>Ignore if packages can't be authenticated and don't prompt
 	   about it.  This can be useful while working with local repositories,
