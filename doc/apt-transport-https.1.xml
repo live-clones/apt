@@ -115,9 +115,9 @@ Acquire::https {
 	CAInfo "/path/to/ca/certs.pem";
 	CRLFile "/path/to/all/crl.pem";
 	Verify-Peer "true";
-	Verify-Host::broken.example.org "false";
-	SSLCert::example.org "/path/to/client/cert.pem";
-	SSLKey::example.org "/path/to/client/key.pem"
+	broken.example.org::Verify-Host "false";
+	example.org::SSLCert "/path/to/client/cert.pem";
+	example.org::SSLKey "/path/to/client/key.pem"
 };
 </literallayout>
 </refsect1>

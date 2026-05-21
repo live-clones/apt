@@ -148,3 +148,17 @@ Inst build-essential (1 stable [i386])
 Conf build-depends (1 stable [i386])
 Conf build-depends-indep (1 stable [i386])
 Conf build-essential (1 stable [i386])" aptget build-dep --simulate ./foobar.dsc --indep-only
+
+testsuccessequal "Note, using file './foobar.dsc' to get the build dependencies
+Reading package lists...
+Building dependency tree...
+The following packages will be REMOVED:
+  build-conflicts
+The following NEW packages will be installed:
+  build-depends build-essential
+0 upgraded, 2 newly installed, 1 to remove and 0 not upgraded.
+Remv build-conflicts [1]
+Inst build-depends (1 stable [i386])
+Inst build-essential (1 stable [i386])
+Conf build-depends (1 stable [i386])
+Conf build-essential (1 stable [i386])" aptget build-dep --simulate ./foobar.dsc --arch-only --indep-only
