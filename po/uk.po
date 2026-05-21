@@ -15,10 +15,10 @@
 # binary = двійковий
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.1.12\n"
+"Project-Id-Version: apt 3.3.1\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-05-17 19:22+0000\n"
-"PO-Revision-Date: 2026-02-09 15:45+0200\n"
+"PO-Revision-Date: 2026-05-18 08:21+0000\n"
 "Last-Translator: Andriy Pysyk <ep.nestor@gmail.com>\n"
 "Language-Team: Українська <uk@li.org>\n"
 "Language: uk\n"
@@ -3993,6 +3993,9 @@ msgid ""
 "Authentication credentials may be configured in %s, but the file(s) are not "
 "readable by the current user. Try running this command as root."
 msgstr ""
+"Облікові дані автентифікації можуть бути налаштовані в %s, але файл(и) "
+"недоступні для читання поточним користувачем. Спробуйте виконати цю команду "
+"від імені root."
 
 #: methods/basehttp.cc
 msgid "Bad header data"
