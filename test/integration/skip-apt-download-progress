@@ -20,7 +20,7 @@ assertprogress() {
 # actually report progress - but not too big to ensure its not delaying the
 # test too much
 TESTFILE=testfile.big
-testsuccess dd if=/dev/zero of=./aptarchive/$TESTFILE bs=1600k count=1
+testsuccess truncate -s 1600k ./aptarchive/$TESTFILE
 
 OPT='-o APT::Status-Fd=3 -o Debug::pkgAcquire::Worker=1 -o Debug::Acquire::http=1 -o Debug::Acquire::https=1'
 
