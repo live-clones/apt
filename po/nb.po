@@ -19,7 +19,7 @@ msgstr ""
 "Project-Id-Version: apt 3.1.13\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-05-17 19:22+0000\n"
-"PO-Revision-Date: 2026-05-19 14:56+0200\n"
+"PO-Revision-Date: 2026-06-01 14:42+0200\n"
 "Last-Translator: Andreas Noteng <andreas@noteng.no>\n"
 "Language-Team: Norwegian Bokmål <l10n-no@lister.huftis.org>\n"
 "Language: nb\n"
@@ -1105,7 +1105,7 @@ msgstr "Klarer ikke å fortolke pakkefila %s (%d)"
 #, c-format
 #| msgid "Waiting for headers"
 msgid "Waiting for cache lock: %s"
-msgstr "Venter på lagerlås: %s"
+msgstr "Venter på mellomlagerlås: %s"
 
 #: apt-pkg/deb/debsystem.cc
 #, fuzzy, c-format
@@ -1115,14 +1115,14 @@ msgstr "Venter på lagerlås: %s"
 msgid ""
 "Unable to acquire the dpkg frontend lock (%s), is another process using it?"
 msgstr ""
-"Klarte ikke å ta dpkg-frontend-låsen (%s). Bruker en annen prosess den?"
+"Klarte ikke å ta låsen til dpkg-forsystemet (%s). Bruker en annen prosess den?"
 
 #: apt-pkg/deb/debsystem.cc
 #, fuzzy, c-format
 #| msgid ""
 #| "Unable to lock the administration directory (%s), are you root?"
 msgid "Unable to acquire the dpkg frontend lock (%s), are you root?"
-msgstr "Klarte ikke å ta dpkg-frontend-låsen (%s). Er du root?"
+msgstr "Klarte ikke å ta låsen til dpkg-forsystemet (%s). Er du root?"
 
 #. TRANSLATORS: the %s contains the recovery command, usually
 #. dpkg --configure -a
@@ -1353,7 +1353,7 @@ msgstr "Forbered mottak av løsning"
 #: apt-pkg/edsp.cc
 #,
 msgid "External solver failed without a proper error message"
-msgstr "Ekstern problemløser feilet uten en ordentlig feilmelding"
+msgstr "Ekstern problemløser feilet uten en god feilmelding"
 
 #: apt-pkg/edsp.cc apt-pkg/upgrade.cc
 msgid "Calculating upgrade"
@@ -1388,7 +1388,7 @@ msgstr "Send scenario til planlegger"
 #: apt-pkg/edsp.cc
 #,
 msgid "External planner failed without a proper error message"
-msgstr "Ekstern planlegger feilet uten en ordentlig feilmelding"
+msgstr "Ekstern planlegger feilet uten en god feilmelding"
 
 #: apt-pkg/history.cc
 #, c-format
@@ -1494,15 +1494,15 @@ msgstr ""
 
 #: apt-pkg/pkgcache.cc
 msgid "Empty package cache"
-msgstr "Tomt pakkelager"
+msgstr "Tomt pakkemellomlager"
 
 #: apt-pkg/pkgcache.cc
 msgid "The package cache file is corrupted"
-msgstr "Pakkens lagerfil er ødelagt"
+msgstr "Pakkens mellomlagerfil er ødelagt"
 
 #: apt-pkg/pkgcache.cc
 msgid "The package cache file is an incompatible version"
-msgstr "Pakkens lagerfil er av feil versjon (samvirker ikke)"
+msgstr "Pakkens mellomlagerfil er av feil versjon (samvirker ikke)"
 
 #: apt-pkg/pkgcache.cc
 #, c-format
@@ -1512,11 +1512,11 @@ msgstr "Denne APT støtter ikke versjonssystemet «%s»"
 #: apt-pkg/pkgcache.cc
 #, c-format
 msgid "The package cache was built for different architectures: %s vs %s"
-msgstr "Pakkelageret ble bygd for andre arkitekturer: %s vs %s"
+msgstr "Pakkemellomlageret ble bygd for andre arkitekturer: %s vs %s"
 
 #: apt-pkg/pkgcache.cc
 msgid "The package cache file is corrupted, it has the wrong hash"
-msgstr "Pakkens lagerfil er skadet, den har feil hash"
+msgstr "Pakkens mellomlagerfil er skadet, den har feil sjekksum"
 
 #: apt-pkg/pkgcache.cc
 msgid "Depends"
@@ -1607,7 +1607,7 @@ msgstr "Leser pakkelister"
 
 #: apt-pkg/pkgcachegen.cc
 msgid "IO Error saving source cache"
-msgstr "IO-feil ved lagring av kildekode-lager"
+msgstr "IO-feil ved lagring av kildekode-mellomlager"
 
 #: apt-pkg/pkgrecords.cc
 #, c-format
