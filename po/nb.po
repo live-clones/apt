@@ -19,7 +19,7 @@ msgstr ""
 "Project-Id-Version: apt 3.1.13\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-05-17 19:22+0000\n"
-"PO-Revision-Date: 2026-06-01 14:42+0200\n"
+"PO-Revision-Date: 2026-06-01 15:05+0200\n"
 "Last-Translator: Andreas Noteng <andreas@noteng.no>\n"
 "Language-Team: Norwegian Bokmål <l10n-no@lister.huftis.org>\n"
 "Language: nb\n"
@@ -326,7 +326,7 @@ msgstr "Klarte ikke låse mappa %s"
 #: apt-pkg/acquire.cc
 #, c-format
 msgid "No sandbox user '%s' on the system, can not drop privileges"
-msgstr "Mangler sandkassebruker «%s» på systemet, kan ikke droppe privileger"
+msgstr "Mangler sandkassebruker «%s» på systemet, kan ikke gi opp privilegiene"
 
 #: apt-pkg/acquire.cc
 #, c-format
@@ -544,7 +544,7 @@ msgstr "Kildelisteoppføringer for denne CD-en er:\n"
 #: apt-pkg/clean.cc
 #, c-format
 msgid "Unable to stat %s."
-msgstr "Klarer ikke finne informasjonom %s."
+msgstr "Klarer ikke finne informasjon om %s."
 
 #: apt-pkg/contrib/arfile.cc
 msgid "Invalid archive signature"
@@ -1782,7 +1782,7 @@ msgstr " Utført"
 
 #: apt-private/private-cachefile.cc apt-private/private-install.cc
 msgid "You might want to run 'apt --fix-broken install' to correct these."
-msgstr "Du vil kanskje kjøre «apt --fix-broken install» for å rette på dette."
+msgstr "Prøv å kjøre «apt --fix-broken install» for å rette på dette."
 
 #: apt-private/private-cachefile.cc apt-private/private-install.cc
 msgid ""
@@ -2917,7 +2917,7 @@ msgstr "Klarte ikke å tolke %s. Redigere på nytt? "
 #: apt-private/private-sources.cc
 #, c-format
 msgid "Your '%s' file changed, please run 'apt-get update'.\n"
-msgstr "'%s'-filen din ble endret, vær så snill å kjør 'apt-get update'.\n"
+msgstr "Filen «%s» er endret. Kjør «apt-get update».\n"
 
 #: apt-private/private-sources.cc
 #, c-format
@@ -3400,7 +3400,7 @@ msgstr "vent til systemet er på nett"
 
 #: cmdline/apt-helper.cc
 msgid "drop privileges before running given command"
-msgstr "dropp privilegier før angitt kommando kjøres"
+msgstr "gi opp privilegiene før angitt kommando kjøres"
 
 #: cmdline/apt-helper.cc
 msgid "analyse a pattern"
@@ -3675,7 +3675,7 @@ msgstr "Trykk [Enter] for å fortsette."
 
 #: dselect/install
 msgid "Do you want to erase any previously downloaded .deb files?"
-msgstr "Vil du slettet alle tidligere nedlastede .deb-filer?"
+msgstr "Vil du slette alle tidligere nedlastede .deb-filer?"
 
 # Note to translators: The following four messages belong together. It doesn't
 # matter where sentences start, but it has to fit in just these four lines,
