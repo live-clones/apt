@@ -19,7 +19,7 @@ msgstr ""
 "Project-Id-Version: apt 3.1.13\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-05-17 19:22+0000\n"
-"PO-Revision-Date: 2026-06-01 15:05+0200\n"
+"PO-Revision-Date: 2026-06-02 22:46+0200\n"
 "Last-Translator: Andreas Noteng <andreas@noteng.no>\n"
 "Language-Team: Norwegian Bokmål <l10n-no@lister.huftis.org>\n"
 "Language: nb\n"
@@ -42,7 +42,7 @@ msgid ""
 "Data from such a repository can't be authenticated and is therefore "
 "potentially dangerous to use."
 msgstr ""
-"Data fra et slikt depot kan ikke atentiseres og er derfor potensielt "
+"Data fra et slikt depot kan ikke autentiseres og er derfor potensielt "
 "skadelig."
 
 #: apt-pkg/acquire-item.cc
@@ -50,7 +50,7 @@ msgid ""
 "See apt-secure(8) manpage for repository creation and user configuration "
 "details."
 msgstr ""
-"Se manualsiden apt-secure(8) for detaljer om oppretting av depoter og "
+"Se manualsiden apt-secure(8) for detaljer om oppretting av depot og "
 "brukeroppsett."
 
 #: apt-pkg/acquire-item.cc
@@ -74,17 +74,17 @@ msgstr ""
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "The repository '%s' is not signed."
-msgstr "Depotet «%s» er ikke lenger signert."
+msgstr "Depotet «%s» er ikke signert."
 
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "The repository '%s' does not have a Release file."
-msgstr "Depotet «%s» har ikke lenger en Release-fil"
+msgstr "Depotet «%s» har ikke en Release-fil"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "The repository '%s' provides only weak security information."
-msgstr "Depotet «%s» oppgir svak sikkerhetsinformasjon."
+msgstr "Depotet «%s» tilbyr kun svak sikkerhetsinformasjon."
 
 #: apt-pkg/acquire-item.cc ftparchive/writer.cc
 #, c-format
@@ -140,15 +140,15 @@ msgid ""
 "updated and the previous index files will be used. OpenPGP signature "
 "verification failed: %s: %s"
 msgstr ""
-"En feil oppstod under signaturverifisering. Depotet er ikke oppdatert, og de"
-" forrige indeksfilene vil bli brukt. OpenPGP-signaturverifisering mislyktes:"
+"En feil oppstod under signatursjekken. Depotet er ikke oppdatert, og de"
+" forrige indeksfilene vil bli brukt. OpenPGP-signatursjekk mislyktes:"
 " %s: %s"
 
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
 #, c-format
 msgid "OpenPGP signature verification failed: %s: %s"
-msgstr "OpenPGP-signaturverifisering mislyktes: %s: %s"
+msgstr "OpenPGP-signatursjekk mislyktes: %s: %s"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -183,8 +183,8 @@ msgid ""
 "Skipping acquire of configured file '%s' as repository '%s' provides only "
 "weak security information for it"
 msgstr ""
-"Hopper over nedlasting av den oppsatte filen «%s» da depotet «%s» bare "
-"oppgir svak sikkerhetsinformasjon for den"
+"Hopper over nedlasting av den oppsatte filen «%s» da depotet «%s» kun "
+"tilbyr svak sikkerhetsinformasjon for den"
 
 #. TRANSLATOR: The first %s is the URL of the bad Release file, the second is
 #. the time since then the file is invalid - formatted in the same way as in
@@ -241,7 +241,7 @@ msgid ""
 "This must be accepted explicitly before updates for this repository can be "
 "applied. See %s manpage for details."
 msgstr ""
-"Dette må eksplisitt aksepteres før oppdateringer fra dette depoet kan tas i "
+"Dette må eksplisitt aksepteres før oppdateringer fra dette depotet kan tas i "
 "bruk.  Se manualsiden %s for detaljer."
 
 #: apt-pkg/acquire-item.cc apt-pkg/update.cc apt-private/private-download.cc
@@ -2978,7 +2978,7 @@ msgstr ""
 #| "details."
 msgid ""
 "See apt-secure(8) for best practices in configuring repository signing."
-msgstr "Se apt-secure(8) for anbefalt praksis for signering av depoter."
+msgstr "Se apt-secure(8) for anbefalt praksis for signering av depot."
 
 #: apt-private/private-update.cc
 msgid "Some sources can be modernized. Run 'apt modernize-sources' to do so."
@@ -3107,7 +3107,7 @@ msgstr "Vis data om kildekoden"
 
 #: cmdline/apt-cache.cc
 msgid "Search the package list for a regex pattern"
-msgstr "Søk i pakkelista etter et regulært uttrykkr"
+msgstr "Søk i pakkelista etter et regulært uttrykk"
 
 #: cmdline/apt-cache.cc
 msgid "Show raw dependency information for a package"
@@ -3127,7 +3127,7 @@ msgstr "List alle pakkenavn på systemet"
 
 #: cmdline/apt-cache.cc
 msgid "Show policy settings"
-msgstr "Vis regelinnstillingerr"
+msgstr "Vis regelinnstillinger"
 
 #: cmdline/apt-cdrom.cc
 msgid "Please provide a name for this Disc, such as 'Debian 5.0.3 Disk 1'"
@@ -4212,7 +4212,7 @@ msgstr "Intern feil: God signatur, men kunne bestemme nøkkelfingeravtrykk?!"
 #| "Could not execute 'apt-key' to verify signature (is gnupg installed?)"
 msgid "Could not execute 'gpgv' to verify signature (is gnupg installed?)"
 msgstr ""
-"Klarte ikke å kjøre «gpgv» for å verifisere signaturen (er gnupg "
+"Klarte ikke å kjøre «gpgv» for å sjekke signaturen (er gnupg "
 "installert?)"
 
 #: methods/gpgv.cc
@@ -4237,7 +4237,7 @@ msgid ""
 "The following signatures couldn't be verified because the public key is not "
 "available:\n"
 msgstr ""
-"De følgende signaturene kunne ikke verifiseres fordi den offentlige nøkkelen"
+"De følgende signaturene kunne ikke sjekkes fordi den offentlige nøkkelen"
 " ikke er tilgjengelig:\n"
 
 #: methods/http.cc
