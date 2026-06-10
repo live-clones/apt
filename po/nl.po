@@ -13,10 +13,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.1.11\n"
+"Project-Id-Version: apt 3.2.0\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-05-17 19:22+0000\n"
-"PO-Revision-Date: 2025-10-28 14:36+0100\n"
+"PO-Revision-Date: 2026-04-18 17:58+0200\n"
 "Last-Translator: Frans Spiesschaert <Frans.Spiesschaert@yucom.be>\n"
 "Language-Team: Debian Dutch l10n Team <debian-l10n-dutch@lists.debian.org>\n"
 "Language: nl\n"
@@ -1467,7 +1467,7 @@ msgstr "Voortgang: [%3li%%]"
 #. send status information that we are about to fork dpkg
 #: apt-pkg/install-progress.cc
 msgid "Running dpkg"
-msgstr "dpkg wordt uitgevoerd"
+msgstr "dpkg uitvoeren"
 
 #: apt-pkg/packagemanager.cc
 #, c-format
@@ -1951,10 +1951,11 @@ msgid "Couldn't determine free space in %s"
 msgstr "Kon de hoeveelheid vrije schijfruimte op %s niet bepalen"
 
 #: apt-private/private-download.cc
-#, fuzzy, c-format
-#| msgid "Couldn't determine free space in %s"
+#, c-format
 msgid "Couldn't determine filesystem statistics of %s."
-msgstr "Kon de hoeveelheid vrije schijfruimte op %s niet bepalen"
+msgstr ""
+"De statistieken van het bestandssysteem van %s konden niet worden "
+"vastgesteld."
 
 #: apt-private/private-download.cc
 #, c-format
