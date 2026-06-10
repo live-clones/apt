@@ -9,7 +9,7 @@
 #
 # Sorin Batariuc <sorin@bonbon.net>, 2004, 2005, 2006.
 # Eddy Petrișor <eddy.petrisor@gmail.com>, 2008.
-# Remus-Gabriel Chelu <remusgabriel.chelu@disroot.org>, 2023, 2024, 2025.
+# Remus-Gabriel Chelu <remusgabriel.chelu@disroot.org>, 2023, 2024, 2025, 2026.
 #
 # Cronologia traducerii fișierului „apt”:
 # Traducerea inițială, făcută de SB, pentru versiunea apt 0.5.24, noi-2004.
@@ -22,14 +22,15 @@
 # Actualizare a traducerii pentru versiunea 2.7.2, făcută de R-GC, iul-2023.
 # Actualizare a traducerii pentru versiunea 2.9.8, făcută de R-GC, aug-2024.
 # Actualizare a traducerii pentru versiunea 2.9.35, făcută de R-GC, mar-2025.
+# Actualizare a traducerii pentru versiunea 3.3.1, făcută de R-GC, mai-2026.
 # Actualizare a traducerii pentru versiunea Y, făcută de X, Z(luna-anul).
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 2.9.35\n"
+"Project-Id-Version: apt 3.3.1\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-05-17 19:22+0000\n"
-"PO-Revision-Date: 2025-03-29 00:56+0100\n"
+"PO-Revision-Date: 2026-05-26 20:41+0200\n"
 "Last-Translator: Remus-Gabriel Chelu <remusgabriel.chelu@disroot.org>\n"
 "Language-Team: Romanian <debian-l10n-romanian@lists.debian.org>\n"
 "Language: ro\n"
@@ -39,7 +40,7 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
 "20)) ? 1 : 2;\n"
 "X-Bugs: Report translation errors to the Language-Team address.\n"
-"X-Generator: Poedit 3.5\n"
+"X-Generator: Poedit 3.8\n"
 
 #: apt-pkg/acquire-item.cc
 msgid ""
@@ -1430,30 +1431,27 @@ msgstr "Planificatorul extern a eșuat fără un mesaj de eroare relevant"
 #: apt-pkg/history.cc
 #, c-format
 msgid "Unknown flag: %s"
-msgstr ""
+msgstr "Fanion necunoscut: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot find history files: %s"
-msgstr "Nu s-a putut deschide fișierul %s"
+msgstr "Nu s-au putut găsi fișierele de istoric: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
-#| msgid "Could not open file %s"
+#, c-format
 msgid "Could not open file: %s"
-msgstr "Nu s-a putut deschide fișierul %s"
+msgstr "Nu s-a putut deschide fișierul: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
-#| msgid "Could not open file %s"
+#, c-format
 msgid "Could not parse file: %s"
-msgstr "Nu s-a putut deschide fișierul %s"
+msgstr "Nu s-a putut analiza fișierul: %s"
 
 #: apt-pkg/history.cc
-#, fuzzy, c-format
-#| msgid "Could not open file %s"
+#, c-format
 msgid "Could not close file: %s"
-msgstr "Nu s-a putut deschide fișierul %s"
+msgstr "Nu s-a putut închide fișierul: %s"
 
 #: apt-pkg/indexcopy.cc
 #, c-format
@@ -2004,10 +2002,9 @@ msgid "Couldn't determine free space in %s"
 msgstr "Nu s-a putut determina spațiul liber din %s"
 
 #: apt-private/private-download.cc
-#, fuzzy, c-format
-#| msgid "Couldn't determine free space in %s"
+#, c-format
 msgid "Couldn't determine filesystem statistics of %s."
-msgstr "Nu s-a putut determina spațiul liber din %s"
+msgstr "Nu s-au putut determina statisticile sistemului de fișiere pentru %s."
 
 #: apt-private/private-download.cc
 #, c-format
@@ -2019,151 +2016,129 @@ msgid "Unable to lock the download directory"
 msgstr "Nu s-a putut bloca directorul de descărcare"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "Installing:"
 msgid "Install"
-msgstr "Se instalează:"
+msgstr "Instalare"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "[installed]"
 msgid "Reinstall"
-msgstr "[Instalat]"
+msgstr "Reinstalare"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "Upgrading:"
 msgid "Upgrade"
-msgstr "Se înnoiește:"
+msgstr "Actualizare"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "%lu downgraded, "
 msgid "Downgrade"
-msgstr "%lu retrogragradat(e), "
+msgstr "Retrogradare"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "Removed %s"
 msgid "Remove"
-msgstr "Șters %s"
+msgstr "Eliminare"
 
 #: apt-private/private-history.cc
 msgid "Purge"
-msgstr ""
+msgstr "Ștergere completă"
 
 #: apt-private/private-history.cc
 msgid "Undefined"
-msgstr ""
+msgstr "Nedefinit"
 
 #. TRANSLATORS: a number used as identifier.
 #: apt-private/private-history.cc
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. TRANSLATORS: input on the terminal console.
 #: apt-private/private-history.cc
 msgid "Command line"
-msgstr ""
+msgstr "Linia de comandă"
 
 #. TRANSLATORS: indicates when the entry occurred.
 #: apt-private/private-history.cc
 msgid "Date and Time"
-msgstr ""
+msgstr "Data și ora"
 
 #. TRANSLATORS: the type of operation that was performed.
 #: apt-private/private-history.cc
 msgid "Action"
-msgstr ""
+msgstr "Acțiune"
 
 #. TRANSLATORS: changes as a quantity.
 #: apt-private/private-history.cc
 msgid "Changes"
-msgstr ""
+msgstr "Modificări"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "[installed,automatic]"
 msgid "automatic"
-msgstr "[Instalat, automat]"
+msgstr "automat"
 
 #: apt-private/private-history.cc
 msgid "Transaction ID"
-msgstr ""
+msgstr "ID tranzacție"
 
 #: apt-private/private-history.cc
 msgid "Start time"
-msgstr ""
+msgstr "Ora de începere"
 
 #: apt-private/private-history.cc
 msgid "End time"
-msgstr ""
+msgstr "Ora de finalizare"
 
 #: apt-private/private-history.cc
 msgid "Requested by"
-msgstr ""
+msgstr "Cerut de"
 
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "Error:"
 msgid "Error"
-msgstr "Eroare:"
+msgstr "Eroare"
 
 #: apt-private/private-history.cc
 msgid "Comment"
-msgstr ""
+msgstr "Comentariu"
 
 #. For each performed action, print what it did to each package
 #: apt-private/private-history.cc
-#, fuzzy
-#| msgid "No packages found"
 msgid "Packages changed"
-msgstr "Nu s-au găsit pachete"
+msgstr "Pachete modificate"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Couldn't find package %s"
+#, c-format
 msgid "Could not find package %s"
 msgstr "Nu s-a putut găsi pachetul %s"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "but it is not installed"
+#, c-format
 msgid "Tried to remove %s, but it is not installed"
-msgstr "dar nu este instalat"
+msgstr "S-a încercat dezinstalarea %s, dar acesta nu este instalat"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Can not find version '%s' of package '%s'"
+#, c-format
 msgid "Could not find given version %s of %s"
-msgstr "Nu se poate găsi versiunea „%s” a pachetului „%s”"
+msgstr "Nu s-a găsit versiunea specificată %s a %s"
 
 #: apt-private/private-history.cc
 msgid "Incorrect usage, no ID was given."
-msgstr ""
+msgstr "Utilizare incorectă, nu s-a furnizat niciun ID."
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "%s not a valid DEB package."
+#, c-format
 msgid "'%s' not a valid ID."
-msgstr "%s nu este un pachet DEB valid."
+msgstr "„%s” nu este un ID valid."
 
 #: apt-private/private-history.cc
 #, c-format
 msgid "Transaction ID '%ld' out of bounds."
-msgstr ""
+msgstr "ID-ul tranzacției „%ld” este în afara limitelor."
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Could not resolve '%s'"
+#, c-format
 msgid "Could not read %s"
-msgstr "Nu s-a putut rezolva „%s”"
+msgstr "Nu s-a putut citi %s"
 
 #: apt-private/private-history.cc
-#, fuzzy, c-format
-#| msgid "Could not resolve '%s'"
+#, c-format
 msgid "Could not read: %s"
-msgstr "Nu s-a putut rezolva „%s”"
+msgstr "Nu s-a putut citi: %s"
 
 #: apt-private/private-install.cc
 msgid ""
@@ -3748,23 +3723,23 @@ msgstr "înnoiește sistemul prin eliminarea/instalarea/înnoirea pachetelor"
 #. history stuff
 #: cmdline/apt.cc
 msgid "show list of history"
-msgstr ""
+msgstr "afișează lista istoricului"
 
 #: cmdline/apt.cc
 msgid "show info on specific transactions"
-msgstr ""
+msgstr "afișează informații despre tranzacții specifice"
 
 #: cmdline/apt.cc
 msgid "redo transactions"
-msgstr ""
+msgstr "reface tranzacțiile"
 
 #: cmdline/apt.cc
 msgid "undo transactions"
-msgstr ""
+msgstr "anulează tranzacțiile"
 
 #: cmdline/apt.cc
 msgid "rollback transactions"
-msgstr ""
+msgstr "revine la starea anterioară a efectuării tranzacțiilor"
 
 #. misc
 #: cmdline/apt.cc
@@ -3781,7 +3756,7 @@ msgstr "efectuează operațiile pentru satisfacerea lanțurilor de dependențe"
 
 #: cmdline/apt.cc
 msgid "produce a reason trace for the current state of the package"
-msgstr ""
+msgstr "generează o urmărire a motivului pentru starea actuală a pachetului"
 
 #: dselect/install
 msgid "Bad default setting!"
@@ -4158,6 +4133,9 @@ msgid ""
 "Authentication credentials may be configured in %s, but the file(s) are not "
 "readable by the current user. Try running this command as root."
 msgstr ""
+"Datele de autentificare pot fi configurate în %s, dar fișierul (fișierele) "
+"nu pot fi citite de utilizatorul curent. Încercați să executați această "
+"comandă ca root."
 
 #: methods/basehttp.cc
 msgid "Bad header data"
