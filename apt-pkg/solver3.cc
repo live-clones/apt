@@ -1187,6 +1187,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 {
    DefaultRootSetFunc2 rootSet(&cache);
    std::vector<Var> manualPackages;
+   std::vector<Var> removals;
 
    // Enforce strict pinning rules by rejecting all forbidden versions.
    if (StrictPinning)
@@ -1225,10 +1226,16 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	       || (not P->CurrentVer && state.Keep() && not AllowInstall) // New package installs not allowed.
       )
       {
+	 auto Protected = state.Protect() || (not P->CurrentVer && not AllowInstall);
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Delete " << P.FullName() << "\n";
-	 if (not Enqueue(~Var(P)))
-	    return false;
+	 if (Protected)
+	 {
+	    if (not Enqueue(~Var(P)))
+	       return false;
+	 }
+	 else
+	    removals.push_back(Var(P));
       }
       else if (state.Install() || (state.Keep() && P->CurrentVer))
       {
@@ -1308,6 +1315,11 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
    for (auto assumption : manualPackages)
    {
       if (not Assume(assumption, {}) || not Propagate())
+	 must_succeed(Pop());
+   }
+   for (auto removal : removals)
+   {
+      if (not Assume(~removal, {}) || not Propagate())
 	 must_succeed(Pop());
    }
 

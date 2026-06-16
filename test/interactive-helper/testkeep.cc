@@ -46,6 +46,8 @@ int main(int argc, const char *argv[])
       goto err;
    if (not pkgInitSystem(*_config, _system))
       goto err;
+
+   _config->CndSet("APT::Solver", "3.0");
    if (not test(argv[1], argc > 2 && strcmp(argv[2], "--hold") == 0))
       goto err;
 
