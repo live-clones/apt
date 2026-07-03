@@ -352,6 +352,12 @@ class PrivateHashes
 
    std::string HexDigest(HashAlgo const &algo)
    {
+      // The digest may be unavailable, e.g. MD5 under an OpenSSL FIPS provider.
+      // Enable() then left the context nullptr and EVP_MD_CTX_copy() below would
+      // dereference it, so bail out with an empty digest instead of crashing.
+      if (contexts[algo.index] == nullptr)
+	 return std::string();
+
       auto Size = EVP_MD_size(algo.evpLink());
       unsigned char Sum[Size];
 
@@ -478,7 +484,7 @@ HashString Hashes::GetHashString(SupportedHashes hash)
 {
    for (auto &Algo : d->Algorithms)
       if (hash == Algo.ourAlgo)
-	 return HashString(Algo.name, d->HexDigest(Algo));
+	 return d->IsEnabled(Algo) ? HashString(Algo.name, d->HexDigest(Algo)) : HashString();
 
    abort();
 }
