@@ -1,0 +1,55 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+
+# apt-ftparchive computes a Description-md5 (writer.cc) via
+# Hashes::GetHashString(Hashes::MD5SUM) when APT::FTPArchive::LongDescription
+# is false. Since the switch to OpenSSL, MD5 can be unavailable at runtime
+# (e.g. under a FIPS or null provider). An unavailable digest left the EVP
+# context nullptr; the unguarded HexDigest()/GetHashString() then read an
+# uninitialised buffer and emitted garbage (or crashed). The fix returns an
+# empty HashString for a disabled digest, so no Description-md5 is written.
+
+buildsimplenativepackage 'foo' 'all' '1' 'unstable' '' 'a package to hash'
+
+# Positive control: with MD5 available, the Description-md5 field IS produced.
+# This proves the trigger actually fires, so the later assertion has teeth.
+testsuccess aptftparchive -qq -o APT::FTPArchive::LongDescription=false packages incoming
+cp rootdir/tmp/testsuccess.output aptarchive/Packages-md5-available
+testsuccess grep -E '^Description-md5: .' aptarchive/Packages-md5-available
+
+# Independent oracle: disable MD5 via the OpenSSL "null" provider (built into
+# libcrypto >= 3.0). We verify with the openssl tool that MD5 is genuinely
+# unavailable in this configuration before relying on it below.
+cat > openssl-null.cnf <<'EOF'
+openssl_conf = openssl_init
+[openssl_init]
+providers = provider_sect
+[provider_sect]
+null = null_sect
+[null_sect]
+activate = 1
+EOF
+
+if ! command -v openssl >/dev/null 2>&1; then
+	msgskip 'openssl tool not available to disable MD5'
+	exit 0
+fi
+export OPENSSL_CONF="${TMPWORKINGDIRECTORY}/openssl-null.cnf"
+if printf 'x' | openssl dgst -md5 >/dev/null 2>&1; then
+	unset OPENSSL_CONF
+	msgskip 'OpenSSL null provider did not disable MD5 (needs OpenSSL >= 3.0)'
+	exit 0
+fi
+
+# With MD5 provably unavailable, apt cannot legitimately compute any MD5, so
+# the only correct output is no (non-empty) Description-md5. The unpatched code
+# emits uninitialised-memory garbage here (nondeterministic 32-hex string) or
+# crashes; the patched code omits the field.
+testsuccess aptftparchive -qq -o APT::FTPArchive::LongDescription=false packages incoming
+cp rootdir/tmp/testsuccess.output aptarchive/Packages-md5-disabled
+testfailure grep -E '^Description-md5: .' aptarchive/Packages-md5-disabled
