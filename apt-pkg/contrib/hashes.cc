@@ -30,6 +30,7 @@
 #include <string>
 #include <unistd.h>
 
+#include <openssl/err.h>
 #include <openssl/evp.h>
 									/*}}}*/
 
@@ -371,6 +372,12 @@ class PrivateHashes
 
    bool Enable(HashAlgo const &algo)
    {
+      // Discard errors from disabled algorithms.
+      // SECURITY: Enabling a digest may fail. If no secure digests are available,
+      // security is not compromised.
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
+
       contexts[algo.index] = EVP_MD_CTX_new();
       if (contexts[algo.index] == nullptr)
 	 return false;
