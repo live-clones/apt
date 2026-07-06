@@ -480,7 +480,7 @@ class DependencySolver final : public Solver
    void RegisterCommonDependencies(pkgCache::PkgIterator Pkg);
 
    /// \brief Translate an or group into a clause object
-   [[nodiscard]] Clause TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
+   [[nodiscard]] std::optional<Clause> TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
 
    public:
    // \brief Basic solver initializer. This cannot fail.

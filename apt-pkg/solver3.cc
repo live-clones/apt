@@ -1004,9 +1004,8 @@ void DependencySolver::Discover(Var var)
 			    { return c->dep && SameOrGroup(start, pkgCache::DepIterator(cache, c->dep)); }))
 	       continue;
 
-	    auto clause = TranslateOrGroup(start, end, Var(Ver));
-
-	    RegisterClause(std::move(clause));
+	    if (auto clause = TranslateOrGroup(start, end, Var(Ver)))
+	       RegisterClause(std::move(*clause));
 	 }
       }
 
@@ -1040,20 +1039,20 @@ void DependencySolver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
       }
       if (not allHaveDep)
 	 continue;
-      auto clause = TranslateOrGroup(start, end, Var(Pkg));
-      RegisterClause(std::move(clause));
+      if (auto clause = TranslateOrGroup(start, end, Var(Pkg)))
+	 RegisterClause(std::move(*clause));
    }
 }
 
-Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
+std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason)
 {
    // Non-important dependencies can only be installed if they are currently satisfied, see the check further
    // below once we have calculated all possible solutions.
    if (start.ParentPkg()->CurrentVer == 0 && not policy.IsImportantDep(start))
-      return Clause{reason, Group::Satisfy, true};
+      return std::nullopt;
    // Replaces and Enhances are not a real dependency.
    if (start->Type == pkgCache::Dep::Replaces || start->Type == pkgCache::Dep::Enhances)
-      return Clause{reason, Group::Satisfy, true};
+      return std::nullopt;
    if (unlikely(debug >= 3))
       std::cerr << "Found dependency critical " << reason.toString(cache) << " -> " << start.TargetPkg().FullName() << "\n";
 
@@ -1140,13 +1139,13 @@ Clause DependencySolver::TranslateOrGroup(pkgCache::DepIterator start, pkgCache:
       {
 	 if (unlikely(debug >= 3))
 	    std::cerr << "Ignore unimportant clause: " << clause.toString(cache, true) << std::endl;
-	 return Clause{reason, Group::Satisfy, true};
+	 return std::nullopt;
       }
       else if (not existing.end() && policy.IsImportantDep(existing) && not satisfied)
       {
 	 if (unlikely(debug >= 3))
 	    std::cerr << "Ignoring unsatisfied clause: " << clause.toString(cache, true) << std::endl;
-	 return Clause{reason, Group::Satisfy, true};
+	 return std::nullopt;
       }
       else if (IsUpgrade && not existing.end() && satisfied)
       {
