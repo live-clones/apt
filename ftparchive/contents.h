@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <set>
 #include <string>
+#include <vector>
 
 class debDebFile;
 class FileFd;
@@ -58,20 +59,18 @@ class ContentsExtract : public pkgDirStream
    public:
 
    // The Data Block
-   char *Data;
-   unsigned long long MaxSize;
-   unsigned long long CurSize;
+   std::vector<char> Data;
    void AddData(const char *Text);
    
    bool Read(debDebFile &Deb);
    
    bool DoItem(Item &Itm,int &Fd) override;
-   void Reset() {CurSize = 0;};
+   void Reset() { Data.clear(); };
    bool TakeContents(const void *Data,unsigned long long Length);
    void Add(GenContents &Contents,std::string const &Package);
-   
-   ContentsExtract();
-   virtual ~ContentsExtract();
+
+   ContentsExtract() = default;
+   ~ContentsExtract() override = default;
 };
 
 #endif

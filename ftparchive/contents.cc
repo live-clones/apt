@@ -158,18 +158,6 @@ void GenContents::Print(FileFd &Out)
    }
 }
 									/*}}}*/
-// ContentsExtract Constructor						/*{{{*/
-ContentsExtract::ContentsExtract()
-   : Data(0), MaxSize(0), CurSize(0)
-{
-}
-									/*}}}*/
-// ContentsExtract Destructor						/*{{{*/
-ContentsExtract::~ContentsExtract()
-{
-   free(Data);
-}
-									/*}}}*/
 // ContentsExtract::Read - Read the archive				/*{{{*/
 // ---------------------------------------------------------------------
 /* */
@@ -197,21 +185,7 @@ bool ContentsExtract::DoItem(Item &Itm, int &/*Fd*/)
       Itm.Name += 2;
    }
 
-   // Allocate more storage for the string list
-   if (CurSize + Len + 2 >= MaxSize || Data == 0)
-   {
-      if (MaxSize == 0)
-	 MaxSize = 512*1024/2;
-      while (MaxSize <= CurSize + Len + 2)
-	 MaxSize *= 2;
-      char *NewData = (char *)realloc(Data,MaxSize);
-      if (NewData == 0)
-	 return _error->Error(_("realloc - Failed to allocate memory"));
-      Data = NewData;
-   }
-   
-   strcpy(Data+CurSize,Itm.Name);   
-   CurSize += Len + 1;
+   Data.insert(Data.end(), Itm.Name, Itm.Name + Len + 1);
    return true;
 }
 									/*}}}*/
@@ -222,28 +196,12 @@ bool ContentsExtract::TakeContents(const void *NewData,unsigned long long Length
 {
    if (Length == 0)
    {
-      CurSize = 0;
+      Data.clear();
       return true;
    }
 
-   // Allocate more storage for the string list
-   if (Length + 2 >= MaxSize || Data == 0)
-   {
-      if (MaxSize == 0)
-	 MaxSize = 512*1024/2;
-      while (MaxSize*2 <= Length)
-	 MaxSize *= 2;
-      
-      char *NewData = (char *)realloc(Data,MaxSize*2);
-      if (NewData == 0)
-	 return _error->Error(_("realloc - Failed to allocate memory"));
-      Data = NewData;
-      MaxSize *= 2;
-   }
-   memcpy(Data,NewData,Length);
-   CurSize = Length;
-   
-   return Data[CurSize-1] == 0;
+   Data.assign(static_cast<const char *>(NewData), static_cast<const char *>(NewData) + Length);
+   return Data.back() == 0;
 }
 									/*}}}*/
 // ContentsExtract::Add - Read the contents data into the sorter	/*{{{*/
@@ -251,9 +209,10 @@ bool ContentsExtract::TakeContents(const void *NewData,unsigned long long Length
 /* */
 void ContentsExtract::Add(GenContents &Contents,std::string const &Package)
 {
-   const char *Start = Data;
+   const char *Start = Data.data();
+   const char *End = Data.data() + Data.size();
    auto Pkg = Contents.Mystrdup(Package.c_str());
-   for (const char *I = Data; I < Data + CurSize; I++)
+   for (const char *I = Start; I < End; I++)
    {
       if (*I == 0)
       {
