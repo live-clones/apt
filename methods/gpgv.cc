@@ -135,7 +135,8 @@ static void PushEntryWithKeyID(std::vector<std::string> &Signers, char * const b
    while (*p && !isspace(*p))
       ++p;
    // skip the separator whitespace
-   ++p;
+   if (*p != '\0')
+      ++p;
    // skip the hexdigit fingerprint
    while (*p && isxdigit(*p))
       ++p;
