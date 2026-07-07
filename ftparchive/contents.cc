@@ -202,11 +202,12 @@ bool ContentsExtract::DoItem(Item &Itm, int &/*Fd*/)
    {
       if (MaxSize == 0)
 	 MaxSize = 512*1024/2;
-      char *NewData = (char *)realloc(Data,MaxSize*2);
+      while (MaxSize <= CurSize + Len + 2)
+	 MaxSize *= 2;
+      char *NewData = (char *)realloc(Data,MaxSize);
       if (NewData == 0)
 	 return _error->Error(_("realloc - Failed to allocate memory"));
       Data = NewData;
-      MaxSize *= 2;
    }
    
    strcpy(Data+CurSize,Itm.Name);   
