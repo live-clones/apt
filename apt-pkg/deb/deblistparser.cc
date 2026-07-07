@@ -30,9 +30,91 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
+#include <dirent.h>
+#include <fnmatch.h>
 									/*}}}*/
 
 using std::string;
+
+// EvaluateHardwareCondition - Check Hardware-Condition against sysfs	/*{{{*/
+// Reads all modalias files under /sys/bus/*/devices/*/modalias files and tests
+// each against the glob pattern from the package field.  Returns true if
+// at least one device modalias matches (for "modalias") or if no device
+// matches (for "modalias-not").
+static bool EvaluateHardwareCondition(std::string_view field)
+{
+   // Parse: "<type> <pattern>"
+   auto sep = field.find(' ');
+   if (sep == std::string_view::npos)
+      return true; // Unrecognised format – default safe (treat as met)
+
+   std::string_view type = field.substr(0, sep);
+   std::string pattern(field.substr(sep + 1));
+
+   bool wantMatch = (type == "modalias");
+   if (not wantMatch && type != "modalias-not")
+      return true; // Unknown type – default safe
+
+   // Override path for testing
+   std::string sysfsBase = _config->Find("APT::HardwareCondition::SysfsBase",
+					 "/sys/bus");
+
+   // Walk /sys/bus/<bus>/devices/<dev>/modalias
+   bool anyMatch = false;
+   DIR *busDir = opendir(sysfsBase.c_str());
+   if (busDir == nullptr)
+      return wantMatch ? false : true; // No sysfs – unknown hardware
+
+   struct dirent *busEntry;
+   while ((busEntry = readdir(busDir)) != nullptr)
+   {
+      if (busEntry->d_name[0] == '.')
+	 continue;
+
+      std::string devicesPath = sysfsBase + "/" + busEntry->d_name + "/devices";
+      DIR *devDir = opendir(devicesPath.c_str());
+      if (devDir == nullptr)
+	 continue;
+
+      struct dirent *devEntry;
+      while ((devEntry = readdir(devDir)) != nullptr)
+      {
+	 if (devEntry->d_name[0] == '.')
+	    continue;
+
+	 std::string aliasPath = devicesPath + "/" + devEntry->d_name + "/modalias";
+	 FILE *f = fopen(aliasPath.c_str(), "r");
+	 if (f == nullptr)
+	    continue;
+
+	 char alias[512];
+	 if (fgets(alias, sizeof(alias), f) != nullptr)
+	 {
+	    // Strip trailing newline
+	    size_t len = strlen(alias);
+	    if (len > 0 && alias[len - 1] == '\n')
+	       alias[--len] = '\0';
+
+	    if (fnmatch(pattern.c_str(), alias, 0) == 0)
+	    {
+	       anyMatch = true;
+	       fclose(f);
+	       closedir(devDir);
+	       closedir(busDir);
+	       return wantMatch; // early exit on first match
+	    }
+	 }
+	 fclose(f);
+      }
+      closedir(devDir);
+   }
+   closedir(busDir);
+
+   // anyMatch is false here (we'd have returned early otherwise)
+   return wantMatch ? false : true; // "modalias-not": no match → condition met
+}
+									/*}}}*/
 using std::string_view;
 using namespace std::literals;
 
@@ -325,6 +407,10 @@ bool debListParser::UsePackage(pkgCache::PkgIterator &Pkg,
       if (not Ver.PhasedUpdatePercentage(phased))
 	 _error->Warning("Ignoring invalid Phased-Update-Percentage value");
    }
+
+   auto hwcond = Section.Find(pkgTagSection::Key::Hardware_Condition);
+   if (not hwcond.empty())
+      Ver.HardwareConditionMet(EvaluateHardwareCondition(hwcond));
 
    if (ParseStatus(Pkg,Ver) == false)
       return false;

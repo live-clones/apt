@@ -2611,6 +2611,30 @@ bool pkgDepCache::PhasingApplied(pkgCache::PkgIterator Pkg) const
 
    return true;
 }
+
+// DepCache::HardwareConditionApplied					/*{{{
+// Returns true if the installed package's upgrade candidate was held back
+// because of a Hardware-Condition field that is not met on this machine.
+bool pkgDepCache::HardwareConditionApplied(pkgCache::PkgIterator Pkg) const
+{
+   if (Pkg->CurrentVer == 0)
+      return false;
+   if ((*this)[Pkg].CandidateVer == 0)
+      return false;
+   // Candidate is the current version: no upgrade was attempted
+   if ((*this)[Pkg].CandidateVerIter(*Cache) == Pkg.CurrentVer())
+      return false;
+   // Check all versions newer than the current one for an unmet Hardware-Condition
+   for (auto Ver = Pkg.VersionList(); not Ver.end(); ++Ver)
+   {
+      if (Ver == Pkg.CurrentVer())
+	 break;
+      if (not Ver.HardwareConditionMet() &&
+	  not _config->FindB("APT::Get::Ignore-Hardware-Condition", false))
+	 return true;
+   }
+   return false;
+}
 									/*}}}*/
 
 // DepCache::BootSize						/*{{{*/
