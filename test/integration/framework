@@ -264,9 +264,9 @@ valgrind() {
 		CMD="${APTCMDLINEBINDIR}/${CMD}"
 	fi
 	if command valgrind --version >/dev/null 2>&1; then
-		runapt command valgrind -q --error-exitcode=7 "$CMD" "$@"
+		runapt command prlimit --nofile=1024 valgrind -q --error-exitcode=7 "$CMD" "$@"
 	else
-		runapt command "$CMD" "$@"
+		runapt command prlimit --nofile=1024 "$CMD" "$@"
 	fi
 }
 
