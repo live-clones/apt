@@ -369,7 +369,7 @@ setupenvironment() {
 	# Setup coreutils on BSD systems
 	mkdir "${TMPWORKINGDIRECTORY}/bin"
 	for prefix in gnu g; do
-			for command in stat touch sed cp tr sha1sum sha256sum md5sum sha512sum grep date wc chmod head readlink tar expr base64; do
+			for command in stat touch sed cp tr sha1sum sha256sum md5sum sha512sum grep date wc chmod head readlink tar expr base64 rm; do
 					if command -v $prefix$command 2>/dev/null >/dev/null; then
 							[ -e "${TMPWORKINGDIRECTORY}/bin/$command" ] || ln -sf $(command -v $prefix$command)  "${TMPWORKINGDIRECTORY}/bin/$command"
 					fi
