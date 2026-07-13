@@ -253,7 +253,7 @@ valgrind() {
 	if [ "${CMD##*/}" = "$CMD" ]; then
 		CMD="${APTCMDLINEBINDIR}/${CMD}"
 	fi
-	runapt command valgrind -q --error-exitcode=7 "$CMD" "$@"
+	runapt command prlimit --nofile=1024 valgrind -q --error-exitcode=7 "$CMD" "$@"
 }
 
 lastmodification() {
