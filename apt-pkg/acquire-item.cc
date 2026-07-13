@@ -1491,6 +1491,22 @@ bool pkgAcqMetaBase::CheckDownloadDone(pkgAcqTransactionItem * const I, const st
       {
 	 IMSHit = true;
 	 RemoveFile("CheckDownloadDone", I->DestFile);
+	 /* The server send us the full file although its content is identical
+	    to the copy we have already, instead of replying 'Not Modified' –
+	    e.g. because a mirror rewrote Last-Modified without changing the
+	    content. Advance the modification time of our copy to the reported
+	    one so the next If-Modified-Since request can result in a real hit
+	    instead of re-downloading the identical content on every run. */
+	 time_t lastmod = 0;
+	 struct stat Buf;
+	 if (RFC1123StrToTime(LookupTag(Message, "Last-Modified", ""), lastmod) &&
+	     stat(FinalFile.c_str(), &Buf) == 0 && lastmod > Buf.st_mtime)
+	 {
+	    struct timeval times[2];
+	    times[0].tv_sec = times[1].tv_sec = lastmod;
+	    times[0].tv_usec = times[1].tv_usec = 0;
+	    utimes(FinalFile.c_str(), times);
+	 }
       }
    }
 
