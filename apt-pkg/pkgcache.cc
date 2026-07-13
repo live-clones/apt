@@ -281,6 +281,12 @@ uint32_t pkgCache::CacheHash()
 // ---------------------------------------------------------------------
 /* Returns 0 on error, pointer to the package otherwise */
 pkgCache::PkgIterator pkgCache::FindPkg(string_view Name) {
+	// File paths start with '/', './' or '../'; any ':' in the path must not
+	// be mistaken for an arch separator.
+	if (!Name.empty() && (Name[0] == '/' ||
+			      (Name.size() > 1 && Name[0] == '.' && Name[1] == '/') ||
+			      (Name.size() > 2 && Name[0] == '.' && Name[1] == '.' && Name[2] == '/')))
+	   return FindPkg(Name, "native");
 	auto const found = Name.rfind(':');
 	if (found == string::npos)
 	   return FindPkg(Name, "native");

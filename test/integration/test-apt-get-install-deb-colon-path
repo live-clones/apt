@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+buildsimplenativepackage 'foo' 'amd64' '1.0'
+
+# Regression test: installing a .deb whose path contains a colon must succeed.
+# A colon in the path must not be mistaken for a pkg:arch separator in FindPkg.
+mkdir -p "colon:dir"
+cp ./incoming/foo_1.0_amd64.deb "colon:dir/"
+
+testdpkgnotinstalled 'foo'
+testsuccess aptget install "./colon:dir/foo_1.0_amd64.deb"
+testdpkginstalled 'foo'
