@@ -185,7 +185,7 @@ bool debDebPkgFileIndex::GetContent(std::ostream &content, std::string const &de
       return _error->Error(_("Could not read meta data from %s"), debfile.c_str());
 
    // trim off newlines
-   while (extractor.Control[extractor.Length] == '\n')
+   while (extractor.Length > 0 && extractor.Control[extractor.Length] == '\n')
       extractor.Control[extractor.Length--] = '\0';
    const char *Control = extractor.Control;
    while (isspace_ascii(Control[0]))

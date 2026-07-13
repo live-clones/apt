@@ -393,7 +393,7 @@ bool CacheDB::LoadContents(bool const &GenOnly)
    
    // Write back the control information
    InitQueryContent();
-   if (Put(Contents.Data,Contents.CurSize) == true)
+   if (Put(Contents.Data.data(), Contents.Data.size()) == true)
       CurStat.Flags |= FlContents;
    return true;
 }
