@@ -337,6 +337,19 @@ bool FTWScanner::Delink(string &FileName,const char *OriginalPath,
 bool FTWScanner::SetExts(string const &Vals)
 {
    ClearPatterns();
+   // Estimate the number of patterns to reserve space
+   size_t num_patterns = 0;
+   if (!Vals.empty())
+   {
+      num_patterns = 1; // At least one pattern
+      for (char c : Vals)
+      {
+         if (c == ' ')
+            num_patterns++;
+      }
+   }
+   Patterns.reserve(num_patterns);
+
    string::size_type Start = 0;
    while (Start <= Vals.length()-1)
    {
