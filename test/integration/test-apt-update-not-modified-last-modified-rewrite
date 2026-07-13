@@ -1,0 +1,59 @@
+#!/bin/sh
+# Regression test for repositories/mirrors which hand out a newer Last-Modified
+# (or ETag) for content that is in fact byte-identical to what we have already
+# – e.g. a mirror that rewrites Last-Modified on every sync without the content
+# changing. In that case the server can not answer our conditional request with
+# '304 Not Modified' (its Last-Modified is newer than our If-Modified-Since), so
+# it sends us the full file. APT notices via hash comparison that the content is
+# unchanged and keeps its copy, but it must also advance the modification time
+# of that copy to the reported one. Otherwise every following 'apt update' would
+# send the same stale If-Modified-Since, get another full 200 and re-download the
+# identical file indefinitely.
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+confighashes 'SHA256'
+
+insertpackage 'unstable' 'apt' 'amd64' '1.0'
+
+export APT_DONT_SIGN=''
+setupaptarchive --no-update
+cp -a aptarchive/dists aptarchive/dists.good
+
+methodtest() {
+	local URI="$1"
+	msgmsg 'Mirror rewrites Last-Modified without changing content' "$URI"
+	rm -rf rootdir/var/lib/apt/lists
+	rm -rf aptarchive/dists
+	cp -a aptarchive/dists.good aptarchive/dists
+
+	# populate our cache
+	testsuccess aptget update
+
+	# the mirror hands out a newer Last-Modified, but the content is identical
+	touch -d "$(date -u -d 'now + 6 hours' -R)" aptarchive/dists/unstable/InRelease
+
+	# the server can not answer with 304 as its Last-Modified is now newer than
+	# our If-Modified-Since, so it sends the full file – which APT keeps as the
+	# content is unchanged, but it must record the new modification time…
+	testsuccessequal "Get:1 $URI unstable InRelease [$(stat -c '%s' 'aptarchive/dists/unstable/InRelease') B]
+Reading package lists..." aptget update
+
+	# … so that the next run finally converges to a real 'Not Modified' hit
+	# instead of re-downloading the identical file over and over again.
+	testsuccessequal "Hit:1 $URI unstable InRelease
+Reading package lists..." aptget update
+	# and it stays a hit on further runs
+	testsuccessequal "Hit:1 $URI unstable InRelease
+Reading package lists..." aptget update
+}
+
+changetowebserver
+methodtest "http://localhost:${APTHTTPPORT}"
+
+changetohttpswebserver
+methodtest "https://localhost:${APTHTTPSPORT}"
