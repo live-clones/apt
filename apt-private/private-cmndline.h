@@ -31,6 +31,7 @@ struct aptDispatchWithHelp
    const char *Match;
    bool (*Handler)(CommandLine &);
    const char *Help;
+   bool (*ShowHelp)(CommandLine &) = nullptr;
 };
 
 APT_PUBLIC std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD const Binary,

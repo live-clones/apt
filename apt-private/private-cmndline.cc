@@ -564,23 +564,45 @@ static void ShowHelpListCommands(std::vector<aptDispatchWithHelp> const &Cmds)/*
    }
 }
 									/*}}}*/
-static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<aptDispatchWithHelp> const &Cmds,/*{{{*/
-      bool (*ShowHelp)(CommandLine &))
+static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<aptDispatchWithHelp> const &Cmds, /*{{{*/
+			   bool (*ShowHelp)(CommandLine &), char const *const CmdCalled)
 {
    std::cout << PACKAGE << " " << PACKAGE_VERSION << " (" << COMMON_ARCH << ")" << std::endl;
    if (_config->FindB("version") == true && Binary != APT_CMD::APT_GET)
       return true;
-   if (ShowHelp(CmdL) == false)
-      return false;
+
+   // If a specific command was requested, try its per-command help
+   bool usedCommandHelp = false;
+   if (CmdCalled != nullptr)
+   {
+      for (auto const &c : Cmds)
+      {
+	 if (c.Match != nullptr && strcmp(c.Match, CmdCalled) == 0 && c.ShowHelp != nullptr)
+	 {
+	    if (c.ShowHelp(CmdL) == false)
+	       return false;
+	    usedCommandHelp = true;
+	    break;
+	 }
+      }
+   }
+
+   if (not usedCommandHelp)
+   {
+      if (ShowHelp(CmdL) == false)
+	 return false;
+   }
    if (_config->FindB("version") == true || Binary == APT_CMD::APT_FTPARCHIVE)
       return true;
-   ShowHelpListCommands(Cmds);
+   if (not usedCommandHelp)
+   {
+      ShowHelpListCommands(Cmds);
 
-   auto bin = std::ranges::find_if(binaries, [Binary](auto b) noexcept
-				   { return b.binary == Binary; });
-   if (bin != binaries.end())
-      OptionPrinter(*bin).print_common();
-
+      auto bin = std::ranges::find_if(binaries, [Binary](auto b) noexcept
+				      { return b.binary == Binary; });
+      if (bin != binaries.end())
+	 OptionPrinter(*bin).print_common();
+   }
    std::cout << std::endl;
    char const * cmd = nullptr;
    switch (Binary)
@@ -792,7 +814,7 @@ std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD c
        (Sys != NULL && pkgInitSystem(*_config, *Sys) == false))
    {
       if (_config->FindB("version") == true)
-	 ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp);
+	 ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp, CmdCalled);
 
       _error->DumpErrors();
       exit(100);
@@ -813,12 +835,12 @@ std::vector<CommandLine::Dispatch> ParseCommandLine(CommandLine &CmdL, APT_CMD c
    if (_config->FindB("help") == true || _config->FindB("version") == true ||
 	 (CmdL.FileSize() > 0 && strcmp(CmdL.FileList[0], "help") == 0))
    {
-      ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp);
+      ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp, CmdCalled);
       exit(0);
    }
    if (Cmds.empty() == false && CmdL.FileSize() == 0)
    {
-      ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp);
+      ShowCommonHelp(Binary, CmdL, CmdsWithHelp, ShowHelp, CmdCalled);
       exit(1);
    }
    return Cmds;
