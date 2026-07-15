@@ -622,19 +622,30 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
       case APT_CMD::APT_SORTPKG: cmd = "apt-sortpkgs(1)"; break;
       case APT_CMD::RRED: cmd = nullptr; break;
    }
-   if (cmd != nullptr)
-      ioprintf(std::cout, _("See %s for more information about the available commands."), cmd);
-   if (Binary != APT_CMD::APT_DUMP_SOLVER && Binary != APT_CMD::APT_INTERNAL_SOLVER &&
-	 Binary != APT_CMD::APT_INTERNAL_PLANNER && Binary != APT_CMD::RRED)
-      std::cout << std::endl <<
-	 _("Configuration options and syntax is detailed in apt.conf(5).\n"
-	       "Information about how to configure sources can be found in sources.list(5).\n"
-	       "Package and version choices can be expressed via apt_preferences(5).\n"
-	       "Security details are available in apt-secure(8).\n");
-   if (Binary == APT_CMD::APT_GET || Binary == APT_CMD::APT)
-      std::cout << std::right << std::setw(70) << _("This APT has Super Cow Powers.") << std::endl;
-   else if (Binary == APT_CMD::APT_HELPER || Binary == APT_CMD::APT_DUMP_SOLVER)
-      std::cout << std::right << std::setw(70) << _("This APT helper has Super Meep Powers.") << std::endl;
+   if (usedCommandHelp)
+   {
+      if (cmd != nullptr)
+	 ioprintf(std::cout,
+		  _("See %s, apt.conf(5), sources.list(5), apt_preferences(5),\n"
+		    "and apt-secure(8) for more information.\n"),
+		  cmd);
+   }
+   else
+   {
+      if (cmd != nullptr)
+	 ioprintf(std::cout, _("See %s for more information about the available commands."), cmd);
+      if (Binary != APT_CMD::APT_DUMP_SOLVER && Binary != APT_CMD::APT_INTERNAL_SOLVER &&
+	  Binary != APT_CMD::APT_INTERNAL_PLANNER && Binary != APT_CMD::RRED)
+	 std::cout << std::endl
+		   << _("Configuration options and syntax is detailed in apt.conf(5).\n"
+			"Information about how to configure sources can be found in sources.list(5).\n"
+			"Package and version choices can be expressed via apt_preferences(5).\n"
+			"Security details are available in apt-secure(8).\n");
+      if (Binary == APT_CMD::APT_GET || Binary == APT_CMD::APT)
+	 std::cout << std::right << std::setw(70) << _("This APT has Super Cow Powers.") << std::endl;
+      else if (Binary == APT_CMD::APT_HELPER || Binary == APT_CMD::APT_DUMP_SOLVER)
+	 std::cout << std::right << std::setw(70) << _("This APT helper has Super Meep Powers.") << std::endl;
+   }
    return true;
 }
 									/*}}}*/

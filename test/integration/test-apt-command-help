@@ -1,0 +1,105 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+# Test that documented commands show command-specific help
+# (Usage line mentions the command, no "Most used commands:" list)
+check_command_help() {
+	local cmd="$1"
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-help.output"
+	# Must have a Usage line mentioning the command name
+	testsuccess grep "^Usage: apt \[options\] ${cmd}" "${cmd}-help.output"
+	# Must NOT fall back to the generic command listing
+	testfailure grep "Most used commands:" "${cmd}-help.output"
+}
+
+msggroup "Checking per-command help for documented commands"
+for cmd in list search show install reinstall remove purge autoremove \
+	   update upgrade full-upgrade satisfy why why-not \
+	   edit-sources modernize-sources; do
+	check_command_help "$cmd"
+done
+msggroup
+
+# Test that install/reinstall/remove/purge show the correct command name
+# in the Usage line (they share a help function)
+msggroup "Checking shared help shows correct command name"
+for cmd in install reinstall remove purge; do
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-shared-help.output"
+	testsuccess grep "^Usage: apt \[options\] ${cmd} <package(s)>" "${cmd}-shared-help.output"
+done
+msggroup
+
+# Test that undocumented/advanced commands fall back to generic help
+# (they should show "Most used commands:")
+check_fallback_help() {
+	local cmd="$1"
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-fallback-help.output"
+	# Must fall back to the generic command listing
+	testsuccess grep "Most used commands:" "${cmd}-fallback-help.output"
+}
+
+msggroup "Checking fallback to generic help for undocumented commands"
+for cmd in moo dist-upgrade depends policy build-dep source download \
+	   changelog clean autoclean showsrc info; do
+	check_fallback_help "$cmd"
+done
+msggroup
+
+# Test that apt --help (no command) still shows the generic help
+msggroup "Checking generic apt --help"
+testsuccess apt --help
+cp -f rootdir/tmp/testsuccess.output apt-generic-help.output
+testsuccess grep "^Usage: apt \[options\] command" apt-generic-help.output
+testsuccess grep "Most used commands:" apt-generic-help.output
+testsuccess grep "^  list - " apt-generic-help.output
+testsuccess grep "^  install - " apt-generic-help.output
+# Generic help should have the verbose footer and Super Cow
+testsuccess grep "Super Cow Powers" apt-generic-help.output
+msggroup
+
+# Test that history-* commands fall back to generic help (no per-command help yet)
+msggroup "Checking history commands fall back to generic help"
+for cmd in history-list history-info history-redo history-undo history-rollback; do
+	check_fallback_help "$cmd"
+done
+msggroup
+
+# Test that per-command help includes an Options section where expected
+msggroup "Checking Options section in per-command help"
+for cmd in list search show install autoremove update upgrade full-upgrade satisfy; do
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-help.output"
+	testsuccess grep "^Options:" "${cmd}-options-help.output"
+done
+msggroup
+
+# Test that commands without notable options don't have an Options section
+msggroup "Checking no Options section for commands without options"
+for cmd in why why-not edit-sources modernize-sources; do
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-nooptions-help.output"
+	testfailure grep "^Options:" "${cmd}-nooptions-help.output"
+done
+msggroup
+
+# Test that per-command help does NOT include Super Cow Powers
+# and uses the shortened footer instead of the verbose one
+msggroup "Checking footer and Super Cow in per-command help"
+testsuccess apt list --help
+cp -f rootdir/tmp/testsuccess.output list-footer-help.output
+# Shortened footer present
+testsuccess grep "See apt(8), apt.conf(5), sources.list(5)" list-footer-help.output
+# Verbose footer absent
+testfailure grep "^Configuration options and syntax" list-footer-help.output
+# Super Cow absent in per-command help
+testfailure grep "Super Cow Powers" list-footer-help.output
+msggroup

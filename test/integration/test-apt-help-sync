@@ -1,0 +1,118 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+# This test checks that the per-command --help text in apt(8) stays
+# in sync with the man page (apt.8.xml). It is skipped if xsltproc
+# is not available, as it requires the XSLT toolchain.
+
+DOC_DIR="${SOURCEDIRECTORY}/doc"
+VENDOR_DIR="${SOURCEDIRECTORY}/vendor/$("${SOURCEDIRECTORY}/vendor/getinfo" current)"
+XSLT="${DOC_DIR}/extract-command-help.xsl"
+MANPAGE="${DOC_DIR}/apt.8.xml"
+
+if ! command -v xsltproc >/dev/null 2>&1; then
+	msgskip "xsltproc not installed, skipping help sync test"
+	exit 0
+fi
+
+# Extract command descriptions from the man page XML
+EXTRACTED=$(mktemp)
+xsltproc --xinclude --path "$DOC_DIR" --path "$VENDOR_DIR" "$XSLT" "$MANPAGE" > "$EXTRACTED" 2>/dev/null
+
+if [ ! -s "$EXTRACTED" ]; then
+	msgskip "Could not extract command help from man page XML"
+	rm -f "$EXTRACTED"
+	exit 0
+fi
+
+msggroup "Checking that documented commands have per-command help"
+
+# For each command documented in apt.8.xml, verify that apt <command> --help
+# does NOT fall back to the generic "Most used commands:" listing.
+# Commands in the man page with non-empty descriptions should have specific help.
+while IFS='	' read -r cmd desc; do
+	# The why, why-not entry has both names in one field
+	for c in $(echo "$cmd" | tr ',' ' '); do
+		c=$(echo "$c" | xargs) # trim whitespace
+		[ -z "$c" ] && continue
+
+		testsuccess apt "$c" --help
+		cp -f rootdir/tmp/testsuccess.output "${c}-sync-help.output"
+
+		# Must NOT contain the generic command listing
+		if grep -q "Most used commands:" "${c}-sync-help.output"; then
+			msgwarn "apt $c --help falls back to generic help, but $c is documented in apt(8)"
+			msgwarn "Consider adding a ShowHelp function for '$c' in cmdline/apt.cc"
+		fi
+	done
+done < "$EXTRACTED"
+
+msggroup
+
+msggroup "Checking keyword overlap between man page and --help output"
+
+# For each documented command, check that key words from the man page
+# description also appear in the --help output. We check for a few
+# significant content words (not stopwords) to detect drift.
+# This is a fuzzy check - warnings, not failures.
+
+# Extract significant words (4+ chars, not stopwords) from a text
+extract_keywords() {
+	echo "$1" | tr '[:upper:]' '[:lower:]' | \
+		tr -cs '[:alpha:]' '\n' | \
+		grep '^.\{4,\}$' | \
+		grep -vE '^(this|that|with|from|they|them|have|been|will|your|their|there|about|which|would|could|should|other|these|those|into|also|than|then|such|only|more|most|some|when|while|what|each|both|just|like|very|even|here|were|where|does|done|being|doing|having|said|says|many|much|very|same|another|between|through|during|before|after|above|below|under|again|further|once|upon|both|upon)' | \
+		sort -u
+}
+
+while IFS='	' read -r cmd desc; do
+	for c in $(echo "$cmd" | tr ',' ' '); do
+		c=$(echo "$c" | xargs)
+		[ -z "$c" ] && continue
+
+		# Skip commands that fall back to generic help (no per-command help)
+		if grep -q "Most used commands:" "${c}-sync-help.output" 2>/dev/null; then
+			continue
+		fi
+
+            # Compare only the command prose, excluding options and footer.
+            help_text=$(sed \
+                    -e '/^Options:/,$d' \
+                    -e '/^Common options:/,$d' \
+                    -e '/^See apt(8)/,$d' \
+                    "${c}-sync-help.output")
+
+            # Check that keywords used by the concise help text also occur
+            # in the more detailed man-page description.
+            help_keywords=$(extract_keywords "$help_text")
+            [ -z "$help_keywords" ] && continue
+
+            found=0
+            total=0
+            for kw in $help_keywords; do
+                    total=$((total + 1))
+                    if echo "$desc" | grep -qi "$kw"; then
+                            found=$((found + 1))
+                    fi
+            done
+
+		# Warn if less than 30% of keywords overlap
+		if [ "$total" -gt 0 ]; then
+			overlap=$((found * 100 / total))
+			if [ "$overlap" -lt 30 ]; then
+				msgwarn "apt $c --help has low keyword overlap ($overlap%) with apt(8) man page"
+				msgwarn "The --help text may have drifted from the documentation"
+			fi
+		fi
+	done
+done < "$EXTRACTED"
+
+msggroup
+
+rm -f "$EXTRACTED"

@@ -103,3 +103,13 @@ testwarning aptget moo
 export COLUMNS=
 testwarning aptget moo
 unset COLUMNS
+
+# Check that apt provides command-specific help, not just the generic listing.
+# apt install --help must mention "install" in the Usage line, must not
+# fall back to the "Most used commands:" overview, and must not include
+# the Super Cow Powers footer (which is reserved for the generic help).
+testsuccess apt install --help
+cp -f rootdir/tmp/testsuccess.output apt-install-help.output
+testsuccess grep '^Usage: apt \[options\] install' apt-install-help.output
+testfailure grep 'Most used commands:' apt-install-help.output
+testfailure grep 'Super Cow Powers' apt-install-help.output
