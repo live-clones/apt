@@ -194,6 +194,22 @@ constexpr std::initializer_list<binary> binaries{
 	 {'t', "tempdir", "APT::ExtractTemplates::TempDir", "Temporary directory for extracted templates", CommandLine::HasArg},
       },
    },
+   binary{
+      APT_CMD::APT_FTPARCHIVE,
+      commands{},
+      options{
+	 {0, "md5", "APT::FTPArchive::MD5", "Generate MD5 checksums", 0},
+	 {0, "sha1", "APT::FTPArchive::SHA1", "Generate SHA1 checksums", 0},
+	 {0, "sha256", "APT::FTPArchive::SHA256", "Generate SHA256 checksums", 0},
+	 {0, "sha512", "APT::FTPArchive::SHA512", "Generate SHA512 checksums", 0},
+	 {'d', "db", "APT::FTPArchive::DB", "Cache database", CommandLine::HasArg},
+	 {'s', "source-override", "APT::FTPArchive::SourceOverride", "Source override file", CommandLine::HasArg},
+	 {0, "delink", "APT::FTPArchive::DeLinkAct", "Enable delinking of files", 0},
+	 {0, "readonly", "APT::FTPArchive::ReadOnlyDB", "Make cache read-only", 0},
+	 {0, "contents", "APT::FTPArchive::Contents", "Generate the contents file", 0},
+	 {'a', "arch", "APT::FTPArchive::Architecture", "Only accept files for the given architecture", CommandLine::HasArg},
+      },
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -218,21 +234,6 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
       addArg(option.shrt, option.lng, option.option, option.flag);
 
    return addedArgs;
-}
-									/*}}}*/
-static bool addArgumentsAPTFTPArchive(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
-{
-   addArg(0,"md5","APT::FTPArchive::MD5",0);
-   addArg(0,"sha1","APT::FTPArchive::SHA1",0);
-   addArg(0,"sha256","APT::FTPArchive::SHA256",0);
-   addArg(0,"sha512","APT::FTPArchive::SHA512",0);
-   addArg('d',"db","APT::FTPArchive::DB",CommandLine::HasArg);
-   addArg('s',"source-override","APT::FTPArchive::SourceOverride",CommandLine::HasArg);
-   addArg(0,"delink","APT::FTPArchive::DeLinkAct",0);
-   addArg(0,"readonly","APT::FTPArchive::ReadOnlyDB",0);
-   addArg(0,"contents","APT::FTPArchive::Contents",0);
-   addArg('a',"arch","APT::FTPArchive::Architecture",CommandLine::HasArg);
-   return true;
 }
 									/*}}}*/
 static bool addArgumentsAPTHelper(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
@@ -469,11 +470,11 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_CONFIG:
 	 case APT_CMD::APT_DUMP_SOLVER:
 	 case APT_CMD::APT_EXTRACTTEMPLATES:
+	 case APT_CMD::APT_FTPARCHIVE:
 	 case APT_CMD::APT_INTERNAL_PLANNER:
 	 case APT_CMD::APT_INTERNAL_SOLVER:
 	    addArguments(Program, Args, Cmd);
 	    break;
-	 case APT_CMD::APT_FTPARCHIVE: addArgumentsAPTFTPArchive(Args, Cmd); break;
 	 case APT_CMD::APT_HELPER:
 	    addArgumentsAPTHelper(Args, Cmd);
 	    break;
