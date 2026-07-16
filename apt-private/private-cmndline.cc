@@ -226,6 +226,18 @@ constexpr std::initializer_list<binary> binaries{
 	 {'C', "compress", "Rred::Compress", "Set compression algorithm", CommandLine::HasArg},
       },
    },
+   binary{
+      APT_CMD::APT_HELPER,
+      {
+	 command{
+	    {"cat-file"},
+	    {
+	       {'C', "compress", "Apt-Helper::Cat-File::Compress", "Set compression algorithm", CommandLine::HasArg},
+	    },
+	 },
+      },
+      options{},
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -250,15 +262,6 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
       addArg(option.shrt, option.lng, option.option, option.flag);
 
    return addedArgs;
-}
-									/*}}}*/
-static bool addArgumentsAPTHelper(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
-{
-   if (CmdMatches("cat-file"))
-   {
-      addArg('C', "compress", "Apt-Helper::Cat-File::Compress",CommandLine::HasArg);
-   }
-   return true;
 }
 									/*}}}*/
 static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
@@ -473,14 +476,12 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_DUMP_SOLVER:
 	 case APT_CMD::APT_EXTRACTTEMPLATES:
 	 case APT_CMD::APT_FTPARCHIVE:
+	 case APT_CMD::APT_HELPER:
 	 case APT_CMD::APT_INTERNAL_PLANNER:
 	 case APT_CMD::APT_INTERNAL_SOLVER:
 	 case APT_CMD::APT_SORTPKG:
 	 case APT_CMD::RRED:
 	    addArguments(Program, Args, Cmd);
-	    break;
-	 case APT_CMD::APT_HELPER:
-	    addArgumentsAPTHelper(Args, Cmd);
 	    break;
 	 case APT_CMD::APT_MARK:
 	    addArgumentsAPTMark(Args, Cmd);
