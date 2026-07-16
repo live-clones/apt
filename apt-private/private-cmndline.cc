@@ -217,6 +217,15 @@ constexpr std::initializer_list<binary> binaries{
 	 {'s', "source", "APT::SortPkgs::Source", "Sort source package files", 0},
       },
    },
+   binary{
+      APT_CMD::RRED,
+      commands{},
+      options{
+	 {'t', nullptr, "Rred::T", nullptr, 0},
+	 {'f', nullptr, "Rred::F", nullptr, 0},
+	 {'C', "compress", "Rred::Compress", "Set compression algorithm", CommandLine::HasArg},
+      },
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -447,14 +456,6 @@ static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * c
    return true;
 }
 									/*}}}*/
-static bool addArgumentsRred(std::vector<CommandLine::Args> &Args, char const * const /*Cmd*/)/*{{{*/
-{
-   addArg('t', nullptr, "Rred::T", 0);
-   addArg('f', nullptr, "Rred::F", 0);
-   addArg('C', "compress", "Rred::Compress",CommandLine::HasArg);
-   return true;
-}
-									/*}}}*/
 std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const * const Cmd)/*{{{*/
 {
    std::vector<CommandLine::Args> Args;
@@ -475,6 +476,7 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_INTERNAL_PLANNER:
 	 case APT_CMD::APT_INTERNAL_SOLVER:
 	 case APT_CMD::APT_SORTPKG:
+	 case APT_CMD::RRED:
 	    addArguments(Program, Args, Cmd);
 	    break;
 	 case APT_CMD::APT_HELPER:
@@ -483,7 +485,6 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_MARK:
 	    addArgumentsAPTMark(Args, Cmd);
 	    break;
-	 case APT_CMD::RRED: addArgumentsRred(Args, Cmd); break;
       }
 
    // options without a command
