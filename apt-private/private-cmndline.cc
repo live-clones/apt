@@ -187,6 +187,13 @@ constexpr std::initializer_list<binary> binaries{
       },
       options{},
    },
+   binary{
+      APT_CMD::APT_EXTRACTTEMPLATES,
+      commands{},
+      options{
+	 {'t', "tempdir", "APT::ExtractTemplates::TempDir", "Temporary directory for extracted templates", CommandLine::HasArg},
+      },
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -211,12 +218,6 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
       addArg(option.shrt, option.lng, option.option, option.flag);
 
    return addedArgs;
-}
-									/*}}}*/
-static bool addArgumentsAPTExtractTemplates(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
-{
-   addArg('t',"tempdir","APT::ExtractTemplates::TempDir",CommandLine::HasArg);
-   return true;
 }
 									/*}}}*/
 static bool addArgumentsAPTFTPArchive(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
@@ -467,11 +468,11 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_CDROM:
 	 case APT_CMD::APT_CONFIG:
 	 case APT_CMD::APT_DUMP_SOLVER:
+	 case APT_CMD::APT_EXTRACTTEMPLATES:
 	 case APT_CMD::APT_INTERNAL_PLANNER:
 	 case APT_CMD::APT_INTERNAL_SOLVER:
 	    addArguments(Program, Args, Cmd);
 	    break;
-	 case APT_CMD::APT_EXTRACTTEMPLATES: addArgumentsAPTExtractTemplates(Args, Cmd); break;
 	 case APT_CMD::APT_FTPARCHIVE: addArgumentsAPTFTPArchive(Args, Cmd); break;
 	 case APT_CMD::APT_HELPER:
 	    addArgumentsAPTHelper(Args, Cmd);
