@@ -170,6 +170,23 @@ constexpr std::initializer_list<binary> binaries{
       commands{},
       options{},
    },
+   binary{
+      APT_CMD::APT_CONFIG,
+      {
+	 command{
+	    {"dump"},
+	    {
+	       {0, "empty", "APT::Config::Dump::EmptyValue", "Include empty values in output", CommandLine::Boolean},
+	       {0, "format", "APT::Config::Dump::Format", "Output format (shell, ...)", CommandLine::HasArg},
+	    },
+	 },
+	 command{
+	    {"shell"},
+	    {},
+	 },
+      },
+      options{},
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -194,21 +211,6 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
       addArg(option.shrt, option.lng, option.option, option.flag);
 
    return addedArgs;
-}
-									/*}}}*/
-static bool addArgumentsAPTConfig(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
-{
-   if (CmdMatches("dump"))
-   {
-      addArg(0,"empty","APT::Config::Dump::EmptyValue",CommandLine::Boolean);
-      addArg(0,"format","APT::Config::Dump::Format",CommandLine::HasArg);
-   }
-   else if (CmdMatches("shell"))
-      ;
-   else
-      return false;
-
-   return true;
 }
 									/*}}}*/
 static bool addArgumentsAPTExtractTemplates(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
@@ -463,13 +465,11 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_GET: addArgumentsAPTGet(Args, Cmd); break;
 	 case APT_CMD::APT_CACHE:
 	 case APT_CMD::APT_CDROM:
+	 case APT_CMD::APT_CONFIG:
 	 case APT_CMD::APT_DUMP_SOLVER:
 	 case APT_CMD::APT_INTERNAL_PLANNER:
 	 case APT_CMD::APT_INTERNAL_SOLVER:
 	    addArguments(Program, Args, Cmd);
-	    break;
-	 case APT_CMD::APT_CONFIG:
-	    addArgumentsAPTConfig(Args, Cmd);
 	    break;
 	 case APT_CMD::APT_EXTRACTTEMPLATES: addArgumentsAPTExtractTemplates(Args, Cmd); break;
 	 case APT_CMD::APT_FTPARCHIVE: addArgumentsAPTFTPArchive(Args, Cmd); break;
