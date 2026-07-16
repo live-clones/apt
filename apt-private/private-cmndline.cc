@@ -283,6 +283,137 @@ constexpr std::initializer_list<binary> binaries{
 	 {0, "with-source", "APT::Sources::With::", "Configure an ephemeral source file", CommandLine::HasArg},
       },
    },
+   binary{
+      APT_CMD::APT_GET,
+      {
+	 command{
+	    {"install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
+	     "dselect-upgrade", "autoremove", "auto-remove", "autopurge", "full-upgrade"},
+	    {
+	       {0, "show-progress", "DpkgPM::Progress", "Show user-friendly progress information", 0},
+	       {'f', "fix-broken", "APT::Get::Fix-Broken", "Fix broken dependencies", 0},
+	       {0, "purge", "APT::Get::Purge", "Use purge instead of remove", 0},
+	       {'V', "verbose-versions", "APT::Get::Show-Versions", "Show verbose version information", 0},
+	       {0, "list-columns", "APT::Get::List-Columns", "Show list columns", 0},
+	       {0, "autoremove", "APT::Get::AutomaticRemove", "Remove automatically installed packages no longer needed", 0},
+	       {0, "auto-remove", "APT::Get::AutomaticRemove", nullptr, 0},
+	       {0, "reinstall", "APT::Get::ReInstall", "Reinstall packages", 0},
+	       {0, "solver", "APT::Solver", "Set the dependency solver", CommandLine::HasArg},
+	       {0, "strict-pinning", "APT::Solver::Strict-Pinning", "Apply strict pinning", 0},
+	       {0, "planner", "APT::Planner", "Set the dependency planner", CommandLine::HasArg},
+	       {0, "comment", "APT::History::Comment", "Add a comment to history", CommandLine::HasArg},
+	       {'U', "update", "APT::Update", "Update package lists", 0},
+	    },
+	 },
+	 command{
+	    {"upgrade"},
+	    {
+	       {0, "new-pkgs", "APT::Get::Upgrade-Allow-New", "Allow installing new packages for upgraded dependencies", CommandLine::Boolean},
+	    },
+	 },
+	 command{
+	    {"update"},
+	    {
+	       {0, "list-cleanup", "APT::Get::List-Cleanup", "Clean up old list files", 0},
+	       {0, "allow-insecure-repositories", "Acquire::AllowInsecureRepositories", "Allow insecure repositories", 0},
+	       {0, "allow-weak-repositories", "Acquire::AllowWeakRepositories", "Allow weak repositories", 0},
+	       {0, "allow-releaseinfo-change", "Acquire::AllowReleaseInfoChange", "Allow Release info changes", 0},
+	       {0, "allow-releaseinfo-change-origin", "Acquire::AllowReleaseInfoChange::Origin", "Allow changes to Origin field", 0},
+	       {0, "allow-releaseinfo-change-label", "Acquire::AllowReleaseInfoChange::Label", "Allow changes to Label field", 0},
+	       {0, "allow-releaseinfo-change-version", "Acquire::AllowReleaseInfoChange::Version", "Allow changes to Version field", 0},
+	       {0, "allow-releaseinfo-change-codename", "Acquire::AllowReleaseInfoChange::Codename", "Allow changes to Codename field", 0},
+	       {0, "allow-releaseinfo-change-suite", "Acquire::AllowReleaseInfoChange::Suite", "Allow changes to Suite field", 0},
+	       {0, "allow-releaseinfo-change-defaultpin", "Acquire::AllowReleaseInfoChange::DefaultPin", "Allow changes to DefaultPin field", 0},
+	       {'e', "error-on", "APT::Update::Error-Mode", "Fail on the specified error", CommandLine::HasArg},
+	    },
+	 },
+	 command{
+	    {"source"},
+	    {
+	       {'a', "host-architecture", "APT::Get::Host-Architecture", "Set host architecture", CommandLine::HasArg},
+	       {'b', "compile", "APT::Get::Compile", "Compile source packages", 0},
+	       {'b', "build", "APT::Get::Compile", nullptr, 0},
+	       {'P', "build-profiles", "APT::Build-Profiles", "Set build profiles", CommandLine::HasArg},
+	       {0, "diff-only", "APT::Get::Diff-Only", "Download only the diff", 0},
+	       {0, "debian-only", "APT::Get::Diff-Only", nullptr, 0},
+	       {0, "tar-only", "APT::Get::Tar-Only", "Download only the tar", 0},
+	       {0, "dsc-only", "APT::Get::Dsc-Only", "Download only the dsc", 0},
+	    },
+	 },
+	 command{
+	    {"build-dep", "satisfy"},
+	    {
+	       {'a', "host-architecture", "APT::Get::Host-Architecture", "Set host architecture", CommandLine::HasArg},
+	       {'P', "build-profiles", "APT::Build-Profiles", "Set build profiles", CommandLine::HasArg},
+	       {0, "purge", "APT::Get::Purge", "Use purge instead of remove", 0},
+	       {0, "solver", "APT::Solver", "Set the dependency solver", CommandLine::HasArg},
+	       {0, "strict-pinning", "APT::Solver::Strict-Pinning", "Apply strict pinning", 0},
+	       {'f', "fix-broken", "APT::Get::Fix-Broken", "Fix broken dependencies", 0},
+	    },
+	 },
+	 command{
+	    {"build-dep"},
+	    {
+	       {0, "arch-only", "APT::Get::Arch-Only", "Only process architecture-dependent build dependencies", 0},
+	       {0, "indep-only", "APT::Get::Indep-Only", "Only process architecture-independent build dependencies", 0},
+	    },
+	 },
+	 command{
+	    {"indextargets"},
+	    {
+	       {0, "format", "APT::Get::IndexTargets::Format", "Output format", CommandLine::HasArg},
+	       {0, "release-info", "APT::Get::IndexTargets::ReleaseInfo", "Show release info", 0},
+	    },
+	 },
+	 command{
+	    {"download", "changelog", "markauto", "unmarkauto"},
+	    {},
+	 },
+	 command{
+	    {"install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
+	     "dselect-upgrade", "autoremove", "auto-remove", "autopurge", "full-upgrade",
+	     "source", "build-dep", "satisfy",
+	     "clean", "autoclean", "auto-clean", "distclean", "dist-clean", "check"},
+	    {
+	       {'s', "simulate", "APT::Get::Simulate", "No action; perform a simulation", 0},
+	       {'s', "just-print", "APT::Get::Simulate", nullptr, 0},
+	       {'s', "recon", "APT::Get::Simulate", nullptr, 0},
+	       {'s', "dry-run", "APT::Get::Simulate", nullptr, 0},
+	       {'s', "no-act", "APT::Get::Simulate", nullptr, 0},
+	    },
+	 },
+      },
+      options{
+	 {'d', "download-only", "APT::Get::Download-Only", "Download only; do not install or unpack", 0},
+	 {'y', "yes", "APT::Get::Assume-Yes", "Automatic yes to prompts", 0},
+	 {'y', "assume-yes", "APT::Get::Assume-Yes", nullptr, 0},
+	 {0, "assume-no", "APT::Get::Assume-No", "Automatic no to prompts", 0},
+	 {'u', "show-upgraded", "APT::Get::Show-Upgraded", "Show upgraded packages", 0},
+	 {'m', "ignore-missing", "APT::Get::Fix-Missing", nullptr, 0},
+	 {'t', "target-release", "APT::Default-Release", "Set the target release", CommandLine::HasArg},
+	 {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+	 {'S', "snapshot", "APT::Snapshot", "Snapshot to use", CommandLine::HasArg},
+	 {0, "download", "APT::Get::Download", "Download packages", 0},
+	 {0, "fix-missing", "APT::Get::Fix-Missing", "Ignore packages that cannot be retrieved", 0},
+	 {0, "ignore-hold", "APT::Ignore-Hold", "Ignore held packages", 0},
+	 {0, "upgrade", "APT::Get::upgrade", "Upgrade packages", 0},
+	 {0, "only-upgrade", "APT::Get::Only-Upgrade", "Only upgrade packages", 0},
+	 {0, "allow-change-held-packages", "APT::Get::allow-change-held-packages", "Allow changing held packages", CommandLine::Boolean},
+	 {0, "allow-remove-essential", "APT::Get::allow-remove-essential", "Allow removing essential packages", CommandLine::Boolean},
+	 {0, "allow-downgrades", "APT::Get::allow-downgrades", "Allow downgrading packages", CommandLine::Boolean},
+	 {0, "force-yes", "APT::Get::force-yes", "Force yes (deprecated)", 0},
+	 {0, "print-uris", "APT::Get::Print-URIs", "Print URIs", 0},
+	 {0, "trivial-only", "APT::Get::Trivial-Only", "Only perform trivial operations", 0},
+	 {0, "mark-auto", "APT::Get::Mark-Auto", "Mark packages as automatically installed", 0},
+	 {0, "remove", "APT::Get::Remove", "Remove packages", 0},
+	 {0, "only-source", "APT::Get::Only-Source", "Only query source package names", 0},
+	 {0, "allow-unauthenticated", "APT::Get::AllowUnauthenticated", "Allow unauthenticated packages", 0},
+	 {0, "install-recommends", "APT::Install-Recommends", "Install recommended packages", CommandLine::Boolean},
+	 {0, "install-suggests", "APT::Install-Suggests", "Install suggested packages", CommandLine::Boolean},
+	 {0, "fix-policy", "APT::Get::Fix-Policy-Broken", "Fix broken policy dependencies", 0},
+	 {0, "with-source", "APT::Sources::With::", "Configure an ephemeral source file", CommandLine::HasArg},
+      },
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -309,128 +440,6 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
    return addedArgs;
 }
 									/*}}}*/
-static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
-{
-   if (CmdMatches("install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
-	    "dselect-upgrade", "autoremove", "autopurge", "full-upgrade"))
-   {
-      addArg(0, "show-progress", "DpkgPM::Progress", 0);
-      addArg('f', "fix-broken", "APT::Get::Fix-Broken", 0);
-      addArg(0, "purge", "APT::Get::Purge", 0);
-      addArg('V',"verbose-versions", "APT::Get::Show-Versions",0);
-      addArg(0, "list-columns", "APT::Get::List-Columns", 0);
-      addArg(0, "autoremove", "APT::Get::AutomaticRemove", 0);
-      addArg(0, "auto-remove", "APT::Get::AutomaticRemove", 0);
-      addArg(0, "reinstall", "APT::Get::ReInstall", 0);
-      addArg(0, "solver", "APT::Solver", CommandLine::HasArg);
-      addArg(0, "strict-pinning", "APT::Solver::Strict-Pinning", 0);
-      addArg(0, "planner", "APT::Planner", CommandLine::HasArg);
-      addArg(0, "comment", "APT::History::Comment", CommandLine::HasArg);
-      addArg('U', "update", "APT::Update", 0);
-      if (CmdMatches("upgrade"))
-      {
-         addArg(0, "new-pkgs", "APT::Get::Upgrade-Allow-New", 
-                CommandLine::Boolean);
-      }
-   }
-
-   else if (CmdMatches("update") || CmdMatches("install"))
-   {
-      addArg(0, "list-cleanup", "APT::Get::List-Cleanup", 0);
-      addArg(0, "allow-insecure-repositories", "Acquire::AllowInsecureRepositories", 0);
-      addArg(0, "allow-weak-repositories", "Acquire::AllowWeakRepositories", 0);
-      addArg(0, "allow-releaseinfo-change", "Acquire::AllowReleaseInfoChange", 0);
-      addArg(0, "allow-releaseinfo-change-origin", "Acquire::AllowReleaseInfoChange::Origin", 0);
-      addArg(0, "allow-releaseinfo-change-label", "Acquire::AllowReleaseInfoChange::Label", 0);
-      addArg(0, "allow-releaseinfo-change-version", "Acquire::AllowReleaseInfoChange::Version", 0);
-      addArg(0, "allow-releaseinfo-change-codename", "Acquire::AllowReleaseInfoChange::Codename", 0);
-      addArg(0, "allow-releaseinfo-change-suite", "Acquire::AllowReleaseInfoChange::Suite", 0);
-      addArg(0, "allow-releaseinfo-change-defaultpin", "Acquire::AllowReleaseInfoChange::DefaultPin", 0);
-      addArg('e', "error-on", "APT::Update::Error-Mode", CommandLine::HasArg);
-   }
-   else if (CmdMatches("source"))
-   {
-      addArg('a', "host-architecture", "APT::Get::Host-Architecture", CommandLine::HasArg);
-      addArg('b', "compile", "APT::Get::Compile", 0);
-      addArg('b', "build", "APT::Get::Compile", 0);
-      addArg('P', "build-profiles", "APT::Build-Profiles", CommandLine::HasArg);
-      addArg(0, "diff-only", "APT::Get::Diff-Only", 0);
-      addArg(0, "debian-only", "APT::Get::Diff-Only", 0);
-      addArg(0, "tar-only", "APT::Get::Tar-Only", 0);
-      addArg(0, "dsc-only", "APT::Get::Dsc-Only", 0);
-   }
-   else if (CmdMatches("build-dep") || CmdMatches("satisfy"))
-   {
-      addArg('a', "host-architecture", "APT::Get::Host-Architecture", CommandLine::HasArg);
-      addArg('P', "build-profiles", "APT::Build-Profiles", CommandLine::HasArg);
-      addArg(0, "purge", "APT::Get::Purge", 0);
-      addArg(0, "solver", "APT::Solver", CommandLine::HasArg);
-      addArg(0, "strict-pinning", "APT::Solver::Strict-Pinning", 0);
-      if (CmdMatches("build-dep"))
-      {
-         addArg(0,"arch-only","APT::Get::Arch-Only",0);
-         addArg(0,"indep-only","APT::Get::Indep-Only",0);
-      }
-      // this has no effect *but* sbuild is using it (see LP: #1255806)
-      // once sbuild is fixed, this option can be removed
-      addArg('f', "fix-broken", "APT::Get::Fix-Broken", 0);
-   }
-   else if (CmdMatches("indextargets"))
-   {
-      addArg(0,"format","APT::Get::IndexTargets::Format", CommandLine::HasArg);
-      addArg(0,"release-info","APT::Get::IndexTargets::ReleaseInfo", 0);
-   }
-   else if (CmdMatches("clean", "autoclean", "auto-clean", "distclean", "dist-clean", "check", "download", "changelog") ||
-	    CmdMatches("markauto", "unmarkauto")) // deprecated commands
-   {
-   }
-   if (CmdMatches("install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
-	    "dselect-upgrade", "autoremove", "auto-remove", "autopurge", "check",
-	    "clean", "autoclean", "auto-clean", "distclean", "dist-clean",
-	    "build-dep", "satisfy", "full-upgrade", "source"))
-   {
-      addArg('s', "simulate", "APT::Get::Simulate", 0);
-      addArg('s', "just-print", "APT::Get::Simulate", 0);
-      addArg('s', "recon", "APT::Get::Simulate", 0);
-      addArg('s', "dry-run", "APT::Get::Simulate", 0);
-      addArg('s', "no-act", "APT::Get::Simulate", 0);
-   }
-
-   bool const found_something = Args.empty() == false;
-
-   // FIXME: move to the correct command(s)
-   addArg('d',"download-only","APT::Get::Download-Only",0);
-   addArg('y',"yes","APT::Get::Assume-Yes",0);
-   addArg('y',"assume-yes","APT::Get::Assume-Yes",0);
-   addArg(0,"assume-no","APT::Get::Assume-No",0);
-   addArg('u',"show-upgraded","APT::Get::Show-Upgraded",0);
-   addArg('m',"ignore-missing","APT::Get::Fix-Missing",0);
-   addArg('t',"target-release","APT::Default-Release",CommandLine::HasArg);
-   addArg('t',"default-release","APT::Default-Release",CommandLine::HasArg);
-   addArg('S', "snapshot", "APT::Snapshot", CommandLine::HasArg);
-   addArg(0,"download","APT::Get::Download",0);
-   addArg(0,"fix-missing","APT::Get::Fix-Missing",0);
-   addArg(0,"ignore-hold","APT::Ignore-Hold",0);
-   addArg(0,"upgrade","APT::Get::upgrade",0);
-   addArg(0,"only-upgrade","APT::Get::Only-Upgrade",0);
-   addArg(0,"allow-change-held-packages","APT::Get::allow-change-held-packages",CommandLine::Boolean);
-   addArg(0,"allow-remove-essential","APT::Get::allow-remove-essential",CommandLine::Boolean);
-   addArg(0,"allow-downgrades","APT::Get::allow-downgrades",CommandLine::Boolean);
-   addArg(0,"force-yes","APT::Get::force-yes",0);
-   addArg(0,"print-uris","APT::Get::Print-URIs",0);
-   addArg(0,"trivial-only","APT::Get::Trivial-Only",0);
-   addArg(0,"mark-auto","APT::Get::Mark-Auto",0);
-   addArg(0,"remove","APT::Get::Remove",0);
-   addArg(0,"only-source","APT::Get::Only-Source",0);
-   addArg(0,"allow-unauthenticated","APT::Get::AllowUnauthenticated",0);
-   addArg(0,"install-recommends","APT::Install-Recommends",CommandLine::Boolean);
-   addArg(0,"install-suggests","APT::Install-Suggests",CommandLine::Boolean);
-   addArg(0,"fix-policy","APT::Get::Fix-Policy-Broken",0);
-   addArg(0, "with-source", "APT::Sources::With::", CommandLine::HasArg);
-
-   return found_something;
-}
-									/*}}}*/
 static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
 {
    if (CmdMatches("list"))
@@ -451,7 +460,7 @@ static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * c
       addArg('f', "full", "APT::Cache::ShowFull", 0);
       addArg('S', "snapshot", "APT::Snapshot", CommandLine::HasArg);
    }
-   else if (addArgumentsAPTGet(Args, Cmd) || addArguments(APT_CMD::APT_CACHE, Args, Cmd))
+   else if (addArguments(APT_CMD::APT_GET, Args, Cmd) || addArguments(APT_CMD::APT_CACHE, Args, Cmd))
    {
        // we have no (supported) command-name overlaps so far, so we call
        // specifics in order until we find one which adds arguments
@@ -473,22 +482,24 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
    else
       switch (Program)
       {
-	 case APT_CMD::APT: addArgumentsAPT(Args, Cmd); break;
-	 case APT_CMD::APT_GET: addArgumentsAPTGet(Args, Cmd); break;
-	 case APT_CMD::APT_CACHE:
-	 case APT_CMD::APT_CDROM:
-	 case APT_CMD::APT_CONFIG:
-	 case APT_CMD::APT_DUMP_SOLVER:
-	 case APT_CMD::APT_EXTRACTTEMPLATES:
-	 case APT_CMD::APT_FTPARCHIVE:
-	 case APT_CMD::APT_HELPER:
-	 case APT_CMD::APT_INTERNAL_PLANNER:
-	 case APT_CMD::APT_INTERNAL_SOLVER:
-	 case APT_CMD::APT_MARK:
-	 case APT_CMD::APT_SORTPKG:
-	 case APT_CMD::RRED:
-	    addArguments(Program, Args, Cmd);
-	    break;
+      case APT_CMD::APT:
+	 addArgumentsAPT(Args, Cmd);
+	 break;
+      case APT_CMD::APT_CACHE:
+      case APT_CMD::APT_CDROM:
+      case APT_CMD::APT_CONFIG:
+      case APT_CMD::APT_DUMP_SOLVER:
+      case APT_CMD::APT_EXTRACTTEMPLATES:
+      case APT_CMD::APT_FTPARCHIVE:
+      case APT_CMD::APT_GET:
+      case APT_CMD::APT_HELPER:
+      case APT_CMD::APT_INTERNAL_PLANNER:
+      case APT_CMD::APT_INTERNAL_SOLVER:
+      case APT_CMD::APT_MARK:
+      case APT_CMD::APT_SORTPKG:
+      case APT_CMD::RRED:
+	 addArguments(Program, Args, Cmd);
+	 break;
       }
 
    // options without a command
