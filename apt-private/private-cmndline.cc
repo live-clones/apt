@@ -238,6 +238,51 @@ constexpr std::initializer_list<binary> binaries{
       },
       options{},
    },
+   binary{
+      APT_CMD::APT_MARK,
+      {
+	 command{
+	    {"auto", "manual", "hold", "unhold", "markauto", "unmarkauto", "minimize-manual",
+	     "showauto", "showmanual", "showhold", "showholds", "showheld"},
+	    {
+	       {'f', "file", "Dir::State::extended_states", "Read/write states from the given file", CommandLine::HasArg},
+	    },
+	 },
+	 command{
+	    {"showinstall", "showinstalls", "showremove", "showremoves",
+	     "showdeinstall", "showdeinstalls", "showpurge", "showpurges"},
+	    {},
+	 },
+	 command{
+	    {"markauto", "unmarkauto"},
+	    {
+	       {'v', "verbose", "APT::MarkAuto::Verbose", "Verbose output", 0},
+	    },
+	 },
+	 command{
+	    {"minimize-manual"},
+	    {
+	       {'y', "yes", "APT::Get::Assume-Yes", "Automatic yes to prompts", 0},
+	       {'y', "assume-yes", "APT::Get::Assume-Yes", nullptr, 0},
+	       {0, "assume-no", "APT::Get::Assume-No", "Automatic no to prompts", 0},
+	    },
+	 },
+	 command{
+	    {"auto", "manual", "hold", "unhold", "markauto", "unmarkauto", "minimize-manual",
+	     "install", "reinstall", "remove", "deinstall", "purge"},
+	    {
+	       {'s', "simulate", "APT::Mark::Simulate", "No action; perform a simulation", 0},
+	       {'s', "just-print", "APT::Mark::Simulate", nullptr, 0},
+	       {'s', "recon", "APT::Mark::Simulate", nullptr, 0},
+	       {'s', "dry-run", "APT::Mark::Simulate", nullptr, 0},
+	       {'s', "no-act", "APT::Mark::Simulate", nullptr, 0},
+	    },
+	 },
+      },
+      options{
+	 {0, "with-source", "APT::Sources::With::", "Configure an ephemeral source file", CommandLine::HasArg},
+      },
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -386,46 +431,6 @@ static bool addArgumentsAPTGet(std::vector<CommandLine::Args> &Args, char const 
    return found_something;
 }
 									/*}}}*/
-static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
-{
-   if (CmdMatches("auto", "manual", "hold", "unhold", "showauto",
-	    "showmanual", "showhold", "showholds", "showheld",
-	    "markauto", "unmarkauto", "minimize-manual"))
-   {
-      addArg('f',"file","Dir::State::extended_states",CommandLine::HasArg);
-   }
-   else if (CmdMatches("install", "reinstall", "remove", "deinstall", "purge",
-	    "showinstall", "showinstalls", "showremove", "showremoves",
-	    "showdeinstall", "showdeinstalls", "showpurge", "showpurges"))
-      ;
-   else
-      return false;
-
-   if (CmdMatches("markauto", "unmarkauto"))
-   {
-      addArg('v',"verbose","APT::MarkAuto::Verbose",0);
-   }
-
-   if (CmdMatches("minimize-manual"))
-   {
-      addArg('y',"yes","APT::Get::Assume-Yes",0);
-      addArg('y',"assume-yes","APT::Get::Assume-Yes",0);
-      addArg(0,"assume-no","APT::Get::Assume-No",0);
-   }
-
-   if (CmdMatches("minimize-manual") || (Cmd != nullptr && strncmp(Cmd, "show", strlen("show")) != 0))
-   {
-      addArg('s',"simulate","APT::Mark::Simulate",0);
-      addArg('s',"just-print","APT::Mark::Simulate",0);
-      addArg('s',"recon","APT::Mark::Simulate",0);
-      addArg('s',"dry-run","APT::Mark::Simulate",0);
-      addArg('s',"no-act","APT::Mark::Simulate",0);
-   }
-   addArg(0, "with-source", "APT::Sources::With::", CommandLine::HasArg);
-
-   return true;
-}
-									/*}}}*/
 static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
 {
    if (CmdMatches("list"))
@@ -479,12 +484,10 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_HELPER:
 	 case APT_CMD::APT_INTERNAL_PLANNER:
 	 case APT_CMD::APT_INTERNAL_SOLVER:
+	 case APT_CMD::APT_MARK:
 	 case APT_CMD::APT_SORTPKG:
 	 case APT_CMD::RRED:
 	    addArguments(Program, Args, Cmd);
-	    break;
-	 case APT_CMD::APT_MARK:
-	    addArgumentsAPTMark(Args, Cmd);
 	    break;
       }
 
