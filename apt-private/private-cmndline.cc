@@ -152,7 +152,25 @@ constexpr std::initializer_list<binary> binaries{
 	 },
       },
       options{},
-   }};
+   },
+   binary{
+      APT_CMD::APT_DUMP_SOLVER,
+      commands{},
+      options{
+	 {0, "user", "APT::Solver::RunAsUser", "Run solver as the specified user", CommandLine::HasArg},
+      },
+   },
+   binary{
+      APT_CMD::APT_INTERNAL_PLANNER,
+      commands{},
+      options{},
+   },
+   binary{
+      APT_CMD::APT_INTERNAL_SOLVER,
+      commands{},
+      options{},
+   },
+};
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
 {
@@ -193,12 +211,6 @@ static bool addArgumentsAPTConfig(std::vector<CommandLine::Args> &Args, char con
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTDumpSolver(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
-{
-   addArg(0,"user","APT::Solver::RunAsUser",CommandLine::HasArg);
-   return true;
-}
-									/*}}}*/
 static bool addArgumentsAPTExtractTemplates(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
 {
    addArg('t',"tempdir","APT::ExtractTemplates::TempDir",CommandLine::HasArg);
@@ -217,16 +229,6 @@ static bool addArgumentsAPTFTPArchive(std::vector<CommandLine::Args> &Args, char
    addArg(0,"readonly","APT::FTPArchive::ReadOnlyDB",0);
    addArg(0,"contents","APT::FTPArchive::Contents",0);
    addArg('a',"arch","APT::FTPArchive::Architecture",CommandLine::HasArg);
-   return true;
-}
-									/*}}}*/
-static bool addArgumentsAPTInternalPlanner(std::vector<CommandLine::Args> &, char const * const)/*{{{*/
-{
-   return true;
-}
-									/*}}}*/
-static bool addArgumentsAPTInternalSolver(std::vector<CommandLine::Args> &, char const * const)/*{{{*/
-{
    return true;
 }
 									/*}}}*/
@@ -461,15 +463,19 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_GET: addArgumentsAPTGet(Args, Cmd); break;
 	 case APT_CMD::APT_CACHE:
 	 case APT_CMD::APT_CDROM:
+	 case APT_CMD::APT_DUMP_SOLVER:
+	 case APT_CMD::APT_INTERNAL_PLANNER:
+	 case APT_CMD::APT_INTERNAL_SOLVER:
 	    addArguments(Program, Args, Cmd);
 	    break;
-	 case APT_CMD::APT_CONFIG: addArgumentsAPTConfig(Args, Cmd); break;
-	 case APT_CMD::APT_DUMP_SOLVER: addArgumentsAPTDumpSolver(Args, Cmd); break;
+	 case APT_CMD::APT_CONFIG:
+	    addArgumentsAPTConfig(Args, Cmd);
+	    break;
 	 case APT_CMD::APT_EXTRACTTEMPLATES: addArgumentsAPTExtractTemplates(Args, Cmd); break;
 	 case APT_CMD::APT_FTPARCHIVE: addArgumentsAPTFTPArchive(Args, Cmd); break;
-	 case APT_CMD::APT_HELPER: addArgumentsAPTHelper(Args, Cmd); break;
-	 case APT_CMD::APT_INTERNAL_PLANNER: addArgumentsAPTInternalPlanner(Args, Cmd); break;
-	 case APT_CMD::APT_INTERNAL_SOLVER: addArgumentsAPTInternalSolver(Args, Cmd); break;
+	 case APT_CMD::APT_HELPER:
+	    addArgumentsAPTHelper(Args, Cmd);
+	    break;
 	 case APT_CMD::APT_MARK: addArgumentsAPTMark(Args, Cmd); break;
 	 case APT_CMD::APT_SORTPKG: addArgumentsAPTSortPkgs(Args, Cmd); break;
 	 case APT_CMD::RRED: addArgumentsRred(Args, Cmd); break;
