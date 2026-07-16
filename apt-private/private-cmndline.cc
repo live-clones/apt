@@ -210,6 +210,13 @@ constexpr std::initializer_list<binary> binaries{
 	 {'a', "arch", "APT::FTPArchive::Architecture", "Only accept files for the given architecture", CommandLine::HasArg},
       },
    },
+   binary{
+      APT_CMD::APT_SORTPKG,
+      commands{},
+      options{
+	 {'s', "source", "APT::SortPkgs::Source", "Sort source package files", 0},
+      },
+   },
 };
 
 static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, char const *const Cmd) /*{{{*/
@@ -407,12 +414,6 @@ static bool addArgumentsAPTMark(std::vector<CommandLine::Args> &Args, char const
    return true;
 }
 									/*}}}*/
-static bool addArgumentsAPTSortPkgs(std::vector<CommandLine::Args> &Args, char const * const)/*{{{*/
-{
-   addArg('s',"source","APT::SortPkgs::Source",0);
-   return true;
-}
-									/*}}}*/
 static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
 {
    if (CmdMatches("list"))
@@ -473,13 +474,15 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 	 case APT_CMD::APT_FTPARCHIVE:
 	 case APT_CMD::APT_INTERNAL_PLANNER:
 	 case APT_CMD::APT_INTERNAL_SOLVER:
+	 case APT_CMD::APT_SORTPKG:
 	    addArguments(Program, Args, Cmd);
 	    break;
 	 case APT_CMD::APT_HELPER:
 	    addArgumentsAPTHelper(Args, Cmd);
 	    break;
-	 case APT_CMD::APT_MARK: addArgumentsAPTMark(Args, Cmd); break;
-	 case APT_CMD::APT_SORTPKG: addArgumentsAPTSortPkgs(Args, Cmd); break;
+	 case APT_CMD::APT_MARK:
+	    addArgumentsAPTMark(Args, Cmd);
+	    break;
 	 case APT_CMD::RRED: addArgumentsRred(Args, Cmd); break;
       }
 
