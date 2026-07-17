@@ -66,6 +66,18 @@ struct binary
 using commands = std::initializer_list<command>;
 using options = std::initializer_list<option>;
 
+constexpr options globalOptions{
+   {'h', "help", "help", "Show this help message", 0},
+   {'v', "version", "version", "Show the version", 0},
+   {0, "color", "APT::Color", "Enable color output", 0},
+   {'q', "quiet", "quiet", "Output less information", CommandLine::IntLevel},
+   {0, "audit", "APT::Audit", "Audit output", 0},
+   {'q', "silent", "quiet", nullptr, CommandLine::IntLevel},
+   {'c', "config-file", 0, "Read a configuration file", CommandLine::ConfigFile},
+   {'o', "option", 0, "Set a configuration option", CommandLine::ArbItem},
+   {0, "cli-version", "APT::Version", "Set CLI version", CommandLine::HasArg},
+};
+
 constexpr std::initializer_list<binary> binaries{
    binary{
       APT_CMD::APT,
@@ -483,41 +495,12 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 {
    std::vector<CommandLine::Args> Args;
    Args.reserve(50);
-   if (Cmd != nullptr && strcmp(Cmd, "help") == 0)
-      ; // no options for help so no need to implement it in each
-   else
-      switch (Program)
-      {
-      case APT_CMD::APT:
-      case APT_CMD::APT_CACHE:
-      case APT_CMD::APT_CDROM:
-      case APT_CMD::APT_CONFIG:
-      case APT_CMD::APT_DUMP_SOLVER:
-      case APT_CMD::APT_EXTRACTTEMPLATES:
-      case APT_CMD::APT_FTPARCHIVE:
-      case APT_CMD::APT_GET:
-      case APT_CMD::APT_HELPER:
-      case APT_CMD::APT_INTERNAL_PLANNER:
-      case APT_CMD::APT_INTERNAL_SOLVER:
-      case APT_CMD::APT_MARK:
-      case APT_CMD::APT_SORTPKG:
-      case APT_CMD::RRED:
-	 addArguments(Program, Args, Cmd);
-	 break;
-      }
+   if (Cmd == nullptr || strcmp(Cmd, "help") != 0)
+      addArguments(Program, Args, Cmd);
 
-   // options without a command
-   addArg('h', "help", "help", 0);
-   addArg('v', "version", "version", 0);
-   // general options
-   addArg(0, "color", "APT::Color", 0);
-   addArg('q', "quiet", "quiet", CommandLine::IntLevel);
-   addArg(0, "audit", "APT::Audit", 0);
-   addArg('q', "silent", "quiet", CommandLine::IntLevel);
-   addArg('c', "config-file", 0, CommandLine::ConfigFile);
-   addArg('o', "option", 0, CommandLine::ArbItem);
-   addArg(0, "cli-version", "APT::Version", CommandLine::HasArg);
-   addArg(0, NULL, NULL, 0);
+   for (auto &option : globalOptions)
+      addArg(option.shrt, option.lng, option.option, option.flag);
+   addArg(0, nullptr, nullptr, 0);
 
    return Args;
 }
