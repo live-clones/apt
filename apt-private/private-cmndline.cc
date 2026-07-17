@@ -60,12 +60,44 @@ struct binary
    APT_CMD binary;
    const std::initializer_list<command> commands;
    const std::initializer_list<option> options;
+   const std::initializer_list<APT_CMD> inherits = {};
 };
 
 using commands = std::initializer_list<command>;
 using options = std::initializer_list<option>;
 
 constexpr std::initializer_list<binary> binaries{
+   binary{
+      APT_CMD::APT,
+      {
+	 command{
+	    {"list"},
+	    {
+	       {'i', "installed", "APT::Cmd::Installed", "Print only installed packages", 0},
+	       {0, "upgradeable", "APT::Cmd::Upgradable", "Print only upgradeable packages", 0},
+	       {'u', "upgradable", "APT::Cmd::Upgradable", nullptr, 0},
+	       {0, "manual-installed", "APT::Cmd::Manual-Installed", "Print only manually installed packages", 0},
+	       {'v', "verbose", "APT::Cmd::List-Include-Summary", "Include summary", 0},
+	       {'a', "all-versions", "APT::Cmd::All-Versions", "Show all versions", 0},
+	       {'t', "target-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+	       {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+	       {'S', "snapshot", "APT::Snapshot", nullptr, CommandLine::HasArg},
+	    },
+	 },
+	 command{
+	    {"show", "info"},
+	    {
+	       {'a', "all-versions", "APT::Cache::AllVersions", "Show all versions", 0},
+	       {'f', "full", "APT::Cache::ShowFull", "Show the full record", 0},
+	       {'S', "snapshot", "APT::Snapshot", nullptr, CommandLine::HasArg},
+	    },
+	 },
+      },
+      options{
+	 {0, "with-source", "APT::Sources::With::", "Configure an ephemeral source file", CommandLine::HasArg},
+      },
+      {APT_CMD::APT_GET, APT_CMD::APT_CACHE},
+   },
    binary{
       APT_CMD::APT_CACHE,
       {
@@ -425,12 +457,19 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
 
    if (Cmd)
    {
+      bool matched = false;
       for (auto &command : binary->commands)
 	 if (std::ranges::contains(command.commands, std::string_view(Cmd)))
 	 {
 	    for (auto &option : command.options)
 	       addArg(option.shrt, option.lng, option.option, option.flag);
+	    matched = true;
 	 }
+
+      if (!matched)
+	 for (auto inherit : binary->inherits)
+	    if (addArguments(inherit, Args, Cmd))
+	       break;
    }
 
    bool addedArgs = not Args.empty();
@@ -438,39 +477,6 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
       addArg(option.shrt, option.lng, option.option, option.flag);
 
    return addedArgs;
-}
-									/*}}}*/
-static bool addArgumentsAPT(std::vector<CommandLine::Args> &Args, char const * const Cmd)/*{{{*/
-{
-   if (CmdMatches("list"))
-   {
-      addArg('i',"installed","APT::Cmd::Installed",0);
-      addArg(0,"upgradeable","APT::Cmd::Upgradable",0);
-      addArg('u',"upgradable","APT::Cmd::Upgradable",0);
-      addArg(0,"manual-installed","APT::Cmd::Manual-Installed",0);
-      addArg('v', "verbose", "APT::Cmd::List-Include-Summary", 0);
-      addArg('a', "all-versions", "APT::Cmd::All-Versions", 0);
-      addArg('t', "target-release", "APT::Default-Release", CommandLine::HasArg);
-      addArg('t', "default-release", "APT::Default-Release", CommandLine::HasArg);
-      addArg('S', "snapshot", "APT::Snapshot", CommandLine::HasArg);
-   }
-   else if (CmdMatches("show") || CmdMatches("info"))
-   {
-      addArg('a', "all-versions", "APT::Cache::AllVersions", 0);
-      addArg('f', "full", "APT::Cache::ShowFull", 0);
-      addArg('S', "snapshot", "APT::Snapshot", CommandLine::HasArg);
-   }
-   else if (addArguments(APT_CMD::APT_GET, Args, Cmd) || addArguments(APT_CMD::APT_CACHE, Args, Cmd))
-   {
-       // we have no (supported) command-name overlaps so far, so we call
-       // specifics in order until we find one which adds arguments
-   }
-   else
-      return false;
-
-   addArg(0, "with-source", "APT::Sources::With::", CommandLine::HasArg);
-
-   return true;
 }
 									/*}}}*/
 std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const * const Cmd)/*{{{*/
@@ -483,8 +489,6 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
       switch (Program)
       {
       case APT_CMD::APT:
-	 addArgumentsAPT(Args, Cmd);
-	 break;
       case APT_CMD::APT_CACHE:
       case APT_CMD::APT_CDROM:
       case APT_CMD::APT_CONFIG:
