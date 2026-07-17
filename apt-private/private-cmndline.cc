@@ -91,9 +91,9 @@ constexpr std::initializer_list<binary> binaries{
 	       {0, "manual-installed", "APT::Cmd::Manual-Installed", "Print only manually installed packages", 0},
 	       {'v', "verbose", "APT::Cmd::List-Include-Summary", "Include summary", 0},
 	       {'a', "all-versions", "APT::Cmd::All-Versions", "Show all versions", 0},
-	       {'t', "target-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+	       {'t', "target-release", "APT::Default-Release", "Set the target release", CommandLine::HasArg},
 	       {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
-	       {'S', "snapshot", "APT::Snapshot", nullptr, CommandLine::HasArg},
+	       {'S', "snapshot", "APT::Snapshot", "Snapshot to use", CommandLine::HasArg},
 	    },
 	 },
 	 command{
@@ -101,7 +101,7 @@ constexpr std::initializer_list<binary> binaries{
 	    {
 	       {'a', "all-versions", "APT::Cache::AllVersions", "Show all versions", 0},
 	       {'f', "full", "APT::Cache::ShowFull", "Show the full record", 0},
-	       {'S', "snapshot", "APT::Snapshot", nullptr, CommandLine::HasArg},
+	       {'S', "snapshot", "APT::Snapshot", "Snapshot to use", CommandLine::HasArg},
 	    },
 	 },
       },
@@ -506,6 +506,51 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 }
 									/*}}}*/
 #undef addArg
+
+struct OptionPrinter
+{
+   size_t width = 0;
+   const binary &bin;
+
+   OptionPrinter(const binary &b) : bin(b)
+   {
+      for (auto &option : bin.options)
+	 if (option.lng != nullptr)
+	    width = std::max(strlen(option.lng), width);
+      for (auto &option : globalOptions)
+	 if (option.lng != nullptr && option.flag != CommandLine::ArbItem && option.flag != CommandLine::ConfigFile)
+	    width = std::max(strlen(option.lng), width);
+   }
+
+   void print_common() const
+   {
+      std::cout << std::endl
+		<< "Common options:" << std::endl;
+      for (auto &option : bin.options)
+      {
+	 if (not option.description)
+	    continue;
+	 print_option(option);
+      }
+      for (auto &option : globalOptions)
+      {
+	 if (not option.description || option.flag == CommandLine::ArbItem || option.flag == CommandLine::ConfigFile)
+	    continue;
+	 print_option(option);
+      }
+   }
+
+   void print_option(const option &o) const
+   {
+      if (o.shrt && o.lng)
+	 std::cout << "    -" << o.shrt << ", --" << std::left << std::setw(width) << o.lng << "  " << o.description << std::endl;
+      else if (o.lng)
+	 std::cout << "        --" << std::left << std::setw(width) << o.lng << "  " << o.description << std::endl;
+      else if (o.shrt)
+	 std::cout << "    -" << o.shrt << "  " << o.description << std::endl;
+   }
+};
+
 static void ShowHelpListCommands(std::vector<aptDispatchWithHelp> const &Cmds)/*{{{*/
 {
    if (Cmds.empty() || Cmds[0].Match == nullptr)
@@ -530,6 +575,12 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
    if (_config->FindB("version") == true || Binary == APT_CMD::APT_FTPARCHIVE)
       return true;
    ShowHelpListCommands(Cmds);
+
+   auto bin = std::ranges::find_if(binaries, [Binary](auto b) noexcept
+				   { return b.binary == Binary; });
+   if (bin != binaries.end())
+      OptionPrinter(*bin).print_common();
+
    std::cout << std::endl;
    char const * cmd = nullptr;
    switch (Binary)
