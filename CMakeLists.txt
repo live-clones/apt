@@ -141,6 +141,9 @@ endif()
 
 find_package(XXHASH REQUIRED)
 
+# sftp-transport dependencies
+find_package(OpenSSH)
+
 # Mount()ing and stat()ing and friends
 check_symbol_exists(statfs sys/vfs.h HAVE_VFS_H)
 check_include_files(sys/params.h HAVE_PARAMS_H)
