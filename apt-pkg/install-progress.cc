@@ -1,6 +1,7 @@
 #include <config.h>
 
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/install-progress.h>
 #include <apt-pkg/strutl.h>
@@ -57,7 +58,8 @@ bool PackageManager::StatusChanged(std::string /*PackageName*/,
 {
    int reporting_steps = _config->FindI("DpkgPM::Reporting-Steps", 1);
    percentage = StepsDone/(double)TotalSteps * 100.0;
-   strprintf(progress_str, _("Progress: [%3li%%]"), std::lround(percentage));
+   // Never show a 100%
+   strprintf(progress_str, _("%2li%% Performing changes..."), std::min(std::lround(percentage), 99l));
 
    if(percentage < (last_reported_progress + reporting_steps))
       return false;
@@ -220,10 +222,15 @@ bool PackageManagerProgressDeb822Fd::StatusChanged(std::string PackageName,
    return true;
 }
 
+struct PackageManagerFancy::Private
+{
+   time_t started{0};
+};
 
 PackageManagerFancy::PackageManagerFancy()
-   : d(NULL), child_pty(-1)
+    : d(new Private), child_pty(-1)
 {
+   static_assert(sizeof(PackageManagerFancy::d) == sizeof(void *));
    // setup terminal size
    if (instances.empty())
       SIGWINCH_orig = signal(SIGWINCH, PackageManagerFancy::staticSIGWINCH);
@@ -324,6 +331,7 @@ void PackageManagerFancy::HandleSIGWINCH(int)
 
 void PackageManagerFancy::Start(int a_child_pty)
 {
+   d->started = time(nullptr);
    child_pty = a_child_pty;
    int const nr_terminal_rows = GetTerminalSize().rows;
    SetupTerminalScrollArea(nr_terminal_rows);
@@ -339,6 +347,8 @@ void PackageManagerFancy::Stop()
       // override the progress line (sledgehammer)
       static const char* clear_screen_below_cursor = "\033[J";
       std::cout << clear_screen_below_cursor;
+      if (not _error->PendingError())
+	 std::cout << _config->Find("APT::Color::Green") << "✓" << _config->Find("APT::Color::Neutral") << " Performed changes.\n";
       std::flush(std::cout);
    }
    child_pty = -1;
@@ -352,19 +362,13 @@ PackageManagerFancy::GetTextProgressStr(float Percent, int OutputSize)
    if (unlikely(OutputSize < 3))
       return output;
 
-   int const BarSize = OutputSize - 2; // bar without the leading "[" and trailing "]"
+   int const BarSize = OutputSize; // bar without the leading "[" and trailing "]"
    int const BarDone = std::max(0, std::min(BarSize, static_cast<int>(std::floor(Percent * BarSize))));
-   double dummy;
-   double const BarDoneFractional = std::modf(Percent * BarSize, &dummy);
-   const char *const BarDoneFractionalChar = (const char *[]){
-      " ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"}[static_cast<int>(std::floor(BarDoneFractional * 8))];
-   output.append("[");
    for (int i = 0; i < BarDone; i++)
-      output.append(Unicode ? "█" : "#");
-   if (BarDone + 1 <= BarSize)
-      output.append(Unicode ? BarDoneFractionalChar : ".");
-   std::fill_n(std::back_inserter(output), BarSize - BarDone - 1, Unicode ? ' ' : '.');
-   output.append("]");
+      output.append(Unicode ? "∎" : "#");
+   for (int i = BarDone; i < BarSize; i++)
+      output.append(Unicode ? "—" : "-");
+
    return output;
 }
 
@@ -401,22 +405,22 @@ bool PackageManagerFancy::DrawStatusLine()
    std::cout << save_cursor
       // move cursor position to last row
              << "\033[" << std::to_string(size.rows) << ";0f"
-             << set_bg_color
-             << set_fg_color
-             << progress_str
-             << restore_bg
-             << restore_fg;
+             << progress_str;
    std::flush(std::cout);
+
+   auto elapsed = time(nullptr) - d->started;
+   std::string elapsedStr;
+   elapsedStr.append("(").append(TimeToFixedStr(elapsed)).append(")");
 
    // draw text progress bar
    if (_config->FindB("Dpkg::Progress-Fancy::Progress-Bar", true))
    {
-      int padding = 4;
-      auto const progressbar_size = size.columns - padding - String::DisplayLength(progress_str);
+      auto const progressbar_size = size.columns - String::DisplayLength(elapsedStr) - String::DisplayLength(progress_str) - 2;
       auto const current_percent = percentage / 100.0f;
       std::cout << " " 
                 << GetTextProgressStr(current_percent, progressbar_size)
-                << " ";
+                << " "
+                << elapsedStr;
       std::flush(std::cout);
    }
 

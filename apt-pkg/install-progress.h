@@ -4,6 +4,7 @@
 #include <apt-pkg/macros.h>
 
 #include <csignal>
+#include <memory>
 #include <string>
 #include <vector>
 #include <unistd.h>
@@ -121,7 +122,8 @@ namespace Progress {
 
  class APT_PUBLIC PackageManagerFancy : public PackageManager
  {
-    void * const d;
+    struct Private;
+    std::unique_ptr<Private> const d;
  private:
     APT_HIDDEN static void staticSIGWINCH(int);
     static std::vector<PackageManagerFancy*> instances;
