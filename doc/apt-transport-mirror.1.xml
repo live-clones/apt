@@ -82,6 +82,16 @@ should be tried first before any of another set is tried, a priority can be expl
 set. The mirrors with the lowest number are tried first. Mirrors which have no explicit
 priority set default to the highest possible number and are therefore tried last. The
 choice between mirrors with the same priority is again random.</para>
+<para>Files are by default spread over multiple mirrors of the set with the lowest
+priority number: At least three mirrors are used if the set contains enough mirrors,
+beyond that their number scales with the square root of the number of files fetched
+(e.g. 4 mirrors for 16 files, 10 mirrors for 100 files) and each file is assigned
+to the currently least used of these mirrors. This fan-out
+can be controlled via the &apt-conf; options <literal>Acquire::Mirror::Fanout</literal>
+(<literal>sqrt</literal> (the default) or <literal>none</literal> to pick a random
+mirror for each file independently) and <literal>Acquire::Mirror::Fanout-Limit</literal>
+(an upper bound on the number of actively used mirrors, 0 for no limit). Mirrors of
+another set are only tried on failure as described above.</para>
 </refsect2>
 
 <refsect2><title>Allowed transports in a mirrorlist</title>

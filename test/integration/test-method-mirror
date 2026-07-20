@@ -297,3 +297,114 @@ testrundownload 'foo=2'
 rm -rf rootdir/var/lib/apt/lists
 sed -i -e "s# \[signed-by=[^]]\+\] foo+# [signed-by=$(readlink -f ./keys/marvinparanoid.pub)] foo+#g" rootdir/etc/apt/sources.list.d/apt-test-unstable-deb*
 testfailure apt update
+
+msgmsg 'fan-out scales with file count' 'sqrt'
+: > aptarchive/mirror.txt
+for i in 1 2 3 4 5 6; do
+	webserverconfig "aptwebserver::redirect::replace::/m$i/" "http://localhost:${APTHTTPPORT}/"
+	echo "http://localhost:${APTHTTPPORT}/m$i" >> aptarchive/mirror.txt
+done
+for p in $(seq 1 24); do
+	buildsimplenativepackage "fanout$p" 'all' '1' 'unstable'
+done
+# NB: PKGS is assembled in a separate loop as framework functions are free
+# to clobber non-local variables (aptautotest does so with e.g. $i and $p)
+PKGS=''
+for p in $(seq 1 24); do
+	PKGS="$PKGS fanout$p=1"
+done
+setupaptarchive --no-update
+# setupaptarchive adds file: sources for the archive again, so replace the
+# sources only now to have the packages fetched via the mirrors instead
+rm -f rootdir/etc/apt/sources.list.d/*
+echo "deb mirror+http://localhost:${APTHTTPPORT}/mirror.txt unstable main" > rootdir/etc/apt/sources.list.d/mirror.list
+rm -rf rootdir/var/lib/apt/lists
+testsuccess apt update
+
+# 24 files via sqrt fan-out over 6 mirrors: expect 4 active mirrors à 6 files
+LOGLINES=$(wc -l < aptarchive/webserver.log)
+testsuccess apt install --download-only -o Debug::NoLocking=true -y $PKGS
+testrundownload_internal_debs 'rootdir/var/cache/apt/archives' $PKGS
+USED=0
+for i in 1 2 3 4 5 6; do
+	COUNT=$(tail -n "+$((LOGLINES + 1))" aptarchive/webserver.log | grep -c "/m$i/pool/.*\.deb" || true)
+	if [ "$COUNT" -ne 0 ]; then
+		testequal '6' echo "$COUNT"
+		USED=$((USED + 1))
+	fi
+done
+testequal '4' echo "$USED"
+
+msgmsg 'fan-out starts with at least' '3 mirrors'
+# the first 3 files are already spread over 3 different mirrors
+LOGLINES=$(wc -l < aptarchive/webserver.log)
+testsuccess apt install --download-only -o Debug::NoLocking=true -y fanout1=1 fanout2=1 fanout3=1
+testrundownload_internal_debs 'rootdir/var/cache/apt/archives' fanout1=1 fanout2=1 fanout3=1
+USED=0
+for i in 1 2 3 4 5 6; do
+	COUNT=$(tail -n "+$((LOGLINES + 1))" aptarchive/webserver.log | grep -c "/m$i/pool/.*\.deb" || true)
+	if [ "$COUNT" -ne 0 ]; then
+		testequal '1' echo "$COUNT"
+		USED=$((USED + 1))
+	fi
+done
+testequal '3' echo "$USED"
+
+msgmsg 'fan-out is limited by' 'Fanout-Limit'
+# 24 files with at most 2 active mirrors: expect 2 active mirrors à 12 files
+LOGLINES=$(wc -l < aptarchive/webserver.log)
+testsuccess apt install --download-only -o Debug::NoLocking=true -y -o Acquire::Mirror::Fanout-Limit=2 $PKGS
+testrundownload_internal_debs 'rootdir/var/cache/apt/archives' $PKGS
+USED=0
+for i in 1 2 3 4 5 6; do
+	COUNT=$(tail -n "+$((LOGLINES + 1))" aptarchive/webserver.log | grep -c "/m$i/pool/.*\.deb" || true)
+	if [ "$COUNT" -ne 0 ]; then
+		testequal '12' echo "$COUNT"
+		USED=$((USED + 1))
+	fi
+done
+testequal '2' echo "$USED"
+
+msgmsg 'fan-out stays within the best priority' 'tier'
+# 24 files would mean 4 active mirrors, but only 2 mirrors have the best
+# priority: the other 4 must remain untouched alternates
+echo "http://localhost:${APTHTTPPORT}/m1	priority:1
+http://localhost:${APTHTTPPORT}/m2	priority:1
+http://localhost:${APTHTTPPORT}/m3
+http://localhost:${APTHTTPPORT}/m4
+http://localhost:${APTHTTPPORT}/m5
+http://localhost:${APTHTTPPORT}/m6" > aptarchive/mirror.txt
+LOGLINES=$(wc -l < aptarchive/webserver.log)
+testsuccess apt install --download-only -o Debug::NoLocking=true -y $PKGS
+testrundownload_internal_debs 'rootdir/var/cache/apt/archives' $PKGS
+for i in 1 2; do
+	COUNT=$(tail -n "+$((LOGLINES + 1))" aptarchive/webserver.log | grep -c "/m$i/pool/.*\.deb" || true)
+	testequal '12' echo "$COUNT"
+done
+for i in 3 4 5 6; do
+	COUNT=$(tail -n "+$((LOGLINES + 1))" aptarchive/webserver.log | grep -c "/m$i/pool/.*\.deb" || true)
+	testequal '0' echo "$COUNT"
+done
+
+msgmsg 'failover progresses through mirrors in' 'per-file order'
+# pin the active mirror with a priority and make it fail: all files are
+# assigned to it and have to fail over to their alternates, which should
+# differ per file rather than all landing on the same next mirror
+echo "http://localhost:${APTHTTPPORT}/m1	priority:1" > aptarchive/mirror.txt
+for i in 2 3 4 5 6; do
+	echo "http://localhost:${APTHTTPPORT}/m$i" >> aptarchive/mirror.txt
+done
+webserverconfig "aptwebserver::redirect::replace::/m1/" "http://localhost:${APTHTTPPORT}/nonexistent/"
+LOGLINES=$(wc -l < aptarchive/webserver.log)
+testsuccess apt install --download-only -o Debug::NoLocking=true -y -o Acquire::Mirror::Fanout-Limit=1 $PKGS
+testrundownload_internal_debs 'rootdir/var/cache/apt/archives' $PKGS
+COUNT=$(tail -n "+$((LOGLINES + 1))" aptarchive/webserver.log | grep -c "/m1/pool/.*\.deb" || true)
+testequal '24' echo "$COUNT"
+USED=0
+for i in 2 3 4 5 6; do
+	COUNT=$(tail -n "+$((LOGLINES + 1))" aptarchive/webserver.log | grep -c "/m$i/pool/.*\.deb" || true)
+	if [ "$COUNT" -ne 0 ]; then
+		USED=$((USED + 1))
+	fi
+done
+testsuccess test "$USED" -gt 2
