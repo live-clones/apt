@@ -11,12 +11,12 @@
    "Signed-By" acquire header — either a filesystem path or an inline
    PEM certificate blob.
 
-   Verification is delegated to APT::Internal::X509Store (see
-   apt-pkg/contrib/pkcs7.h), which builds the trust store and runs
-   CMS_verify() against the supplied certificate bundle.  The Suite
-   and Origin headers are read from the acquire message and forwarded
-   for use by future policy-aware verification, but are not used by
-   the unconstrained verifier.
+   Verification is delegated to APT::Internal::Constrained (see
+   apt-pkg/contrib/pkcs7.h), which builds the trust store, runs
+   CMS_verify(), and applies the APT repository-signing certificate
+   policy (EKU, key usage, SAN matching for Origin + Suite, trust
+   anchor constraints) supplied by DefaultRepoSignerPolicy /
+   DefaultRepoAnchorPolicy (see pkcs7-constraints.h).
 
    ##################################################################### */
 									/*}}}*/
@@ -56,7 +56,6 @@ bool CMSMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
    std::string const SignedBy = DeQuoteString(LookupTag(Message, "Signed-By"));
    std::string const Suite = DeQuoteString(LookupTag(Message, "Suite"));
    std::string const Origin = DeQuoteString(LookupTag(Message, "Origin"));
-   (void)Origin; // used by the constrained verifier in a later commit
 
    if (SignedBy.empty())
       return _error->Error("cms verification requires a Signed-By certificate");
@@ -73,9 +72,10 @@ bool CMSMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
    if (not dataFd.Open(DataPath, FileFd::ReadOnly))
       return _error->Error("cms: cannot open data file %s", DataPath.c_str());
 
-   // Load the certificate bundle - either from a file path or an inline
+   // Load the certificate bundle — either from a file path or an inline
    // PEM blob in the Signed-By header.
-   X509Store store;
+   Constrained store(DefaultRepoSignerPolicy(Origin, Suite),
+		     DefaultRepoAnchorPolicy());
    if (SignedBy[0] == '/')
    {
       // Filesystem path.

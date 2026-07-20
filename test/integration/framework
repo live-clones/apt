@@ -1395,7 +1395,7 @@ signreleasefiles() {
 
 signreleasewithp7s() {
 	# Sign Release files with a CMS/PKCS#7 detached signature.
-	# The EKU OID is not enforced by the unconstrained verifier.
+	# The EKU OID must match apt-pkg/contrib/pkcs7-constraints.h.
 	local CERTFILE="$1"
 	local KEYFILE="$2"
 	local CAFILE="${3:-}"

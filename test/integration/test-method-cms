@@ -7,8 +7,8 @@ TESTDIR="$(readlink -f "$(dirname "$0")")"
 setupenvironment
 configarchitecture 'amd64'
 
-# Placeholder APT repository signing EKU OID - used by certificate
-# generation below.  Not enforced by the unconstrained verifier.
+# Placeholder APT repository signing EKU OID - must match
+# apt-pkg/contrib/pkcs7-constraints.h (APT::Internal::REPO_SIGNING_EKU).
 APT_P7S_EKU='1.3.6.1.4.1.99999.2'
 
 # --------------------------------------------------------------------------- #
@@ -178,3 +178,9 @@ msgtest 'Malformed p7s file' 'returns 400 URI Failure'
 cmsmethod "$RELEASE_GARBAGE"
 testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
 
+# --------------------------------------------------------------------------- #
+# Test 9: Wrong suite → 400 URI Failure
+# --------------------------------------------------------------------------- #
+msgtest 'Wrong suite' 'returns 400 URI Failure'
+cmsmethod "$RELEASE_P7S" "$RELEASE" "$CERTDIR/ca.cert" "wrong-suite"
+testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"

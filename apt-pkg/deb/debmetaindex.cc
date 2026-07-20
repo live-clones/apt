@@ -968,7 +968,9 @@ bool debReleaseIndex::ReVerifyTrust() const
    if (not dataFd.Open(releasePath, FileFd::ReadOnly))
       return _error->Error("ReVerifyTrust: cannot open data file %s", releasePath.c_str());
 
-   APT::Internal::X509Store store;
+   APT::Internal::Constrained store(
+      APT::Internal::DefaultRepoSignerPolicy(GetOrigin(), GetExpectedDist()),
+      APT::Internal::DefaultRepoAnchorPolicy());
 
    // Load the certificate bundle — file path or inline PEM blob.
    if (SignedBy[0] == '/')
