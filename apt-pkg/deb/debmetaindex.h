@@ -58,6 +58,7 @@ class APT_HIDDEN debReleaseIndex : public metaIndex
    std::map<std::string, std::string> GetReleaseOptions();
 
    [[nodiscard]] bool IsTrusted() const override;
+   [[nodiscard]] bool ReVerifyTrust() const override;
    [[nodiscard]] bool IsArchitectureSupported(std::string const &arch) const override;
    [[nodiscard]] bool IsArchitectureAllSupportedFor(IndexTarget const &target) const override;
    [[nodiscard]] bool HasSupportForComponent(std::string const &component) const override;

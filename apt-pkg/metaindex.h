@@ -95,6 +95,10 @@ public:
    virtual std::vector<IndexTarget> GetIndexTargets() const = 0;
    virtual std::vector<pkgIndexFile *> *GetIndexFiles() = 0;
    virtual bool IsTrusted() const = 0;
+   // Re-verify trust using expensive cryptographic verification (e.g.
+   // re-running CMS_verify on a cached .p7s).  Called during slow
+   // operations like install; IsTrusted() is the fast presence check.
+   virtual bool ReVerifyTrust() const { return true; }
    virtual bool Load(std::string const &Filename, std::string * const ErrorText) = 0;
    bool Load(std::string *const ErrorText);
    /** @return a new metaIndex object based on this one, but without information from #Load */
