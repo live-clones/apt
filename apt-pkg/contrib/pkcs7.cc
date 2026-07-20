@@ -2,16 +2,18 @@
 // Description							/*{{{*/
 /* pkcs7.cc - X.509 trust store and detached CMS signature verifier.
  *
- * Implementation of X509Store (pImpl via std::unique_ptr<Impl>).
- * All OpenSSL state is held inside X509Store::Impl (defined below);
- * the header exposes only a single std::unique_ptr<Impl> member,
- * keeping the ABI stable.
+ * Implementation of X509Store (pImpl via std::unique_ptr<Impl>) and
+ * Constrained (private X509Store subclass with caller-supplied
+ * CertificateConstraints).  All OpenSSL state is held inside
+ * X509Store::Impl (defined below); the header exposes only a single
+ * std::unique_ptr<Impl> member, keeping the ABI stable.
  */
 									/*}}}*/
 // Include Files						/*{{{*/
 #include <config.h>
 
 #include <apt-pkg/pkcs7.h>
+#include <apt-pkg/pkcs7-constraints.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 
@@ -81,7 +83,7 @@ static std::string CertFingerprint(X509 *cert)
 }
 									/*}}}*/
 
-// X509Store::Impl (pImpl - defined here, forward-declared in header)	/*{{{*/
+// X509Store::Impl (pImpl — defined here, forward-declared in header)	/*{{{*/
 class X509Store::Impl
 {
 public:
@@ -92,6 +94,7 @@ public:
 
    bool LoadCertPath(std::string const &path);
    bool ParseAndCMSVerify(FileFd &signature, FileFd &data);
+   bool ApplyToAllCerts(CertificateConstraints &policy);
 };
 
 bool X509Store::Impl::LoadCertPath(std::string const &path)
@@ -139,6 +142,16 @@ bool X509Store::Impl::LoadCertPath(std::string const &path)
 
 fail:
    return _error->Error("LoadCert: failed to parse certificate: %s", err.c_str());
+}
+
+bool X509Store::Impl::ApplyToAllCerts(CertificateConstraints &policy)
+{
+   for (auto const &cert : certs)
+   {
+      if (not policy.Apply(cert.get()))
+	 return false;
+   }
+   return true;
 }
 
 bool X509Store::Impl::ParseAndCMSVerify(FileFd &signature, FileFd &data)
@@ -195,6 +208,11 @@ X509 *X509Store::PendingSigner()
    return d->pendingSigner;
 }
 
+bool X509Store::ApplyToAllCerts(CertificateConstraints &policy)
+{
+   return d->ApplyToAllCerts(policy);
+}
+
 bool X509Store::VerifyDetach(FileFd &signature, FileFd &data,
 			     VerificationResult &result)
 {
@@ -205,7 +223,7 @@ bool X509Store::VerifyDetach(FileFd &signature, FileFd &data,
       return false;
 
    // 2. Virtual hook: signature-level / trust-anchor constraints.
-   //    Base: no-op.
+   //    Base: no-op.  Constrained: validate all bundle certs.
    if (not VerifySignature())
       return false;
 
@@ -239,6 +257,24 @@ bool X509Store::VerifyDetach(FileFd &signature, FileFd &data,
 
    result.success = true;
    return true;
+}
+									/*}}}*/
+
+// Constrained								/*{{{*/
+
+Constrained::Constrained(CertificateConstraints signer, CertificateConstraints anchor)
+   : X509Store(), signerPolicy(std::move(signer)), anchorPolicy(std::move(anchor)) {}
+
+Constrained::~Constrained() = default; // base dtor needs Impl complete
+
+bool Constrained::VerifyCert()
+{
+   return signerPolicy.Apply(PendingSigner());
+}
+
+bool Constrained::VerifySignature()
+{
+   return ApplyToAllCerts(anchorPolicy);
 }
 									/*}}}*/
 

@@ -21,11 +21,20 @@ namespace APT::Test::PKI
    // KeyUsage keyCertSign+crlSign (critical), SKI.
    X509 *MakeCACert(EVP_PKEY *key, char const *cn);
 
-   // Leaf cert signed by caCert/caKey with BasicConstraints CA:FALSE
-   // (critical), KeyUsage digitalSignature (critical), SubjectAltName
-   // (suite), SKI, AKI.
+   // Leaf cert signed by caCert/caKey.  All policy-relevant extensions
+   // are parameterised so negative tests can inject violations without
+   // re-invoking the full OpenSSL boilerplate.
    X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
-		      char const *cn, char const *suite);
+		      char const *cn, char const *suite,
+		      bool addEKU = true,
+		      int extraKeyUsage = 0,
+		      bool makeCA = false,
+		      bool includeDigitalSignature = true,
+		      long notBeforeOffset = -60,
+		      long notAfterOffset = 86400L,
+		      bool bcCritical = true,
+		      bool kuCritical = true,
+		      int sanType = GEN_DNS);
 
    // Bare self-signed cert with no extensions (not a valid trust anchor).
    X509 *MakeSelfSignedLeaf(EVP_PKEY *key, char const *cn);
@@ -41,16 +50,23 @@ namespace APT::Test::PKI
    ScopedFileDeleter WriteCMSPEM(CMS_ContentInfo *cms);
    ScopedFileDeleter WriteDataFile(std::string const &data);
 
-   // Verify an in-memory CMS against a CA bundle.  Writes CMS+data to
-   // temp files then calls VerifyCMSFiles.  Returns 1=pass, 0=fail,
-   // -1=infra error.
+   // Verify an in-memory CMS against a CA bundle with the default APT
+   // repo-signing policy.  Writes CMS+data to temp files then calls
+   // VerifyCMSFiles.  Returns 1=pass, 0=policy fail, -1=infra error.
    int VerifyCMS(CMS_ContentInfo *cms, std::string const &data,
-		 std::string const &caPath);
+		 std::string const &caPath, std::string const &suite);
 
    // Verify on-disk CMS+data files (as ReVerifyTrust does).
    // Returns true on success, false on any failure.
    bool VerifyCMSFiles(std::string const &cmsPath, std::string const &dataPath,
-		       std::string const &caPath);
+		       std::string const &caPath, std::string const &suite);
+
+   // Verify an in-memory CMS directly (no PEM round-trip).  This is needed
+   // for multi-signer CMS on OpenSSL 3.5.x where PEM serialization corrupts
+   // the second signer's signature.  Returns 1=pass, 0=policy fail, -1=error.
+   // Uses CMS_verify + signer iteration, mirroring X509Store::VerifyDetach.
+   int VerifyCMSInMemory(CMS_ContentInfo *cms, std::string const &data,
+			 std::string const &caPath, std::string const &suite);
 }
 
 #endif

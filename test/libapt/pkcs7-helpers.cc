@@ -142,22 +142,26 @@ X509 *MakeCACert(EVP_PKEY *key, char const *cn)
 }
 
 X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
-		   char const *cn, char const *suite)
+		   char const *cn, char const *suite,
+		   bool addEKU, int extraKeyUsage, bool makeCA,
+		   bool includeDigitalSignature,
+		   long notBeforeOffset, long notAfterOffset,
+		   bool bcCritical, bool kuCritical, int sanType)
 {
    X509 *x = X509_new();
    if (x == nullptr)
       return nullptr;
    X509_set_version(x, X509_VERSION_3);
    ASN1_INTEGER_set(X509_get_serialNumber(x), 2);
-   X509_gmtime_adj(X509_get_notBefore(x), -60);
-   X509_gmtime_adj(X509_get_notAfter(x), 86400L);
+   X509_gmtime_adj(X509_get_notBefore(x), notBeforeOffset);
+   X509_gmtime_adj(X509_get_notAfter(x), notAfterOffset);
    X509_set_pubkey(x, key);
    SetSubject(x, cn);
    X509_set_issuer_name(x, X509_get_subject_name(caCert));
 
    BASIC_CONSTRAINTS *bc = BASIC_CONSTRAINTS_new();
-   bc->ca = 0;
-   if (AddExtension(x, NID_basic_constraints, 1, bc) == false)
+   bc->ca = makeCA ? 1 : 0;
+   if (AddExtension(x, NID_basic_constraints, bcCritical ? 1 : 0, bc) == false)
    {
       BASIC_CONSTRAINTS_free(bc);
       X509_free(x);
@@ -171,14 +175,39 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
       X509_free(x);
       return nullptr;
    }
-   SetKeyUsageBits(ku, KU_DIGITAL_SIGNATURE);
-   if (AddExtension(x, NID_key_usage, 1, ku) == false)
+   int usageMask = 0;
+   if (includeDigitalSignature)
+      usageMask |= KU_DIGITAL_SIGNATURE;
+   if (extraKeyUsage != 0)
+      usageMask |= extraKeyUsage;
+   SetKeyUsageBits(ku, usageMask);
+   if (AddExtension(x, NID_key_usage, kuCritical ? 1 : 0, ku) == false)
    {
       ASN1_BIT_STRING_free(ku);
       X509_free(x);
       return nullptr;
    }
    ASN1_BIT_STRING_free(ku);
+
+   if (addEKU)
+   {
+      EXTENDED_KEY_USAGE *eku = sk_ASN1_OBJECT_new_null();
+      ASN1_OBJECT *obj = OBJ_txt2obj(APT::Internal::REPO_SIGNING_EKU, 1);
+      if (eku == nullptr || obj == nullptr || sk_ASN1_OBJECT_push(eku, obj) != 1)
+      {
+	 ASN1_OBJECT_free(obj);
+	 EXTENDED_KEY_USAGE_free(eku);
+	 X509_free(x);
+	 return nullptr;
+      }
+      bool ok = AddExtension(x, NID_ext_key_usage, 0, eku);
+      EXTENDED_KEY_USAGE_free(eku);
+      if (ok == false)
+      {
+	 X509_free(x);
+	 return nullptr;
+      }
+   }
 
    GENERAL_NAMES *sans = sk_GENERAL_NAME_new_null();
    ASN1_IA5STRING *sanValue = ASN1_IA5STRING_new();
@@ -198,8 +227,11 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
       X509_free(x);
       return nullptr;
    }
-   gn->type = GEN_DNS;
-   gn->d.dNSName = sanValue;
+   gn->type = sanType;
+   if (sanType == GEN_DNS)
+      gn->d.dNSName = sanValue;
+   else
+      gn->d.uniformResourceIdentifier = sanValue;
    if (sk_GENERAL_NAME_push(sans, gn) != 1)
    {
       GENERAL_NAME_free(gn);
@@ -295,9 +327,11 @@ ScopedFileDeleter WriteDataFile(std::string const &data)
 }
 
 bool VerifyCMSFiles(std::string const &cmsPath, std::string const &dataPath,
-		    std::string const &caPath)
+		    std::string const &caPath, std::string const &suite)
 {
-   APT::Internal::X509Store store;
+   APT::Internal::Constrained store(
+      APT::Internal::DefaultRepoSignerPolicy("", suite),
+      APT::Internal::DefaultRepoAnchorPolicy());
    if (not store.LoadCert(caPath))
    {
       _error->Discard();
@@ -317,12 +351,14 @@ bool VerifyCMSFiles(std::string const &cmsPath, std::string const &dataPath,
 }
 
 int VerifyCMS(CMS_ContentInfo *cms, std::string const &data,
-	      std::string const &caPath)
+	      std::string const &caPath, std::string const &suite)
 {
    auto cmsTmp = WriteCMSPEM(cms);
    auto dataTmp = WriteDataFile(data);
 
-   APT::Internal::X509Store store;
+   APT::Internal::Constrained store(
+      APT::Internal::DefaultRepoSignerPolicy("", suite),
+      APT::Internal::DefaultRepoAnchorPolicy());
    if (not store.LoadCert(caPath))
    {
       _error->Discard();
@@ -335,15 +371,90 @@ int VerifyCMS(CMS_ContentInfo *cms, std::string const &data,
    if (not dataFd.Open(dataTmp.Name(), FileFd::ReadOnly))
       return -1;
 
-   APT::Internal::VerificationResult result;
-   if (not store.VerifyDetach(sigFd, dataFd, result))
+    APT::Internal::VerificationResult result;
+    if (not store.VerifyDetach(sigFd, dataFd, result))
+    {
+       _error->Discard();
+       return 0;
+    }
+
+    _error->Discard();
+    return result.success ? 1 : 0;
+}
+
+int VerifyCMSInMemory(CMS_ContentInfo *cms, std::string const &data,
+		      std::string const &caPath, std::string const &suite)
+{
+   // Load CA cert into an X509_STORE (mirrors X509Store::LoadCert).
+   BIO *caBio = BIO_new_file(caPath.c_str(), "r");
+   if (caBio == nullptr)
+      return -1;
+   X509_STORE *store = X509_STORE_new();
+   if (store == nullptr)
    {
-      _error->Discard();
+      BIO_free(caBio);
+      return -1;
+   }
+   X509_VERIFY_PARAM *param = X509_STORE_get0_param(store);
+   X509_VERIFY_PARAM_set_purpose(param, X509_PURPOSE_ANY);
+   bool loaded = false;
+   for (;;)
+   {
+      X509 *cert = PEM_read_bio_X509(caBio, nullptr, nullptr, nullptr);
+      if (cert == nullptr)
+	 break;
+      X509_STORE_add_cert(store, cert);
+      X509_free(cert);
+      loaded = true;
+   }
+   BIO_free(caBio);
+   ERR_clear_error();
+   if (not loaded)
+   {
+      X509_STORE_free(store);
+      return -1;
+   }
+
+   // CMS_verify (raw cryptographic verification).
+   BIO *dataBio = BIO_new_mem_buf(data.data(), static_cast<int>(data.size()));
+   if (dataBio == nullptr)
+   {
+      X509_STORE_free(store);
+      return -1;
+      }
+   int rc = CMS_verify(cms, nullptr, store, dataBio, nullptr,
+		       CMS_DETACHED | CMS_BINARY);
+   BIO_free(dataBio);
+
+   if (rc != 1)
+   {
+      X509_STORE_free(store);
       return 0;
    }
 
-   _error->Discard();
-   return result.success ? 1 : 0;
+   // Apply signer policy: at least one signer must pass.
+   // This mirrors Constrained::VerifyCert (signerPolicy.Apply).
+   auto signerPolicy = APT::Internal::DefaultRepoSignerPolicy("", suite);
+
+   STACK_OF(X509) *signers = CMS_get0_signers(cms);
+   if (signers == nullptr)
+   {
+      X509_STORE_free(store);
+      return 0;
+   }
+   bool accepted = false;
+   for (int i = 0; i < sk_X509_num(signers); ++i)
+   {
+      X509 *cert = sk_X509_value(signers, i);
+      if (cert && signerPolicy.Apply(cert))
+      {
+	 accepted = true;
+	 break;
+      }
+   }
+    X509_STORE_free(store);
+    _error->Discard();
+    return accepted ? 1 : 0;
 }
 
 } // namespace APT::Test::PKI
