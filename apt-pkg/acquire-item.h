@@ -1209,6 +1209,13 @@ class APT_HIDDEN pkgAcqAuxFile final : public pkgAcqFile		/*{{{*/
       reply must still reference the original URI the requester used
       to ask for this file. */
    std::string const OriginalURI;
+   /** \brief modification time of a preexisting copy of the file kept as fallback
+
+      An old copy of the file is kept around in the auxfiles directory
+      and can be used by the requester as a fallback if the download
+      fails, so it must not be renamed to ".FAILED" unless the download
+      actually (partially) replaced it. */
+   struct timespec OldCopyMtime = {};
 
    public:
    void Failed(std::string const &Message, pkgAcquire::MethodConfig const * Cnf) override;

@@ -214,6 +214,9 @@ bool MirrorMethod::MirrorListFileReceived(MirrorListInfo &info, FetchItem *const
 	 baseuris.push_back(i.second.baseuri);
    sortByLength(baseuris);
 
+   /* If fetching the mirror file failed, but an old copy of it is still
+      around in the auxfiles directory, the worker hands us the old copy
+      directly, so Itm->DestFile is usable and we do not have to fail. */
    FileFd mirrorlist;
    if (FileExists(Itm->DestFile) && mirrorlist.Open(Itm->DestFile, FileFd::ReadOnly, FileFd::Extension))
    {

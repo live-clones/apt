@@ -4110,8 +4110,23 @@ void pkgAcqAuxFile::Failed(std::string const &Message, pkgAcquire::MethodConfig 
    pkgAcqFile::Failed(Message, Cnf);
    if (Status == StatIdle)
       return;
-   if (RealFileExists(DestFile))
-      Rename(DestFile, DestFile + ".FAILED");
+   /* Rename the file to ".FAILED" if it is a partial download, but keep an
+      old copy of the file around untouched as the requester might use it
+      as a fallback if the download failed before it modified the file. */
+   struct stat Buf;
+   if ((OldCopyMtime.tv_sec == 0 && OldCopyMtime.tv_nsec == 0) ||
+       stat(DestFile.c_str(), &Buf) != 0 ||
+       Buf.st_mtim.tv_sec != OldCopyMtime.tv_sec || Buf.st_mtim.tv_nsec != OldCopyMtime.tv_nsec)
+   {
+      if (RealFileExists(DestFile))
+	 Rename(DestFile, DestFile + ".FAILED");
+   }
+   else
+   {
+      /* the old copy of the file can be used as a fallback by the requester,
+	 so the failure to download the file is ignored rather than fatal */
+      Status = StatDone;
+   }
    Desc.URI = OriginalURI;
    Worker->ReplyAux(Desc);
 }
@@ -4207,6 +4222,12 @@ pkgAcqAuxFile::pkgAcqAuxFile(pkgAcquire::Item *const Owner, pkgAcquire::Worker *
 			     HashStringList const &Hashes, unsigned long long const MaximumSize) : pkgAcqFile(Owner->GetOwner(), URI, Hashes, Hashes.FileSize(), Desc, ShortDesc, "", GetAuxFileNameFromURI(URI), false),
 												   Owner(Owner), Worker(Worker), MaximumSize(MaximumSize), OriginalURI(this->Desc.URI)
 {
+   /* remember if we have an old copy of the file around so that we can
+      keep it as a fallback in case the download fails (see Failed) */
+   struct stat Buf;
+   if (stat(DestFile.c_str(), &Buf) == 0)
+      OldCopyMtime = Buf.st_mtim;
+
    /* very bad failures can happen while constructing which causes
       us to hang as the aux request is never answered (e.g. method not available)
       Ideally we catch failures earlier, but a safe guard can't hurt. */
