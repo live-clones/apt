@@ -114,6 +114,19 @@ msgmsg 'all mirror+http setup'
 sed -i -e 's# mirror:# mirror+http:#' rootdir/etc/apt/sources.list.d/*
 testrun '*_redirectme_*' '*_mirror.txt_*'
 
+msgmsg 'redirect of mirrorlist is handled correctly'
+cp aptarchive/mirror.txt aptarchive/mirror2.txt
+webserverconfig 'aptwebserver::redirect::replace::/mirror.txt' "http://127.0.0.2:${APTHTTPPORT}/mirror2.txt"
+testsuccessequal "Get:1 http://localhost:${APTHTTPPORT}/mirror.txt Mirrorlist [$(stat -c%s aptarchive/mirror2.txt) B]
+Hit:2 http://localhost:${APTHTTPPORT} stable InRelease
+Hit:3 http://localhost:${APTHTTPPORT} unstable InRelease
+Reading package lists...
+Building dependency tree...
+Reading state information...
+All packages are up to date." apt update
+webserverconfig 'aptwebserver::redirect::replace::/mirror.txt'
+rm -f aptarchive/mirror2.txt
+
 msgmsg 'stable gzipped redirect setup'
 echo "http://localhost:${APTHTTPPORT}/redirectme" > aptarchive/mirror.txt
 compressfile aptarchive/mirror.txt

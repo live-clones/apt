@@ -749,7 +749,9 @@ static void * handleClient(int const client, size_t const id)		/*{{{*/
 	 {
 	    std::string redirect = "/" + filename;
 	    for (::Configuration::Item *I = Replaces->Child; I != NULL; I = I->Next)
-	       redirect = SubstVar(redirect, I->Tag, I->Value);
+	       // cleared options remain as items with an empty value
+	       if (I->Value.empty() == false)
+		  redirect = SubstVar(redirect, I->Tag, I->Value);
 	    if (redirect.empty() == false && redirect[0] == '/')
 	       redirect.erase(0,1);
 	    if (redirect != filename)
