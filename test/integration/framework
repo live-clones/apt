@@ -1393,6 +1393,34 @@ signreleasefiles() {
 	msgdone 'info'
 }
 
+signreleasewithp7s() {
+	# Sign Release files with a CMS/PKCS#7 detached signature.
+	# The EKU OID is not enforced by the unconstrained verifier.
+	local CERTFILE="$1"
+	local KEYFILE="$2"
+	local CAFILE="${3:-}"
+	local REPODIR="${4:-aptarchive}"
+	msgninfo "\tSign archive with p7s (${CERTFILE})… "
+	for RELEASE in $(find "${REPODIR}/" -name 'Release'); do
+		local HASH
+		HASH="$(sha256sum "${RELEASE}" | cut -d' ' -f1)"
+		local SIGDIR
+		SIGDIR="${RELEASE%/Release}/signed-by/SHA256"
+		mkdir -p "${SIGDIR}"
+		local CERTARG=""
+		[ -n "$CAFILE" ] && CERTARG="-certfile ${CAFILE}"
+		openssl cms -sign \
+			-in     "${RELEASE}" \
+			-out    "${SIGDIR}/${HASH}.p7s" \
+			-signer "${CERTFILE}" \
+			-inkey  "${KEYFILE}" \
+			-outform PEM -binary \
+			${CERTARG} \
+			2>/dev/null
+	done
+	msgdone 'info'
+}
+
 redatereleasefiles() {
 	local DATE="$(date -u -d "$1" -R)"
 	for release in $(find aptarchive/ -name 'Release'); do
