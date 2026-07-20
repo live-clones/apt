@@ -235,7 +235,7 @@ static void APT_NONNULL(3) ChangeSiteIsMirrorChange(std::string const &NewURI, p
    if (firstSpace != std::string::npos)
    {
       std::string const OldSite = desc.Description.substr(0, firstSpace);
-      if (likely(APT::String::Startswith(desc.URI, OldSite)))
+      if (likely(APT::String::Startswith(desc.URI, OldSite) && desc.URI.length() > OldSite.length()))
       {
 	 std::string const OldExtra = desc.URI.substr(OldSite.length() + 1);
 	 if (likely(APT::String::Endswith(NewURI, OldExtra)))
