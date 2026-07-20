@@ -4223,10 +4223,15 @@ pkgAcqAuxFile::pkgAcqAuxFile(pkgAcquire::Item *const Owner, pkgAcquire::Worker *
 												   Owner(Owner), Worker(Worker), MaximumSize(MaximumSize), OriginalURI(this->Desc.URI)
 {
    /* remember if we have an old copy of the file around so that we can
-      keep it as a fallback in case the download fails (see Failed) */
+      keep it as a fallback in case the download fails (see Failed).
+      There is no point in retrying a failed download then as we can
+      use the old copy instead straight away. */
    struct stat Buf;
    if (stat(DestFile.c_str(), &Buf) == 0)
+   {
       OldCopyMtime = Buf.st_mtim;
+      Retries = 0;
+   }
 
    /* very bad failures can happen while constructing which causes
       us to hang as the aux request is never answered (e.g. method not available)
