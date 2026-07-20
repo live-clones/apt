@@ -1203,6 +1203,12 @@ class APT_HIDDEN pkgAcqAuxFile final : public pkgAcqFile		/*{{{*/
    pkgAcquire::Item *const Owner;
    pkgAcquire::Worker *const Worker;
    unsigned long long MaximumSize;
+   /** \brief URI the file was originally requested with
+
+      A redirect changes the URI of the item during download, but the
+      reply must still reference the original URI the requester used
+      to ask for this file. */
+   std::string const OriginalURI;
 
    public:
    void Failed(std::string const &Message, pkgAcquire::MethodConfig const * Cnf) override;

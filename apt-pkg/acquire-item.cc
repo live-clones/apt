@@ -4112,6 +4112,7 @@ void pkgAcqAuxFile::Failed(std::string const &Message, pkgAcquire::MethodConfig 
       return;
    if (RealFileExists(DestFile))
       Rename(DestFile, DestFile + ".FAILED");
+   Desc.URI = OriginalURI;
    Worker->ReplyAux(Desc);
 }
 									/*}}}*/
@@ -4119,10 +4120,11 @@ void pkgAcqAuxFile::Done(std::string const &Message, HashStringList const &CalcH
 			 pkgAcquire::MethodConfig const *const Cnf)
 {
    pkgAcqFile::Done(Message, CalcHashes, Cnf);
-   if (Status == StatDone)
+   if (Status == StatDone || Status == StatAuthError || Status == StatError)
+   {
+      Desc.URI = OriginalURI;
       Worker->ReplyAux(Desc);
-   else if (Status == StatAuthError || Status == StatError)
-      Worker->ReplyAux(Desc);
+   }
 }
 									/*}}}*/
 std::string pkgAcqAuxFile::Custom600Headers() const /*{{{*/
@@ -4203,7 +4205,7 @@ static std::string GetAuxFileNameFromURI(std::string const &uri)
 pkgAcqAuxFile::pkgAcqAuxFile(pkgAcquire::Item *const Owner, pkgAcquire::Worker *const Worker,
 			     std::string const &ShortDesc, std::string const &Desc, std::string const &URI,
 			     HashStringList const &Hashes, unsigned long long const MaximumSize) : pkgAcqFile(Owner->GetOwner(), URI, Hashes, Hashes.FileSize(), Desc, ShortDesc, "", GetAuxFileNameFromURI(URI), false),
-												   Owner(Owner), Worker(Worker), MaximumSize(MaximumSize)
+												   Owner(Owner), Worker(Worker), MaximumSize(MaximumSize), OriginalURI(this->Desc.URI)
 {
    /* very bad failures can happen while constructing which causes
       us to hang as the aux request is never answered (e.g. method not available)
