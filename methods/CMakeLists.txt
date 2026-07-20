@@ -13,6 +13,7 @@ add_executable(sqv sqv.cc)
 install(TARGETS sqv
         RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/apt/methods)
 endif()
+add_executable(cms cms.cc)
 add_executable(cdrom cdrom.cc)
 add_executable(http http.cc basehttp.cc $<TARGET_OBJECTS:connectlib>)
 add_executable(mirror mirror.cc)
@@ -21,14 +22,16 @@ add_executable(rred rred.cc)
 target_compile_definitions(connectlib PRIVATE ${OPENSSL_DEFINITIONS})
 target_include_directories(connectlib PRIVATE ${OPENSSL_INCLUDE_DIR})
 target_include_directories(http PRIVATE $<$<BOOL:${SYSTEMD_FOUND}>:${SYSTEMD_INCLUDE_DIRS}>)
+target_include_directories(cms PRIVATE ${OPENSSL_INCLUDE_DIR})
 
 # Additional libraries to link against for networked stuff
 target_link_libraries(http OpenSSL::SSL $<$<BOOL:${SYSTEMD_FOUND}>:${SYSTEMD_LIBRARIES}>)
+target_link_libraries(cms OpenSSL::Crypto)
 
 target_link_libraries(rred apt-private)
 
 # Install the library
-install(TARGETS file copy store cdrom gpgv http rred mirror
+install(TARGETS file copy store cdrom gpgv http rred mirror cms
         RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/apt/methods)
 
 add_links(${CMAKE_INSTALL_LIBEXECDIR}/apt/methods mirror mirror+http mirror+https mirror+file mirror+copy)
