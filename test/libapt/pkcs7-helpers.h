@@ -7,6 +7,7 @@
 // PEM_write_bio_CMS / PEM_read_bio_CMS correctly.
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/evp.h>
 #include <openssl/cms.h>
 
@@ -22,10 +23,11 @@ namespace APT::Test::PKI
    X509 *MakeCACert(EVP_PKEY *key, char const *cn);
 
    // Leaf cert signed by caCert/caKey with BasicConstraints CA:FALSE
-   // (critical), KeyUsage digitalSignature (critical), SubjectAltName
-   // (suite), SKI, AKI.
+   // (critical), KeyUsage kuMask (critical, default digitalSignature),
+   // SubjectAltName (suite), SKI, AKI.
    X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
-		      char const *cn, char const *suite);
+		      char const *cn, char const *suite,
+		      int kuMask = KU_DIGITAL_SIGNATURE);
 
    // Bare self-signed cert with no extensions (not a valid trust anchor).
    X509 *MakeSelfSignedLeaf(EVP_PKEY *key, char const *cn);
@@ -34,6 +36,12 @@ namespace APT::Test::PKI
    // optionally the CA cert in the SignedData certificates field.
    CMS_ContentInfo *SignData(std::string const &data, X509 *signcert,
 			     EVP_PKEY *signkey, X509 *includeCA = nullptr);
+
+   // Like SignData, but with an explicit message digest (e.g. EVP_sha1())
+   // for digest-policy tests.
+   CMS_ContentInfo *SignDataWithDigest(std::string const &data, X509 *signcert,
+				       EVP_PKEY *signkey, EVP_MD const *md,
+				       X509 *includeCA = nullptr);
 
    // Write cert(s) / CMS / data to PEM temp files (ScopedFileDeleter keeps
    // them alive until it goes out of scope).

@@ -14,6 +14,8 @@
 #include <apt-pkg/pkcs7.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/configuration.h>
+#include <apt-pkg/strutl.h>
 
 #include <memory>
 #include <string>
@@ -39,10 +41,12 @@ struct X509Deleter { void operator()(X509 *p) const { X509_free(p); } };
 struct X509StoreDeleter { void operator()(X509_STORE *p) const { X509_STORE_free(p); } };
 struct CMSDeleter { void operator()(CMS_ContentInfo *p) const { CMS_ContentInfo_free(p); } };
 struct BIODeleter { void operator()(BIO *p) const { BIO_free(p); } };
+struct X509StackDeleter { void operator()(STACK_OF(X509) *p) const { sk_X509_pop_free(p, X509_free); } };
 using X509UP = std::unique_ptr<X509, X509Deleter>;
 using X509StoreUP = std::unique_ptr<X509_STORE, X509StoreDeleter>;
 using CMSUP = std::unique_ptr<CMS_ContentInfo, CMSDeleter>;
 using BIOUP = std::unique_ptr<BIO, BIODeleter>;
+using X509StackUP = std::unique_ptr<STACK_OF(X509), X509StackDeleter>;
 
 // Internal helpers (not exported).						/*{{{*/
 static std::string FormatOpenSSLErrorQueue()
@@ -79,6 +83,38 @@ static std::string CertFingerprint(X509 *cert)
       return "";
    return HexDigest(md, len);
 }
+
+enum class DigestTrust { Trusted, Weak, Untrusted };
+
+// Classify a CMS signer digest algorithm per APT hash policy, mirroring
+// the gpgv method's APT::Hashes::<name>::{Untrusted,Weak} knobs.
+// Checked order: Untrusted option, Weak option, built-in default.
+static DigestTrust ClassifyDigest(X509_ALGOR const *alg, std::string &name)
+{
+   static constexpr int untrustedNids[] = {
+      NID_md2, NID_md4, NID_md5, NID_sha1, NID_ripemd160,
+   };
+   int nid = NID_undef;
+   if (alg != nullptr && alg->algorithm != nullptr)
+      nid = OBJ_obj2nid(alg->algorithm);
+   char const *sn = (nid == NID_undef) ? nullptr : OBJ_nid2sn(nid);
+   name = (sn != nullptr) ? sn : "unknown";
+
+   std::string opt;
+   strprintf(opt, "APT::Hashes::%s::Untrusted", name.c_str());
+   if (_config != nullptr && _config->FindB(opt, false))
+      return DigestTrust::Untrusted;
+   strprintf(opt, "APT::Hashes::%s::Weak", name.c_str());
+   if (_config != nullptr && _config->FindB(opt, false))
+      return DigestTrust::Weak;
+
+   if (nid == NID_undef)
+      return DigestTrust::Untrusted;
+   for (int const u : untrustedNids)
+      if (nid == u)
+	 return DigestTrust::Untrusted;
+   return DigestTrust::Trusted;
+}
 									/*}}}*/
 
 // X509Store::Impl (pImpl - defined here, forward-declared in header)	/*{{{*/
@@ -110,6 +146,15 @@ bool X509Store::Impl::LoadCertPath(std::string const &path)
 	 return _error->Error("LoadCert: X509_STORE_new failed: %s",
 			      FormatOpenSSLErrorQueue().c_str());
       }
+      // Chain validation is intentionally purpose-agnostic: APT's
+      // repo-signing EKU is not a standard X509_PURPOSE, so OpenSSL's
+      // purpose mechanism (keyUsage/EKU/SAN checks) is skipped and any
+      // signing-purpose constraints are enforced per-signer by the
+      // policy layer (VerifyCert() hook) instead.  Setting the purpose
+      // to X509_PURPOSE_ANY makes this explicit; it is equivalent to
+      // leaving the purpose unset, as chain building is independent of
+      // the purpose (purpose checks only run for purpose >=
+      // X509_PURPOSE_MIN, and X509_PURPOSE_ANY is a no-op check).
       X509_VERIFY_PARAM *const param = X509_STORE_get0_param(store.get());
       X509_VERIFY_PARAM_set_purpose(param, X509_PURPOSE_ANY);
    }
@@ -172,6 +217,35 @@ bool X509Store::Impl::ParseAndCMSVerify(FileFd &signature, FileFd &data)
       return _error->Error("VerifyDetach: CMS signature verification failed: %s", err.c_str());
    }
 
+   // Trusted-digest floor (gpgv parity): reject signers using untrusted
+   // digest algorithms.  OpenSSL security level 1 still accepts SHA-1
+   // and the gpgv path explicitly rejects it by default.
+   // CMS_get0_SignerInfos returns an internal pointer — no free.
+   STACK_OF(CMS_SignerInfo) *const sinfos = CMS_get0_SignerInfos(cms.get());
+   if (sinfos == nullptr)
+      return _error->Error("VerifyDetach: CMS_get0_SignerInfos returned null");
+   for (int i = 0; i < sk_CMS_SignerInfo_num(sinfos); ++i)
+   {
+      CMS_SignerInfo *const si = sk_CMS_SignerInfo_value(sinfos, i);
+      if (si == nullptr)
+	 continue;
+      X509_ALGOR *digestAlg = nullptr;
+      CMS_SignerInfo_get0_algs(si, nullptr, nullptr, &digestAlg, nullptr);
+      std::string digestName;
+      switch (ClassifyDigest(digestAlg, digestName))
+      {
+      case DigestTrust::Untrusted:
+	 return _error->Error("VerifyDetach: signer %d uses untrusted digest algorithm: %s",
+			      i, digestName.c_str());
+      case DigestTrust::Weak:
+	 _error->Warning("VerifyDetach: signer %d uses weak digest algorithm: %s",
+			 i, digestName.c_str());
+	 break;
+      case DigestTrust::Trusted:
+	 break;
+      }
+   }
+
    return true;
 }
 									/*}}}*/
@@ -210,7 +284,10 @@ bool X509Store::VerifyDetach(FileFd &signature, FileFd &data,
       return false;
 
    // 3. Walk signers, applying per-signer cert policy via VerifyCert().
-   STACK_OF(X509) *const signers = CMS_get0_signers(d->cms.get());
+   //    CMS_get0_signers returns a new stack of up-ref'd certs; must be
+   //    freed with sk_X509_pop_free(..., X509_free).
+   X509StackUP signersUP(CMS_get0_signers(d->cms.get()));
+   STACK_OF(X509) *const signers = signersUP.get();
    if (signers == nullptr)
       return _error->Error("VerifyDetach: CMS_get0_signers returned null");
 
@@ -220,6 +297,14 @@ bool X509Store::VerifyDetach(FileFd &signature, FileFd &data,
    {
       X509 *const cert = sk_X509_value(signers, i);
       if (cert == nullptr)
+	 continue;
+      // Baseline signing-capability check (gpgv parity: gpg only accepts
+      // signatures from keys whose flags include "sign").  An absent
+      // KeyUsage extension means unrestricted use (RFC 5280), reported by
+      // X509_get_key_usage as UINT32_MAX; only reject when the extension
+      // is present and lacks digitalSignature.
+      uint32_t const ku = X509_get_key_usage(cert);
+      if (ku != UINT32_MAX && (ku & KU_DIGITAL_SIGNATURE) == 0)
 	 continue;
       d->pendingSigner = cert;
       if (VerifyCert())

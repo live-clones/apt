@@ -142,7 +142,7 @@ X509 *MakeCACert(EVP_PKEY *key, char const *cn)
 }
 
 X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
-		   char const *cn, char const *suite)
+		   char const *cn, char const *suite, int kuMask)
 {
    X509 *x = X509_new();
    if (x == nullptr)
@@ -171,7 +171,7 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
       X509_free(x);
       return nullptr;
    }
-   SetKeyUsageBits(ku, KU_DIGITAL_SIGNATURE);
+   SetKeyUsageBits(ku, kuMask);
    if (AddExtension(x, NID_key_usage, 1, ku) == false)
    {
       ASN1_BIT_STRING_free(ku);
@@ -254,6 +254,42 @@ CMS_ContentInfo *SignData(std::string const &data, X509 *signcert,
    CMS_ContentInfo *cms = CMS_sign(signcert, signkey, certs, bio,
 				   CMS_DETACHED | CMS_BINARY);
    sk_X509_free(certs);
+   BIO_free(bio);
+   return cms;
+}
+
+CMS_ContentInfo *SignDataWithDigest(std::string const &data, X509 *signcert,
+				    EVP_PKEY *signkey, EVP_MD const *md,
+				    X509 *includeCA)
+{
+   BIO *bio = BIO_new_mem_buf(data.data(), static_cast<int>(data.size()));
+   if (bio == nullptr)
+      return nullptr;
+   CMS_ContentInfo *cms = CMS_sign(nullptr, nullptr, nullptr, bio,
+				   CMS_PARTIAL | CMS_DETACHED | CMS_BINARY);
+   if (cms == nullptr)
+   {
+      BIO_free(bio);
+      return nullptr;
+   }
+   if (CMS_add1_signer(cms, signcert, signkey, md, 0) == nullptr)
+   {
+      CMS_ContentInfo_free(cms);
+      BIO_free(bio);
+      return nullptr;
+   }
+   if (includeCA != nullptr && CMS_add1_cert(cms, includeCA) != 1)
+   {
+      CMS_ContentInfo_free(cms);
+      BIO_free(bio);
+      return nullptr;
+   }
+   if (CMS_final(cms, bio, nullptr, CMS_DETACHED | CMS_BINARY) != 1)
+   {
+      CMS_ContentInfo_free(cms);
+      BIO_free(bio);
+      return nullptr;
+   }
    BIO_free(bio);
    return cms;
 }

@@ -178,3 +178,23 @@ msgtest 'Malformed p7s file' 'returns 400 URI Failure'
 cmsmethod "$RELEASE_GARBAGE"
 testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
 
+# --------------------------------------------------------------------------- #
+# Test 9: SHA-1 digest → 400 URI Failure (trusted-digest floor).
+# Guarded so this test still passes on hosts whose OpenSSL security level
+# rejects SHA-1 at signing time (level ≥ 2).
+# --------------------------------------------------------------------------- #
+RELEASE_P7S_SHA1="${TMPWORKINGDIRECTORY}/Release.sha1.p7s"
+if openssl cms -sign -md sha1 \
+    -in      "$RELEASE" \
+    -out     "$RELEASE_P7S_SHA1" \
+    -signer  "$CERTDIR/leaf.cert" \
+    -inkey   "$CERTDIR/leaf.key" \
+    -certfile "$CERTDIR/ca.cert" \
+    -outform PEM -binary 2>/dev/null; then
+    msgtest 'SHA-1 signed CMS' 'returns 400 URI Failure'
+    cmsmethod "$RELEASE_P7S_SHA1"
+    testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
+else
+    msgskip 'SHA-1 signing rejected by host OpenSSL security level'
+fi
+

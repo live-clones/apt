@@ -18,6 +18,7 @@
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/strutl.h>
+#include <apt-pkg/configuration.h>
 #include <apt-pkg/pkcs7.h>
 
 #include <regex>
@@ -318,8 +319,9 @@ TEST_F(CMSVerifyTest, SignerSubjectExtracted)
    X509_NAME_oneline(X509_get_subject_name(signer), subjectbuf, sizeof(subjectbuf));
    std::string const subject(subjectbuf);
    EXPECT_NE(subject.find("APT Test CMS Leaf"), std::string::npos)
-      << "Subject was: " << subject;
+       << "Subject was: " << subject;
 
+   sk_X509_pop_free(signers, X509_free);
    CMS_ContentInfo_free(cms);
 }
 
@@ -350,6 +352,68 @@ TEST_F(CMSVerifyTest, IntermediateChainVerifies)
    EVP_PKEY_free(leaf2Key);
    X509_free(interCert);
    EVP_PKEY_free(interKey);
+}
+
+TEST_F(CMSVerifyTest, SHA1DigestRejected)
+{
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignDataWithDigest(data, leafCert, leafKey, EVP_sha1(), caCert);
+   if (cms == nullptr)
+      GTEST_SKIP() << "SHA-1 CMS signing rejected by host OpenSSL security level";
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name()), 1);
+   CMS_ContentInfo_free(cms);
+}
+
+TEST_F(CMSVerifyTest, SHA1DigestWeakConfigAccepted)
+{
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignDataWithDigest(data, leafCert, leafKey, EVP_sha1(), caCert);
+   if (cms == nullptr)
+      GTEST_SKIP() << "SHA-1 CMS signing rejected by host OpenSSL security level";
+
+   _config->Set("APT::Hashes::SHA1::Weak", true);
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   EXPECT_EQ(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name()), 1);
+   _config->Clear("APT::Hashes::SHA1::Weak");
+   CMS_ContentInfo_free(cms);
+}
+
+TEST_F(CMSVerifyTest, SHA256DigestUntrustedConfigRejected)
+{
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   _config->Set("APT::Hashes::SHA256::Untrusted", true);
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name()), 1);
+   _config->Clear("APT::Hashes::SHA256::Untrusted");
+   CMS_ContentInfo_free(cms);
+}
+
+// Baseline signing-capability check (gpgv parity): a signer whose
+// KeyUsage extension lacks digitalSignature (e.g. a keyEncipherment-only
+// TLS cert chaining to the pinned CA) must not be accepted.
+TEST_F(CMSVerifyTest, SignerLackingDigitalSignatureRejected)
+{
+   EVP_PKEY *tlsKey = APT::Test::PKI::MakeKey();
+   ASSERT_NE(tlsKey, nullptr);
+   X509 *tlsCert = APT::Test::PKI::MakeLeafCert(tlsKey, caKey, caCert,
+						"TLS-Only Leaf", "resolute",
+						KU_KEY_ENCIPHERMENT);
+   ASSERT_NE(tlsCert, nullptr);
+
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, tlsCert, tlsKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name()), 1);
+   CMS_ContentInfo_free(cms);
+   X509_free(tlsCert);
+   EVP_PKEY_free(tlsKey);
 }
 
 // ---------------------------------------------------------------------------

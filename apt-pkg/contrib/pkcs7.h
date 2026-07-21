@@ -5,11 +5,42 @@
  * Loads a PEM certificate bundle into an X.509 trust store and verifies
  * a detached CMS/PKCS#7 signature against it.  X509Store is policy
  * agnostic: it performs the raw CMS_verify and accepts any signer that
- * passes the OpenSSL chain validation.
+ * passes the OpenSSL chain validation.  X509_PURPOSE_ANY is set on the
+ * store to make explicit that OpenSSL's purpose mechanism (per-purpose
+ * keyUsage/EKU checks) is skipped: APT's repo-signing EKU is not a
+ * standard X509_PURPOSE, so any signing-purpose constraints must be
+ * enforced per-signer by the policy layer (VerifyCert() hook).
+ * (Chain building is independent of the purpose; ANY is equivalent to
+ * leaving the purpose unset.)
  *
  * Subclasses can override the protected VerifyCert()/VerifySignature()
  * virtual hooks to impose constraints on accepted signers or trust
  * anchors.
+ *
+ * VerifyDetach enforces two baseline constraints on every call, both
+ * mirroring the gpgv path (parity, no policy beyond it):
+ *  - A trusted-digest floor: MD2, MD4, MD5, SHA‑1 and RIPEMD‑160 are
+ *    untrusted by default; the gpgv‑parity options
+ *    APT::Hashes::<name>::{Untrusted,Weak} can tighten or relax this
+ *    per digest.
+ *  - A signing-capability check: a signer whose KeyUsage extension is
+ *    present but lacks digitalSignature is rejected (gpg accepts data
+ *    signatures only from keys flagged for signing).  An absent
+ *    KeyUsage extension means unrestricted use (RFC 5280).
+ * Both run before any policy hook, so they apply uniformly to every
+ * call site (acquire method and ReVerifyTrust).
+ *
+ * The unconstrained verifier trusts exactly what the admin pins in
+ * Signed-By: any signing-capable certificate chaining to that anchor
+ * is accepted, regardless of EKU or SAN.  EKU/SAN-based scoping is
+ * deliberately not enforced here (it exceeds gpgv parity); operators
+ * wanting scoping should pin a dedicated CA.  Hooks remain for
+ * subclasses that need stronger policy.
+ *
+ * Known limitations:
+ *  - No CRL or OCSP revocation checks (no distribution story yet).
+ *  - CMS / ASN.1 is parsed in‑process, unlike gpgv's separate
+ *    subprocess; seccomp filtering is opt‑in.
  *
  * The class uses the pImpl idiom (std::unique_ptr<Impl>) so that the
  * header does not expose OpenSSL types in the class layout; the ABI is
@@ -47,8 +78,9 @@ struct APT_PUBLIC VerificationResult
 };
 
 // Generic X.509 trust store + detached CMS verifier.  Policy-agnostic:
-// accepts any signer that passes OpenSSL chain validation.  Subclasses
-// can override VerifyCert()/VerifySignature() to impose constraints.
+// accepts any signer that passes OpenSSL chain validation and the
+// gpgv-parity baseline constraints (see above).  Subclasses can
+// override VerifyCert()/VerifySignature() to impose constraints.
 class APT_PUBLIC X509Store
 {
    class Impl;                             // defined in pkcs7.cc
