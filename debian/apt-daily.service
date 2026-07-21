@@ -6,6 +6,7 @@ After=network.target network-online.target systemd-networkd.service NetworkManag
 
 [Service]
 Type=oneshot
+TimeoutSec=30min
 ExecStartPre=-/usr/lib/apt/apt-helper wait-online
 ExecStart=/usr/lib/apt/apt.systemd.daily update
 
