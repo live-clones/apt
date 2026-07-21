@@ -790,6 +790,16 @@ void ShowPhasing(ostream &out, CacheFile &Cache, APT::PackageVector const &HeldB
 	    CurrentToCandidateVersion(&Cache));
 }
 									/*}}}*/
+// ShowHardwareConditionDeferred - Show packages deferred by hardware condition  /*{{{*/
+void ShowHardwareConditionDeferred(ostream &out, CacheFile &Cache, APT::PackageVector const &HeldBackPackages)
+{
+   ShowList(out, _("The following upgrades have been deferred due to hardware condition:"),
+	    HeldBackPackages,
+	    &AlwaysTrue,
+	    &PrettyFullName,
+	    CurrentToCandidateVersion(&Cache));
+}
+									/*}}}*/
 // ShowKept - Show kept packages					/*{{{*/
 void ShowKept(ostream &out,CacheFile &Cache, APT::PackageVector const &HeldBackPackages)
 {

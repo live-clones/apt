@@ -75,6 +75,8 @@ static bool WriteScenarioVersion(FileFd &output, pkgCache::PkgIterator const &Pk
    WriteOkay(Okay, output, "\nAPT-ID: ", Ver->ID);
    if (Ver.PhasedUpdatePercentage() != 100)
       WriteOkay(Okay, output, "\nPhased-Update-Percentage: ", Ver.PhasedUpdatePercentage());
+   if (not Ver.HardwareConditionMet())
+      WriteOkay(Okay, output, "\nHardware-Condition-Met: no");
    if ((Pkg->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
       WriteOkay(Okay, output, "\nEssential: yes");
    if ((Ver->MultiArch & pkgCache::Version::Allowed) == pkgCache::Version::Allowed)

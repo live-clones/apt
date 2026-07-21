@@ -426,6 +426,14 @@ class APT_PUBLIC pkgDepCache : protected pkgCache::Namespace
     */
    bool PhasingApplied(PkgIterator Pkg) const;
 
+   /** Check if a Hardware-Condition field caused the upgrade to be deferred.
+    *
+    * \return \b true if this package is held back solely because its
+    *  upgrade candidate carries a Hardware-Condition that is not met on
+    *  the current machine.
+    */
+   bool HardwareConditionApplied(PkgIterator Pkg) const;
+
    /** \name State Manipulators
     */
    // @{

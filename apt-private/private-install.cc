@@ -295,15 +295,19 @@ bool InstallPackages(CacheFile &Cache, APT::PackageVector &HeldBackPackages, boo
    {
       APT::PackageVector PhasingPackages;
       APT::PackageVector NotPhasingHeldBackPackages;
+      APT::PackageVector HardwareConditionPackages;
       for (auto const &Pkg : HeldBackPackages)
       {
 	 if (Cache->PhasingApplied(Pkg))
 	    PhasingPackages.push_back(Pkg);
+	 else if (Cache->HardwareConditionApplied(Pkg))
+	    HardwareConditionPackages.push_back(Pkg);
 	 else
 	    NotPhasingHeldBackPackages.push_back(Pkg);
       }
 
       ShowPhasing(c1out, Cache, PhasingPackages);
+      ShowHardwareConditionDeferred(c1out, Cache, HardwareConditionPackages);
       ShowKept(c1out, Cache, NotPhasingHeldBackPackages);
       if (not PhasingPackages.empty() && not NotPhasingHeldBackPackages.empty())
 	 _error->Notice("Some packages may have been kept back due to phasing.");

@@ -82,3 +82,4 @@ Version
 ### APPEND BELOW, sort in with next ABI break ###
 Source-Version
 Architecture-Variant
+Hardware-Condition

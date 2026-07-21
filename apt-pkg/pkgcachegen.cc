@@ -932,6 +932,7 @@ map_pointer<pkgCache::Version> pkgCacheGenerator::NewVersion(pkgCache::VerIterat
    Ver->d = d;
    if (not Ver.PhasedUpdatePercentage(100))
       abort();
+   Ver.HardwareConditionMet(true);
    auto SourceVersion = AllocateInMap<pkgCache::SourceVersion>(); // sequence point so Ver can be moved if needed
    Ver->SourceVersion = SourceVersion;
    Ver.SourceVersion()->ID = Cache.HeaderP->SourceVersionCount++;

@@ -323,6 +323,9 @@ APT_PURE signed short pkgPolicy::GetPriority(pkgCache::VerIterator const &Ver, b
    auto ceiling = std::numeric_limits<signed int>::max();
    if (ExcludePhased(d->machineID, Ver))
       ceiling = 1;
+   if (not Ver.HardwareConditionMet() &&
+       not _config->FindB("APT::Get::Ignore-Hardware-Condition", false))
+      ceiling = std::min(ceiling, (int)1);
    if (VerPins[Ver->ID].Type != pkgVersionMatch::None)
    {
       // If all sources are never pins, the never pin wins.
