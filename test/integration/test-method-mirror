@@ -147,6 +147,23 @@ for f in rootdir/var/lib/apt/lists/127.0.0.2:1_mirror.txt* rootdir/var/lib/apt/l
 	mv "$f" "$(echo "$f" | sed -e "s#127.0.0.2:1_#localhost:${APTHTTPPORT}_#")"
 done
 
+msgmsg 'old mirrorlist is used if the download is interrupted'
+cp aptarchive/mirror.txt aptarchive/mirror.txt.good
+echo "# a newer comment" >> aptarchive/mirror.txt
+webserverconfig 'aptwebserver::truncate-after::mirror.txt' '10'
+testsuccessequal "Get:1 http://localhost:${APTHTTPPORT}/mirror.txt Mirrorlist [41 B]
+Ign:1 http://localhost:${APTHTTPPORT}/mirror.txt Mirrorlist
+  Undetermined Error
+Hit:2 http://localhost:${APTHTTPPORT} stable InRelease
+Hit:3 http://localhost:${APTHTTPPORT} unstable InRelease
+Reading package lists...
+Building dependency tree...
+Reading state information...
+All packages are up to date." apt update
+webserverconfig 'aptwebserver::truncate-after::mirror.txt' ''
+testsuccessequal "$(cat aptarchive/mirror.txt.good)" cat rootdir/var/lib/apt/lists/auxfiles/localhost:${APTHTTPPORT}_mirror.txt
+rm -f aptarchive/mirror.txt.good
+
 msgmsg 'redirect of mirrorlist is handled correctly'
 cp aptarchive/mirror.txt aptarchive/mirror2.txt
 webserverconfig 'aptwebserver::redirect::replace::/mirror.txt' "http://127.0.0.2:${APTHTTPPORT}/mirror2.txt"
