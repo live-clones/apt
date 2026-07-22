@@ -964,7 +964,10 @@ bool debReleaseIndex::IsTrusted() const
 bool debReleaseIndex::ReVerifyTrust() const
 {
    if (not SignedByIsX509Cert(SignedBy))
-      return true; // not an X.509 source; nothing to re-verify
+      // Deliberate no-op accept: for non-X.509 sources trust was already
+      // established by IsTrusted()/the gpgv path, so there is no CMS
+      // signature to re-verify and the source stays trusted.
+      return true;
 
    std::string const p7sPath = MetaIndexFile("Release.p7s");
    std::string const releasePath = MetaIndexFile("Release");

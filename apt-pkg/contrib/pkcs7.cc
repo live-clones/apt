@@ -30,6 +30,7 @@
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
+#include <openssl/x509err.h>
 #include <openssl/x509v3.h>
 
 namespace APT
@@ -93,11 +94,30 @@ static std::string CertFingerprint(X509 *cert)
    return HexDigest(md, len);
 }
 
+// Render an X.509 subject name as a single-line string using the
+// non-deprecated X509_NAME_print_ex API (RFC2253-style, XN_FLAG_ONELINE).
+// Returns an empty string on failure.
+static std::string SubjectOneline(X509 *cert)
+{
+   BIOUP bio(BIO_new(BIO_s_mem()));
+   if (bio == nullptr)
+      return "";
+   if (X509_NAME_print_ex(bio.get(), X509_get_subject_name(cert), 0,
+			  XN_FLAG_ONELINE) < 0)
+      return "";
+   char *data = nullptr;
+   long const len = BIO_get_mem_data(bio.get(), &data);
+   if (len <= 0 || data == nullptr)
+      return "";
+   return std::string(data, static_cast<std::size_t>(len));
+}
+
 enum class DigestTrust { Trusted, Weak, Untrusted };
 
-// Classify a CMS signer digest algorithm per APT hash policy, mirroring
-// the gpgv method's APT::Hashes::<name>::{Untrusted,Weak} knobs.
-// Checked order: Untrusted option, Weak option, built-in default.
+// Classify a CMS signer digest algorithm per the APT hash policy knobs
+// APT::Hashes::<name>::{Untrusted,Weak} (the same options the gpgv
+// method consumes).  Checked order: Untrusted option, Weak option,
+// built-in default.
 static DigestTrust ClassifyDigest(X509_ALGOR const *alg, std::string &name)
 {
    static constexpr int untrustedNids[] = {
@@ -193,6 +213,20 @@ bool X509Store::Impl::LoadCertPath(std::string const &path)
       loaded = true;
       if (X509_STORE_add_cert(store.get(), cert.get()) != 1)
       {
+	 // A duplicate certificate (already present in the store) is
+	 // benign: bundles assembled by concatenating chains commonly
+	 // repeat a cert.  Peek at the reason via a mark so we consume
+	 // only that entry and skip the cert; any other add failure
+	 // stays fatal.
+	 ERR_set_mark();
+	 bool const isDup = (ERR_GET_LIB(ERR_peek_error()) == ERR_LIB_X509 &&
+			     ERR_GET_REASON(ERR_peek_error()) == X509_R_CERT_ALREADY_IN_HASH_TABLE);
+	 if (isDup)
+	 {
+	    ERR_pop_to_mark(); // discard the duplicate entry, keep going
+	    continue;
+	 }
+	 ERR_pop_to_mark();
 	 err = FormatOpenSSLErrorQueue();
 	 fclose(fp);
 	 goto fail;
@@ -240,9 +274,11 @@ bool X509Store::Impl::ParseAndCMSVerify(FileFd &signature, FileFd &data)
       return _error->Error("VerifyDetach: CMS signature verification failed: %s", err.c_str());
    }
 
-   // Trusted-digest floor (gpgv parity): reject signers using untrusted
-   // digest algorithms.  OpenSSL security level 1 still accepts SHA-1
-   // and the gpgv path explicitly rejects it by default.
+   // Trusted-digest floor: reject signers using untrusted digest
+   // algorithms, per the shared APT::Hashes::<name>::{Untrusted,Weak}
+   // knobs that the gpgv method also honors.  OpenSSL security level 1
+   // still accepts SHA-1, so this floor tightens what CMS_verify would
+   // otherwise allow.
    // CMS_get0_SignerInfos returns an internal pointer — no free.
    STACK_OF(CMS_SignerInfo) *const sinfos = CMS_get0_SignerInfos(cms.get());
    if (sinfos == nullptr)
@@ -328,17 +364,22 @@ bool X509Store::VerifyDetach(FileFd &signature, FileFd &data,
       // is present and lacks digitalSignature.
       uint32_t const ku = X509_get_key_usage(cert);
       if (ku != UINT32_MAX && (ku & KU_DIGITAL_SIGNATURE) == 0)
+      {
+	 _error->Warning("VerifyDetach: signer %d (%s) rejected: KeyUsage lacks digitalSignature",
+			 i, SubjectOneline(cert).c_str());
 	 continue;
+      }
       d->pendingSigner = cert;
       if (VerifyCert())
       {
 	 accepted = true;
-	 char subjectbuf[256];
-	 X509_NAME_oneline(X509_get_subject_name(cert), subjectbuf, sizeof(subjectbuf));
-	 result.signerSubject = subjectbuf;
+	 result.signerSubject = SubjectOneline(cert);
 	 result.signerFingerprint = CertFingerprint(cert);
 	 break;
       }
+      d->pendingSigner = nullptr;
+      _error->Warning("VerifyDetach: signer %d (%s) rejected by the certificate policy",
+		      i, SubjectOneline(cert).c_str());
    }
    d->pendingSigner = nullptr;
 

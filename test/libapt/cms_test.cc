@@ -26,8 +26,8 @@
 #include <fstream>
 #include <sstream>
 
-// pem.h must come before cms.h so that DECLARE_PEM_rw(CMS,...) resolves
-// PEM_read_bio_CMS correctly.
+// pem.h must come before cms.h: cms.h declares the PEM accessors via
+// DECLARE_PEM_rw only when OPENSSL_PEM_H is already defined.
 #include <openssl/pem.h>
 #include <openssl/cms.h>
 #include <openssl/err.h>
@@ -428,6 +428,52 @@ TEST_F(CMSVerifyTest, SignerLackingDigitalSignatureRejected)
    EVP_PKEY_free(tlsKey);
 }
 
+// The KeyUsage-gated rejection must name the rejected signer (subject)
+// in a Warning so operators can diagnose which candidate failed policy.
+// (Drives the store directly: the VerifyCMS helper discards the error
+// queue before the caller can inspect it.)
+TEST_F(CMSVerifyTest, KeyUsageRejectionNamesSigner)
+{
+   EVP_PKEY *tlsKey = APT::Test::PKI::MakeKey();
+   ASSERT_NE(tlsKey, nullptr);
+   X509 *tlsCert = APT::Test::PKI::MakeLeafCert(tlsKey, caKey, caCert,
+						"TLS-Only Leaf", "resolute",
+						KU_KEY_ENCIPHERMENT);
+   ASSERT_NE(tlsCert, nullptr);
+
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, tlsCert, tlsKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   auto cmsTmp = APT::Test::PKI::WriteCMSPEM(cms);
+   auto dataTmp = APT::Test::PKI::WriteDataFile(data);
+   CMS_ContentInfo_free(cms);
+
+   APT::Internal::X509Store store;
+   ASSERT_TRUE(store.LoadCert(caTmp.Name()));
+   FileFd sigFd, dataFd;
+   ASSERT_TRUE(sigFd.Open(cmsTmp.Name(), FileFd::ReadOnly));
+   ASSERT_TRUE(dataFd.Open(dataTmp.Name(), FileFd::ReadOnly));
+   APT::Internal::VerificationResult result;
+   EXPECT_FALSE(store.VerifyDetach(sigFd, dataFd, result));
+
+   std::string msg;
+   bool sawKeyUsageWarning = false;
+   while (_error->empty() == false)
+   {
+      _error->PopMessage(msg); // returns true only for ERROR/FATAL
+      if (msg.find("TLS-Only Leaf") != std::string::npos &&
+	  msg.find("KeyUsage") != std::string::npos)
+	 sawKeyUsageWarning = true;
+   }
+   EXPECT_TRUE(sawKeyUsageWarning);
+   _error->Discard();
+
+   X509_free(tlsCert);
+   EVP_PKEY_free(tlsKey);
+}
+
 // ---------------------------------------------------------------------------
 // Cached-file re-verification (as ReVerifyTrust does).
 // ---------------------------------------------------------------------------
@@ -481,5 +527,26 @@ TEST_F(CMSVerifyTest, MalformedCertInBundleFails)
 
    APT::Internal::X509Store store;
    EXPECT_FALSE(store.LoadCert(bundle.Name()));
+   _error->Discard();
+}
+
+// A bundle that lists the same certificate twice (common when chains
+// are concatenated) is benign: duplicates must be skipped, not fatal.
+TEST_F(CMSVerifyTest, DuplicateCertInBundleLoads)
+{
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   std::ifstream pem(caTmp.Name());
+   std::stringstream single;
+   single << pem.rdbuf();
+   std::string const bundleText = single.str() + single.str(); // cert twice
+
+   auto bundle = createTemporaryFile("pki_bundle_dup");
+   FileFd fd;
+   ASSERT_TRUE(fd.Open(bundle.Name(), FileFd::WriteOnly | FileFd::Empty));
+   ASSERT_TRUE(fd.Write(bundleText.data(), bundleText.size()));
+   fd.Close();
+
+   APT::Internal::X509Store store;
+   EXPECT_TRUE(store.LoadCert(bundle.Name()));
    _error->Discard();
 }

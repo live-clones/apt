@@ -89,8 +89,8 @@ static void SetKeyUsageBits(ASN1_BIT_STRING *ku, int mask)
 
 // Drain this thread's OpenSSL error queue.  Helpers call this on their
 // own failure exits: the errors belong to the failed operation and must
-// not leak to unrelated OpenSSL consumers (the TearDown hook in
-// cms_test.cc fails the test on any leaked entry).
+// not leak to unrelated OpenSSL consumers (the test fixture's TearDown
+// hook fails the test on any leaked entry).
 static void DrainOpenSSLErrors()
 {
    while (ERR_get_error() != 0)
@@ -100,10 +100,17 @@ static void DrainOpenSSLErrors()
 
 EVP_PKEY *MakeKey()
 {
+   // EVP_RSA_gen is OpenSSL 3.x only.  These test helpers require
+   // OpenSSL >= 3.0; production code (X509Store) does not, so the floor
+   // lives here rather than in the top-level find_package(OpenSSL).
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#error "pkcs7-helpers requires OpenSSL >= 3.0 (EVP_RSA_gen); build tests against OpenSSL 3.x"
+#else
    EVP_PKEY *const key = EVP_RSA_gen(2048);
    if (key == nullptr)
       DrainOpenSSLErrors();
    return key;
+#endif
 }
 
 X509 *MakeCACert(EVP_PKEY *key, char const *cn)

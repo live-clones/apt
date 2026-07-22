@@ -42,6 +42,13 @@ class CMSMethod : public aptMethod
    public:
    CMSMethod() : aptMethod("cms", "1.1", SingleInstance | SendConfig | SendURIEncoded) {}
 };
+// RAII cleanup for the staged inline-certificate temp file (mirrors the
+// TemporaryFile struct in the gpgv method).
+struct TemporaryFile
+{
+   std::string name = "";
+   ~TemporaryFile() { RemoveFile("~TemporaryFile", name); }
+};
 // CMSMethod::URIAcquire - Verify a detached PEM CMS signature		/*{{{*/
 bool CMSMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
 {
@@ -86,22 +93,20 @@ bool CMSMethod::URIAcquire(std::string const &Message, FetchItem *Itm)
    }
    else
    {
-      // Inline PEM certificate blob — write to a temp file, then load.
-      // Alternatively, FileFd could wrap a memfd, but the simplest
-      // approach is a temporary file.
+      // Inline PEM certificate blob — stage it in a uniquely-named temp
+      // file (GetTempFile, same pattern as gpgv's GenerateKeyFile) and
+      // load that.  X509Store::LoadCert(FileFd&) resolves fd.Name() to
+      // a real on-disk path, so an in-memory/fd-based write is not an
+      // option here; ImmediateUnlink=false keeps the name valid until
+      // LoadCert has read it.
       FileFd certFd;
-      std::string const tmpCert = _config->FindDir("Dir::State::lists") + "aptcms-XXXXXX";
-      if (not certFd.Open(tmpCert, FileFd::WriteAtomic, FileFd::Extension))
+      if (GetTempFile("aptcms.XXXXXX.pem", false, &certFd) == nullptr)
 	 return _error->Error("cms: cannot create temp file for inline certificate");
+      TemporaryFile certTmp{certFd.Name()};
       if (not certFd.Write(SignedBy.data(), SignedBy.size()))
 	 return _error->Error("cms: cannot write inline certificate to temp file");
       certFd.Close();
-      if (not certFd.Open(tmpCert, FileFd::ReadOnly))
-	 return _error->Error("cms: cannot reopen temp certificate file");
-      bool const ok = store.LoadCert(certFd);
-      certFd.Close();
-      RemoveFile("cms", tmpCert);
-      if (not ok)
+      if (not store.LoadCert(certFd))
 	 return false;
    }
 

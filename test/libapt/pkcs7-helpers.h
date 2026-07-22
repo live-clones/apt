@@ -3,8 +3,10 @@
 
 #include <string>
 
-// pem.h must come before cms.h so that DECLARE_PEM_rw(CMS,...) resolves
-// PEM_write_bio_CMS / PEM_read_bio_CMS correctly.
+// pem.h must come before cms.h: cms.h declares the PEM accessors
+// (PEM_write_bio_CMS / PEM_read_bio_CMS) via DECLARE_PEM_rw only when
+// OPENSSL_PEM_H is already defined, so including cms.h first would
+// leave them undeclared.
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
