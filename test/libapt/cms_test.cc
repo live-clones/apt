@@ -23,6 +23,8 @@
 
 #include <regex>
 #include <string>
+#include <fstream>
+#include <sstream>
 
 // pem.h must come before cms.h so that DECLARE_PEM_rw(CMS,...) resolves
 // PEM_read_bio_CMS correctly.
@@ -205,7 +207,6 @@ protected:
 
    void SetUp() override
    {
-      ERR_clear_error();
       caKey = APT::Test::PKI::MakeKey();
       ASSERT_NE(caKey, nullptr);
       caCert = APT::Test::PKI::MakeCACert(caKey, "APT Test CMS CA");
@@ -235,6 +236,18 @@ protected:
       // singleton.  Drain them so they don't leak into subsequent
       // tests in the shared test binary (e.g. ExtractTar).
       _error->Discard();
+      // The OpenSSL error queue must be empty between tests: a leaked
+      // error is a bug in the code that produced it — it must be handled
+      // there, not silently discarded by an unrelated later consumer.
+      std::string leaked;
+      for (unsigned long e; (e = ERR_get_error()) != 0;)
+      {
+	 if (not leaked.empty())
+	    leaked += "; ";
+	 char const * const r = ERR_reason_error_string(e);
+	 leaked += (r != nullptr) ? r : "unknown";
+      }
+      EXPECT_TRUE(leaked.empty()) << "leaked OpenSSL errors: " << leaked;
    }
 };
 
@@ -255,9 +268,8 @@ TEST_F(CMSVerifyTest, TamperedDataFails)
    CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
    ASSERT_NE(cms, nullptr);
 
-   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
-   ERR_clear_error();
-   EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, "TAMPERED CONTENT\n", caTmp.Name()), 1);
+    auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+    EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, "TAMPERED CONTENT\n", caTmp.Name()), 1);
    CMS_ContentInfo_free(cms);
 }
 
@@ -268,7 +280,6 @@ TEST_F(CMSVerifyTest, WrongTrustAnchorFails)
    ASSERT_NE(cms, nullptr);
 
    auto otherTmp = APT::Test::PKI::WriteCertPEM(otherCert);
-   ERR_clear_error();
    EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, data, otherTmp.Name()), 1);
    CMS_ContentInfo_free(cms);
 }
@@ -279,8 +290,7 @@ TEST_F(CMSVerifyTest, MissingCertFileReturnsError)
    CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
    ASSERT_NE(cms, nullptr);
 
-   ERR_clear_error();
-   EXPECT_EQ(APT::Test::PKI::VerifyCMS(cms, data, "/nonexistent/ca.pem"), -1);
+    EXPECT_EQ(APT::Test::PKI::VerifyCMS(cms, data, "/nonexistent/ca.pem"), -1);
    CMS_ContentInfo_free(cms);
 }
 
@@ -294,8 +304,10 @@ TEST_F(CMSVerifyTest, MalformedSignatureFileFailsPEMRead)
 
    BIO *bio = BIO_new_file(garbage.Name().c_str(), "r");
    ASSERT_NE(bio, nullptr);
-   ERR_clear_error();
+   // Expected to fail; scope and discard the parse errors it pushes.
+   ERR_set_mark();
    CMS_ContentInfo *cms = PEM_read_bio_CMS(bio, nullptr, nullptr, nullptr);
+   ERR_pop_to_mark();
    BIO_free(bio);
    EXPECT_EQ(cms, nullptr);
 }
@@ -448,4 +460,26 @@ TEST_F(CMSVerifyTest, VerifyCachedTamperedDataFails)
 
    EXPECT_FALSE(APT::Test::PKI::VerifyCMSFiles(
       cmsTmp.Name(), dataTmp.Name(), caTmp.Name()));
+}
+
+// A bundle containing a malformed certificate must fail loudly instead
+// of silently loading only the certificates before it.
+TEST_F(CMSVerifyTest, MalformedCertInBundleFails)
+{
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   std::ifstream pem(caTmp.Name());
+   std::stringstream content;
+   content << pem.rdbuf();
+   content << "-----BEGIN CERTIFICATE-----\n!invalid-base64!\n-----END CERTIFICATE-----\n";
+   std::string const bundleText = content.str();
+
+   auto bundle = createTemporaryFile("pki_bundle_bad");
+   FileFd fd;
+   ASSERT_TRUE(fd.Open(bundle.Name(), FileFd::WriteOnly | FileFd::Empty));
+   ASSERT_TRUE(fd.Write(bundleText.data(), bundleText.size()));
+   fd.Close();
+
+   APT::Internal::X509Store store;
+   EXPECT_FALSE(store.LoadCert(bundle.Name()));
+   _error->Discard();
 }

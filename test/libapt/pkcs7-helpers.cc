@@ -72,12 +72,12 @@ static bool AddAKI(X509 *x, X509 *issuer)
    return ok;
 }
 
-static void SetSubject(X509 *x, char const *cn)
+static bool SetSubject(X509 *x, char const *cn)
 {
    X509_NAME *name = X509_get_subject_name(x);
-   X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
-                              reinterpret_cast<unsigned char const *>(cn),
-                              -1, -1, 0);
+   return X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
+				     reinterpret_cast<unsigned char const *>(cn),
+				     -1, -1, 0) == 1;
 }
 
 static void SetKeyUsageBits(ASN1_BIT_STRING *ku, int mask)
@@ -86,11 +86,24 @@ static void SetKeyUsageBits(ASN1_BIT_STRING *ku, int mask)
       if (mask & (1 << i))
 	 ASN1_BIT_STRING_set_bit(ku, 7 - i, 1);
 }
+
+// Drain this thread's OpenSSL error queue.  Helpers call this on their
+// own failure exits: the errors belong to the failed operation and must
+// not leak to unrelated OpenSSL consumers (the TearDown hook in
+// cms_test.cc fails the test on any leaked entry).
+static void DrainOpenSSLErrors()
+{
+   while (ERR_get_error() != 0)
+      ;
+}
 									/*}}}*/
 
 EVP_PKEY *MakeKey()
 {
-   return EVP_RSA_gen(2048);
+   EVP_PKEY *const key = EVP_RSA_gen(2048);
+   if (key == nullptr)
+      DrainOpenSSLErrors();
+   return key;
 }
 
 X509 *MakeCACert(EVP_PKEY *key, char const *cn)
@@ -103,7 +116,12 @@ X509 *MakeCACert(EVP_PKEY *key, char const *cn)
    X509_gmtime_adj(X509_get_notBefore(x), -60);
    X509_gmtime_adj(X509_get_notAfter(x), 86400L);
    X509_set_pubkey(x, key);
-   SetSubject(x, cn);
+   if (not SetSubject(x, cn))
+   {
+      X509_free(x);
+      DrainOpenSSLErrors();
+      return nullptr;
+   }
    X509_set_issuer_name(x, X509_get_subject_name(x));
 
    BASIC_CONSTRAINTS *bc = BASIC_CONSTRAINTS_new();
@@ -112,6 +130,7 @@ X509 *MakeCACert(EVP_PKEY *key, char const *cn)
    {
       BASIC_CONSTRAINTS_free(bc);
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    BASIC_CONSTRAINTS_free(bc);
@@ -120,6 +139,7 @@ X509 *MakeCACert(EVP_PKEY *key, char const *cn)
    if (ku == nullptr)
    {
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    SetKeyUsageBits(ku, KU_KEY_CERT_SIGN | KU_CRL_SIGN);
@@ -127,6 +147,7 @@ X509 *MakeCACert(EVP_PKEY *key, char const *cn)
    {
       ASN1_BIT_STRING_free(ku);
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    ASN1_BIT_STRING_free(ku);
@@ -134,10 +155,16 @@ X509 *MakeCACert(EVP_PKEY *key, char const *cn)
    if (AddSKI(x) == false)
    {
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
 
-   X509_sign(x, key, EVP_sha256());
+   if (X509_sign(x, key, EVP_sha256()) == 0)
+   {
+      X509_free(x);
+      DrainOpenSSLErrors();
+      return nullptr;
+   }
    return x;
 }
 
@@ -152,7 +179,12 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
    X509_gmtime_adj(X509_get_notBefore(x), -60);
    X509_gmtime_adj(X509_get_notAfter(x), 86400L);
    X509_set_pubkey(x, key);
-   SetSubject(x, cn);
+   if (not SetSubject(x, cn))
+   {
+      X509_free(x);
+      DrainOpenSSLErrors();
+      return nullptr;
+   }
    X509_set_issuer_name(x, X509_get_subject_name(caCert));
 
    BASIC_CONSTRAINTS *bc = BASIC_CONSTRAINTS_new();
@@ -161,6 +193,7 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
    {
       BASIC_CONSTRAINTS_free(bc);
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    BASIC_CONSTRAINTS_free(bc);
@@ -169,6 +202,7 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
    if (ku == nullptr)
    {
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    SetKeyUsageBits(ku, kuMask);
@@ -176,6 +210,7 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
    {
       ASN1_BIT_STRING_free(ku);
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    ASN1_BIT_STRING_free(ku);
@@ -188,6 +223,7 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
       ASN1_IA5STRING_free(sanValue);
       sk_GENERAL_NAME_pop_free(sans, GENERAL_NAME_free);
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    GENERAL_NAME *gn = GENERAL_NAME_new();
@@ -196,6 +232,7 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
       ASN1_IA5STRING_free(sanValue);
       sk_GENERAL_NAME_pop_free(sans, GENERAL_NAME_free);
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    gn->type = GEN_DNS;
@@ -205,6 +242,7 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
       GENERAL_NAME_free(gn);
       sk_GENERAL_NAME_pop_free(sans, GENERAL_NAME_free);
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    bool ok = AddExtension(x, NID_subject_alt_name, 0, sans);
@@ -212,16 +250,23 @@ X509 *MakeLeafCert(EVP_PKEY *key, EVP_PKEY *caKey, X509 *caCert,
    if (ok == false)
    {
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
 
    if (AddSKI(x) == false || AddAKI(x, caCert) == false)
    {
       X509_free(x);
+      DrainOpenSSLErrors();
       return nullptr;
    }
 
-   X509_sign(x, caKey, EVP_sha256());
+   if (X509_sign(x, caKey, EVP_sha256()) == 0)
+   {
+      X509_free(x);
+      DrainOpenSSLErrors();
+      return nullptr;
+   }
    return x;
 }
 
@@ -235,9 +280,19 @@ X509 *MakeSelfSignedLeaf(EVP_PKEY *key, char const *cn)
    X509_gmtime_adj(X509_get_notBefore(x), -60);
    X509_gmtime_adj(X509_get_notAfter(x), 86400L);
    X509_set_pubkey(x, key);
-   SetSubject(x, cn);
+   if (not SetSubject(x, cn))
+   {
+      X509_free(x);
+      DrainOpenSSLErrors();
+      return nullptr;
+   }
    X509_set_issuer_name(x, X509_get_subject_name(x));
-   X509_sign(x, key, EVP_sha256());
+   if (X509_sign(x, key, EVP_sha256()) == 0)
+   {
+      X509_free(x);
+      DrainOpenSSLErrors();
+      return nullptr;
+   }
    return x;
 }
 
@@ -251,10 +306,18 @@ CMS_ContentInfo *SignData(std::string const &data, X509 *signcert,
    if (includeCA != nullptr)
       sk_X509_push(certs, includeCA);
    BIO *bio = BIO_new_mem_buf(data.data(), static_cast<int>(data.size()));
+   if (bio == nullptr)
+   {
+      sk_X509_free(certs);
+      DrainOpenSSLErrors();
+      return nullptr;
+   }
    CMS_ContentInfo *cms = CMS_sign(signcert, signkey, certs, bio,
 				   CMS_DETACHED | CMS_BINARY);
    sk_X509_free(certs);
    BIO_free(bio);
+   if (cms == nullptr)
+      DrainOpenSSLErrors();
    return cms;
 }
 
@@ -264,30 +327,37 @@ CMS_ContentInfo *SignDataWithDigest(std::string const &data, X509 *signcert,
 {
    BIO *bio = BIO_new_mem_buf(data.data(), static_cast<int>(data.size()));
    if (bio == nullptr)
+   {
+      DrainOpenSSLErrors();
       return nullptr;
+   }
    CMS_ContentInfo *cms = CMS_sign(nullptr, nullptr, nullptr, bio,
 				   CMS_PARTIAL | CMS_DETACHED | CMS_BINARY);
    if (cms == nullptr)
    {
       BIO_free(bio);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    if (CMS_add1_signer(cms, signcert, signkey, md, 0) == nullptr)
    {
       CMS_ContentInfo_free(cms);
       BIO_free(bio);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    if (includeCA != nullptr && CMS_add1_cert(cms, includeCA) != 1)
    {
       CMS_ContentInfo_free(cms);
       BIO_free(bio);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    if (CMS_final(cms, bio, nullptr, CMS_DETACHED | CMS_BINARY) != 1)
    {
       CMS_ContentInfo_free(cms);
       BIO_free(bio);
+      DrainOpenSSLErrors();
       return nullptr;
    }
    BIO_free(bio);
@@ -300,7 +370,8 @@ ScopedFileDeleter WriteCertPEM(X509 *x)
    BIO *bio = BIO_new_file(out.Name().c_str(), "w");
    if (bio != nullptr)
    {
-      PEM_write_bio_X509(bio, x);
+      if (PEM_write_bio_X509(bio, x) != 1)
+	 DrainOpenSSLErrors();
       BIO_free(bio);
    }
    return out;
@@ -312,7 +383,8 @@ ScopedFileDeleter WriteCMSPEM(CMS_ContentInfo *cms)
    BIO *bio = BIO_new_file(out.Name().c_str(), "w");
    if (bio != nullptr)
    {
-      PEM_write_bio_CMS(bio, cms);
+      if (PEM_write_bio_CMS(bio, cms) != 1)
+	 DrainOpenSSLErrors();
       BIO_free(bio);
    }
    return out;
@@ -324,7 +396,8 @@ ScopedFileDeleter WriteDataFile(std::string const &data)
    BIO *bio = BIO_new_file(out.Name().c_str(), "w");
    if (bio != nullptr)
    {
-      BIO_write(bio, data.data(), static_cast<int>(data.size()));
+      if (BIO_write(bio, data.data(), static_cast<int>(data.size())) <= 0)
+	 DrainOpenSSLErrors();
       BIO_free(bio);
    }
    return out;

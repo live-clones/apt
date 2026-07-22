@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cstdio>
 
 #include <openssl/bio.h>
 #include <openssl/pem.h>
@@ -57,7 +58,15 @@ static std::string FormatOpenSSLErrorQueue()
    {
       if (not errstr.empty())
 	 errstr += "; ";
-      errstr += ERR_reason_error_string(e);
+      // ERR_reason_error_string returns nullptr for unknown reason codes.
+      if (char const * const reason = ERR_reason_error_string(e))
+	 errstr += reason;
+      else
+      {
+	 char buf[40];
+	 snprintf(buf, sizeof(buf), "unknown error 0x%lx", e);
+	 errstr += buf;
+      }
    }
    return errstr;
 }
@@ -163,9 +172,24 @@ bool X509Store::Impl::LoadCertPath(std::string const &path)
    bool loaded = false;
    for (;;)
    {
+      // Scope the error-queue entries of each read: only the benign
+      // end-of-bundle error (PEM_R_NO_START_LINE) may be discarded; any
+      // other parse error is real and must abort the load instead of
+      // silently accepting a partial bundle.
+      ERR_set_mark();
       X509UP cert(PEM_read_X509(fp, nullptr, nullptr, nullptr));
       if (cert == nullptr)
-	 break;
+      {
+	 if (ERR_GET_REASON(ERR_peek_last_error()) == PEM_R_NO_START_LINE)
+	 {
+	    ERR_pop_to_mark();
+	    break;
+	 }
+	 err = FormatOpenSSLErrorQueue();
+	 fclose(fp);
+	 goto fail;
+      }
+      ERR_pop_to_mark();
       loaded = true;
       if (X509_STORE_add_cert(store.get(), cert.get()) != 1)
       {
@@ -176,7 +200,6 @@ bool X509Store::Impl::LoadCertPath(std::string const &path)
       certs.push_back(std::move(cert));
    }
    fclose(fp);
-   ERR_clear_error();
 
    if (not loaded)
       return _error->Error("LoadCert: no certificates found in bundle");

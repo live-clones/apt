@@ -33,6 +33,7 @@
 #include <apt-pkg/pkcs7.h>
 
 #include <openssl/bio.h>
+#include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
@@ -768,6 +769,14 @@ static bool SignedByIsX509Cert(std::string const &SignedBy)
 {
    if (SignedBy.empty())
       return false;
+
+   // Probing with PEM_read_bio_X509 pushes errors onto the thread-local
+   // OpenSSL error queue when parsing fails.  Scope and discard them so
+   // they cannot leak into unrelated OpenSSL consumers in this process
+   // (e.g. X509Store::VerifyDetach in ReVerifyTrust, which formats the
+   // whole queue into its error messages).
+   ERR_set_mark();
+   DEFER([] { ERR_pop_to_mark(); });
 
    // Inline PEM certificate block.
    if (SignedBy.find("-----BEGIN CERTIFICATE-----") != std::string::npos)
