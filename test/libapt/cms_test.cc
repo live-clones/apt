@@ -1,0 +1,566 @@
+// -*- mode: cpp; mode: fold -*-
+// Description							/*{{{*/
+/* Unit tests for the CMS PKCS#7 Release file verification feature.
+ *
+ * Three test suites:
+ *   CMSURIDerivation — URL construction logic (mirrors pkgAcqMetaCMS::Done)
+ *   CMSKeepPattern   — KeepPattern regex (mirrors acquire.cc CleanLists logic)
+ *   CMSVerify        — libssl CMS sign/verify round-trip with CA-signed leaf
+ *                      certs and the trust policy from apt-pkg/contrib/pkcs7.
+ *
+ * PKI generation and verification helpers live in pkcs7-helpers.{h,cc}.
+ */
+									/*}}}*/
+// Include Files						/*{{{*/
+#include <config.h>
+
+#include <apt-pkg/error.h>
+#include <apt-pkg/fileutl.h>
+#include <apt-pkg/hashes.h>
+#include <apt-pkg/strutl.h>
+#include <apt-pkg/pkcs7.h>
+
+#include <regex>
+#include <string>
+
+// pem.h must come before cms.h so that DECLARE_PEM_rw(CMS,...) resolves
+// PEM_read_bio_CMS correctly.
+#include <openssl/pem.h>
+#include <openssl/cms.h>
+#include <openssl/err.h>
+#include <openssl/x509.h>
+
+#include "common.h"
+#include "file-helpers.h"
+#include "pkcs7-helpers.h"
+									/*}}}*/
+
+// ---------------------------------------------------------------------------
+// Suite A: CMSURIDerivation
+//
+// Mirrors the logic in pkgAcqMetaCMS::Done():
+//   std::string const baseURI = Target.URI.substr(0, Target.URI.rfind('/') + 1);
+//   std::string const p7sURI  = baseURI + "signed-by/SHA256/" + sha256hex + ".p7s";
+// ---------------------------------------------------------------------------
+
+static std::string DeriveP7SURI(std::string const &releaseURI, std::string const &sha256hex)
+{
+   std::string const baseURI = releaseURI.substr(0, releaseURI.rfind('/') + 1);
+   return baseURI + "signed-by/SHA256/" + sha256hex + ".p7s";
+}
+
+static std::string SHA256OfFile(std::string const &path)
+{
+   ::Hashes hasher(::Hashes::SHA256SUM);
+   FileFd fd;
+   if (fd.Open(path, FileFd::ReadOnly) == false || hasher.AddFD(fd) == false)
+      return "";
+   HashStringList const hsl = hasher.GetHashStringList();
+   HashString const * const entry = hsl.find("SHA256");
+   return entry ? entry->HashValue() : "";
+}
+
+TEST(CMSURIDerivation, KnownContent)
+{
+   auto tmp = createTemporaryFile("cms_uri_known");
+   FileFd fd;
+   ASSERT_TRUE(fd.Open(tmp.Name(), FileFd::WriteOnly | FileFd::Empty));
+   std::string const content = "Origin: Test\nSuite: stable\n";
+   ASSERT_TRUE(fd.Write(content.data(), content.size()));
+   fd.Close();
+
+   std::string const sha256 = SHA256OfFile(tmp.Name());
+   EXPECT_EQ(sha256, "052fe8069ea7789c77aaa32df9ff81c3fc5752db5f38a9288af1f007c35c513e");
+
+   EXPECT_EQ(DeriveP7SURI(
+      "http://deb.debian.org/debian/dists/stable/Release", sha256),
+      "http://deb.debian.org/debian/dists/stable/"
+      "signed-by/SHA256/052fe8069ea7789c77aaa32df9ff81c3fc5752db5f38a9288af1f007c35c513e.p7s");
+}
+
+TEST(CMSURIDerivation, DifferentContentDifferentURI)
+{
+   auto tmp1 = createTemporaryFile("cms_uri_a");
+   auto tmp2 = createTemporaryFile("cms_uri_b");
+   FileFd f1, f2;
+   ASSERT_TRUE(f1.Open(tmp1.Name(), FileFd::WriteOnly | FileFd::Empty));
+   ASSERT_TRUE(f1.Write("Origin: Test\n", 14));
+   f1.Close();
+   ASSERT_TRUE(f2.Open(tmp2.Name(), FileFd::WriteOnly | FileFd::Empty));
+   ASSERT_TRUE(f2.Write("Origin: Other\n", 15));
+   f2.Close();
+
+   std::string const base = "http://localhost:8080/dists/bookworm/Release";
+   EXPECT_NE(DeriveP7SURI(base, SHA256OfFile(tmp1.Name())),
+	     DeriveP7SURI(base, SHA256OfFile(tmp2.Name())));
+}
+
+TEST(CMSURIDerivation, EmptyFile)
+{
+   auto tmp = createTemporaryFile("cms_uri_empty");
+   std::string const sha256 = SHA256OfFile(tmp.Name());
+   EXPECT_EQ(sha256, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+
+   EXPECT_EQ(DeriveP7SURI("http://localhost/Release", sha256),
+      "http://localhost/"
+      "signed-by/SHA256/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.p7s");
+}
+
+TEST(CMSURIDerivation, BaseURIExtractionNested)
+{
+   EXPECT_EQ(DeriveP7SURI(
+      "http://deb.debian.org/debian/dists/stable/Release", "aabbcc"),
+      "http://deb.debian.org/debian/dists/stable/signed-by/SHA256/aabbcc.p7s");
+}
+
+TEST(CMSURIDerivation, BaseURIExtractionFlatArchive)
+{
+   EXPECT_EQ(DeriveP7SURI("http://localhost:8080/Release", "deadbeef"),
+      "http://localhost:8080/signed-by/SHA256/deadbeef.p7s");
+}
+
+TEST(CMSURIDerivation, BaseURIExtractionPort)
+{
+   EXPECT_EQ(DeriveP7SURI(
+      "http://localhost:8080/dists/bookworm/Release", "1234"),
+      "http://localhost:8080/dists/bookworm/signed-by/SHA256/1234.p7s");
+}
+
+// ---------------------------------------------------------------------------
+// Suite B: CMSKeepPattern
+//
+// Mirrors the regex in apt-pkg/acquire.cc used by CleanLists to decide which
+// cached list files to keep.
+// ---------------------------------------------------------------------------
+
+static const std::regex KeepPattern(
+   ".*_(Release|Release\\.gpg|InRelease|Release\\.p7s)");
+
+TEST(CMSKeepPattern, MatchesReleaseP7S)
+{
+   EXPECT_TRUE(std::regex_match(
+      "deb.debian.org_debian_dists_stable_Release.p7s", KeepPattern));
+}
+
+TEST(CMSKeepPattern, DoesNotMatchByHashP7S)
+{
+   EXPECT_FALSE(std::regex_match(
+      "deb.debian.org_debian_dists_stable_signed-by_SHA256_aabbcc.p7s",
+      KeepPattern));
+}
+
+TEST(CMSKeepPattern, DoesNotMatchFprSidecar)
+{
+   EXPECT_FALSE(std::regex_match(
+      "deb.debian.org_debian_dists_stable_Release.p7s.fpr", KeepPattern));
+}
+
+TEST(CMSKeepPattern, DoesNotMatchWrongExtension)
+{
+   EXPECT_FALSE(std::regex_match("repo_Release.gpg.p7s", KeepPattern));
+}
+
+TEST(CMSKeepPattern, DoesNotMatchPlainPackagesFile)
+{
+   EXPECT_FALSE(std::regex_match(
+      "deb.debian.org_debian_dists_stable_main_binary-amd64_Packages",
+      KeepPattern));
+}
+
+TEST(CMSKeepPattern, StillMatchesRelease)
+{
+   EXPECT_TRUE(std::regex_match(
+      "deb.debian.org_debian_dists_stable_Release", KeepPattern));
+}
+
+TEST(CMSKeepPattern, StillMatchesReleaseGpg)
+{
+   EXPECT_TRUE(std::regex_match(
+      "deb.debian.org_debian_dists_stable_Release.gpg", KeepPattern));
+}
+
+TEST(CMSKeepPattern, StillMatchesInRelease)
+{
+   EXPECT_TRUE(std::regex_match(
+      "deb.debian.org_debian_dists_stable_InRelease", KeepPattern));
+}
+
+// ---------------------------------------------------------------------------
+// Suite C: CMSVerify
+//
+// Generates a small PKI (root CA + signing leaf), signs data with CMS_sign(),
+// and verifies the chain and signer-certificate policy exactly as the cms
+// method does.
+// ---------------------------------------------------------------------------
+
+class CMSVerifyTest : public ::testing::Test
+{
+protected:
+   EVP_PKEY *caKey = nullptr;
+   X509     *caCert = nullptr;
+   EVP_PKEY *leafKey = nullptr;
+   X509     *leafCert = nullptr;
+   EVP_PKEY *otherKey = nullptr;
+   X509     *otherCert = nullptr;
+
+   void SetUp() override
+   {
+      ERR_clear_error();
+      caKey = APT::Test::PKI::MakeKey();
+      ASSERT_NE(caKey, nullptr);
+      caCert = APT::Test::PKI::MakeCACert(caKey, "APT Test CMS CA");
+      ASSERT_NE(caCert, nullptr);
+
+      leafKey = APT::Test::PKI::MakeKey();
+      ASSERT_NE(leafKey, nullptr);
+      leafCert = APT::Test::PKI::MakeLeafCert(leafKey, caKey, caCert,
+					       "APT Test CMS Leaf", "resolute");
+      ASSERT_NE(leafCert, nullptr);
+
+      otherKey = APT::Test::PKI::MakeKey();
+      ASSERT_NE(otherKey, nullptr);
+      otherCert = APT::Test::PKI::MakeSelfSignedLeaf(otherKey, "APT Other CMS Signer");
+      ASSERT_NE(otherCert, nullptr);
+   }
+
+   void TearDown() override
+   {
+      X509_free(caCert);      caCert = nullptr;
+      EVP_PKEY_free(caKey);   caKey = nullptr;
+      X509_free(leafCert);    leafCert = nullptr;
+      EVP_PKEY_free(leafKey); leafKey = nullptr;
+      X509_free(otherCert);   otherCert = nullptr;
+      EVP_PKEY_free(otherKey); otherKey = nullptr;
+      // Negative tests push expected errors to the global _error
+      // singleton.  Drain them so they don't leak into subsequent
+      // tests in the shared test binary (e.g. ExtractTar).
+      _error->Discard();
+   }
+};
+
+TEST_F(CMSVerifyTest, ValidChainAndPolicyVerifies)
+{
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   EXPECT_EQ(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name(), "resolute"), 1);
+   CMS_ContentInfo_free(cms);
+}
+
+TEST_F(CMSVerifyTest, TamperedDataFails)
+{
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   ERR_clear_error();
+   EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, "TAMPERED CONTENT\n", caTmp.Name(), "resolute"), 1);
+   CMS_ContentInfo_free(cms);
+}
+
+TEST_F(CMSVerifyTest, WrongTrustAnchorFails)
+{
+   std::string const data = "Origin: Test\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto otherTmp = APT::Test::PKI::WriteCertPEM(otherCert);
+   ERR_clear_error();
+   EXPECT_NE(APT::Test::PKI::VerifyCMS(cms, data, otherTmp.Name(), "resolute"), 1);
+   CMS_ContentInfo_free(cms);
+}
+
+TEST_F(CMSVerifyTest, MissingCertFileReturnsError)
+{
+   std::string const data = "Origin: Test\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   ERR_clear_error();
+   EXPECT_EQ(APT::Test::PKI::VerifyCMS(cms, data, "/nonexistent/ca.pem", "resolute"), -1);
+   CMS_ContentInfo_free(cms);
+}
+
+TEST_F(CMSVerifyTest, MalformedSignatureFileFailsPEMRead)
+{
+   auto garbage = createTemporaryFile("cms_garbage");
+   FileFd fd;
+   ASSERT_TRUE(fd.Open(garbage.Name(), FileFd::WriteOnly | FileFd::Empty));
+   ASSERT_TRUE(fd.Write("THIS IS NOT A VALID CMS PEM FILE\n", 34));
+   fd.Close();
+
+   BIO *bio = BIO_new_file(garbage.Name().c_str(), "r");
+   ASSERT_NE(bio, nullptr);
+   ERR_clear_error();
+   CMS_ContentInfo *cms = PEM_read_bio_CMS(bio, nullptr, nullptr, nullptr);
+   BIO_free(bio);
+   EXPECT_EQ(cms, nullptr);
+}
+
+TEST_F(CMSVerifyTest, SignerSubjectExtracted)
+{
+   std::string const data = "Origin: Test\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   ASSERT_EQ(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name(), "resolute"), 1);
+
+   STACK_OF(X509) *signers = CMS_get0_signers(cms);
+   ASSERT_NE(signers, nullptr);
+   ASSERT_GE(sk_X509_num(signers), 1);
+   X509 *signer = sk_X509_value(signers, 0);
+   ASSERT_NE(signer, nullptr);
+
+   char subjectbuf[256];
+   X509_NAME_oneline(X509_get_subject_name(signer), subjectbuf, sizeof(subjectbuf));
+   std::string const subject(subjectbuf);
+   EXPECT_NE(subject.find("APT Test CMS Leaf"), std::string::npos)
+      << "Subject was: " << subject;
+
+   CMS_ContentInfo_free(cms);
+}
+
+TEST_F(CMSVerifyTest, IntermediateChainVerifies)
+{
+   EVP_PKEY *interKey = APT::Test::PKI::MakeKey();
+   ASSERT_NE(interKey, nullptr);
+   X509 *interCert = APT::Test::PKI::MakeCACert(interKey, "APT Test Intermediate CA");
+   ASSERT_NE(interCert, nullptr);
+   X509_set_issuer_name(interCert, X509_get_subject_name(caCert));
+   X509_sign(interCert, caKey, EVP_sha256());
+
+   EVP_PKEY *leaf2Key = APT::Test::PKI::MakeKey();
+   ASSERT_NE(leaf2Key, nullptr);
+   X509 *leaf2Cert = APT::Test::PKI::MakeLeafCert(leaf2Key, interKey, interCert,
+						   "Intermediate Leaf", "resolute");
+   ASSERT_NE(leaf2Cert, nullptr);
+
+   std::string const data = "Origin: Test\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leaf2Cert, leaf2Key, interCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   EXPECT_EQ(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name(), "resolute"), 1);
+
+   CMS_ContentInfo_free(cms);
+   X509_free(leaf2Cert);
+   EVP_PKEY_free(leaf2Key);
+   X509_free(interCert);
+   EVP_PKEY_free(interKey);
+}
+
+// ---------------------------------------------------------------------------
+// Multi-signer tests.
+// ---------------------------------------------------------------------------
+
+TEST_F(CMSVerifyTest, MultipleSignersOneValidVerifies)
+{
+   EVP_PKEY *leaf2Key = APT::Test::PKI::MakeKey();
+   ASSERT_NE(leaf2Key, nullptr);
+   X509 *leaf2Cert = APT::Test::PKI::MakeLeafCert(leaf2Key, caKey, caCert,
+						   "Second Valid Leaf", "resolute");
+   ASSERT_NE(leaf2Cert, nullptr);
+
+   std::string const data = "Origin: Test\n";
+
+   // Multi-signer CMS requires CMS_PARTIAL + CMS_final so both signers hash
+   // the same data.  CMS_sign with CMS_DETACHED discards the data after the
+   // first signer, so CMS_add1_signer cannot compute the second signer's
+   // digest.  Embed the content (no CMS_DETACHED); the verifier still uses
+   // the external data file via CMS_verify(CMS_DETACHED).
+   STACK_OF(X509) *certs = sk_X509_new_null();
+   sk_X509_push(certs, leafCert);
+   sk_X509_push(certs, leaf2Cert);
+   sk_X509_push(certs, caCert);
+   CMS_ContentInfo *cms = CMS_sign(nullptr, nullptr, certs, nullptr,
+				   CMS_BINARY | CMS_PARTIAL);
+   sk_X509_free(certs);
+   ASSERT_NE(cms, nullptr);
+
+   ASSERT_NE(CMS_add1_signer(cms, leafCert, leafKey, nullptr, 0), nullptr);
+   ASSERT_NE(CMS_add1_signer(cms, leaf2Cert, leaf2Key, nullptr, 0), nullptr);
+
+   BIO *bio = BIO_new_mem_buf(data.data(), static_cast<int>(data.size()));
+   ASSERT_NE(bio, nullptr);
+   ASSERT_EQ(CMS_final(cms, bio, nullptr, CMS_BINARY), 1);
+   BIO_free(bio);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   // Verify directly in-memory — PEM round-trip corrupts multi-signer CMS
+   // on OpenSSL 3.5.x (PEM_write_bio_CMS → PEM_read_bio_CMS breaks the
+   // second signer's signature).
+   EXPECT_EQ(APT::Test::PKI::VerifyCMSInMemory(cms, data, caTmp.Name(), "resolute"), 1);
+
+   CMS_ContentInfo_free(cms);
+   X509_free(leaf2Cert);
+   EVP_PKEY_free(leaf2Key);
+}
+
+TEST_F(CMSVerifyTest, MultipleSignersAllInvalidFails)
+{
+   EVP_PKEY *leaf2Key = APT::Test::PKI::MakeKey();
+   ASSERT_NE(leaf2Key, nullptr);
+   X509 *leaf2Cert = APT::Test::PKI::MakeLeafCert(leaf2Key, caKey, caCert,
+						   "Wrong SAN Leaf", "noble");
+   ASSERT_NE(leaf2Cert, nullptr);
+
+   EVP_PKEY *leaf3Key = APT::Test::PKI::MakeKey();
+   ASSERT_NE(leaf3Key, nullptr);
+   X509 *leaf3Cert = APT::Test::PKI::MakeLeafCert(leaf3Key, caKey, caCert,
+						   "No EKU Leaf", "resolute", false);
+   ASSERT_NE(leaf3Cert, nullptr);
+
+   std::string const data = "Origin: Test\n";
+
+   STACK_OF(X509) *certs = sk_X509_new_null();
+   sk_X509_push(certs, leaf2Cert);
+   sk_X509_push(certs, leaf3Cert);
+   sk_X509_push(certs, caCert);
+   CMS_ContentInfo *cms = CMS_sign(nullptr, nullptr, certs, nullptr,
+				   CMS_BINARY | CMS_PARTIAL);
+   sk_X509_free(certs);
+   ASSERT_NE(cms, nullptr);
+
+   ASSERT_NE(CMS_add1_signer(cms, leaf2Cert, leaf2Key, nullptr, 0), nullptr);
+   ASSERT_NE(CMS_add1_signer(cms, leaf3Cert, leaf3Key, nullptr, 0), nullptr);
+
+   BIO *bio = BIO_new_mem_buf(data.data(), static_cast<int>(data.size()));
+   ASSERT_NE(bio, nullptr);
+   ASSERT_EQ(CMS_final(cms, bio, nullptr, CMS_BINARY), 1);
+   BIO_free(bio);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   ERR_clear_error();
+   EXPECT_EQ(APT::Test::PKI::VerifyCMSInMemory(cms, data, caTmp.Name(), "resolute"), 0);
+
+   CMS_ContentInfo_free(cms);
+   X509_free(leaf2Cert);
+   EVP_PKEY_free(leaf2Key);
+   X509_free(leaf3Cert);
+   EVP_PKEY_free(leaf3Key);
+}
+
+// ---------------------------------------------------------------------------
+// Cached-file re-verification (as ReVerifyTrust does).
+// ---------------------------------------------------------------------------
+
+TEST_F(CMSVerifyTest, VerifyCachedSucceeds)
+{
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   auto cmsTmp = APT::Test::PKI::WriteCMSPEM(cms);
+   auto dataTmp = APT::Test::PKI::WriteDataFile(data);
+   CMS_ContentInfo_free(cms);
+
+   EXPECT_TRUE(APT::Test::PKI::VerifyCMSFiles(
+      cmsTmp.Name(), dataTmp.Name(), caTmp.Name(), "resolute"));
+}
+
+TEST_F(CMSVerifyTest, VerifyCachedTamperedDataFails)
+{
+   std::string const data = "Origin: Test\nSuite: resolute\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   auto cmsTmp = APT::Test::PKI::WriteCMSPEM(cms);
+   auto dataTmp = APT::Test::PKI::WriteDataFile("TAMPERED DATA\n");
+   CMS_ContentInfo_free(cms);
+
+   EXPECT_FALSE(APT::Test::PKI::VerifyCMSFiles(
+      cmsTmp.Name(), dataTmp.Name(), caTmp.Name(), "resolute"));
+}
+
+TEST_F(CMSVerifyTest, VerifyCachedWrongSuiteFails)
+{
+   std::string const data = "Origin: Test\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, leafCert, leafKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   auto cmsTmp = APT::Test::PKI::WriteCMSPEM(cms);
+   auto dataTmp = APT::Test::PKI::WriteDataFile(data);
+   CMS_ContentInfo_free(cms);
+
+   EXPECT_FALSE(APT::Test::PKI::VerifyCMSFiles(
+      cmsTmp.Name(), dataTmp.Name(), caTmp.Name(), "wrong-suite"));
+}
+
+// ---------------------------------------------------------------------------
+// Suite D: CertPolicyTest (parameterized)
+//
+// Each case builds a leaf cert with a specific policy violation (or a valid
+// variant) and verifies that the default repo-signing policy accepts or
+// rejects it.  The parameters map directly to MakeLeafCert arguments.
+// ---------------------------------------------------------------------------
+
+struct CertVariant
+{
+   std::string name;
+   bool addEKU = true;
+   int extraKeyUsage = 0;
+   bool makeCA = false;
+   bool includeDigitalSignature = true;
+   long notBeforeOffset = -60;
+   long notAfterOffset = 86400L;
+   bool bcCritical = true;
+   bool kuCritical = true;
+   int sanType = GEN_DNS;
+   std::string certSuite = "resolute";
+   std::string verifySuite = "resolute";
+   int expectedResult = 0;
+};
+
+class CertPolicyTest : public CMSVerifyTest,
+		       public ::testing::WithParamInterface<CertVariant>
+{
+};
+
+TEST_P(CertPolicyTest, ChecksPolicy)
+{
+   auto const &p = GetParam();
+   EVP_PKEY *badKey = APT::Test::PKI::MakeKey();
+   ASSERT_NE(badKey, nullptr);
+   X509 *badLeaf = APT::Test::PKI::MakeLeafCert(
+      badKey, caKey, caCert, "Bad Cert", p.certSuite.c_str(),
+      p.addEKU, p.extraKeyUsage, p.makeCA, p.includeDigitalSignature,
+      p.notBeforeOffset, p.notAfterOffset,
+      p.bcCritical, p.kuCritical, p.sanType);
+   ASSERT_NE(badLeaf, nullptr);
+
+   std::string const data = "Origin: Test\n";
+   CMS_ContentInfo *cms = APT::Test::PKI::SignData(data, badLeaf, badKey, caCert);
+   ASSERT_NE(cms, nullptr);
+
+   auto caTmp = APT::Test::PKI::WriteCertPEM(caCert);
+   ERR_clear_error();
+   EXPECT_EQ(APT::Test::PKI::VerifyCMS(cms, data, caTmp.Name(), p.verifySuite),
+	     p.expectedResult);
+
+   CMS_ContentInfo_free(cms);
+   X509_free(badLeaf);
+   EVP_PKEY_free(badKey);
+}
+
+INSTANTIATE_TEST_SUITE_P(CertPolicy, CertPolicyTest, ::testing::Values(
+   CertVariant{.name = "CALeaf", .makeCA = true},
+   CertVariant{.name = "MissingDigitalSignature", .extraKeyUsage = KU_KEY_ENCIPHERMENT, .includeDigitalSignature = false},
+   CertVariant{.name = "MissingEKU", .addEKU = false},
+   CertVariant{.name = "NonCriticalKeyUsage", .kuCritical = false},
+   CertVariant{.name = "NonCriticalBasicConstraints", .bcCritical = false},
+   CertVariant{.name = "ExpiredLeaf", .notBeforeOffset = -86400 * 10, .notAfterOffset = -86400 * 5},
+   CertVariant{.name = "NotYetValidLeaf", .notBeforeOffset = 86400 * 5, .notAfterOffset = 86400 * 10},
+   CertVariant{.name = "WrongSuite", .verifySuite = "noble"},
+   CertVariant{.name = "URISANMatch", .sanType = GEN_URI, .certSuite = "bookworm-uri", .verifySuite = "bookworm-uri", .expectedResult = 1},
+   CertVariant{.name = "URISANMismatch", .sanType = GEN_URI, .certSuite = "bookworm-uri", .verifySuite = "resolute"}
+   ),
+   [](::testing::TestParamInfo<CertVariant> const &info) {
+      return info.param.name;
+   });

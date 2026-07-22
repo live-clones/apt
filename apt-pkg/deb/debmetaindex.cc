@@ -30,6 +30,12 @@
 
 #include <apti18n.h>
 
+#include <apt-pkg/pkcs7.h>
+
+#include <openssl/bio.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+
 static std::string transformFingergrpints(std::string finger) /*{{{*/
 {
    std::transform(finger.begin(), finger.end(), finger.begin(), ::toupper);
@@ -59,8 +65,10 @@ static std::string transformFingergrpintsWithFilenames(std::string const &finger
 // by setting it to a filename or a complete key
 static std::string NormalizeSignedBy(std::string SignedBy, bool const Introducer)
 {
-   // This is an embedded public pgp key, normalize spaces inside it and empty "." lines
-   if (Introducer && SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos) {
+   // This is an embedded public pgp key or PEM certificate bundle, normalize
+   // spaces inside it and empty "." lines
+   if (Introducer && (SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos ||
+		      SignedBy.find("-----BEGIN CERTIFICATE-----") != std::string::npos)) {
       std::istringstream is(SignedBy);
       std::ostringstream os;
       std::string line;
@@ -749,11 +757,87 @@ bool debReleaseIndex::parseSumData(const char *&Start, const char *End,	/*{{{*/
 }
 									/*}}}*/
 
+// SignedByIsX509Cert - is the Signed-By value an X.509 PEM certificate bundle? /*{{{*/
+// The CMS acquire path is only attempted when a source's Signed-By is either
+// a single filesystem path containing at least one PEM X.509 certificate, or
+// an inline PEM certificate block.  Comma-separated GPG fingerprints/keyring
+// paths and GPG keyrings must stay disabled for the CMS path so that probing
+// for a Release.p7s can never break or downgrade verification of an ordinary
+// gpg-signed repo.
+static bool SignedByIsX509Cert(std::string const &SignedBy)
+{
+   if (SignedBy.empty())
+      return false;
+
+   // Inline PEM certificate block.
+   if (SignedBy.find("-----BEGIN CERTIFICATE-----") != std::string::npos)
+   {
+      // Probe by parsing the inline blob with OpenSSL.
+      BIO *const bio = BIO_new_mem_buf(SignedBy.data(), static_cast<int>(SignedBy.size()));
+      if (bio == nullptr)
+	 return false;
+      X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+      BIO_free(bio);
+      if (cert != nullptr)
+      {
+	 X509_free(cert);
+	 return true;
+      }
+      return false;
+   }
+
+   // Single absolute path only; comma-separated values are gpg fingerprints
+   // and/or keyring paths.
+   if (SignedBy[0] != '/' || SignedBy.find(',') != std::string::npos)
+      return false;
+   if (FileExists(SignedBy) == false)
+      return false;
+
+   // Parse the file as a PEM X.509 certificate bundle.
+   BIO *const bio = BIO_new_file(SignedBy.c_str(), "r");
+   if (bio == nullptr)
+      return false;
+   X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+   BIO_free(bio);
+   if (cert == nullptr)
+      return false;
+   X509_free(cert);
+   return true;
+}
+									/*}}}*/
 bool debReleaseIndex::GetIndexes(pkgAcquire *Owner, bool const &GetAll)/*{{{*/
 {
 #define APT_TARGET(X) IndexTarget("", X, MetaIndexInfo(X), MetaIndexURI(X), false, false, d->ReleaseOptions)
-   pkgAcqMetaClearSig * const TransactionManager = new pkgAcqMetaClearSig(Owner,
-	 APT_TARGET("InRelease"), APT_TARGET("Release"), APT_TARGET("Release.gpg"), this);
+   // The p7s (PKCS#7/CMS) verification path is only attempted when this source's
+   // Signed-By is an X.509 certificate. For gpg-signed repositories it must stay
+   // disabled: probing for a Release.p7s there (or an injected / soft-404 one)
+   // could otherwise hard-fail the update or add needless round-trips.
+   bool const useCMS = SignedByIsX509Cert(SignedBy);
+
+   // When CMS is in play the InRelease / Release.gpg download is not
+   // started at all: pkgAcqMetaClearSig is constructed with DeferStart=true
+   // and empty IndexTargets for the GPG artifacts, acting purely as a
+   // transaction manager.  There is no fallback to GPG if the CMS path
+   // fails — a repo that declares an X.509 Signed-By must provide a
+   // Release.p7s, otherwise the update fails (or proceeds untrusted only
+   // if AllowInsecureRepositories is set).
+   pkgAcqMetaClearSig * const TransactionManager = useCMS
+      ? new pkgAcqMetaClearSig(Owner,
+	   IndexTarget("", "", "", "", false, false, d->ReleaseOptions), // no InRelease
+	   APT_TARGET("Release"),    // Release (stored by TM, not fetched by TM)
+	   IndexTarget("", "", "", "", false, false, d->ReleaseOptions), // no Release.gpg
+	   this, /*DeferStart=*/true)
+      : new pkgAcqMetaClearSig(Owner,
+	   APT_TARGET("InRelease"), APT_TARGET("Release"), APT_TARGET("Release.gpg"),
+	   this, /*DeferStart=*/false);
+
+   if (useCMS)
+   {
+      // CMS path: download Release, derive the p7s URL from its SHA256
+      // hash, and fetch signed-by/SHA256/<hash>.p7s for verification.
+      new pkgAcqMetaCMS(Owner, TransactionManager,
+	 APT_TARGET("Release"));
+   }
 #undef APT_TARGET
    // special case for --print-uris
    if (GetAll)
@@ -861,7 +945,63 @@ bool debReleaseIndex::IsTrusted() const
    if (FileExists(MetaIndexFile("Release.gpg")))
       return true;
 
+   if (SignedByIsX509Cert(SignedBy) && FileExists(MetaIndexFile("Release.p7s")))
+      return true;
+
    return FileExists(MetaIndexFile("InRelease"));
+}
+									/*}}}*/
+// ReVerifyTrust - expensive CMS re-verification for slow paths (install)	/*{{{*/
+bool debReleaseIndex::ReVerifyTrust() const
+{
+   if (not SignedByIsX509Cert(SignedBy))
+      return true; // not an X.509 source; nothing to re-verify
+
+   std::string const p7sPath = MetaIndexFile("Release.p7s");
+   std::string const releasePath = MetaIndexFile("Release");
+   if (not FileExists(p7sPath) or not FileExists(releasePath))
+      return false;
+
+   FileFd sigFd, dataFd;
+   if (not sigFd.Open(p7sPath, FileFd::ReadOnly))
+      return _error->Error("ReVerifyTrust: cannot open signature file %s", p7sPath.c_str());
+   if (not dataFd.Open(releasePath, FileFd::ReadOnly))
+      return _error->Error("ReVerifyTrust: cannot open data file %s", releasePath.c_str());
+
+   APT::Internal::Constrained store(
+      APT::Internal::DefaultRepoSignerPolicy(GetOrigin(), GetExpectedDist()),
+      APT::Internal::DefaultRepoAnchorPolicy());
+
+   // Load the certificate bundle — file path or inline PEM blob.
+   if (SignedBy[0] == '/')
+   {
+      if (not store.LoadCert(SignedBy))
+	 return false;
+   }
+   else
+   {
+      // Inline PEM blob — write to a temp file.
+      FileFd certFd;
+      std::string const tmpCert = _config->FindDir("Dir::State::lists") + "aptcms-XXXXXX";
+      if (not certFd.Open(tmpCert, FileFd::WriteAtomic, FileFd::Extension))
+	 return _error->Error("ReVerifyTrust: cannot create temp file for inline certificate");
+      if (not certFd.Write(SignedBy.data(), SignedBy.size()))
+	 return _error->Error("ReVerifyTrust: cannot write inline certificate to temp file");
+      certFd.Close();
+      if (not certFd.Open(tmpCert, FileFd::ReadOnly))
+	 return _error->Error("ReVerifyTrust: cannot reopen temp certificate file");
+      bool const ok = store.LoadCert(certFd);
+      certFd.Close();
+      RemoveFile("ReVerifyTrust", tmpCert);
+      if (not ok)
+	 return false;
+   }
+
+   APT::Internal::VerificationResult result;
+   if (not store.VerifyDetach(sigFd, dataFd, result))
+      return _error->Error("ReVerifyTrust: CMS re-verification failed for %s", releasePath.c_str());
+
+   return true;
 }
 									/*}}}*/
 bool debReleaseIndex::IsArchitectureSupported(std::string const &arch) const/*{{{*/
@@ -895,7 +1035,7 @@ std::vector <pkgIndexFile *> *debReleaseIndex::GetIndexFiles()		/*{{{*/
       return Indexes;
 
    Indexes = new std::vector<pkgIndexFile*>();
-   bool const istrusted = IsTrusted();
+   bool const istrusted = IsTrusted() && ReVerifyTrust();
    for (auto const &T: GetIndexTargets())
    {
       std::string const TargetName = T.Option(IndexTarget::CREATED_BY);
