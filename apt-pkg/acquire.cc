@@ -731,6 +731,23 @@ pkgAcquire::RunResult pkgAcquire::Run(int PulseInterval)
 	 if (I->Items == nullptr)
 	    continue;
 
+	 // Check for stuck queue: PipeDepth is 0 but items exist
+	 if (I->PipeDepth == 0)
+	 {
+	    // Check if there are any idle items waiting
+	    bool hasIdle = false;
+	    for (auto *itm = I->Items; itm != nullptr; itm = itm->Next)
+	    {
+	       if (itm->Owner->Status == pkgAcquire::Item::StatIdle)
+	       {
+		  hasIdle = true;
+		  break;
+	       }
+	    }
+	    if (hasIdle && not I->Cycle())
+	       goto stop;
+	 }
+
 	 auto f = I->Items->GetFetchAfter();
 
 	 if (f == time_point() || I->Items->Owner->Status != pkgAcquire::Item::StatIdle)
