@@ -1209,6 +1209,18 @@ class APT_HIDDEN pkgAcqAuxFile final : public pkgAcqFile		/*{{{*/
       reply must still reference the original URI the requester used
       to ask for this file. */
    std::string const OriginalURI;
+   /** \brief name the file will have after it was downloaded successfully
+
+      The file is downloaded to a temporary name (FinalFile with ".tmp"
+      appended) and renamed to its final name only if the download was
+      successful, so a preexisting copy of the file is never modified by
+      a failed download and can be used as a fallback (see Failed). */
+   std::string const FinalFile;
+
+   pkgAcqAuxFile(pkgAcquire::Item *const Owner, pkgAcquire::Worker *const Worker,
+		 std::string const &ShortDesc, std::string const &Desc, std::string const &URI,
+		 HashStringList const &Hashes, unsigned long long const MaximumSize,
+		 std::string const &FinalFileName);
 
    public:
    void Failed(std::string const &Message, pkgAcquire::MethodConfig const * Cnf) override;
