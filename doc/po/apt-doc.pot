@@ -4144,12 +4144,12 @@ msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
-msgid "This boolean option, set by default, causes apt to inhbit shutdown"
+msgid "This boolean option, set by default, causes apt to inhibit shutdown"
 msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
-msgid "This boolean option, set by default, causes apt to inhbit sleep"
+msgid "This boolean option, set by default, causes apt to inhibit sleep"
 msgstr ""
 
 #. type: Content of: <refentry><refsect1><para>
