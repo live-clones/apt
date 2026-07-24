@@ -519,6 +519,23 @@ APT::Compressor::rev {
      will be opened.</para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>Mirror</option></term>
+     <listitem><para>The options in this scope configure the behavior of URIs
+     using the <literal>mirror</literal> method, which redirects each request
+     to a mirror chosen from a list. <literal>Mirror::Fanout</literal>
+     controls how many mirrors are used in parallel: <literal>sqrt</literal>
+     (the default) uses at least three mirrors if enough are available and
+     scales their number further with the square root of the number of files
+     fetched so far, assigning each file to the currently least used of these
+     mirrors, while <literal>none</literal>
+     picks a random mirror for each file independently.
+     <literal>Mirror::Fanout-Limit</literal> sets an upper bound on the number
+     of actively used mirrors; the default 0 means no limit. Only mirrors
+     with the lowest <literal>priority</literal> value are candidates; the
+     remaining mirrors are tried as fallbacks in case of failures, as
+     described in &apt-transport-mirror;.</para></listitem>
+     </varlistentry>
+
      <varlistentry><term><option>Retries</option></term>
      <listitem><para>Number of retries to perform. If this is non-zero APT will retry failed 
      files the given number of times.</para></listitem>
