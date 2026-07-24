@@ -709,6 +709,7 @@ apt::sources::with "<LIST>";
 apt::moo::color "<BOOL>";
 apt::pkgpackagemanager::maxloopcount "<INT>";
 apt::hashes::*::untrusted "<BOOL>";
+apt::hashes::*::weak "<BOOL>";
 apt::list-cleanup "<BOOL>";
 apt::authentication::trustcdrom "<BOOL>";
 apt::solver::strict-pinning "<BOOL>";

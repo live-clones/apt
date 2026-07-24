@@ -431,6 +431,9 @@ class APT_HIDDEN pkgAcqMetaBase : public pkgAcqTransactionItem		/*{{{*/
    /** \brief Queue the downloaded Signature for verification */
    void QueueForSignatureVerify(pkgAcqTransactionItem * const I, std::string const &File, std::string const &Signature);
 
+   /** \brief Queue a detached PEM CMS (.p7s) signature for verification */
+   void QueueForCMSVerify(pkgAcqTransactionItem * const I, std::string const &File, std::string const &Signature);
+
    [[nodiscard]] std::string Custom600Headers() const override;
 
    /** \brief Called when authentication succeeded.
@@ -519,7 +522,8 @@ class APT_HIDDEN pkgAcqMetaIndex : public pkgAcqMetaBase
 
    /** \brief Create a new pkgAcqMetaIndex. */
    pkgAcqMetaIndex(pkgAcquire * const Owner, pkgAcqMetaClearSig * const TransactionManager,
-		   IndexTarget const &DataTarget, IndexTarget const &DetachedSigTarget) APT_NONNULL(2, 3);
+		   IndexTarget const &DataTarget, IndexTarget const &DetachedSigTarget,
+		   bool const DeferStart = false) APT_NONNULL(2, 3);
    ~pkgAcqMetaIndex() override;
 
    friend class pkgAcqMetaSig;
@@ -581,7 +585,7 @@ class APT_HIDDEN pkgAcqMetaClearSig final : public pkgAcqMetaIndex
    void DoCancelled();
    void Finished() override;
 
-   /** \brief Starts downloading the individual index files.
+    /** \brief Starts downloading the individual index files.
     *
     *  \param verify If \b true, only indices whose expected hashsum
     *  can be determined from the meta-index will be downloaded, and
@@ -596,8 +600,74 @@ class APT_HIDDEN pkgAcqMetaClearSig final : public pkgAcqMetaIndex
 		IndexTarget const &ClearsignedTarget,
 		IndexTarget const &DetachedDataTarget,
 		IndexTarget const &DetachedSigTarget,
-		metaIndex * const MetaIndexParser);
+		metaIndex * const MetaIndexParser,
+		bool const DeferStart = false);
    ~pkgAcqMetaClearSig() override;
+
+    friend class pkgAcqMetaCMS;
+    friend class pkgAcqMetaCMSSig;
+};
+									/*}}}*/
+/** \brief Downloads the Release file and queues Release.p7s for verification	{{{
+ *
+ *  Used when the source's Signed-By is an X.509 certificate bundle.
+ *  Downloads the plain Release file, derives the CMS URL from the file's
+ *  SHA256 hash, and creates a pkgAcqMetaCMSSig to fetch and verify the
+ *  detached CMS signature.  There is no fallback to InRelease/Release.gpg;
+ *  if the p7s is missing or verification fails, the update fails (or
+ *  proceeds untrusted only if AllowInsecureRepositories is set).
+ */
+class APT_HIDDEN pkgAcqMetaCMS final : public pkgAcqMetaIndex
+{
+   void * const d;
+
+   public:
+   [[nodiscard]] bool HashesRequired() const override { return false; }
+
+   void Done(std::string const &Message, HashStringList const &Hashes,
+	     pkgAcquire::MethodConfig const *Cnf) override;
+   void Failed(std::string const &Message, pkgAcquire::MethodConfig const *Cnf) override;
+
+   pkgAcqMetaCMS(pkgAcquire * const Owner,
+		      pkgAcqMetaClearSig * const TransactionManager,
+		      IndexTarget const &DataTarget) APT_NONNULL(2, 3);
+   ~pkgAcqMetaCMS() override;
+
+   friend class pkgAcqMetaCMSSig;
+};
+									/*}}}*/
+/** \brief Downloads and verifies a detached CMS (.p7s) Release signature	{{{
+ *
+ *  Created by pkgAcqMetaCMS after the Release file is downloaded.
+ *  On verification success the transaction is committed; on failure
+ *  (download or verification) AllowInsecureRepositories is consulted —
+ *  there is no fallback to the GPG path.
+ */
+class APT_HIDDEN pkgAcqMetaCMSSig final : public pkgAcqTransactionItem
+{
+   void * const d;
+
+   pkgAcqMetaCMS * const MetaIndex;
+
+   /** \brief Saved sig path during the auth (verification) pass */
+   std::string MetaIndexFileSignature;
+
+   protected:
+   [[nodiscard]] std::string GetFinalFilename() const override;
+
+   public:
+   [[nodiscard]] bool HashesRequired() const override { return false; }
+
+   void Failed(std::string const &Message, pkgAcquire::MethodConfig const *Cnf) override;
+   void Done(std::string const &Message, HashStringList const &Hashes,
+	     pkgAcquire::MethodConfig const *Cnf) override;
+   [[nodiscard]] std::string Custom600Headers() const override;
+
+   pkgAcqMetaCMSSig(pkgAcquire * const Owner,
+		    pkgAcqMetaClearSig * const TransactionManager,
+		    IndexTarget const &Target,
+		    pkgAcqMetaCMS * const MetaIndex) APT_NONNULL(2, 3, 5);
+   ~pkgAcqMetaCMSSig() override;
 };
 									/*}}}*/
 /** \brief Common base class for all classes that deal with fetching indexes	{{{*/

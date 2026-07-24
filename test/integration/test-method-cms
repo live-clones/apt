@@ -1,0 +1,200 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+# Placeholder APT repository signing EKU OID - used by certificate
+# generation below.  Not enforced by the unconstrained verifier.
+APT_P7S_EKU='1.3.6.1.4.1.99999.2'
+
+# --------------------------------------------------------------------------- #
+# Generate test PKI at runtime (no committed certs)
+#
+# Signed-By points to a CA bundle. The p7s file must be signed by a leaf
+# certificate issued by that CA, with:
+#   - BasicConstraints CA:FALSE (critical)
+#   - KeyUsage digitalSignature (critical)
+#   - ExtendedKeyUsage APT_P7S_EKU
+#   - SubjectAltName dNSName matching the source suite ("stable")
+# --------------------------------------------------------------------------- #
+CERTDIR="${TMPWORKINGDIRECTORY}/certs"
+mkdir -p "$CERTDIR"
+
+# Root CA for the trusted Signed-By bundle
+openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/ca.key" \
+    -out    "$CERTDIR/ca.cert" \
+    -days 1 -subj "/CN=APT Test P7S CA" \
+    -addext "basicConstraints = critical,CA:TRUE" \
+    -addext "keyUsage = critical,keyCertSign,cRLSign" 2>/dev/null
+
+# Signing leaf certificate, valid for suite "stable"
+openssl req -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/leaf.key" \
+    -out    "$CERTDIR/leaf.csr" \
+    -subj "/CN=APT Test P7S Leaf" 2>/dev/null
+openssl x509 -req \
+    -in      "$CERTDIR/leaf.csr" \
+    -CA      "$CERTDIR/ca.cert" \
+    -CAkey   "$CERTDIR/ca.key" \
+    -CAcreateserial \
+    -out     "$CERTDIR/leaf.cert" \
+    -days    1 \
+    -extfile /dev/stdin <<EOF 2>/dev/null
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = ${APT_P7S_EKU}
+subjectAltName = DNS:stable
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+EOF
+
+# A second, unrelated CA and leaf for wrong-trust-anchor tests
+openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/other-ca.key" \
+    -out    "$CERTDIR/other-ca.cert" \
+    -days 1 -subj "/CN=APT Other P7S CA" \
+    -addext "basicConstraints = critical,CA:TRUE" \
+    -addext "keyUsage = critical,keyCertSign,cRLSign" 2>/dev/null
+
+openssl req -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/other-leaf.key" \
+    -out    "$CERTDIR/other-leaf.csr" \
+    -subj "/CN=APT Other P7S Leaf" 2>/dev/null
+openssl x509 -req \
+    -in      "$CERTDIR/other-leaf.csr" \
+    -CA      "$CERTDIR/other-ca.cert" \
+    -CAkey   "$CERTDIR/other-ca.key" \
+    -CAcreateserial \
+    -out     "$CERTDIR/other-leaf.cert" \
+    -days    1 \
+    -extfile /dev/stdin <<EOF 2>/dev/null
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = ${APT_P7S_EKU}
+subjectAltName = DNS:stable
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+EOF
+
+# --------------------------------------------------------------------------- #
+# Prepare test data files
+# --------------------------------------------------------------------------- #
+RELEASE="${TMPWORKINGDIRECTORY}/Release"
+printf 'Origin: Test\nSuite: stable\n' > "$RELEASE"
+
+RELEASE_TAMPERED="${TMPWORKINGDIRECTORY}/Release.tampered"
+printf 'Origin: TAMPERED\nSuite: stable\n' > "$RELEASE_TAMPERED"
+
+RELEASE_P7S="${TMPWORKINGDIRECTORY}/Release.p7s"
+openssl cms -sign \
+    -in      "$RELEASE" \
+    -out     "$RELEASE_P7S" \
+    -signer  "$CERTDIR/leaf.cert" \
+    -inkey   "$CERTDIR/leaf.key" \
+    -certfile "$CERTDIR/ca.cert" \
+    -outform PEM -binary 2>/dev/null
+
+RELEASE_GARBAGE="${TMPWORKINGDIRECTORY}/Release.garbage"
+printf 'THIS IS NOT A VALID CMS PEM FILE\n' > "$RELEASE_GARBAGE"
+
+METHODOUT="${TMPWORKINGDIRECTORY}/method.out"
+
+# --------------------------------------------------------------------------- #
+# Helper: run the cms method with the acquire protocol on stdin.
+# cmsmethod [sigfile] [datafile] [certfile] [suite]
+# --------------------------------------------------------------------------- #
+cmsmethod() {
+    local SIGFILE="${1:-$RELEASE_P7S}"
+    local DATAFILE="${2:-$RELEASE}"
+    local CERTFILE="${3:-$CERTDIR/ca.cert}"
+    local SUITE="${4:-stable}"
+    printf '601 Configuration\n\n600 URI Acquire\nURI: cms:%s\nFilename: %s\nSigned-By: %s\nSuite: %s\n\n' \
+        "${SIGFILE}" \
+        "${DATAFILE}" \
+        "${CERTFILE}" \
+        "${SUITE}" \
+    | runapt command "${METHODSDIR}/cms" > "$METHODOUT" 2>&1 || true
+}
+
+# --------------------------------------------------------------------------- #
+# Test 1: Valid signature → 201 URI Done
+# --------------------------------------------------------------------------- #
+msgtest 'Valid CMS signature' 'returns 201 URI Done'
+cmsmethod
+testsuccess --nomsg grep '^201 URI Done$' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 2: Valid signature → Signed-By header is present
+# --------------------------------------------------------------------------- #
+msgtest 'Valid CMS signature' 'returns Signed-By header'
+testsuccess --nomsg grep '^Signed-By:' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 3: Valid signature → Signed-By header contains CN
+# --------------------------------------------------------------------------- #
+msgtest 'Valid CMS signature' 'Signed-By contains signer CN'
+testsuccess --nomsg grep 'APT Test P7S Leaf' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 4: Tampered data file → 400 URI Failure
+# --------------------------------------------------------------------------- #
+msgtest 'Tampered data file' 'returns 400 URI Failure'
+cmsmethod "$RELEASE_P7S" "$RELEASE_TAMPERED"
+testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 5: Wrong trust anchor → 400 URI Failure
+# --------------------------------------------------------------------------- #
+msgtest 'Wrong trust anchor' 'returns 400 URI Failure'
+cmsmethod "$RELEASE_P7S" "$RELEASE" "$CERTDIR/other-ca.cert"
+testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 6: Missing certificate file → 400 URI Failure
+# --------------------------------------------------------------------------- #
+msgtest 'Missing certificate file' 'returns 400 URI Failure'
+cmsmethod "$RELEASE_P7S" "$RELEASE" "/nonexistent/ca.pem"
+testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 7: Empty Signed-By header → 400 URI Failure
+# --------------------------------------------------------------------------- #
+msgtest 'Empty Signed-By' 'returns 400 URI Failure'
+printf '601 Configuration\n\n600 URI Acquire\nURI: cms:%s\nFilename: %s\n\n' \
+    "${RELEASE_P7S}" \
+    "${RELEASE}" \
+| runapt command "${METHODSDIR}/cms" > "$METHODOUT" 2>&1 || true
+testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 8: Malformed / garbage .p7s file → 400 URI Failure
+# --------------------------------------------------------------------------- #
+msgtest 'Malformed p7s file' 'returns 400 URI Failure'
+cmsmethod "$RELEASE_GARBAGE"
+testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
+
+# --------------------------------------------------------------------------- #
+# Test 9: SHA-1 digest → 400 URI Failure (trusted-digest floor).
+# Guarded so this test still passes on hosts whose OpenSSL security level
+# rejects SHA-1 at signing time (level ≥ 2).
+# --------------------------------------------------------------------------- #
+RELEASE_P7S_SHA1="${TMPWORKINGDIRECTORY}/Release.sha1.p7s"
+if openssl cms -sign -md sha1 \
+    -in      "$RELEASE" \
+    -out     "$RELEASE_P7S_SHA1" \
+    -signer  "$CERTDIR/leaf.cert" \
+    -inkey   "$CERTDIR/leaf.key" \
+    -certfile "$CERTDIR/ca.cert" \
+    -outform PEM -binary 2>/dev/null; then
+    msgtest 'SHA-1 signed CMS' 'returns 400 URI Failure'
+    cmsmethod "$RELEASE_P7S_SHA1"
+    testsuccess --nomsg grep '^400 URI Failure$' "$METHODOUT"
+else
+    msgskip 'SHA-1 signing rejected by host OpenSSL security level'
+fi
+
