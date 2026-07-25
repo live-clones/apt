@@ -412,7 +412,7 @@ bool pkgTagFile::Fill()
 
       // Append a double new line if one does not exist
       unsigned int LineCount = 0;
-      for (const char *E = d->End - 1; E - d->End < 6 && (*E == '\n' || *E == '\r'); E--)
+      for (const char *E = d->End - 1; E >= d->Buffer && d->End - E < 6 && (*E == '\n' || *E == '\r'); E--)
 	 if (*E == '\n')
 	    ++LineCount;
       if (LineCount < 2)
