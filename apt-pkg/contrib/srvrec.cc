@@ -81,6 +81,11 @@ bool GetSrvRecords(std::string name, std::vector<SrvRec> &Result)
 #endif //__RES >= 19991006
    if (answer_len == -1)
       return false;
+   // res_query can report a length bigger than answer if the reply got
+   // truncated, treat that the same as any other bad reply instead of
+   // trusting a length that reaches past our buffer
+   if (answer_len > (int)sizeof(answer))
+      return _error->Warning("res_query returned too much data (%i)", answer_len);
    if (answer_len < (int)sizeof(HEADER))
       return _error->Warning("Not enough data from res_query (%i)", answer_len);
 
