@@ -219,7 +219,7 @@ bool MultiCompress::Finalize(unsigned long long &OutSize)
       {
 	 // Update the mtime if necessary
 	 if (UpdateMTime > 0 &&
-	     (Now - St.st_mtime > (signed)UpdateMTime || St.st_mtime > Now))
+	     (Now - St.st_mtime > UpdateMTime || St.st_mtime > Now))
 	 {
 	    utimes(I->Output.c_str(), NULL);
 	    Changed = true;
