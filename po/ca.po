@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.4~beta1\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2025-03-13 16:18+0100\n"
 "Last-Translator: poc senderi <pocsenderi@protonmail.com>\n"
 "Language-Team: Catalan <debian-l10n-catalan@lists.debian.org>\n"
@@ -130,11 +130,15 @@ msgstr ""
 "autenticació?)"
 
 #: apt-pkg/acquire-item.cc
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "An error occurred during the signature verification. The repository is "
+#| "not updated and the previous index files will be used. OpenPGP signature "
+#| "verification failed: %s: %s"
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "S'ha produït un error durant la verificació de la signatura. El dipòsit no "
 "està actualitzat i s'emprarà el fitxer d'índex anteriors. Ha fallat la "
@@ -142,8 +146,9 @@ msgstr ""
 
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
-#, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+#, fuzzy, c-format
+#| msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr "Ha fallat la verificació de la signatura OpenPGP: %s: %s"
 
 #: apt-pkg/acquire-item.cc
@@ -3879,10 +3884,6 @@ msgstr "L'arxiu no té registre de control"
 msgid "Unable to get a cursor"
 msgstr "No es pot aconseguir un cursor"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc - No s'ha pogut assignar espai en memòria"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4298,6 +4299,9 @@ msgstr "No s'ha pogut establir l'hora de modificació"
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "Els fitxers buits no poden ser arxius vàlids"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc - No s'ha pogut assignar espai en memòria"
 
 #, c-format
 #~ msgid "GPG error: %s: %s"

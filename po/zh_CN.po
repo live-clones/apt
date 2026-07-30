@@ -16,7 +16,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.9.26\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2025-07-31 18:13+0800\n"
 "Last-Translator: Tianyu Chen <sweetyfish@deepin.org>\n"
 "Language-Team: Chinese (simplified) <debian-l10n-chinese@lists.debian.org>\n"
@@ -122,19 +122,24 @@ msgid ""
 msgstr "明文签署文件不可用，结果为‘%s’（您的网络需要认证吗？）"
 
 #: apt-pkg/acquire-item.cc
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "An error occurred during the signature verification. The repository is "
+#| "not updated and the previous index files will be used. OpenPGP signature "
+#| "verification failed: %s: %s"
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "校验数字签名时出错。因仓库未成功更新，将继续使用先前的索引文件。OpenPGP 签名"
 "校验失败：%s: %s"
 
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
-#, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+#, fuzzy, c-format
+#| msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr "OpenPGP 签名校验失败：%s: %s"
 
 #: apt-pkg/acquire-item.cc
@@ -3657,10 +3662,6 @@ msgstr "归档文件没有包含控制字段"
 msgid "Unable to get a cursor"
 msgstr "无法获得游标"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc - 分配内存失败"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4061,6 +4062,9 @@ msgstr "无法设置文件的修改日期"
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "空文件不是有效归档"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc - 分配内存失败"
 
 #, c-format
 #~ msgid "GPG error: %s: %s"

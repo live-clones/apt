@@ -38,7 +38,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.8.10\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2025-07-24 22:11-0500\n"
 "Last-Translator: Igor Támara <igor.tamara@gmail.com>\n"
 "Language-Team: Español; Castellano <debian-l10n-spanish@lists.debian.org>\n"
@@ -185,11 +185,15 @@ msgstr ""
 "autenticación?)"
 
 #: apt-pkg/acquire-item.cc
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "An error occurred during the signature verification. The repository is "
+#| "not updated and the previous index files will be used. OpenPGP signature "
+#| "verification failed: %s: %s"
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "Se produjo un error durante la verificación de la firma. El repositorio no "
 "está actualizado y se utilizarán los ficheros de índice antiguos. Falló la "
@@ -197,8 +201,9 @@ msgstr ""
 
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
-#, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+#, fuzzy, c-format
+#| msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr "Falló la verificación de firma OpenPGP: %s: %s"
 
 #: apt-pkg/acquire-item.cc
@@ -3938,10 +3943,6 @@ msgstr "No hay registro de control del archivo"
 msgid "Unable to get a cursor"
 msgstr "No se pudo obtener un cursor"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc - No pudo reservar memoria"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4355,6 +4356,9 @@ msgstr "Fallo al establecer el tiempo de modificación"
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "Los ficheros vacíos no pueden ser archivadores válidos"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc - No pudo reservar memoria"
 
 #, c-format
 #~ msgid "GPG error: %s: %s"

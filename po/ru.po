@@ -18,7 +18,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.9.30\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2025-02-26 11:30+0300\n"
 "Last-Translator: Алексей Шилин <shilin.aleksej@gmail.com>\n"
 "Language-Team: Russian <debian-l10n-russian@lists.debian.org>\n"
@@ -139,8 +139,8 @@ msgstr ""
 #| "not updated and the previous index files will be used. GPG error: %s: %s"
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "Произошла ошибка при проверке подписи. Репозиторий не обновлён, и будут "
 "использованы предыдущие индексные файлы. Ошибка GPG: %s: %s"
@@ -148,7 +148,7 @@ msgstr ""
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
 #, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr ""
 
 #: apt-pkg/acquire-item.cc
@@ -3875,10 +3875,6 @@ msgstr "В архиве нет поля control"
 msgid "Unable to get a cursor"
 msgstr "Невозможно получить курсор"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc — не удалось выделить память"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4297,6 +4293,9 @@ msgstr "Не удалось установить время модификаци
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "Пустые файлы не могут быть допустимыми архивами"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc — не удалось выделить память"
 
 #, c-format
 #~ msgid "GPG error: %s: %s"

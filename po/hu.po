@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2016-04-10 19:46+0200\n"
 "Last-Translator: Gabor Kelemen <kelemeng@ubuntu.com>\n"
 "Language-Team: Hungarian <gnome-hu-list@gnome.org>\n"
@@ -134,8 +134,8 @@ msgstr ""
 #| "not updated and the previous index files will be used. GPG error: %s: %s"
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "Hiba történt az aláírás ellenőrzése közben. A tároló nem frissült, és az "
 "előző indexfájl lesz használva. GPG hiba: %s: %s"
@@ -143,7 +143,7 @@ msgstr ""
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
 #, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr ""
 
 #: apt-pkg/acquire-item.cc
@@ -3854,10 +3854,6 @@ msgstr "Az archívumnak nincs vezérlő rekordja"
 msgid "Unable to get a cursor"
 msgstr "Nem sikerült egy mutatóhoz jutni"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc - Nem sikerült memóriát lefoglalni"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4274,6 +4270,9 @@ msgstr "A módosítási idő beállítása sikertelen"
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "Az üres fájlok biztosan nem érvényes csomagok"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc - Nem sikerült memóriát lefoglalni"
 
 #, c-format
 #~ msgid "GPG error: %s: %s"

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2012-06-28 20:49+0100\n"
 "Last-Translator: Ivan Masár <helix84@centrum.sk>\n"
 "Language-Team: Slovak <sk-i18n@lists.linux.sk>\n"
@@ -121,8 +121,8 @@ msgstr ""
 #, fuzzy, c-format
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "Počas overovania podpisu sa vyskytla chyba. Repozitár nie je aktualizovaný a "
 "použijú sa predošlé indexové súbory. Chyba GPG: %s: %s\n"
@@ -130,7 +130,7 @@ msgstr ""
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
 #, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr ""
 
 #: apt-pkg/acquire-item.cc
@@ -3759,10 +3759,6 @@ msgstr "Archív nemá riadiaci záznam"
 msgid "Unable to get a cursor"
 msgstr "Nedá sa získať kurzor"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc - Zlyhal pokus o pridelenie pamäti"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4172,6 +4168,9 @@ msgstr "Zlyhalo nastavenie času zmeny"
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "Prázdne súbory nemôžu byť platné archívy"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc - Zlyhal pokus o pridelenie pamäti"
 
 #, c-format
 #~ msgid "GPG error: %s: %s"

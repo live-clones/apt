@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.4\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2025-12-27 12:56+0000\n"
 "Last-Translator: Aindriú Mac Giolla Eoin <aindriu80@gmail.com>\n"
 "Language-Team: Irish\n"
@@ -119,11 +119,15 @@ msgstr ""
 "teastáil ón líonra?)"
 
 #: apt-pkg/acquire-item.cc
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "An error occurred during the signature verification. The repository is "
+#| "not updated and the previous index files will be used. OpenPGP signature "
+#| "verification failed: %s: %s"
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "Tharla earráid le linn an fhíoraithe sínithe. Ní dhéantar an stór a "
 "nuashonrú agus úsáidfear na comhaid innéacs roimhe seo. Theip ar fhíorú "
@@ -131,8 +135,9 @@ msgstr ""
 
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
-#, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+#, fuzzy, c-format
+#| msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr "Theip ar fhíorú sínithe OpenPGP: %s: %s"
 
 #: apt-pkg/acquire-item.cc
@@ -3886,10 +3891,6 @@ msgstr "Níl aon taifead rialaithe ag an gcartlann"
 msgid "Unable to get a cursor"
 msgstr "Ní féidir cúrsóir a fháil"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc - Theip ar chuimhne a leithdháileadh"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4303,3 +4304,6 @@ msgstr "Theip ar an am modhnaithe a shocrú"
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "Ní féidir le comhaid folamh a bheith ina gcartlanna bailí"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc - Theip ar chuimhne a leithdháileadh"

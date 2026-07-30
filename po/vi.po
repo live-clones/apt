@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.8\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-17 19:22+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2014-09-12 13:48+0700\n"
 "Last-Translator: Trần Ngọc Quân <vnwildman@gmail.com>\n"
 "Language-Team: Vietnamese <translation-team-vi@lists.sourceforge.net>\n"
@@ -126,8 +126,8 @@ msgstr ""
 #, fuzzy, c-format
 msgid ""
 "An error occurred during the signature verification. The repository is not "
-"updated and the previous index files will be used. OpenPGP signature "
-"verification failed: %s: %s"
+"updated and the previous index files will be used. Signature verification "
+"failed: %s: %s"
 msgstr ""
 "Gặp lỗi trong khi thẩm tra chữ ký.\n"
 "Kho lưu chưa được cập nhật nên dùng những tập tin chỉ mục trước.\n"
@@ -136,7 +136,7 @@ msgstr ""
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
 #, c-format
-msgid "OpenPGP signature verification failed: %s: %s"
+msgid "Signature verification failed: %s: %s"
 msgstr ""
 
 #: apt-pkg/acquire-item.cc
@@ -3796,10 +3796,6 @@ msgstr "Kho không có mục ghi điều khiển"
 msgid "Unable to get a cursor"
 msgstr "Không thể lấy con trỏ"
 
-#: ftparchive/contents.cc
-msgid "realloc - Failed to allocate memory"
-msgstr "realloc (cấp phát lại) - việc cấp phát bộ nhớ bị lỗi"
-
 #: ftparchive/multicompress.cc
 #, c-format
 msgid "Unknown compression algorithm '%s'"
@@ -4215,6 +4211,9 @@ msgstr "Gặp lỗi khi đặt giờ sửa đổi"
 #: methods/store.cc
 msgid "Empty files can't be valid archives"
 msgstr "Các tập tin trống rỗng không phải là kho lưu hợp lệ"
+
+#~ msgid "realloc - Failed to allocate memory"
+#~ msgstr "realloc (cấp phát lại) - việc cấp phát bộ nhớ bị lỗi"
 
 #, c-format
 #~ msgid "GPG error: %s: %s"

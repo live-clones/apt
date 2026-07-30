@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt-doc 2.9.14\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-05-01 16:41+0000\n"
+"POT-Creation-Date: 2026-07-30 20:45+0000\n"
 "PO-Revision-Date: 2025-04-15 13:14+0200\n"
 "Last-Translator: bubu <bubub@no-log.org>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -2266,6 +2266,13 @@ msgstr ""
 "Ne traiter que les dépendances de construction indépendantes de "
 "l'architecture. Élément de configuration : <literal>APT::Get::Indep-Only</"
 "literal>."
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt-get.8.xml
+msgid ""
+"Only process build-dependencies that are neither architecture-dependent nor "
+"architecture-independent; intersection of the previous two options."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt-get.8.xml

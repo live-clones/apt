@@ -1,3 +1,65 @@
+apt (3.3.2) unstable; urgency=medium
+
+  [ Julian Andres Klode ]
+  * Document and test combined `build-dep --arch-only --indep-only`
+  * ftparchive: fix heap overflow in ContentsExtract::DoItem
+  * deb: guard against unsigned underflow when trimming control newlines
+  * gpgv: don't advance past the null terminator in PushEntryWithKeyID
+  * ftparchive: replace ContentsExtract's manual buffer with std::vector<char>
+  * test: Limit valgrind to 1024 open files
+  * hashes: Fix lingering OpenSSL error (Closes: #1140227)
+  * test: use `gnurm` where available
+  * Convert command-line option-parsing to declarative format
+  * Fix crash when an aux file request is redirected
+  * Reply to aux requests with the original URI if redirected
+  * debian/apt-daily.service: Add timeouts.
+    30 mins for apt-daily.service, 12 hours for apt-daily-upgrade.service
+    should be sufficient. (LP: #2158000)
+
+  [ наб ]
+  * apt-transport-https(1): document host-specific SSLCert, SSLKey, Verify-Host with host:: instead of ::host
+
+  [ David Kalnischkies ]
+  * aptwebserver: Refuse client immediately on TLS handshake
+
+  [ Américo Monteiro ]
+  * Portuguese manpages translation update (Closes: #1133965)
+
+  [ Frans Spiesschaert ]
+  * Dutch program translation update (Closes: #1135221)
+  * Dutch manpages translation update (Closes: #1135222)
+
+  [ Remus-Gabriel Chelu ]
+  * Romanian program translation update (Closes: #1139336)
+
+  [ Mark Atwood ]
+  * hashes: include <span> for std::span
+  * hashes: don't crash on an unavailable digest
+  * test: exercise hashes with a disabled digest
+
+  [ dongshengyuan ]
+  * Fix installing a deb with colon in path
+
+  [ Simon Johnsson ]
+  * apt-pkg: rename "OpenPGP signature verification failed" to "Signature verification failed"
+
+  [ Andreas Noteng ]
+  * Norwegian Bokmål (nb) translation update
+
+  [ Temuri Doghonadze ]
+  * po: Add Georgian translation
+
+  [ Andriy Pysyk ]
+  * Update Ukrainian translation for 3.3.1
+
+  [ Mikhail Khachayants ]
+  * srvrec: reject res_query answers bigger than our buffer
+
+  [ Ramesh Adhikari ]
+  * tagfile: fix unbounded backward scan in Fill()'s trailing-newline check
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Thu, 30 Jul 2026 22:43:05 +0200
+
 apt (3.3.1) unstable; urgency=medium
 
   [ Julian Andres Klode ]
