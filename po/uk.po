@@ -15,10 +15,10 @@
 # binary = двійковий
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.3.1\n"
+"Project-Id-Version: apt 3.3.2\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-07-30 20:45+0000\n"
-"PO-Revision-Date: 2026-05-18 08:21+0000\n"
+"PO-Revision-Date: 2026-07-31 17:14+0300\n"
 "Last-Translator: Andriy Pysyk <ep.nestor@gmail.com>\n"
 "Language-Team: Українська <uk@li.org>\n"
 "Language: uk\n"
@@ -131,26 +131,20 @@ msgstr ""
 "автентифікацію?)"
 
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
-#| msgid ""
-#| "An error occurred during the signature verification. The repository is "
-#| "not updated and the previous index files will be used. OpenPGP signature "
-#| "verification failed: %s: %s"
+#, c-format
 msgid ""
 "An error occurred during the signature verification. The repository is not "
 "updated and the previous index files will be used. Signature verification "
 "failed: %s: %s"
 msgstr ""
 "Під час перевірки підпису сталася помилка. Сховище не оновлено, і буде "
-"використано попередні індексні файли. Перевірка підпису OpenPGP не вдалася: "
-"%s: %s"
+"використано попередні індексні файли. Перевірка підпису не вдалася: %s: %s"
 
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
-#, fuzzy, c-format
-#| msgid "OpenPGP signature verification failed: %s: %s"
+#, c-format
 msgid "Signature verification failed: %s: %s"
-msgstr "Перевірка підпису OpenPGP не вдалася: %s: %s"
+msgstr "Перевірка підпису не вдалася: %s: %s"
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -1470,9 +1464,9 @@ msgid ""
 "package %s due to a Conflicts/Pre-Depends loop. This is often bad, but if "
 "you really want to do it, activate the APT::Force-LoopBreak option."
 msgstr ""
-"Під час цієї інсталяції доведеться тимчасово вилучити критично важливий "
-"пакунок %s через цикл у Conflicts/Pre‑Depends. Це зазвичай погано, але якщо "
-"ви наполягаєте, увімкніть параметр APT::Force-LoopBreak."
+"Під час цієї інсталяції доведеться тимчасово вилучити основний пакунок %s "
+"через цикл у Conflicts/Pre‑Depends. Це зазвичай погано, але якщо ви "
+"наполягаєте, увімкніть параметр APT::Force-LoopBreak."
 
 #: apt-pkg/pkgcache.cc
 msgid "Empty package cache"
@@ -2248,8 +2242,8 @@ msgid ""
 "Removing essential system-critical packages is not permitted. This might "
 "break the system."
 msgstr ""
-"Видалення основних (essential) пакунків заборонено. Це може порушити роботу "
-"системи."
+"Видалення основних, критично важливих для системи пакунків заборонено. Це "
+"може порушити роботу системи."
 
 #: apt-private/private-install.cc
 msgid "Continue anyway?"
@@ -2564,11 +2558,11 @@ msgstr "Наступні пакунки буде ПОНИЖЕНО до попе�
 
 #: apt-private/private-output.cc
 msgid "Changing held packages:"
-msgstr "Зміна зафіксованих пакунків:"
+msgstr "Зміна утримуваних пакунків:"
 
 #: apt-private/private-output.cc
 msgid "The following held packages will be changed:"
-msgstr "Наступні зафіксовані пакунки буде змінено:"
+msgstr "Наступні утримувані пакунки буде змінено:"
 
 #: apt-private/private-output.cc
 #, c-format
@@ -3427,12 +3421,12 @@ msgstr "Наступні пакунки будуть позначені як а�
 #: cmdline/apt-mark.cc
 #, c-format
 msgid "%s was already set on hold.\n"
-msgstr "%s уже зафіксовано.\n"
+msgstr "%s уже утримувано.\n"
 
 #: cmdline/apt-mark.cc
 #, c-format
 msgid "%s was already not on hold.\n"
-msgstr "%s уже не був зафіксований.\n"
+msgstr "%s уже не утримувався.\n"
 
 #: cmdline/apt-mark.cc
 msgid "Executing dpkg failed. Are you root?"
@@ -3441,12 +3435,12 @@ msgstr "Не вдалося виконати dpkg. Ви root?"
 #: cmdline/apt-mark.cc
 #, c-format
 msgid "%s set on hold.\n"
-msgstr "%s зафіксовано.\n"
+msgstr "%s позначено як утримуваний.\n"
 
 #: cmdline/apt-mark.cc
 #, c-format
 msgid "Canceled hold on %s.\n"
-msgstr "Фіксацію для %s скасовано.\n"
+msgstr "Утримування для %s скасовано.\n"
 
 #: cmdline/apt-mark.cc
 #, c-format
