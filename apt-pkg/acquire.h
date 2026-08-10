@@ -354,6 +354,8 @@ class APT_PUBLIC pkgAcquire
     */
    unsigned long long PartialPresent();
 
+   pkgAcquireStatus *GetLog() { return Log; }
+
    void SetLog(pkgAcquireStatus *Progress) { Log = Progress; }
 
    /** \brief acquire lock and perform directory setup
