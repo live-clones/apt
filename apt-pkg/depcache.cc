@@ -18,6 +18,7 @@
 #include <apt-pkg/depcache.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/hardwarecondition.h>
 #include <apt-pkg/macros.h>
 #include <apt-pkg/perf.h>
 #include <apt-pkg/pkgcache.h>
@@ -2629,7 +2630,7 @@ bool pkgDepCache::HardwareConditionApplied(pkgCache::PkgIterator Pkg) const
    {
       if (Ver == Pkg.CurrentVer())
 	 break;
-      if (not Ver.HardwareConditionMet() &&
+      if (not APT::HardwareCondition::IsSatisfied(Ver) &&
 	  not _config->FindB("APT::Get::Ignore-Hardware-Condition", false))
 	 return true;
    }

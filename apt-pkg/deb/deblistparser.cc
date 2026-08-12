@@ -29,142 +29,11 @@
 #include <cctype>
 #include <cstddef>
 #include <cstring>
-#include <filesystem>
 #include <string>
 #include <vector>
-
-#include <dirent.h>
-#include <fnmatch.h>
 									/*}}}*/
 
 using std::string;
-namespace fs = std::filesystem;
-
-static std::string NormalizePCIId(std::string_view id)
-{
-   auto begin = id.find_first_not_of('0');
-   if (begin == std::string_view::npos)
-      return "0";
-
-   std::string normalized(id.substr(begin));
-   std::transform(normalized.begin(), normalized.end(), normalized.begin(),
-	  [](unsigned char c) { return std::tolower(c); });
-   return normalized;
-}
-
-static bool MatchPCICondition(std::string const &pattern, std::string_view alias)
-{
-   if (not alias.starts_with("pci:"))
-      return false;
-
-   auto vendorStart = alias.find('v', 4);
-   if (vendorStart == std::string_view::npos)
-      return false;
-
-   auto deviceStart = alias.find('d', vendorStart + 1);
-   if (deviceStart == std::string_view::npos)
-      return false;
-
-   auto vendorEnd = deviceStart;
-   auto deviceEnd = alias.find("sv", deviceStart + 1);
-   if (deviceEnd == std::string_view::npos)
-      return false;
-
-   std::string match = NormalizePCIId(alias.substr(vendorStart + 1, vendorEnd - vendorStart - 1))
-	+ ":" + NormalizePCIId(alias.substr(deviceStart + 1, deviceEnd - deviceStart - 1));
-   return fnmatch(pattern.c_str(), match.c_str(), 0) == 0;
-}
-
-// EvaluateHardwareCondition - Check Hardware-Condition against sysfs	/*{{{*/
-// Reads all modalias files under /sys/bus/*/devices/*/modalias files and tests
-// each against the glob pattern from the package field.  Returns true if
-// at least one device modalias matches (for "modalias") or if no device
-// matches (for "modalias-not"). The "pci" and "pci-not" forms match the
-// normalized PCI vendor/device ID pair, allowing partial globs such as
-// "8086:7a*".
-static bool EvaluateHardwareCondition(std::string_view field)
-{
-   /* Discards any errors encountered in device path traversal
-   since they shouldn't be presented to the user */
-   struct DiscardErrors
-   {
-      DiscardErrors() { _error->PushToStack(); }
-      ~DiscardErrors() { _error->RevertToStack(); }
-   } discardErrors;
-
-   // Parse: "<type> <pattern>"
-   auto sep = field.find(' ');
-   if (sep == std::string_view::npos)
-      return true; // Unrecognised format – default safe (treat as met)
-
-   std::string_view type = field.substr(0, sep);
-   std::string pattern(field.substr(sep + 1));
-
-   bool wantMatch = (type == "modalias");
-   if (not wantMatch && type != "modalias-not")
-      return true; // Unknown type – default safe
-
-   // Override path for testing
-   std::string sysfsBase = _config->Find("APT::HardwareCondition::SysfsBase",
-					 "/sys/bus");
-
-   std::error_code ec;
-   fs::directory_iterator const end;
-   fs::directory_iterator busDir(sysfsBase, fs::directory_options::skip_permission_denied, ec);
-   if (ec)
-      return wantMatch ? false : true; // No sysfs – unknown hardware
-
-   for (; busDir != end; busDir.increment(ec))
-   {
-      if (ec)
-         break;
-
-      fs::path const busPath = busDir->path();
-      if (not busDir->is_directory(ec))
-         continue;
-
-      std::string devicesPath = (busPath / "devices").string();
-      fs::directory_iterator devDir(devicesPath, fs::directory_options::skip_permission_denied, ec);
-      if (ec)
-      {
-         ec.clear();
-         continue;
-      }
-
-      for (; devDir != end; devDir.increment(ec))
-      {
-         if (ec)
-            break;
-
-         if (not devDir->is_directory(ec))
-            continue;
-
-         fs::path const devPath = devDir->path();
-         std::string aliasPath = (devPath / "modalias").string();
-         FileFd aliasFile(aliasPath, FileFd::ReadOnly);
-         if (not aliasFile.IsOpen() || aliasFile.Failed())
-            continue;
-
-         std::string alias;
-         if (aliasFile.ReadLine(alias))
-         {
-            bool aliasMatch = false;
-            if (type == "modalias" || type == "modalias-not")
-               aliasMatch = (fnmatch(pattern.c_str(), alias.c_str(), 0) == 0);
-            else
-               aliasMatch = MatchPCICondition(pattern, alias);
-
-            if (aliasMatch)
-               return wantMatch; // early exit on first match
-         }
-      }
-
-      ec.clear();
-   }
-
-   return wantMatch ? false : true; // "modalias-not": no match → condition met
-}
-									/*}}}*/
 using std::string_view;
 using namespace std::literals;
 
@@ -460,7 +329,7 @@ bool debListParser::UsePackage(pkgCache::PkgIterator &Pkg,
 
    auto hwcond = Section.Find(pkgTagSection::Key::Hardware_Condition);
    if (not hwcond.empty())
-      Ver.HardwareConditionMet(EvaluateHardwareCondition(hwcond));
+      Ver.HardwareCondition(StoreString(pkgCacheGenerator::MIXED, hwcond));
 
    if (ParseStatus(Pkg,Ver) == false)
       return false;

@@ -281,13 +281,15 @@ class APT_PUBLIC pkgCache::VerIterator : public Iterator<Version, VerIterator> {
 	{
 	   return (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->PhasedUpdatePercentage;
 	}
-	inline bool HardwareConditionMet() const
+	inline void HardwareCondition(map_stringitem_t condition) const
 	{
-	   return (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->HardwareConditionMet;
+	   (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->HardwareCondition = condition;
 	}
-	inline void HardwareConditionMet(bool met) const
+	inline std::string_view HardwareCondition() const
 	{
-	   (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->HardwareConditionMet = met;
+	   if (auto I = (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->HardwareCondition)
+	      return Owner->ViewString(I);
+	   return {};
 	}
 	inline void ArchVariant(map_stringitem_t variant) const
 	{

@@ -19,6 +19,7 @@
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/hardwarecondition.h>
 #include <apt-pkg/pkgcache.h>
 #include <apt-pkg/policy.h>
 #include <apt-pkg/strutl.h>
@@ -323,7 +324,7 @@ APT_PURE signed short pkgPolicy::GetPriority(pkgCache::VerIterator const &Ver, b
    auto ceiling = std::numeric_limits<signed int>::max();
    if (ExcludePhased(d->machineID, Ver))
       ceiling = 1;
-   if (not Ver.HardwareConditionMet() &&
+   if (not APT::HardwareCondition::IsSatisfied(Ver) &&
        not _config->FindB("APT::Get::Ignore-Hardware-Condition", false))
       ceiling = std::min(ceiling, (int)1);
    if (VerPins[Ver->ID].Type != pkgVersionMatch::None)
