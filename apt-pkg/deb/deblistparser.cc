@@ -17,6 +17,7 @@
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/deblistparser.h>
 #include <apt-pkg/error.h>
+#include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/macros.h>
 #include <apt-pkg/pkgcache.h>
@@ -28,6 +29,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstring>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -36,6 +38,7 @@
 									/*}}}*/
 
 using std::string;
+namespace fs = std::filesystem;
 
 static std::string NormalizePCIId(std::string_view id)
 {
@@ -81,6 +84,14 @@ static bool MatchPCICondition(std::string const &pattern, std::string_view alias
 // "8086:7a*".
 static bool EvaluateHardwareCondition(std::string_view field)
 {
+   /* Discards any errors encountered in device path traversal
+   since they shouldn't be presented to the user */
+   struct DiscardErrors
+   {
+      DiscardErrors() { _error->PushToStack(); }
+      ~DiscardErrors() { _error->RevertToStack(); }
+   } discardErrors;
+
    // Parse: "<type> <pattern>"
    auto sep = field.find(' ');
    if (sep == std::string_view::npos)
@@ -97,59 +108,59 @@ static bool EvaluateHardwareCondition(std::string_view field)
    std::string sysfsBase = _config->Find("APT::HardwareCondition::SysfsBase",
 					 "/sys/bus");
 
-   DIR *busDir = opendir(sysfsBase.c_str());
-   if (busDir == nullptr)
+   std::error_code ec;
+   fs::directory_iterator const end;
+   fs::directory_iterator busDir(sysfsBase, fs::directory_options::skip_permission_denied, ec);
+   if (ec)
       return wantMatch ? false : true; // No sysfs – unknown hardware
 
-   struct dirent *busEntry;
-   while ((busEntry = readdir(busDir)) != nullptr)
+   for (; busDir != end; busDir.increment(ec))
    {
-      if (busEntry->d_name[0] == '.')
-	 continue;
+      if (ec)
+         break;
 
-      std::string devicesPath = sysfsBase + "/" + busEntry->d_name + "/devices";
-      DIR *devDir = opendir(devicesPath.c_str());
-      if (devDir == nullptr)
-	 continue;
+      fs::path const busPath = busDir->path();
+      if (not busDir->is_directory(ec))
+         continue;
 
-      struct dirent *devEntry;
-      while ((devEntry = readdir(devDir)) != nullptr)
+      std::string devicesPath = (busPath / "devices").string();
+      fs::directory_iterator devDir(devicesPath, fs::directory_options::skip_permission_denied, ec);
+      if (ec)
       {
-	 if (devEntry->d_name[0] == '.')
-	    continue;
-
-	 std::string aliasPath = devicesPath + "/" + devEntry->d_name + "/modalias";
-	 FILE *f = fopen(aliasPath.c_str(), "r");
-	 if (f == nullptr)
-	    continue;
-
-	 char alias[512];
-	 if (fgets(alias, sizeof(alias), f) != nullptr)
-	 {
-	    // Strip trailing newline
-	    size_t len = strlen(alias);
-	    if (len > 0 && alias[len - 1] == '\n')
-	       alias[--len] = '\0';
-
-       bool aliasMatch = false;
-       if (type == "modalias" || type == "modalias-not")
-          aliasMatch = (fnmatch(pattern.c_str(), alias, 0) == 0);
-       else
-          aliasMatch = MatchPCICondition(pattern, alias);
-
-       if (aliasMatch)
-	    {
-	       fclose(f);
-	       closedir(devDir);
-	       closedir(busDir);
-	       return wantMatch; // early exit on first match
-	    }
-	 }
-	 fclose(f);
+         ec.clear();
+         continue;
       }
-      closedir(devDir);
+
+      for (; devDir != end; devDir.increment(ec))
+      {
+         if (ec)
+            break;
+
+         if (not devDir->is_directory(ec))
+            continue;
+
+         fs::path const devPath = devDir->path();
+         std::string aliasPath = (devPath / "modalias").string();
+         FileFd aliasFile(aliasPath, FileFd::ReadOnly);
+         if (not aliasFile.IsOpen() || aliasFile.Failed())
+            continue;
+
+         std::string alias;
+         if (aliasFile.ReadLine(alias))
+         {
+            bool aliasMatch = false;
+            if (type == "modalias" || type == "modalias-not")
+               aliasMatch = (fnmatch(pattern.c_str(), alias.c_str(), 0) == 0);
+            else
+               aliasMatch = MatchPCICondition(pattern, alias);
+
+            if (aliasMatch)
+               return wantMatch; // early exit on first match
+         }
+      }
+
+      ec.clear();
    }
-   closedir(busDir);
 
    return wantMatch ? false : true; // "modalias-not": no match → condition met
 }
