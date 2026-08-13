@@ -32,6 +32,9 @@ grepwebserverlogs() {
 grepwebserverlogs '^Location:' "Location: http://0.0.0.0:${APTHTTPPORT}/dists/unstable/InRelease"
 
 testsuccessequal "Hit:1 http://0.0.0.0:${APTHTTPPORT} unstable InRelease
+Hit:2 http://0.0.0.0:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://0.0.0.0:${APTHTTPPORT} unstable/main all Packages
+Hit:4 http://0.0.0.0:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists..." aptget update
 
 grepwebserverlogs '^Location:' "Location: http://0.0.0.0:${APTHTTPPORT}/dists/unstable/InRelease
@@ -95,6 +98,9 @@ Reading package lists..." aptget update
 testsuccessequal "Ign:1 http://0.0.0.0:${APTHTTPPORT}/storage unstable InRelease
   404  Not Found
 Hit:2 http://0.0.0.0:${APTHTTPPORT} unstable Release
+Hit:4 http://0.0.0.0:${APTHTTPPORT} unstable/main Sources
+Hit:5 http://0.0.0.0:${APTHTTPPORT} unstable/main all Packages
+Hit:6 http://0.0.0.0:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists..." aptget update
 
 rm -rf rootdir/var/lib/apt/lists
