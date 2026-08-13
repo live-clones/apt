@@ -3373,7 +3373,7 @@ void pkgAcqIndex::StageDownloadDone(string const &Message)
    {
       Filename = GetExistingFilename(GetFinalFileNameFromURI(Target.URI));
       EraseFileName = DestFile = flCombine(flNotFile(DestFile), std::string{flNotDir(Filename)});
-      if (symlink(Filename.c_str(), DestFile.c_str()) != 0)
+      if (symlink(flAbsPath(Filename).c_str(), DestFile.c_str()) != 0)
 	 _error->WarningE("pkgAcqIndex::StageDownloadDone", "Symlinking file %s to %s failed", Filename.c_str(), DestFile.c_str());
       Stage = STAGE_DECOMPRESS_AND_VERIFY;
       Desc.URI = "store:" + pkgAcquire::URIEncode(DestFile);
