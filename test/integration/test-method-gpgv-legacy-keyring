@@ -29,6 +29,8 @@ else
 fi
 
 testwarningequal "Hit:1 http://localhost:${APTHTTPPORT} testing InRelease
+Hit:2 http://localhost:${APTHTTPPORT} testing/main all Packages
+Hit:3 http://localhost:${APTHTTPPORT} testing/main Translation-en
 Reading package lists...
 W: http://localhost:${APTHTTPPORT}/dists/testing/InRelease: Loading ${TMPWORKINGDIRECTORY}/rootdir/etc/apt/trusted.gpg from deprecated option Dir::Etc::Trusted" aptget update -q -o Dir::Etc::trusted=trusted.gpg
 
@@ -43,6 +45,8 @@ W: Some index files failed to download. They have been ignored, or old ones used
 rmdir rootdir/etc/apt/trusted.gpg.d
 
 testwarningequal "Hit:1 http://localhost:${APTHTTPPORT} testing InRelease
+Hit:2 http://localhost:${APTHTTPPORT} testing/main all Packages
+Hit:3 http://localhost:${APTHTTPPORT} testing/main Translation-en
 Reading package lists...
 W: http://localhost:${APTHTTPPORT}/dists/testing/InRelease: Loading ${TMPWORKINGDIRECTORY}/rootdir/etc/apt/trusted.gpg from deprecated option Dir::Etc::Trusted" aptget update -q -o Dir::Etc::trusted=trusted.gpg
 
