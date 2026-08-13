@@ -510,44 +510,181 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 struct OptionPrinter
 {
    size_t width = 0;
-   const binary &bin;
+   binary const &bin;
 
-   OptionPrinter(const binary &b) : bin(b)
+   OptionPrinter(binary const &b) : bin(b)
    {
-      for (auto &option : bin.options)
-	 if (option.lng != nullptr)
-	    width = std::max(strlen(option.lng), width);
-      for (auto &option : globalOptions)
-	 if (option.lng != nullptr && option.flag != CommandLine::ArbItem && option.flag != CommandLine::ConfigFile)
-	    width = std::max(strlen(option.lng), width);
+      for (auto const &option : bin.options)
+	 width = std::max(long_option(option).size(), width);
+      for (auto const &option : globalOptions)
+	 if (option.flag != CommandLine::ArbItem &&
+	     option.flag != CommandLine::ConfigFile)
+	    width = std::max(long_option(option).size(), width);
    }
 
+   static bool has_argument(option const &o)
+   {
+      return o.flag == CommandLine::HasArg;
+   }
+
+   static std::string long_option(option const &o)
+   {
+      if (o.lng == nullptr)
+	 return {};
+
+      std::string result{o.lng};
+      if (has_argument(o))
+	 result += " <value>";
+      return result;
+   }
+
+   static binary const *collect_command_options(
+      binary const &candidate,
+      char const *const cmd,
+      std::vector<option const *> &options)
+   {
+      bool matched = false;
+
+      for (auto const &command : candidate.commands)
+      {
+	 if (not std::ranges::contains(
+		command.commands, std::string_view(cmd)))
+	    continue;
+
+	 matched = true;
+	 for (auto const &option : command.options)
+	    options.push_back(&option);
+      }
+
+      if (matched)
+	 return &candidate;
+
+      for (auto const inherit : candidate.inherits)
+      {
+	 auto const inherited = std::ranges::find_if(
+	    binaries, [inherit](auto const &b) noexcept
+	    { return b.binary == inherit; });
+
+	 if (inherited == binaries.end())
+	    continue;
+
+	 auto const *commandBinary =
+	    collect_command_options(*inherited, cmd, options);
+	 if (commandBinary != nullptr)
+	    return commandBinary;
+      }
+
+      return nullptr;
+   }
+
+   static char find_short_option(
+      option const &displayed,
+      std::vector<option const *> const &options)
+   {
+      if (displayed.shrt != 0)
+	 return displayed.shrt;
+      if (displayed.option == nullptr)
+	 return 0;
+
+      auto const alias = std::ranges::find_if(
+	 options, [&displayed](option const *candidate) noexcept
+	 { return candidate->shrt != 0 &&
+		  candidate->description == nullptr &&
+		  candidate->option != nullptr &&
+		  candidate->flag == displayed.flag &&
+		  strcmp(candidate->option, displayed.option) == 0; });
+
+      return alias == options.end() ? 0 : (*alias)->shrt;
+   }
+
+   void print_command(char const *const cmd) const
+   {
+      std::vector<option const *> options;
+      auto const *commandBinary =
+	 collect_command_options(bin, cmd, options);
+
+      if (commandBinary == nullptr)
+      {
+	 print_common();
+	 return;
+      }
+
+      size_t commandWidth = 0;
+      bool hasOptions = false;
+      for (auto const *option : options)
+      {
+	 if (option->description == nullptr)
+	    continue;
+
+	 hasOptions = true;
+	 commandWidth = std::max(
+	    long_option(*option).size(), commandWidth);
+      }
+
+      if (hasOptions)
+      {
+	 std::cout << std::endl
+		   << _("Options:") << std::endl;
+	 for (auto const *option : options)
+	 {
+	    if (option->description == nullptr)
+	       continue;
+
+	    print_option(
+	       *option,
+	       commandWidth,
+	       find_short_option(*option, options));
+	 }
+      }
+
+      // Use the binary that owns the command so inherited apt-get and
+      // apt-cache commands display their applicable common options.
+      OptionPrinter(*commandBinary).print_common();
+   }
    void print_common() const
    {
       std::cout << std::endl
 		<< "Common options:" << std::endl;
-      for (auto &option : bin.options)
+
+      for (auto const &option : bin.options)
       {
-	 if (not option.description)
+	 if (option.description == nullptr)
 	    continue;
-	 print_option(option);
+	 print_option(option, width, option.shrt);
       }
-      for (auto &option : globalOptions)
+
+      for (auto const &option : globalOptions)
       {
-	 if (not option.description || option.flag == CommandLine::ArbItem || option.flag == CommandLine::ConfigFile)
+	 if (option.description == nullptr ||
+	     option.flag == CommandLine::ArbItem ||
+	     option.flag == CommandLine::ConfigFile)
 	    continue;
-	 print_option(option);
+	 print_option(option, width, option.shrt);
       }
    }
 
-   void print_option(const option &o) const
+   void print_option(
+      option const &o,
+      size_t const optionWidth,
+      char const shortOption) const
    {
-      if (o.shrt && o.lng)
-	 std::cout << "    -" << o.shrt << ", --" << std::left << std::setw(width) << o.lng << "  " << o.description << std::endl;
-      else if (o.lng)
-	 std::cout << "        --" << std::left << std::setw(width) << o.lng << "  " << o.description << std::endl;
-      else if (o.shrt)
-	 std::cout << "    -" << o.shrt << "  " << o.description << std::endl;
+      auto const longOption = long_option(o);
+
+      if (shortOption != 0 && o.lng != nullptr)
+	 std::cout << "    -" << shortOption << ", --"
+		   << std::left << std::setw(optionWidth) << longOption
+		   << "  " << _(o.description) << std::endl;
+      else if (o.lng != nullptr)
+	 std::cout << "        --"
+		   << std::left << std::setw(optionWidth) << longOption
+		   << "  " << _(o.description) << std::endl;
+      else if (shortOption != 0)
+      {
+	 std::cout << "    -" << shortOption;
+	 if (has_argument(o))
+	    std::cout << " <value>";
+	 std::cout << "  " << _(o.description) << std::endl;
+      }
    }
 };
 
@@ -571,13 +708,19 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
    if (_config->FindB("version") == true && Binary != APT_CMD::APT_GET)
       return true;
 
+   char const *HelpCommand = CmdCalled;
+   if (HelpCommand != nullptr &&
+       strcmp(HelpCommand, "help") == 0 &&
+       CmdL.FileSize() > 1)
+      HelpCommand = CmdL.FileList[1];
+
    // If a specific command was requested, try its per-command help
    bool usedCommandHelp = false;
-   if (CmdCalled != nullptr)
+   if (HelpCommand != nullptr)
    {
       for (auto const &c : Cmds)
       {
-	 if (c.Match != nullptr && strcmp(c.Match, CmdCalled) == 0 && c.ShowHelp != nullptr)
+	 if (c.Match != nullptr && strcmp(c.Match, HelpCommand) == 0 && c.ShowHelp != nullptr)
 	 {
 	    if (c.ShowHelp(CmdL) == false)
 	       return false;
@@ -592,14 +735,23 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
       if (ShowHelp(CmdL) == false)
 	 return false;
    }
-   if (_config->FindB("version") == true || Binary == APT_CMD::APT_FTPARCHIVE)
+
+   if (_config->FindB("version") == true ||
+       Binary == APT_CMD::APT_FTPARCHIVE)
       return true;
-   if (not usedCommandHelp)
+
+   auto bin = std::ranges::find_if(
+      binaries, [Binary](auto const &b) noexcept
+      { return b.binary == Binary; });
+
+   if (usedCommandHelp)
+   {
+      if (bin != binaries.end())
+	 OptionPrinter(*bin).print_command(HelpCommand);
+   }
+   else
    {
       ShowHelpListCommands(Cmds);
-
-      auto bin = std::ranges::find_if(binaries, [Binary](auto b) noexcept
-				      { return b.binary == Binary; });
       if (bin != binaries.end())
 	 OptionPrinter(*bin).print_common();
    }

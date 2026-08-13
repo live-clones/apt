@@ -17,6 +17,10 @@ check_command_help() {
 	testsuccess grep "^Usage: apt \[options\] ${cmd}" "${cmd}-help.output"
 	# Must NOT fall back to the generic command listing
 	testfailure grep "Most used commands:" "${cmd}-help.output"
+	# Both supported help syntaxes must produce identical output
+	testsuccess apt help "$cmd"
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-help-command.output"
+	testsuccess cmp "${cmd}-help.output" "${cmd}-help-command.output"
 }
 
 msggroup "Checking per-command help for documented commands"
@@ -80,6 +84,36 @@ for cmd in list search show install autoremove update upgrade full-upgrade satis
 	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-help.output"
 	testsuccess grep "^Options:" "${cmd}-options-help.output"
 done
+msggroup
+
+msggroup "Checking declarative option formatting"
+testsuccess apt list --help
+cp -f rootdir/tmp/testsuccess.output list-option-formatting.output
+testsuccess grep -F -- "-u, --upgradeable" list-option-formatting.output
+testsuccess grep -F -- "--target-release <value>" list-option-formatting.output
+testsuccess grep -F -- "--snapshot <value>" list-option-formatting.output
+
+testsuccess apt satisfy --help
+cp -f rootdir/tmp/testsuccess.output satisfy-option-formatting.output
+testsuccess grep -F -- "--host-architecture <value>" satisfy-option-formatting.output
+testsuccess grep -F -- "--solver <value>" satisfy-option-formatting.output
+msggroup
+
+msggroup "Checking common options in per-command help"
+testsuccess apt list --help
+cp -f rootdir/tmp/testsuccess.output list-common-options.output
+testsuccess grep "^Common options:" list-common-options.output
+testsuccess grep -F -- "--with-source <value>" list-common-options.output
+testsuccess grep -F -- "-h, --help" list-common-options.output
+
+# install and search are inherited from apt-get and apt-cache respectively
+testsuccess apt install --help
+cp -f rootdir/tmp/testsuccess.output install-common-options.output
+testsuccess grep -F -- "-y, --yes" install-common-options.output
+
+testsuccess apt search --help
+cp -f rootdir/tmp/testsuccess.output search-common-options.output
+testsuccess grep -F -- "-g, --generate" search-common-options.output
 msggroup
 
 # Test that commands without notable options don't have an Options section

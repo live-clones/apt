@@ -61,14 +61,7 @@ static bool ShowListHelp(CommandLine &) /*{{{*/
    std::cout << _("Usage: apt [options] list [pattern(s)]\n"
 		  "\n"
 		  "Display packages matching the given names, glob patterns, or\n"
-		  "apt-patterns. Similar to dpkg-query --list but with filtering.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -i, --installed         Show only installed packages\n"
-		  "  -u, --upgradeable       Show only upgradeable packages\n"
-		  "  -a, --all-versions      Show all available versions\n"
-		  "      --manual-installed  Show only manually installed packages\n"
-		  "  -v, --verbose           Include a package summary\n");
+		  "apt-patterns. Similar to dpkg-query --list but with filtering.\n");
    return true;
 }
 									/*}}}*/
@@ -77,11 +70,7 @@ static bool ShowSearchHelp(CommandLine &) /*{{{*/
    std::cout << _("Usage: apt [options] search <regex>\n"
 		  "\n"
 		  "Search package names and descriptions for the given regex terms\n"
-		  "and display matches.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -n, --names-only    Search package names only\n"
-		  "  -f, --full          Search full descriptions\n");
+		  "and display matches.\n");
    return true;
 }
 									/*}}}*/
@@ -91,38 +80,37 @@ static bool ShowShowHelp(CommandLine &) /*{{{*/
 		  "\n"
 		  "Show detailed information about the given package(s), including\n"
 		  "dependencies, install/download size, available sources, and the\n"
-		  "package description.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -a, --all-versions  Show all available versions\n"
-		  "  -f, --full          Show the full record\n");
+		  "package description.\n");
    return true;
 }
 									/*}}}*/
 static bool ShowInstallHelp(CommandLine &CmdL) /*{{{*/
 {
    char const *cmd = "install";
-   if (CmdL.FileSize() > 0)
+   char const *requested = CmdL.FileSize() > 0
+			      ? CmdL.FileList[0]
+			      : nullptr;
+
+   if (requested != nullptr &&
+       strcmp(requested, "help") == 0 &&
+       CmdL.FileSize() > 1)
+      requested = CmdL.FileList[1];
+
+   if (requested != nullptr)
    {
-      if (strcmp(CmdL.FileList[0], "reinstall") == 0)
+      if (strcmp(requested, "reinstall") == 0)
 	 cmd = "reinstall";
-      else if (strcmp(CmdL.FileList[0], "remove") == 0)
+      else if (strcmp(requested, "remove") == 0)
 	 cmd = "remove";
-      else if (strcmp(CmdL.FileList[0], "purge") == 0)
+      else if (strcmp(requested, "purge") == 0)
 	 cmd = "purge";
    }
-   ioprintf(std::cout, _("Usage: apt [options] %s <package(s)>\n\n"), cmd);
+
+   ioprintf(std::cout,
+	    _("Usage: apt [options] %s <package(s)>\n\n"), cmd);
    std::cout << _("Install, reinstall, remove, or purge packages specified by name,\n"
 		  "glob, or regex. Append + to a name to install it, or - to remove it.\n"
-		  "Select a version with pkg=version, or a release with pkg/codename.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -f, --fix-broken    Fix broken dependencies before installing\n"
-		  "      --reinstall     Reinstall packages\n"
-		  "      --purge         Remove packages and their config files\n"
-		  "  -s, --simulate      Dry-run; no actual changes\n"
-		  "  -y, --assume-yes    Assume yes to all prompts\n"
-		  "      --solver <name> Use the specified solver\n");
+		  "Select a version with pkg=version, or a release with pkg/codename.\n");
    return true;
 }
 									/*}}}*/
@@ -131,11 +119,7 @@ static bool ShowAutoremoveHelp(CommandLine &) /*{{{*/
    std::cout << _("Usage: apt [options] autoremove\n"
 		  "\n"
 		  "Remove packages that were automatically installed to satisfy\n"
-		  "dependencies and are no longer needed.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -s, --simulate    Dry-run; no actual changes\n"
-		  "  -y, --assume-yes  Assume yes to all prompts\n");
+		  "dependencies and are no longer needed.\n");
    return true;
 }
 									/*}}}*/
@@ -145,10 +129,7 @@ static bool ShowUpdateHelp(CommandLine &) /*{{{*/
 		  "\n"
 		  "Download package information from all configured sources.\n"
 		  "Run this before upgrade or install to ensure you have the latest\n"
-		  "package lists.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -e, --error-on <mode>  Set the error handling mode\n");
+		  "package lists.\n");
    return true;
 }
 									/*}}}*/
@@ -159,12 +140,7 @@ static bool ShowUpgradeHelp(CommandLine &) /*{{{*/
 		  "Install available upgrades for all installed packages. New packages\n"
 		  "may be installed to satisfy dependencies, but no installed packages\n"
 		  "are removed. If a package is given as an argument, it is installed\n"
-		  "before the upgrade.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -s, --simulate      Dry-run; no actual changes\n"
-		  "  -y, --assume-yes    Assume yes to all prompts\n"
-		  "      --no-new-pkgs   Do not install new packages\n");
+		  "before the upgrade.\n");
    return true;
 }
 									/*}}}*/
@@ -174,11 +150,7 @@ static bool ShowFullUpgradeHelp(CommandLine &) /*{{{*/
 		  "\n"
 		  "Upgrade the system, removing installed packages if needed to\n"
 		  "upgrade the system as a whole. If a package is given as an\n"
-		  "argument, it is installed before the upgrade.\n"
-		  "\n"
-		  "Options:\n"
-		  "  -s, --simulate      Dry-run; no actual changes\n"
-		  "  -y, --assume-yes    Assume yes to all prompts\n");
+		  "argument, it is installed before the upgrade.\n");
    return true;
 }
 									/*}}}*/
@@ -189,21 +161,28 @@ static bool ShowSatisfyHelp(CommandLine &) /*{{{*/
 		  "Satisfy the given dependency strings, as used in Build-Depends.\n"
 		  "Prefix an argument with \"Conflicts: \" to handle conflicts.\n"
 		  "\n"
-		  "Example: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n"
-		  "\n"
-		  "Options:\n"
-		  "      --solver <name>            Use the specified solver\n"
-		  "      --no-strict-pinning        Allow relaxing pinning\n"
-		  "  -a, --host-architecture <arch> Use the specified architecture\n");
+		  "Example: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n");
    return true;
 }
 									/*}}}*/
 static bool ShowWhyHelp(CommandLine &CmdL) /*{{{*/
 {
    char const *cmd = "why";
-   if (CmdL.FileSize() > 0 && strcmp(CmdL.FileList[0], "why-not") == 0)
+   char const *requested = CmdL.FileSize() > 0
+			      ? CmdL.FileList[0]
+			      : nullptr;
+
+   if (requested != nullptr &&
+       strcmp(requested, "help") == 0 &&
+       CmdL.FileSize() > 1)
+      requested = CmdL.FileList[1];
+
+   if (requested != nullptr &&
+       strcmp(requested, "why-not") == 0)
       cmd = "why-not";
-   ioprintf(std::cout, _("Usage: apt [options] %s <package>\n\n"), cmd);
+
+   ioprintf(std::cout,
+	    _("Usage: apt [options] %s <package>\n\n"), cmd);
    std::cout << _("Explain why a package is or is not installed. The why command\n"
 		  "shows why an installed package is present; why-not shows why a\n"
 		  "package cannot be installed. Takes a single package name.\n");
