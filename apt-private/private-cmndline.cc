@@ -86,8 +86,8 @@ constexpr std::initializer_list<binary> binaries{
 	    {"list"},
 	    {
 	       {'i', "installed", "APT::Cmd::Installed", N_("Print only installed packages"), 0},
-	       {0, "upgradeable", "APT::Cmd::Upgradable", N_("Print only upgradeable packages"), 0},
-	       {'u', "upgradable", "APT::Cmd::Upgradable", nullptr, 0},
+	       {'u', "upgradeable", "APT::Cmd::Upgradable", N_("Print only upgradeable packages"), 0},
+	       {0, "upgradable", "APT::Cmd::Upgradable", nullptr, 0},
 	       {0, "manual-installed", "APT::Cmd::Manual-Installed", N_("Print only manually installed packages"), 0},
 	       {'v', "verbose", "APT::Cmd::List-Include-Summary", N_("Include summary"), 0},
 	       {'a', "all-versions", "APT::Cmd::All-Versions", N_("Show all versions"), 0},
@@ -433,12 +433,12 @@ constexpr std::initializer_list<binary> binaries{
 	 {'y', "assume-yes", "APT::Get::Assume-Yes", nullptr, 0},
 	 {0, "assume-no", "APT::Get::Assume-No", N_("Automatic no to prompts"), 0},
 	 {'u', "show-upgraded", "APT::Get::Show-Upgraded", N_("Show upgraded packages"), 0},
-	 {'m', "ignore-missing", "APT::Get::Fix-Missing", nullptr, 0},
 	 {'t', "target-release", "APT::Default-Release", N_("Set the target release"), CommandLine::HasArg},
 	 {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
 	 {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
 	 {0, "download", "APT::Get::Download", N_("Download packages"), 0},
-	 {0, "fix-missing", "APT::Get::Fix-Missing", N_("Ignore packages that cannot be retrieved"), 0},
+	 {0, "ignore-missing", "APT::Get::Fix-Missing", nullptr, 0},
+	 {'m', "fix-missing", "APT::Get::Fix-Missing", N_("Ignore packages that cannot be retrieved"), 0},
 	 {0, "ignore-hold", "APT::Ignore-Hold", N_("Ignore held packages"), 0},
 	 {0, "upgrade", "APT::Get::upgrade", N_("Upgrade packages"), 0},
 	 {0, "only-upgrade", "APT::Get::Only-Upgrade", N_("Only upgrade packages"), 0},
@@ -509,22 +509,40 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
 
 struct OptionPrinter
 {
+   size_t const valueLength = strlen(_("<value>"));
    size_t width = 0;
-   binary const &bin;
+   const binary *bin;
+   std::vector<option const *> commandOptions;
 
-   OptionPrinter(binary const &b) : bin(b)
+   OptionPrinter(const binary &b) : bin(&b)
    {
-      for (auto const &option : bin.options)
-	 width = std::max(long_option(option).size(), width);
-      for (auto const &option : globalOptions)
-	 if (option.flag != CommandLine::ArbItem &&
-	     option.flag != CommandLine::ConfigFile)
-	    width = std::max(long_option(option).size(), width);
+      calculate_width();
+   }
+
+   OptionPrinter(const binary &b, char const *const cmd) : bin(&b)
+   {
+      if (auto const *commandBinary =
+	     collect_command_options(b, cmd, commandOptions);
+	  commandBinary != nullptr)
+	 bin = commandBinary;
+
+      calculate_width();
    }
 
    static bool has_argument(option const &o)
    {
-      return o.flag == CommandLine::HasArg;
+      return (o.flag & CommandLine::HasArg) != 0;
+   }
+
+   size_t option_width(option const &o) const
+   {
+      if (o.lng == nullptr)
+	 return 0;
+
+      size_t result = strlen(o.lng);
+      if (has_argument(o))
+	 result += 1 + valueLength;
+      return result;
    }
 
    static std::string long_option(option const &o)
@@ -534,7 +552,10 @@ struct OptionPrinter
 
       std::string result{o.lng};
       if (has_argument(o))
-	 result += " <value>";
+      {
+	 result += " ";
+	 result += _("<value>");
+      }
       return result;
    }
 
@@ -577,80 +598,18 @@ struct OptionPrinter
       return nullptr;
    }
 
-   static char find_short_option(
-      option const &displayed,
-      std::vector<option const *> const &options)
+   void calculate_width()
    {
-      if (displayed.shrt != 0)
-	 return displayed.shrt;
-      if (displayed.option == nullptr)
-	 return 0;
-
-      auto const alias = std::ranges::find_if(
-	 options, [&displayed](option const *candidate) noexcept
-	 { return candidate->shrt != 0 &&
-		  candidate->description == nullptr &&
-		  candidate->option != nullptr &&
-		  candidate->flag == displayed.flag &&
-		  strcmp(candidate->option, displayed.option) == 0; });
-
-      return alias == options.end() ? 0 : (*alias)->shrt;
-   }
-
-   void print_command(char const *const cmd) const
-   {
-      std::vector<option const *> options;
-      auto const *commandBinary =
-	 collect_command_options(bin, cmd, options);
-
-      if (commandBinary == nullptr)
+      for (auto const *option : commandOptions)
       {
-	 print_common();
-	 return;
+	 if (option->description != nullptr)
+	    width = std::max(option_width(*option), width);
       }
 
-      size_t commandWidth = 0;
-      bool hasOptions = false;
-      for (auto const *option : options)
+      for (auto const &option : bin->options)
       {
-	 if (option->description == nullptr)
-	    continue;
-
-	 hasOptions = true;
-	 commandWidth = std::max(
-	    long_option(*option).size(), commandWidth);
-      }
-
-      if (hasOptions)
-      {
-	 std::cout << std::endl
-		   << _("Options:") << std::endl;
-	 for (auto const *option : options)
-	 {
-	    if (option->description == nullptr)
-	       continue;
-
-	    print_option(
-	       *option,
-	       commandWidth,
-	       find_short_option(*option, options));
-	 }
-      }
-
-      // Use the binary that owns the command so inherited apt-get and
-      // apt-cache commands display their applicable common options.
-      OptionPrinter(*commandBinary).print_common();
-   }
-   void print_common() const
-   {
-      std::cout << std::endl
-		<< _("Common options:") << std::endl;
-
-      for (auto const &option : bin.options)
-      {
-	 if (option.description == nullptr)
-	    continue;
-	 print_option(option, width, option.shrt);
+	 if (option.description != nullptr)
+	    width = std::max(option_width(option), width);
       }
 
       for (auto const &option : globalOptions)
@@ -659,30 +618,78 @@ struct OptionPrinter
 	     option.flag == CommandLine::ArbItem ||
 	     option.flag == CommandLine::ConfigFile)
 	    continue;
-	 print_option(option, width, option.shrt);
+
+	 width = std::max(option_width(option), width);
       }
    }
 
-   void print_option(
-      option const &o,
-      size_t const optionWidth,
-      char const shortOption) const
+   void print_command() const
+   {
+      bool hasOptions = false;
+      for (auto const *option : commandOptions)
+      {
+	 if (option->description != nullptr)
+	 {
+	    hasOptions = true;
+	    break;
+	 }
+      }
+
+      if (hasOptions)
+      {
+	 std::cout << std::endl
+		   << _("Options:") << std::endl;
+	 for (auto const *option : commandOptions)
+	 {
+	    if (option->description == nullptr)
+	       continue;
+
+	    print_option(*option);
+	 }
+      }
+
+      print_common();
+   }
+
+   void print_common() const
+   {
+      std::cout << std::endl
+		<< _("Common options:") << std::endl;
+
+      for (auto const &option : bin->options)
+      {
+	 if (option.description == nullptr)
+	    continue;
+	 print_option(option);
+      }
+
+      for (auto const &option : globalOptions)
+      {
+	 if (option.description == nullptr ||
+	     option.flag == CommandLine::ArbItem ||
+	     option.flag == CommandLine::ConfigFile)
+	    continue;
+	 print_option(option);
+      }
+   }
+
+   void print_option(option const &o) const
    {
       auto const longOption = long_option(o);
 
-      if (shortOption != 0 && o.lng != nullptr)
-	 std::cout << "    -" << shortOption << ", --"
-		   << std::left << std::setw(optionWidth) << longOption
+      if (o.shrt != 0 && o.lng != nullptr)
+	 std::cout << "    -" << o.shrt << ", --"
+		   << std::left << std::setw(width) << longOption
 		   << "  " << _(o.description) << std::endl;
       else if (o.lng != nullptr)
 	 std::cout << "        --"
-		   << std::left << std::setw(optionWidth) << longOption
+		   << std::left << std::setw(width) << longOption
 		   << "  " << _(o.description) << std::endl;
-      else if (shortOption != 0)
+      else if (o.shrt != 0)
       {
-	 std::cout << "    -" << shortOption;
+	 std::cout << "    -" << o.shrt;
 	 if (has_argument(o))
-	    std::cout << " <value>";
+	    std::cout << " " << _("<value>");
 	 std::cout << "  " << _(o.description) << std::endl;
       }
    }
@@ -708,29 +715,34 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
    if (_config->FindB("version") == true && Binary != APT_CMD::APT_GET)
       return true;
 
+   // Normalize `apt help <command>` to the same command name passed by
+   // `apt <command> --help`, so both forms use identical help rendering.
    char const *HelpCommand = CmdCalled;
    if (HelpCommand != nullptr &&
        strcmp(HelpCommand, "help") == 0 &&
        CmdL.FileSize() > 1)
       HelpCommand = CmdL.FileList[1];
 
-   // If a specific command was requested, try its per-command help
-   bool usedCommandHelp = false;
+   // A recognized command remains command-specific even when it has no
+   // additional prose; its declarative options can still be rendered.
+   bool commandMatched = false;
    if (HelpCommand != nullptr)
    {
       for (auto const &c : Cmds)
       {
-	 if (c.Match != nullptr && strcmp(c.Match, HelpCommand) == 0 && c.ShowHelp != nullptr)
-	 {
-	    if (c.ShowHelp(CmdL) == false)
-	       return false;
-	    usedCommandHelp = true;
-	    break;
-	 }
+	 if (c.Match == nullptr ||
+	     strcmp(c.Match, HelpCommand) != 0)
+	    continue;
+
+	 commandMatched = true;
+	 if (c.ShowHelp != nullptr &&
+	     c.ShowHelp(CmdL) == false)
+	    return false;
+	 break;
       }
    }
 
-   if (not usedCommandHelp)
+   if (not commandMatched)
    {
       if (ShowHelp(CmdL) == false)
 	 return false;
@@ -744,10 +756,10 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
       binaries, [Binary](auto const &b) noexcept
       { return b.binary == Binary; });
 
-   if (usedCommandHelp)
+   if (commandMatched)
    {
       if (bin != binaries.end())
-	 OptionPrinter(*bin).print_command(HelpCommand);
+	 OptionPrinter(*bin, HelpCommand).print_command();
    }
    else
    {
@@ -774,7 +786,7 @@ static bool ShowCommonHelp(APT_CMD const Binary, CommandLine &CmdL, std::vector<
       case APT_CMD::APT_SORTPKG: cmd = "apt-sortpkgs(1)"; break;
       case APT_CMD::RRED: cmd = nullptr; break;
    }
-   if (usedCommandHelp)
+   if (commandMatched)
    {
       if (cmd != nullptr)
 	 ioprintf(std::cout,

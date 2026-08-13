@@ -165,25 +165,12 @@ static bool ShowSatisfyHelp(CommandLine &) /*{{{*/
    return true;
 }
 									/*}}}*/
-static bool ShowWhyHelp(CommandLine &CmdL) /*{{{*/
+static bool ShowWhyHelp(CommandLine &) /*{{{*/
 {
-   char const *cmd = "why";
-   char const *requested = CmdL.FileSize() > 0
-			      ? CmdL.FileList[0]
-			      : nullptr;
-
-   if (requested != nullptr &&
-       strcmp(requested, "help") == 0 &&
-       CmdL.FileSize() > 1)
-      requested = CmdL.FileList[1];
-
-   if (requested != nullptr &&
-       strcmp(requested, "why-not") == 0)
-      cmd = "why-not";
-
-   ioprintf(std::cout,
-	    _("Usage: apt [options] %s <package>\n\n"), cmd);
-   std::cout << _("Explain why a package is or is not installed. The why command\n"
+   std::cout << _("Usage: apt [options] why <package>\n"
+		  "       apt [options] why-not <package>\n"
+		  "\n"
+		  "Explain why a package is or is not installed. The why command\n"
 		  "shows why an installed package is present; why-not shows why a\n"
 		  "package cannot be installed. Takes a single package name.\n");
    return true;
@@ -234,8 +221,8 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"reinstall", &DoInstall, _("reinstall packages"), &ShowInstallHelp},
       {"remove", &DoInstall, _("remove packages"), &ShowInstallHelp},
       {"autoremove", &DoInstall, _("automatically remove all unused packages"), &ShowAutoremoveHelp},
-      {"auto-remove", &DoInstall, nullptr, nullptr},
-      {"autopurge", &DoInstall, nullptr, nullptr},
+      {"auto-remove", &DoInstall, nullptr, &ShowAutoremoveHelp},
+      {"autopurge", &DoInstall, nullptr, &ShowAutoremoveHelp},
       {"purge", &DoInstall, nullptr, &ShowInstallHelp},
 
       // system wide stuff
@@ -259,7 +246,7 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"why-not", &DoWhy, _("produce a reason trace for the current state of the package"), &ShowWhyHelp},
 
       // for compat with muscle memory
-      {"dist-upgrade", &DoDistUpgrade, nullptr, nullptr},
+      {"dist-upgrade", &DoDistUpgrade, nullptr, &ShowFullUpgradeHelp},
       {"showsrc", &ShowSrcPackage, nullptr, nullptr},
       {"depends", &Depends, nullptr, nullptr},
       {"rdepends", &RDepends, nullptr, nullptr},
@@ -273,8 +260,7 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"source", &DoSource, nullptr, nullptr},
       {"download", &DoDownload, nullptr, nullptr},
       {"changelog", &DoChangelog, nullptr, nullptr},
-      {"info", &ShowPackage, nullptr, nullptr},
-
+      {"info", &ShowPackage, nullptr, &ShowShowHelp},
       {nullptr, nullptr, nullptr, nullptr}};
 }
 									/*}}}*/

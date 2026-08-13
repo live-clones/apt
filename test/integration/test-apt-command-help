@@ -25,10 +25,22 @@ check_command_help() {
 
 msggroup "Checking per-command help for documented commands"
 for cmd in list search show install reinstall remove purge autoremove \
-	   update upgrade full-upgrade satisfy why why-not \
+	   update upgrade full-upgrade satisfy why \
 	   edit-sources modernize-sources; do
 	check_command_help "$cmd"
 done
+msggroup
+
+msggroup "Checking combined why and why-not help"
+testsuccess apt why-not --help
+cp -f rootdir/tmp/testsuccess.output why-not-help.output
+testsuccess grep "^Usage: apt \[options\] why <package>" why-not-help.output
+testsuccess grep "^       apt \[options\] why-not <package>" why-not-help.output
+testfailure grep "Most used commands:" why-not-help.output
+
+testsuccess apt help why-not
+cp -f rootdir/tmp/testsuccess.output why-not-help-command.output
+testsuccess cmp why-not-help.output why-not-help-command.output
 msggroup
 
 # Test that install/reinstall/remove/purge show the correct command name
@@ -41,21 +53,37 @@ for cmd in install reinstall remove purge; do
 done
 msggroup
 
-# Test that undocumented/advanced commands fall back to generic help
-# (they should show "Most used commands:")
-check_fallback_help() {
+# Commands without additional prose still receive command-specific option help.
+check_options_only_help() {
 	local cmd="$1"
 	testsuccess apt "$cmd" --help
-	cp -f rootdir/tmp/testsuccess.output "${cmd}-fallback-help.output"
-	# Must fall back to the generic command listing
-	testsuccess grep "Most used commands:" "${cmd}-fallback-help.output"
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-only-help.output"
+	testfailure grep "Most used commands:" "${cmd}-options-only-help.output"
+	testsuccess grep "^Common options:" "${cmd}-options-only-help.output"
+
+	testsuccess apt help "$cmd"
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-only-help-command.output"
+	testsuccess cmp "${cmd}-options-only-help.output" \
+		"${cmd}-options-only-help-command.output"
 }
 
-msggroup "Checking fallback to generic help for undocumented commands"
+msggroup "Checking option help for commands without additional prose"
 for cmd in moo dist-upgrade depends policy build-dep source download \
 	   changelog clean autoclean showsrc info; do
-	check_fallback_help "$cmd"
+	check_options_only_help "$cmd"
 done
+msggroup
+
+msggroup "Checking canonical alias help"
+testsuccess apt info --help
+cp -f rootdir/tmp/testsuccess.output info-canonical-help.output
+testsuccess grep "^Usage: apt \[options\] show " \
+	info-canonical-help.output
+
+testsuccess apt dist-upgrade --help
+cp -f rootdir/tmp/testsuccess.output dist-upgrade-canonical-help.output
+testsuccess grep "^Usage: apt \[options\] full-upgrade " \
+	dist-upgrade-canonical-help.output
 msggroup
 
 # Test that apt --help (no command) still shows the generic help
@@ -70,10 +98,10 @@ testsuccess grep "^  install - " apt-generic-help.output
 testsuccess grep "Super Cow Powers" apt-generic-help.output
 msggroup
 
-# Test that history-* commands fall back to generic help (no per-command help yet)
-msggroup "Checking history commands fall back to generic help"
+# History commands receive options-only command-specific help.
+msggroup "Checking option help for history commands"
 for cmd in history-list history-info history-redo history-undo history-rollback; do
-	check_fallback_help "$cmd"
+	check_options_only_help "$cmd"
 done
 msggroup
 
@@ -110,6 +138,7 @@ testsuccess grep -F -- "-h, --help" list-common-options.output
 testsuccess apt install --help
 cp -f rootdir/tmp/testsuccess.output install-common-options.output
 testsuccess grep -F -- "-y, --yes" install-common-options.output
+testsuccess grep -F -- "-m, --fix-missing" install-common-options.output
 
 testsuccess apt search --help
 cp -f rootdir/tmp/testsuccess.output search-common-options.output
