@@ -1,0 +1,79 @@
+#!/bin/sh
+# The caches are only reused while they are newer than the configured sources,
+# and that comparison is driven by pkgSourceList::GetLastModifiedTime(). It used
+# to scan sources.list.d for "list" files only, while ReadSourceDir() reads both
+# "list" and "sources", so editing a deb822 .sources file left every following
+# command answering from a cache built before the change.
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+insertpackage 'unstable' 'foo' 'all' '1'
+insertpackage 'unstable' 'bar' 'all' '1'
+
+export APT_DONT_SIGN=""
+setupaptarchive --no-update
+
+# The framework writes a .list; this is specifically about the deb822 form, so
+# replace it with an equivalent .sources.
+rm -f rootdir/etc/apt/sources.list.d/*.list
+cat > rootdir/etc/apt/sources.list.d/apt-test.sources <<EOF
+Types: deb
+URIs: file://${TMPWORKINGDIRECTORY}/aptarchive
+Suites: unstable
+Components: main
+Trusted: yes
+EOF
+
+testsuccess aptget update
+msgtest 'Both packages are in the cache to start with'
+if aptcache pkgnames >pkgnames.output 2>&1 && grep -q '^foo$' pkgnames.output &&
+   grep -q '^bar$' pkgnames.output; then
+	msgpass
+else
+	msgfail "$(cat pkgnames.output)"
+fi
+
+msgmsg 'Editing the .sources file invalidates the caches'
+# Ahead of the caches, so the mtime comparison has to notice it. Only a .sources
+# file changes here - with .list files ignored this was invisible.
+cat > rootdir/etc/apt/sources.list.d/apt-test.sources <<EOF
+Types: deb
+URIs: file://${TMPWORKINGDIRECTORY}/aptarchive
+Suites: unstable
+Components: main
+Trusted: yes
+Exclude: bar
+EOF
+touch -d 'now + 1 hour' rootdir/etc/apt/sources.list.d/apt-test.sources
+
+testsuccess aptget update
+msgtest 'The excluded package is gone from the cache'
+if aptcache pkgnames >pkgnames.output 2>&1 && grep -q '^foo$' pkgnames.output &&
+   ! grep -q '^bar$' pkgnames.output; then
+	msgpass
+else
+	msgfail "$(cat pkgnames.output)"
+fi
+
+msgmsg 'A .sources file counts towards the source list timestamp'
+# apt-cache alone must see it too: this is the library-level behaviour, not
+# something apt update papers over by rebuilding unconditionally.
+cat > rootdir/etc/apt/sources.list.d/apt-test.sources <<EOF
+Types: deb
+URIs: file://${TMPWORKINGDIRECTORY}/aptarchive
+Suites: unstable
+Components: main
+Trusted: yes
+EOF
+touch -d 'now + 2 hours' rootdir/etc/apt/sources.list.d/apt-test.sources
+
+msgtest 'apt-cache rebuilds after a .sources edit' 'without an update'
+if aptcache pkgnames >pkgnames.output 2>&1 && grep -q '^bar$' pkgnames.output; then
+	msgpass
+else
+	msgfail "$(cat pkgnames.output)"
+fi
