@@ -36,8 +36,11 @@ class StoreMethod final : public aptMethod
    bool Fetch(FetchItem *Itm) override;
 
    public:
-
-   explicit StoreMethod(std::string pProg) : aptMethod(std::move(pProg),"1.2",SingleInstance | SendConfig | SendURIEncoded)
+   /* Fetch() is a pure file->file transform: the source is opened read-only,
+      the destination is written through a mkstemp()ed temporary. Nothing is
+      shared between invocations, so we let pkgAcquire spawn one instance per
+      host-less queue and decompress indexes in parallel. */
+   explicit StoreMethod(std::string pProg) : aptMethod(std::move(pProg), "1.2", SendConfig | SendURIEncoded)
    {
       SeccompFlags = aptMethod::BASE;
       if (Binary != "store")
