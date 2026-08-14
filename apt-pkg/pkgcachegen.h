@@ -39,6 +39,7 @@ class IndexTarget;
 class OpProgress;
 class pkgIndexFile;
 class pkgCacheListParser;
+class debListParser;
 
 class APT_HIDDEN pkgCacheGenerator					/*{{{*/
 {
@@ -163,10 +164,23 @@ class APT_HIDDEN pkgCacheGenerator					/*{{{*/
 
    private:
    void * const d;
+
+   /* Everything in here is constant for one MergeList() run, but used once per
+      stanza - which is 100k+ times for a full cache build - so it is looked up
+      once in MergeList() and handed down instead of being recomputed per
+      stanza. */
+   struct MergeContext
+   {
+      std::vector<std::string> ArchVariants;
+      debListParser *DebList;
+      bool Debug;
+   };
+
    APT_HIDDEN bool MergeListGroup(ListParser &List, std::string const &GrpName);
    APT_HIDDEN bool MergeListPackage(ListParser &List, pkgCache::PkgIterator &Pkg);
    APT_HIDDEN bool MergeListVersion(ListParser &List, pkgCache::PkgIterator &Pkg,
-			 std::string_view Version, pkgCache::VerIterator* &OutVer);
+				    std::string_view Version, pkgCache::VerIterator *&OutVer,
+				    MergeContext const &Ctx);
 
    APT_HIDDEN bool AddImplicitDepends(pkgCache::GrpIterator &G, pkgCache::PkgIterator &P,
 			   pkgCache::VerIterator &V);
