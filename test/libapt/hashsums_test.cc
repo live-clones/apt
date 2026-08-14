@@ -189,10 +189,42 @@ TEST(HashSumsTest, FileBased)
       EXPECT_EQ(NULL, list.find("SHA3-512"));
       EXPECT_EQ(sha512.HashValue(), list.find("SHA512")->HashValue());
       EXPECT_EQ(FileSize, list.find("Checksum-FileSize")->HashValue());
+      HashStringList const expected = list;
+
+      /* The public Hashes(HashStringList) contract is unchanged: it computes
+	 every hash the list names. Callers opt in to the cheaper selection. */
       fd.Seek(0);
-      Hashes hashes2(list);
+      Hashes plain(expected);
+      plain.AddFD(fd);
+      list = plain.GetHashStringList();
+      EXPECT_EQ(3u, list.size());
+      EXPECT_EQ(md5.HashValue(), list.find("MD5Sum")->HashValue());
+      EXPECT_EQ(sha512.HashValue(), list.find("SHA512")->HashValue());
+
+      /* Selection::Strongest computes only the strongest usable hash of the
+	 list: the weak MD5Sum adds nothing to a SHA512 that is checked anyway,
+	 and the result still verifies against the full expectation. */
+      fd.Seek(0);
+      Hashes hashes2(expected, Hashes::Selection::Strongest);
       hashes2.AddFD(fd);
       list = hashes2.GetHashStringList();
+      EXPECT_FALSE(list.empty());
+      EXPECT_EQ(2u, list.size());
+      EXPECT_EQ(NULL, list.find("MD5Sum"));
+      EXPECT_EQ(NULL, list.find("SHA1"));
+      EXPECT_EQ(NULL, list.find("SHA256"));
+      EXPECT_EQ(sha512.HashValue(), list.find("SHA512")->HashValue());
+      EXPECT_EQ(FileSize, list.find("Checksum-FileSize")->HashValue());
+      EXPECT_TRUE(list == expected);
+      EXPECT_TRUE(expected == list);
+
+      // Acquire::ComputeAllHashes restores the historic all-listed behaviour
+      _config->Set("Acquire::ComputeAllHashes", true);
+      fd.Seek(0);
+      Hashes hashes3(expected, Hashes::Selection::Strongest);
+      hashes3.AddFD(fd);
+      list = hashes3.GetHashStringList();
+      _config->Clear("Acquire::ComputeAllHashes");
       EXPECT_FALSE(list.empty());
       EXPECT_EQ(3u, list.size());
       EXPECT_EQ(md5.HashValue(), list.find("MD5Sum")->HashValue());
@@ -202,6 +234,75 @@ TEST(HashSumsTest, FileBased)
       EXPECT_EQ(NULL, list.find("SHA3-512"));
       EXPECT_EQ(sha512.HashValue(), list.find("SHA512")->HashValue());
       EXPECT_EQ(FileSize, list.find("Checksum-FileSize")->HashValue());
+      EXPECT_TRUE(list == expected);
+
+      // Acquire::ForceHash overrides the choice, as it does for the comparison
+      _config->Set("Acquire::ForceHash", "MD5Sum");
+      fd.Seek(0);
+      Hashes hashes4(expected, Hashes::Selection::Strongest);
+      hashes4.AddFD(fd);
+      list = hashes4.GetHashStringList();
+      _config->Clear("Acquire::ForceHash");
+      EXPECT_EQ(2u, list.size());
+      EXPECT_EQ(md5.HashValue(), list.find("MD5Sum")->HashValue());
+      EXPECT_EQ(NULL, list.find("SHA512"));
+
+      /* Selecting a hash we cannot compute must never leave us with the file
+	 size as the only thing to compare: fall back to the full list. */
+      _config->Set("Acquire::ForceHash", "Checksum-FileSize");
+      fd.Seek(0);
+      Hashes sizeOnly(expected, Hashes::Selection::Strongest);
+      sizeOnly.AddFD(fd);
+      list = sizeOnly.GetHashStringList();
+      _config->Clear("Acquire::ForceHash");
+      EXPECT_LT(1u, list.size());
+      EXPECT_EQ(md5.HashValue(), list.find("MD5Sum")->HashValue());
+      EXPECT_EQ(sha512.HashValue(), list.find("SHA512")->HashValue());
+
+      /* A list without any usable hash can't select a strongest one, so we
+	 fall back to computing everything it lists. */
+      HashStringList weak;
+      EXPECT_TRUE(weak.push_back(md5));
+      EXPECT_TRUE(weak.push_back(sha1));
+      EXPECT_FALSE(weak.usable());
+      fd.Seek(0);
+      Hashes hashes5(weak, Hashes::Selection::Strongest);
+      hashes5.AddFD(fd);
+      list = hashes5.GetHashStringList();
+      EXPECT_EQ(7u, list.size());
+      EXPECT_EQ(md5.HashValue(), list.find("MD5Sum")->HashValue());
+      EXPECT_EQ(sha1.HashValue(), list.find("SHA1")->HashValue());
+      EXPECT_EQ(sha256.HashValue(), list.find("SHA256")->HashValue());
+      EXPECT_EQ(sha512.HashValue(), list.find("SHA512")->HashValue());
+
+      /* A hash the admin distrusts is never the one we pick, even if it is
+	 the strongest one listed: distrusting SHA512 leaves {MD5Sum, SHA512}
+	 without a usable hash, so we are back to the unusable-list fallback. */
+      _config->Set("APT::Hashes::SHA512::Untrusted", true);
+      EXPECT_FALSE(expected.usable());
+      fd.Seek(0);
+      Hashes hashes6(expected, Hashes::Selection::Strongest);
+      hashes6.AddFD(fd);
+      list = hashes6.GetHashStringList();
+      _config->Clear("APT::Hashes::SHA512::Untrusted");
+      EXPECT_EQ(7u, list.size());
+      EXPECT_EQ(md5.HashValue(), list.find("MD5Sum")->HashValue());
+      EXPECT_EQ(sha512.HashValue(), list.find("SHA512")->HashValue());
+
+      /* With a stronger-than-distrusted alternative present we pick that one. */
+      HashStringList mixed;
+      EXPECT_TRUE(mixed.push_back(md5));
+      EXPECT_TRUE(mixed.push_back(sha256));
+      EXPECT_TRUE(mixed.push_back(sha512));
+      _config->Set("APT::Hashes::SHA512::Untrusted", true);
+      fd.Seek(0);
+      Hashes hashes7(mixed, Hashes::Selection::Strongest);
+      hashes7.AddFD(fd);
+      list = hashes7.GetHashStringList();
+      _config->Clear("APT::Hashes::SHA512::Untrusted");
+      EXPECT_EQ(2u, list.size());
+      EXPECT_EQ(sha256.HashValue(), list.find("SHA256")->HashValue());
+      EXPECT_EQ(NULL, list.find("SHA512"));
    }
    fd.Seek(0);
    {

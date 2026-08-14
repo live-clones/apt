@@ -440,7 +440,7 @@ protected:
 
    bool CalculateHashes(FetchItem const * const Itm, FetchResult &Res) const APT_NONNULL(2)
    {
-      Hashes Hash(Itm->ExpectedHashes);
+      Hashes Hash(Itm->ExpectedHashes, Hashes::Selection::Strongest);
       FileFd Fd;
       if (Fd.Open(Res.Filename, FileFd::ReadOnly) == false || Hash.AddFD(Fd) == false)
 	 return false;

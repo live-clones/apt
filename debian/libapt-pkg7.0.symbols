@@ -919,6 +919,7 @@ libapt-pkg.so.7.0 libapt-pkg7.0 #MINVER#
  (c++)"Hashes::AddFD(int, unsigned long long)@APTPKG_7.0" 1.1~exp9
  (c++)"Hashes::Add(unsigned char const*, unsigned long long)@APTPKG_7.0" 1.1~exp9
  (c++)"Hashes::Hashes(HashStringList const&)@APTPKG_7.0" 1.1~exp9
+ (c++)"Hashes::Hashes(HashStringList const&, Hashes::Selection)@APTPKG_7.0" 3.3.8~
  (c++)"Hashes::Hashes(unsigned int)@APTPKG_7.0" 1.1~exp9
  (c++)"HashStringList::FileSize() const@APTPKG_7.0" 1.1~exp9
  (c++)"HashStringList::FileSize(unsigned long long)@APTPKG_7.0" 1.1~exp9

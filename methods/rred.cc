@@ -692,7 +692,7 @@ class RredMethod final : public aptMethod {
 		  << std::endl;
 
 	    FileFd p;
-	    Hashes patch_hash(I->ExpectedHashes);
+	    Hashes patch_hash(I->ExpectedHashes, Hashes::Selection::Strongest);
 	    // all patches are compressed, even if the name doesn't reflect it
 	    if (p.Open(patch_name, FileFd::ReadOnly, FileFd::Gzip) == false ||
 		  patch.read_diff(p, &patch_hash) == false)
@@ -725,10 +725,10 @@ class RredMethod final : public aptMethod {
 	    return _error->Error("Failed to open out %s", Itm->DestFile.c_str());
 	 }
 
-	 Hashes end_hash(Itm->ExpectedHashes);
+	 Hashes end_hash(Itm->ExpectedHashes, Hashes::Selection::Strongest);
 	 if (StartHashes.usable())
 	 {
-	    Hashes start_hash(StartHashes);
+	    Hashes start_hash(StartHashes, Hashes::Selection::Strongest);
 	    patch.apply_against_file(out, inp, &start_hash, &end_hash);
 	    if (start_hash.GetHashStringList() != StartHashes)
 	       _error->Error("The input file hadn't the expected hash!");

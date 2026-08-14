@@ -219,6 +219,27 @@ class APT_PUBLIC Hashes
    explicit Hashes(unsigned int const Hashes);
    /** @param Hashes is a list of hashes */
    explicit Hashes(HashStringList const &Hashes);
+
+   /** \brief Which of the hashes a list names are actually computed. */
+   enum class Selection
+   {
+      /** \brief Every algorithm the list names. */
+      All,
+      /** \brief Only the strongest algorithm we trust, plus the file size.
+       *
+       * HashStringList::operator== only compares hashes present in both
+       * lists, so computing the weaker ones too buys nothing. Use only where
+       * the result is compared against an expectation, not probed for which
+       * hash types it has (pkgAcqDiffIndex::ParseDiffIndex does that).
+       *
+       * Honors Acquire::ComputeAllHashes and Acquire::ForceHash; if no usable
+       * hash can be selected it falls back to All, never to the file size.
+       */
+      Strongest,
+   };
+   /** @param Hashes is a list of hashes
+    *  @param Selection which of those hashes to compute */
+   Hashes(HashStringList const &Hashes, Selection const Selection);
    virtual ~Hashes();
 };
 

@@ -1,0 +1,91 @@
+#!/bin/sh
+# APT computes only the strongest checksum it trusts, not every checksum the
+# repository publishes. Verification strength is unchanged: a download is still
+# accepted only if every checksum APT computed matches the published value.
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'i386'
+# a repository as Debian publishes it: a weak and a strong hash per file
+confighashes 'MD5' 'SHA256'
+
+buildsimplenativepackage 'foo' 'i386' '1.0' 'unstable'
+
+setupaptarchive --no-update
+changetowebserver
+
+PKGS='aptarchive/dists/unstable/main/binary-i386/Packages'
+# the redundant hashes each stanza carries are what we are optimising away
+testsuccess grep -q '^MD5sum:' "$PKGS"
+testsuccess grep -q '^SHA256:' "$PKGS"
+
+# the hash types the methods reported for the items whose URI contains $2
+receivedhashes() {
+	awk -v pat="$2" '
+		/^201 URI Done: / { want = (index($0, pat) > 0); next }
+		want && /^ReceivedHash:$/ { inblock = 1; next }
+		inblock && /^ExpectedHash:$/ { inblock = 0; want = 0; next }
+		inblock { print }
+	' "$1" | sed -n 's#^[[:space:]]*- \([^:]*\):.*#\1#p' | sort -u
+}
+
+msgmsg 'Only the strongest published hash is computed for indexes'
+testsuccess aptget update -o Debug::pkgAcquire::Auth=1
+receivedhashes rootdir/tmp/testsuccess.output 'binary-i386/Packages' > received.index
+testsuccess grep -qx 'SHA256' received.index
+testfailure grep -qx 'MD5Sum' received.index
+testfailure grep -qx 'SHA1' received.index
+
+cd downloaded
+
+msgmsg 'A .deb still verifies against the full published hash list'
+testsuccess aptget download foo -o Debug::pkgAcquire::Auth=1
+receivedhashes ../rootdir/tmp/testsuccess.output 'foo_1.0_i386.deb' > received.deb
+testsuccess grep -qx 'SHA256' received.deb
+testfailure grep -qx 'MD5Sum' received.deb
+testsuccess test -s foo_1.0_i386.deb
+rm -f foo_1.0_i386.deb
+
+msgmsg 'Acquire::ComputeAllHashes restores the historic behaviour'
+testsuccess aptget download foo -o Acquire::ComputeAllHashes=1 -o Debug::pkgAcquire::Auth=1
+receivedhashes ../rootdir/tmp/testsuccess.output 'foo_1.0_i386.deb' > received.all
+testsuccess grep -qx 'SHA256' received.all
+testsuccess grep -qx 'MD5Sum' received.all
+testsuccess test -s foo_1.0_i386.deb
+rm -f foo_1.0_i386.deb
+
+msgmsg 'A corrupted .deb is still rejected'
+DEB='../incoming/foo_1.0_i386.deb'
+breakfiles "$DEB"
+testfailure aptget download foo
+testsuccess grep -q 'Hash Sum mismatch' ../rootdir/tmp/testfailure.output
+testfailure test -e foo_1.0_i386.deb
+unbreakfiles "$DEB"
+
+cd ..
+
+msgmsg 'The weak hash no longer decides for a file which has a strong one'
+# A MD5sum is not a security statement about a file that also carries a SHA256,
+# so a wrong one must not change the verdict — unless all hashes are computed.
+sed -i 's#^MD5sum: .*#MD5sum: 00000000000000000000000000000000#' "$PKGS"
+compressfile "$PKGS"
+generatereleasefiles
+signreleasefiles
+rm -rf rootdir/var/lib/apt/lists
+testsuccess aptget update
+
+cd downloaded
+testsuccess aptget download foo
+testsuccess test -s foo_1.0_i386.deb
+rm -f foo_1.0_i386.deb
+testfailure aptget download foo -o Acquire::ComputeAllHashes=1
+testsuccess grep -q 'Hash Sum mismatch' ../rootdir/tmp/testfailure.output
+cd ..
+
+msgmsg 'A repository without any trusted hash is refused as before'
+rm -rf rootdir/var/lib/apt/lists
+testfailure aptget update -o APT::Hashes::SHA256::Untrusted=1
+testsuccess grep -q 'provides only weak security information' rootdir/tmp/testfailure.output

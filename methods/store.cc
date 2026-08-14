@@ -99,7 +99,7 @@ bool StoreMethod::Fetch(FetchItem *Itm)					/*{{{*/
    }
 
    // Read data from source, generate checksums and write
-   Hashes Hash(Itm->ExpectedHashes);
+   Hashes Hash(Itm->ExpectedHashes, Hashes::Selection::Strongest);
    bool Failed = false;
    Res.Size = 0;
    while (1)

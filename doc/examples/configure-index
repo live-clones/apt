@@ -256,6 +256,7 @@ Acquire
   };
   Source-Symlinks "<BOOL>";
   ForceHash "<STRING>"; // hashmethod used for expected hash: sha256, sha1 or md5sum
+  ComputeAllHashes "<BOOL>"; // compute every published hash, not just the strongest trusted one
   Send-URI-Encoded "<BOOL>"; // false does the old encode/decode dance even if we could avoid it
   URIEncode "<STRING>"; // characters to encode with percent encoding
 

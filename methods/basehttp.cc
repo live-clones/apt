@@ -16,6 +16,7 @@
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/strutl.h>
 
+#include <algorithm>
 #include <cctype>
 #include <csignal>
 #include <cstdio>
@@ -467,7 +468,7 @@ BaseHttpMethod::DealWithHeaders(FetchResult &Res, RequestState &Req)
 	 bool partialHit = false;
 	 if (Queue->ExpectedHashes.usable() == true)
 	 {
-	    Hashes resultHashes(Queue->ExpectedHashes);
+	    Hashes resultHashes(Queue->ExpectedHashes, Hashes::Selection::Strongest);
 	    FileFd file(Queue->DestFile, FileFd::ReadOnly);
 	    Req.TotalFileSize = file.FileSize();
 	    Req.Date = file.ModificationTime();
@@ -582,7 +583,7 @@ bool BaseHttpMethod::Fetch(FetchItem *)
       if (UsableHashes && FileExists(QueueBack->DestFile))
       {
 	 FileFd partial(QueueBack->DestFile, FileFd::ReadOnly);
-	 Hashes wehave(QueueBack->ExpectedHashes);
+	 Hashes wehave(QueueBack->ExpectedHashes, Hashes::Selection::Strongest);
 	 if (QueueBack->ExpectedHashes.FileSize() == partial.FileSize())
 	 {
 	    if (wehave.AddFD(partial) &&
@@ -817,10 +818,26 @@ int BaseHttpMethod::Loop()
 	       {
 		  // we did not get the expected hash… mhhh:
 		  // could it be that server/proxy messed up pipelining?
+
+		  /* The computed list may overlap another item's expectation in
+		     nothing but the file size, and size alone must not identify
+		     a file: require at least one real hash to agree. */
+		  auto const isTheFileWeGot = [&hashList](HashStringList const &expected)
+		  {
+		     if (expected != hashList)
+			return false;
+		     return std::any_of(expected.begin(), expected.end(), [&hashList](HashString const &hs)
+					{
+			if (stringcasecmp(hs.HashType(), "Checksum-FileSize") == 0)
+			   return false;
+			HashString const *const got = hashList.find(hs.HashType().c_str());
+			return got != nullptr && *got == hs; });
+		  };
+
 		  FetchItem * BeforeI = Queue;
 		  for (FetchItem *I = Queue->Next; I != 0 && I != QueueBack; I = I->Next)
 		  {
-		     if (I->ExpectedHashes.usable() == true && I->ExpectedHashes == hashList)
+		     if (I->ExpectedHashes.usable() == true && isTheFileWeGot(I->ExpectedHashes))
 		     {
 			// yes, he did! Disable pipelining and rewrite queue
 			if (Server->Pipeline == true)
