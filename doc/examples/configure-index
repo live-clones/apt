@@ -246,6 +246,8 @@ APT
 Acquire
 {
   Queue-Mode "<STRING>";       // host or access
+  Mirror::Fanout "<STRING>";   // sqrt or none
+  Mirror::Fanout-Limit "<INT>"; // 0 for no limit on actively used mirrors
   Retries "<INT>" {
       Delay "<BOOL>" {   // whether to backoff between retries using the delay: method
         Maximum "<INT>"; // maximum number of seconds to delay an item per retry

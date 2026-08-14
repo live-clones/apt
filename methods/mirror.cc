@@ -19,11 +19,16 @@
 #include <apt-pkg/sourcelist.h>
 #include <apt-pkg/strutl.h>
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <functional>
 #include <random>
+#include <span>
 #include <string>
 #include <unordered_map>
 
+#include <strings.h>
 #include <sys/utsname.h>
 
 #include <apti18n.h>
@@ -86,12 +91,17 @@ class MirrorMethod : public aptMethod /*{{{*/
       MirrorFileState state;
       std::string baseuri;
       std::vector<MirrorInfo> list;
+      // fan-out state: redirects processed so far and assignments per mirror
+      uint64_t redirected = 0;
+      std::unordered_map<std::string, uint64_t> assigned;
    };
    std::unordered_map<std::string, MirrorListInfo> mirrorfilestate;
 
    bool URIAcquire(std::string const &Message, FetchItem *Itm) override;
 
-   void RedirectItem(MirrorListInfo const &info, FetchItem *Itm, std::string const &Message);
+   bool SqrtFanout() const { return strcasecmp(_config->Find("Acquire::Mirror::Fanout", "sqrt").c_str(), "none") != 0; }
+   void ShuffleAndSortMirrors(std::span<MirrorInfo> mirrors);
+   void RedirectItem(MirrorListInfo &info, FetchItem *Itm, std::string const &Message);
    bool MirrorListFileReceived(MirrorListInfo &info, FetchItem *Itm);
    std::string GetMirrorFileURI(std::string const &Message, FetchItem *Itm);
    void DealWithPendingItems(std::vector<std::string> const &baseuris, MirrorListInfo const &info, FetchItem *Itm, std::function<void()> handler);
@@ -103,7 +113,18 @@ class MirrorMethod : public aptMethod /*{{{*/
    }
 };
 									/*}}}*/
-void MirrorMethod::RedirectItem(MirrorListInfo const &info, FetchItem *const Itm, std::string const &Message) /*{{{*/
+void MirrorMethod::ShuffleAndSortMirrors(std::span<MirrorInfo> mirrors) /*{{{*/
+{
+   for (auto &&mirror : mirrors)
+      mirror.seed = genrng();
+   std::sort(mirrors.begin(), mirrors.end(), [](MirrorInfo const &a, MirrorInfo const &b)
+	     {
+      if (a.priority != b.priority)
+	 return a.priority < b.priority;
+      return a.seed < b.seed; });
+}
+									/*}}}*/
+void MirrorMethod::RedirectItem(MirrorListInfo &info, FetchItem *const Itm, std::string const &Message) /*{{{*/
 {
    std::unordered_map<std::string, std::string> matchers;
    matchers.emplace("Architecture", LookupTag(Message, "Target-Architecture"));
@@ -135,13 +156,48 @@ void MirrorMethod::RedirectItem(MirrorListInfo const &info, FetchItem *const Itm
 	 continue;
       possMirrors.push_back(mirror);
    }
-   for (auto &&mirror : possMirrors)
-      mirror.seed = genrng();
-   std::sort(possMirrors.begin(), possMirrors.end(), [](MirrorInfo const &a, MirrorInfo const &b) {
-      if (a.priority != b.priority)
-	 return a.priority < b.priority;
-      return a.seed < b.seed;
-   });
+   if (SqrtFanout() == false)
+   {
+      ShuffleAndSortMirrors(possMirrors);
+   }
+   else if (possMirrors.empty() == false)
+   {
+      /* Scale the number of actively used mirrors with the square root of
+	 the number of files: A handful of files is fetched from a single
+	 mirror, but many files are spread over many mirrors while keeping
+	 each active mirror roughly equally busy. Only mirrors with the best
+	 (lowest) priority value are candidates; the remaining mirrors are
+	 alternates for failover as documented in apt-transport-mirror(1). */
+      auto const n = ++info.redirected;
+      auto const bestpriority = possMirrors.front().priority;
+      auto const tierend = std::find_if(possMirrors.begin(), possMirrors.end(), [&](MirrorInfo const &mirror)
+					{ return mirror.priority != bestpriority; });
+      auto const tiersize = static_cast<uint64_t>(tierend - possMirrors.begin());
+      auto const limit = _config->FindI("Acquire::Mirror::Fanout-Limit", 0);
+      auto const maxactive = limit > 0 ? std::min(static_cast<uint64_t>(limit), tiersize) : tiersize;
+      // at least 3 mirrors are used if the tier (and limit) allow for it
+      auto const active = std::clamp(static_cast<uint64_t>(std::sqrt(n)), std::min(uint64_t{3}, maxactive), maxactive);
+
+      auto chosen = possMirrors.begin();
+      uint64_t fewest = std::numeric_limits<uint64_t>::max();
+      for (auto m = possMirrors.begin(); m != possMirrors.begin() + active; ++m)
+      {
+	 auto const count = info.assigned[m->uri];
+	 if (count < fewest)
+	 {
+	    fewest = count;
+	    chosen = m;
+	 }
+      }
+      info.assigned[chosen->uri]++;
+      if (DebugEnabled())
+	 std::clog << "Fan-out " << n << " over " << active << " mirror(s), chose " << chosen->uri << " for " << Itm->Uri << std::endl;
+      std::rotate(possMirrors.begin(), chosen, chosen + 1);
+      /* The alternates are shuffled (keeping their priority) so that
+	 different items progress through the mirrors in different orders,
+	 spreading failover load across the mirrors. */
+      ShuffleAndSortMirrors({possMirrors.begin() + 1, possMirrors.end()});
+   }
    std::string const path = Itm->Uri.substr(info.baseuri.length());
    std::string altMirrors;
    std::unordered_map<std::string, std::string> fields;
@@ -278,6 +334,10 @@ bool MirrorMethod::MirrorListFileReceived(MirrorListInfo &info, FetchItem *const
       else
       {
 	 info.state = AVAILABLE;
+	 // pick the random order of same-priority mirrors once per list so
+	 // that the fan-out in RedirectItem has a stable order to work with
+	 if (SqrtFanout())
+	    ShuffleAndSortMirrors(info.list);
 	 DealWithPendingItems(baseuris, info, Itm, [&]() {
 	    RedirectItem(info, Queue, msgCache[Queue->Uri]);
 	 });
