@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.0.2\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-07-30 20:45+0000\n"
+"POT-Creation-Date: 2026-08-14 14:52+0000\n"
 "PO-Revision-Date: 2025-05-20 15:18+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
@@ -1813,8 +1813,593 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "Pozn: Vybírám „%s“ místo „%s“\n"
 
 #: apt-private/private-cmndline.cc
+msgid "Show this help message"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid " [Not candidate version]"
+msgid "Show the version"
+msgstr " [Není kandidátská verze]"
+
+#: apt-private/private-cmndline.cc
+msgid "Enable color output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Reading state information"
+msgid "Output less information"
+msgstr "Načítají se stavové informace"
+
+#: apt-private/private-cmndline.cc
+msgid "Audit output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set CLI version"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Print the list of manually installed packages"
+msgid "Print only installed packages"
+msgstr "Vypíše seznam balíků instalovaných ručně"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "reinstall packages"
+msgid "Print only upgradeable packages"
+msgstr "přeinstaluje balíky"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Print the list of manually installed packages"
+msgid "Print only manually installed packages"
+msgstr "Vypíše seznam balíků instalovaných ručně"
+
+#: apt-private/private-cmndline.cc
+msgid "Include summary"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show all versions"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the target release"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Snapshot to use"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Show source records"
+msgid "Show the full record"
+msgstr "Zobrazí zdrojové záznamy"
+
+#: apt-private/private-cmndline.cc
+msgid "Configure an ephemeral source file"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Solving dependencies"
+msgid "Print only important dependencies"
+msgstr "Řešení závislostí"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Installing dependencies:"
+msgid "Print only installed dependencies"
+msgstr "Instalace závislostí:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "PreDepends"
+msgid "Print Pre-Depends"
+msgstr "Předzávisí na"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "PreDepends"
+msgid "Print Depends"
+msgstr "Předzávisí na"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Recommends"
+msgid "Print Recommends"
+msgstr "Doporučuje"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggests"
+msgid "Print Suggests"
+msgstr "Navrhuje"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Replaces"
+msgid "Print Replaces"
+msgstr "Nahrazuje"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Breaks"
+msgid "Print Breaks"
+msgstr "Porušuje"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Conflicts"
+msgid "Print Conflicts"
+msgstr "Koliduje s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Enhances"
+msgid "Print Enhances"
+msgstr "Rozšiřuje"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Solving dependencies"
+msgid "Print dependencies recursively"
+msgstr "Řešení závislostí"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Installing dependencies:"
+msgid "Print implicit dependencies"
+msgstr "Instalace závislostí:"
+
+#: apt-private/private-cmndline.cc
+msgid "Only search names"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "The following packages have unmet dependencies:"
+msgid "Show virtual packages and missing dependencies"
+msgstr "Následující balíky mají nesplněné závislosti:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Internal error getting a package name"
+msgid "Only query source package names"
+msgstr "Vnitřní chyba při získávání jména balíku"
+
+#: apt-private/private-cmndline.cc
+msgid "Generate the cache"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the location of the pkgcache.bin"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the location of the srcpkgcache.bin"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Auto detect the CD"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Using CD-ROM mount point %s\n"
+msgid "CD mount point"
+msgstr "Používá se přípojný bod %s\n"
+
+#: apt-private/private-cmndline.cc
+msgid "Rename the CD"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Do not mount automatically"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Do a fast operation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Just print, do not act"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Be thorough"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Run solver as the specified user"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Include empty values in output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Output format (shell, ...)"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Temporary directory for extracted templates"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate MD5 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA1 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA256 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA512 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Cache database"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to read the override file %s"
+msgid "Source override file"
+msgstr "Nezdařilo se přečíst override soubor %s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Problem unlinking the file %s"
+msgid "Enable delinking of files"
+msgstr "Problém při odstraňování souboru %s"
+
+#: apt-private/private-cmndline.cc
+msgid "Make cache read-only"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Error writing header to contents file"
+msgid "Generate the contents file"
+msgstr "Chyba při zapisování hlavičky do souboru"
+
+#: apt-private/private-cmndline.cc
+msgid "Only accept files for the given architecture"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Sort source package files"
+msgstr "Nešlo vyhodnotit seznam zdrojových balíků %s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Unknown compression algorithm '%s'"
+msgid "Set compression algorithm"
+msgstr "Neznámý kompresní algoritmus „%s“"
+
+#: apt-private/private-cmndline.cc
+msgid "Read/write states from the given file"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Verbose output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Automatic yes to prompts"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Automatic no to prompts"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "No action; perform a simulation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show user-friendly progress information"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Solving dependencies"
+msgid "Fix broken dependencies"
+msgstr "Řešení závislostí"
+
+#: apt-private/private-cmndline.cc
+msgid "Use purge instead of remove"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Show reverse dependency information for a package"
+msgid "Show verbose version information"
+msgstr "Zobrazí reverzní závislosti balíku"
+
+#: apt-private/private-cmndline.cc
+msgid "Show list columns"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Remove automatically all unused packages"
+msgid "Remove automatically installed packages no longer needed"
+msgstr "Automaticky odstraní nepoužívané balíky"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "reinstall packages"
+msgid "Reinstall packages"
+msgstr "přeinstaluje balíky"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Satisfy dependency strings"
+msgid "Set the dependency solver"
+msgstr "Splní řetězec závislostí"
+
+#: apt-private/private-cmndline.cc
+msgid "Apply strict pinning"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Execute external planner"
+msgid "Set the dependency planner"
+msgstr "Spuštění externího plánovače"
+
+#: apt-private/private-cmndline.cc
+msgid "Add a comment to history"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Reading package lists"
+msgid "Update package lists"
+msgstr "Načítají se seznamy balíků"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "The following packages have unmet dependencies:"
+msgid "Allow installing new packages for upgraded dependencies"
+msgstr "Následující balíky mají nesplněné závislosti:"
+
+#: apt-private/private-cmndline.cc
+msgid "Clean up old list files"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Use --allow-insecure-repositories to force the update"
+msgid "Allow insecure repositories"
+msgstr "Pro vynucení aktualizace použijte --allow-insecure-repositories"
+
+#: apt-private/private-cmndline.cc
+msgid "Allow weak repositories"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow Release info changes"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Origin field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Label field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Version field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Codename field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Suite field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to DefaultPin field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Fail on the specified error"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set host architecture"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Compile source packages"
+msgstr "Nešlo vyhodnotit seznam zdrojových balíků %s"
+
+#: apt-private/private-cmndline.cc
+msgid "Set build profiles"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Download Failed"
+msgid "Download only the diff"
+msgstr "Stažení selhalo"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Download source archives"
+msgid "Download only the tar"
+msgstr "Stáhne zdrojové archivy"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Download Failed"
+msgid "Download only the dsc"
+msgstr "Stažení selhalo"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to process build dependencies"
+msgid "Only process architecture-dependent build dependencies"
+msgstr "Chyba při zpracování závislostí pro sestavení"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to process build dependencies"
+msgid "Only process architecture-independent build dependencies"
+msgstr "Chyba při zpracování závislostí pro sestavení"
+
+#: apt-private/private-cmndline.cc
+msgid "Output format"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show release info"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Download only; do not install or unpack"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggested packages:"
+msgid "Show upgraded packages"
+msgstr "Navrhované balíky:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Broken packages"
+msgid "Download packages"
+msgstr "Poškozené balíky"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Some packages could not be authenticated"
+msgid "Ignore packages that cannot be retrieved"
+msgstr "Některé balíky nemohly být autentizovány"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Changing held packages:"
+msgid "Ignore held packages"
+msgstr "Změna podržených balíků:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "remove packages"
+msgid "Upgrade packages"
+msgstr "odstraní balíky"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "remove packages"
+msgid "Only upgrade packages"
+msgstr "odstraní balíky"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Changing held packages:"
+msgid "Allow changing held packages"
+msgstr "Změna podržených balíků:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "reinstall packages"
+msgid "Allow removing essential packages"
+msgstr "přeinstaluje balíky"
+
+#: apt-private/private-cmndline.cc
+msgid "Allow downgrading packages"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Force yes (deprecated)"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Print URIs"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Trivial Only specified but this is not a trivial operation."
+msgid "Only perform trivial operations"
+msgstr "Udáno „pouze triviální“, ovšem toto není triviální operace."
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Mark the given packages as automatically installed"
+msgid "Mark packages as automatically installed"
+msgstr "Označí dané balíky jako instalované automaticky"
+
+#: apt-private/private-cmndline.cc cmdline/apt-get.cc
+msgid "Remove packages"
+msgstr "Odstraní balíky"
+
+#: apt-private/private-cmndline.cc
+msgid "Allow unauthenticated packages"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Recommended packages:"
+msgid "Install recommended packages"
+msgstr "Doporučované balíky:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggested packages:"
+msgid "Install suggested packages"
+msgstr "Navrhované balíky:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Solving dependencies"
+msgid "Fix broken policy dependencies"
+msgstr "Řešení závislostí"
+
+#: apt-private/private-cmndline.cc
+msgid "<value>"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Options:"
+msgstr "volitelný"
+
+#: apt-private/private-cmndline.cc
+msgid "Common options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Most used commands:"
 msgstr "Nejpoužívanější příkazy:"
+
+#: apt-private/private-cmndline.cc
+#, c-format
+msgid ""
+"See %s, apt.conf(5), sources.list(5), apt_preferences(5),\n"
+"and apt-secure(8) for more information.\n"
+msgstr ""
 
 #: apt-private/private-cmndline.cc
 #, c-format
@@ -3217,10 +3802,6 @@ msgid "Reinstall packages (pkg is libc6 not libc6.deb)"
 msgstr "Přeinstaluje balíky (balík je libc6, ne libc6.deb)"
 
 #: cmdline/apt-get.cc
-msgid "Remove packages"
-msgstr "Odstraní balíky"
-
-#: cmdline/apt-get.cc
 msgid "Remove packages and config files"
 msgstr "Odstraní balíky včetně konfiguračních souborů"
 
@@ -3503,6 +4084,124 @@ msgstr ""
 "správu a také pro zjišťování informací o balících.\n"
 "Poskytuje stejnou funkcionalitu jako specializované APT nástroje typu\n"
 "apt-get a apt-cache, ale je lépe nastaven pro interaktivní použití.\n"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] list [pattern(s)]\n"
+"\n"
+"Display packages matching the given names, glob patterns, or\n"
+"apt-patterns. Similar to dpkg-query --list but with filtering.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] search <regex>\n"
+"\n"
+"Search package names and descriptions for the given regex terms\n"
+"and display matches.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] show <package(s)>\n"
+"\n"
+"Show detailed information about the given package(s), including\n"
+"dependencies, install/download size, available sources, and the\n"
+"package description.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+#, fuzzy, c-format
+#| msgid ""
+#| "Usage: apt [options] command\n"
+#| "\n"
+#| "CLI for apt.\n"
+msgid ""
+"Usage: apt [options] %s <package(s)>\n"
+"\n"
+msgstr ""
+"Použití: apt [volby] příkaz\n"
+"\n"
+"Řádkové rozhraní pro apt.\n"
+
+#: cmdline/apt.cc
+msgid ""
+"Install, reinstall, remove, or purge packages specified by name,\n"
+"glob, or regex. Append + to a name to install it, or - to remove it.\n"
+"Select a version with pkg=version, or a release with pkg/codename.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] autoremove\n"
+"\n"
+"Remove packages that were automatically installed to satisfy\n"
+"dependencies and are no longer needed.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] update\n"
+"\n"
+"Download package information from all configured sources.\n"
+"Run this before upgrade or install to ensure you have the latest\n"
+"package lists.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] upgrade [package(s)]\n"
+"\n"
+"Install available upgrades for all installed packages. New packages\n"
+"may be installed to satisfy dependencies, but no installed packages\n"
+"are removed. If a package is given as an argument, it is installed\n"
+"before the upgrade.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] full-upgrade [package(s)]\n"
+"\n"
+"Upgrade the system, removing installed packages if needed to\n"
+"upgrade the system as a whole. If a package is given as an\n"
+"argument, it is installed before the upgrade.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] satisfy <dependency-string(s)>\n"
+"\n"
+"Satisfy the given dependency strings, as used in Build-Depends.\n"
+"Prefix an argument with \"Conflicts: \" to handle conflicts.\n"
+"\n"
+"Example: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] why <package>\n"
+"       apt [options] why-not <package>\n"
+"\n"
+"Explain why a package is or is not installed. The why command\n"
+"shows why an installed package is present; why-not shows why a\n"
+"package cannot be installed. Takes a single package name.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] edit-sources\n"
+"\n"
+"Edit sources.list files in your preferred text editor, with basic\n"
+"sanity checks.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] modernize-sources\n"
+"\n"
+"Convert .list files to the .sources format, adding Signed-By\n"
+"values where possible. Old files are saved as .list.bak.\n"
+msgstr ""
 
 #. query
 #: cmdline/apt.cc
@@ -4513,15 +5212,6 @@ msgstr "Prázdné soubory nejsou platnými archivy"
 #~ "Více informací viz manuálové stránky apt-cache(8) a apt.conf(5).\n"
 
 #~ msgid ""
-#~ "Usage: apt [options] command\n"
-#~ "\n"
-#~ "CLI for apt.\n"
-#~ msgstr ""
-#~ "Použití: apt [volby] příkaz\n"
-#~ "\n"
-#~ "Řádkové rozhraní pro apt.\n"
-
-#~ msgid ""
 #~ "Options:\n"
 #~ "  -h   This help text.\n"
 #~ "  -c=? Read this configuration file\n"
@@ -4576,9 +5266,6 @@ msgstr "Prázdné soubory nejsou platnými archivy"
 #~ "  -s   Setřídí zdrojový soubor\n"
 #~ "  -c=? Načte tento konfigurační soubor\n"
 #~ "  -o=? Nastaví libovolnou volbu, např. -o dir::cache=/tmp\n"
-
-#~ msgid "Use --allow-insecure-repositories to force the update"
-#~ msgstr "Pro vynucení aktualizace použijte --allow-insecure-repositories"
 
 #~ msgid ""
 #~ "The data from '%s' is not signed. Packages from that repository can not "
@@ -4647,9 +5334,6 @@ msgstr "Prázdné soubory nejsou platnými archivy"
 
 #~ msgid "Package %s %s was not found while processing file dependencies"
 #~ msgstr "Při zpracování závislostí nebyl nalezen balík %s %s"
-
-#~ msgid "Couldn't stat source package list %s"
-#~ msgstr "Nešlo vyhodnotit seznam zdrojových balíků %s"
 
 #~ msgid "Collecting File Provides"
 #~ msgstr "Collecting File poskytuje"
@@ -4736,9 +5420,6 @@ msgstr "Prázdné soubory nejsou platnými archivy"
 
 #~ msgid "Failed to change to the admin dir %sinfo"
 #~ msgstr "Nepodařilo se změnit na admin adresář %sinfo"
-
-#~ msgid "Internal error getting a package name"
-#~ msgstr "Vnitřní chyba při získávání jména balíku"
 
 #~ msgid "Reading file listing"
 #~ msgstr "Čtu výpis souborů"

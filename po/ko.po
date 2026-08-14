@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-07-30 20:45+0000\n"
+"POT-Creation-Date: 2026-08-14 14:52+0000\n"
 "PO-Revision-Date: 2010-08-30 02:31+0900\n"
 "Last-Translator: Changwoo Ryu <cwryu@debian.org>\n"
 "Language-Team: Korean <debian-l10n-korean@lists.debian.org>\n"
@@ -1776,7 +1776,580 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "주의, '%2$s' 대신에 '%1$s' 패키지를 선택합니다\n"
 
 #: apt-private/private-cmndline.cc
+msgid "Show this help message"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid " [Not candidate version]"
+msgid "Show the version"
+msgstr "[후보 버전 아님]"
+
+#: apt-private/private-cmndline.cc
+msgid "Enable color output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Reading state information"
+msgid "Output less information"
+msgstr "상태 정보를 읽는 중입니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Audit output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set CLI version"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Print only installed packages"
+msgstr "%s 패키지 수동설치로 지정합니다.\n"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Print only upgradeable packages"
+msgstr "핀 패키지:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Print only manually installed packages"
+msgstr "%s 패키지 수동설치로 지정합니다.\n"
+
+#: apt-private/private-cmndline.cc
+msgid "Include summary"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show all versions"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the target release"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Snapshot to use"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Show source records"
+msgid "Show the full record"
+msgstr "소스 기록을 봅니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Configure an ephemeral source file"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print only important dependencies"
+msgstr "전체 의존성: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print only installed dependencies"
+msgstr "전체 의존성: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "PreDepends"
+msgid "Print Pre-Depends"
+msgstr "미리의존"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "PreDepends"
+msgid "Print Depends"
+msgstr "미리의존"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Recommends"
+msgid "Print Recommends"
+msgstr "추천"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggests"
+msgid "Print Suggests"
+msgstr "제안"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Replaces"
+msgid "Print Replaces"
+msgstr "대체"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Breaks"
+msgid "Print Breaks"
+msgstr "망가뜨림"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Conflicts"
+msgid "Print Conflicts"
+msgstr "충돌"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Enhances"
+msgid "Print Enhances"
+msgstr "향상"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print dependencies recursively"
+msgstr "전체 의존성: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print implicit dependencies"
+msgstr "전체 의존성: "
+
+#: apt-private/private-cmndline.cc
+msgid "Only search names"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "The following packages have unmet dependencies:"
+msgid "Show virtual packages and missing dependencies"
+msgstr "다음 패키지의 의존성이 맞지 않습니다:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Internal error getting a package name"
+msgid "Only query source package names"
+msgstr "패키지 이름을 가져오는데 내부 오류"
+
+#: apt-private/private-cmndline.cc
+msgid "Generate the cache"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the location of the pkgcache.bin"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the location of the srcpkgcache.bin"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Auto detect the CD"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Using CD-ROM mount point %s\n"
+msgid "CD mount point"
+msgstr "CD-ROM 마운트 위치 %s 사용\n"
+
+#: apt-private/private-cmndline.cc
+msgid "Rename the CD"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Do not mount automatically"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Do a fast operation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Just print, do not act"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Be thorough"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Run solver as the specified user"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Include empty values in output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Output format (shell, ...)"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Temporary directory for extracted templates"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate MD5 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA1 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA256 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA512 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Cache database"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to read the override file %s"
+msgid "Source override file"
+msgstr "%s override 파일을 읽는데 실패했습니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Problem unlinking the file %s"
+msgid "Enable delinking of files"
+msgstr "%s 파일을 삭제하는데 문제가 있습니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Make cache read-only"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Error writing header to contents file"
+msgid "Generate the contents file"
+msgstr "컨텐츠 파일에 헤더를 쓰는데 오류가 발생했습니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Only accept files for the given architecture"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Sort source package files"
+msgstr "소스 패키지 목록 %s의 정보를 읽을 수 없습니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Unknown compression algorithm '%s'"
+msgid "Set compression algorithm"
+msgstr "'%s' 압축 알고리즘을 알 수 없습니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Read/write states from the given file"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Verbose output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Automatic yes to prompts"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Automatic no to prompts"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "No action; perform a simulation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show user-friendly progress information"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Fix broken dependencies"
+msgstr "전체 의존성: "
+
+#: apt-private/private-cmndline.cc
+msgid "Use purge instead of remove"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Show reverse dependency information for a package"
+msgid "Show verbose version information"
+msgstr "패키지의 역 의존성 정보를 봅니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Show list columns"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Remove automatically all unused packages"
+msgid "Remove automatically installed packages no longer needed"
+msgstr "사용하지 않는 패키지를 자동으로 전부 지웁니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Reinstall packages"
+msgstr "핀 패키지:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Building dependency tree"
+msgid "Set the dependency solver"
+msgstr "의존성 트리를 만드는 중입니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Apply strict pinning"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the dependency planner"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Add a comment to history"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Reading package lists"
+msgid "Update package lists"
+msgstr "패키지 목록을 읽는 중입니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "The following packages have unmet dependencies:"
+msgid "Allow installing new packages for upgraded dependencies"
+msgstr "다음 패키지의 의존성이 맞지 않습니다:"
+
+#: apt-private/private-cmndline.cc
+msgid "Clean up old list files"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow insecure repositories"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow weak repositories"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow Release info changes"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Origin field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Label field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Version field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Codename field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Suite field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to DefaultPin field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Fail on the specified error"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set host architecture"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Compile source packages"
+msgstr "소스 패키지 목록 %s의 정보를 읽을 수 없습니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Set build profiles"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Download only the diff"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Download source archives"
+msgid "Download only the tar"
+msgstr "소스 아카이브를 다운로드합니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Download source archives"
+msgid "Download only the dsc"
+msgstr "소스 아카이브를 다운로드합니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to process build dependencies"
+msgid "Only process architecture-dependent build dependencies"
+msgstr "빌드 의존성을 처리하는데 실패했습니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to process build dependencies"
+msgid "Only process architecture-independent build dependencies"
+msgstr "빌드 의존성을 처리하는데 실패했습니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Output format"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show release info"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Download only; do not install or unpack"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggested packages:"
+msgid "Show upgraded packages"
+msgstr "제안하는 패키지:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Broken packages"
+msgid "Download packages"
+msgstr "망가진 패키지"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Some packages could not be authenticated"
+msgid "Ignore packages that cannot be retrieved"
+msgstr "인증할 수 없는 패키지가 있습니다"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Pinned packages:"
+msgid "Ignore held packages"
+msgstr "핀 패키지:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Upgrade packages"
+msgstr "망가진 패키지"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Only upgrade packages"
+msgstr "망가진 패키지"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Pinned packages:"
+msgid "Allow changing held packages"
+msgstr "핀 패키지:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Allow removing essential packages"
+msgstr "핀 패키지:"
+
+#: apt-private/private-cmndline.cc
+msgid "Allow downgrading packages"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Force yes (deprecated)"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Print URIs"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Trivial Only specified but this is not a trivial operation."
+msgid "Only perform trivial operations"
+msgstr ""
+"사소한 작업만 가능하도록(Trivial Only) 지정되었지만 이 작업은 사소한 작업이 "
+"아닙니다."
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Mark packages as automatically installed"
+msgstr "%s 패키지는 수동설치로 지정합니다.\n"
+
+#: apt-private/private-cmndline.cc cmdline/apt-get.cc
+msgid "Remove packages"
+msgstr "패키지를 지웁니다"
+
+#: apt-private/private-cmndline.cc
+msgid "Allow unauthenticated packages"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Recommended packages:"
+msgid "Install recommended packages"
+msgstr "추천하는 패키지:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggested packages:"
+msgid "Install suggested packages"
+msgstr "제안하는 패키지:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Fix broken policy dependencies"
+msgstr "전체 의존성: "
+
+#: apt-private/private-cmndline.cc
+msgid "<value>"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Options:"
+msgstr "옵션"
+
+#: apt-private/private-cmndline.cc
+msgid "Common options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Most used commands:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, c-format
+msgid ""
+"See %s, apt.conf(5), sources.list(5), apt_preferences(5),\n"
+"and apt-secure(8) for more information.\n"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -3130,10 +3703,6 @@ msgid "Reinstall packages (pkg is libc6 not libc6.deb)"
 msgstr "새 패키지를 설치합니다 (패키지는 libc6 식으로. libc6.deb 아님)"
 
 #: cmdline/apt-get.cc
-msgid "Remove packages"
-msgstr "패키지를 지웁니다"
-
-#: cmdline/apt-get.cc
 msgid "Remove packages and config files"
 msgstr "패키지를 완전히 지웁니다"
 
@@ -3418,6 +3987,117 @@ msgid ""
 "It provides the same functionality as the specialized APT tools,\n"
 "like apt-get and apt-cache, but enables options more suitable for\n"
 "interactive use by default.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] list [pattern(s)]\n"
+"\n"
+"Display packages matching the given names, glob patterns, or\n"
+"apt-patterns. Similar to dpkg-query --list but with filtering.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] search <regex>\n"
+"\n"
+"Search package names and descriptions for the given regex terms\n"
+"and display matches.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] show <package(s)>\n"
+"\n"
+"Show detailed information about the given package(s), including\n"
+"dependencies, install/download size, available sources, and the\n"
+"package description.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+#, c-format
+msgid ""
+"Usage: apt [options] %s <package(s)>\n"
+"\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Install, reinstall, remove, or purge packages specified by name,\n"
+"glob, or regex. Append + to a name to install it, or - to remove it.\n"
+"Select a version with pkg=version, or a release with pkg/codename.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] autoremove\n"
+"\n"
+"Remove packages that were automatically installed to satisfy\n"
+"dependencies and are no longer needed.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] update\n"
+"\n"
+"Download package information from all configured sources.\n"
+"Run this before upgrade or install to ensure you have the latest\n"
+"package lists.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] upgrade [package(s)]\n"
+"\n"
+"Install available upgrades for all installed packages. New packages\n"
+"may be installed to satisfy dependencies, but no installed packages\n"
+"are removed. If a package is given as an argument, it is installed\n"
+"before the upgrade.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] full-upgrade [package(s)]\n"
+"\n"
+"Upgrade the system, removing installed packages if needed to\n"
+"upgrade the system as a whole. If a package is given as an\n"
+"argument, it is installed before the upgrade.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] satisfy <dependency-string(s)>\n"
+"\n"
+"Satisfy the given dependency strings, as used in Build-Depends.\n"
+"Prefix an argument with \"Conflicts: \" to handle conflicts.\n"
+"\n"
+"Example: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] why <package>\n"
+"       apt [options] why-not <package>\n"
+"\n"
+"Explain why a package is or is not installed. The why command\n"
+"shows why an installed package is present; why-not shows why a\n"
+"package cannot be installed. Takes a single package name.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] edit-sources\n"
+"\n"
+"Edit sources.list files in your preferred text editor, with basic\n"
+"sanity checks.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] modernize-sources\n"
+"\n"
+"Convert .list files to the .sources format, adding Signed-By\n"
+"values where possible. Old files are saved as .list.bak.\n"
 msgstr ""
 
 #. query
@@ -4526,9 +5206,6 @@ msgstr ""
 #~ msgid "Package %s %s was not found while processing file dependencies"
 #~ msgstr "파일 의존성을 처리하는 데, %s %s 패키지가 없습니다"
 
-#~ msgid "Couldn't stat source package list %s"
-#~ msgstr "소스 패키지 목록 %s의 정보를 읽을 수 없습니다"
-
 #~ msgid "Collecting File Provides"
 #~ msgstr "파일에서 제공하는 것을 모으는 중입니다"
 
@@ -4614,9 +5291,6 @@ msgstr ""
 
 #~ msgid "Failed to change to the admin dir %sinfo"
 #~ msgstr "관리 디렉토리를 %sinfo로 바꾸는데 실패했습니다"
-
-#~ msgid "Internal error getting a package name"
-#~ msgstr "패키지 이름을 가져오는데 내부 오류"
 
 #~ msgid "Reading file listing"
 #~ msgstr "파일 목록을 읽는 중입니다"

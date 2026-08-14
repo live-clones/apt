@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.9.27\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-07-30 20:45+0000\n"
+"POT-Creation-Date: 2026-08-14 14:52+0000\n"
 "PO-Revision-Date: 2025-02-28 15:48+0100\n"
 "Last-Translator: Chris Leick <c.leick@vollbio.de>\n"
 "Language-Team: German <debian-l10n-german@lists.debian.org>\n"
@@ -5041,6 +5041,24 @@ msgstr ""
 "<literal>host</literal> bedeutet, dass eine Verbindung pro Zielrechner "
 "geöffnet wird, <literal>access</literal> bedeutet, dass eine Verbindung pro "
 "URI-Art geöffnet wird."
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid ""
+"The options in this scope configure the behavior of URIs using the "
+"<literal>mirror</literal> method, which redirects each request to a mirror "
+"chosen from a list. <literal>Mirror::Fanout</literal> controls how many "
+"mirrors are used in parallel: <literal>sqrt</literal> (the default) uses at "
+"least three mirrors if enough are available and scales their number further "
+"with the square root of the number of files fetched so far, assigning each "
+"file to the currently least used of these mirrors, while <literal>none</"
+"literal> picks a random mirror for each file independently.  "
+"<literal>Mirror::Fanout-Limit</literal> sets an upper bound on the number of "
+"actively used mirrors; the default 0 means no limit. Only mirrors with the "
+"lowest <literal>priority</literal> value are candidates; the remaining "
+"mirrors are tried as fallbacks in case of failures, as described in &apt-"
+"transport-mirror;."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
@@ -11540,6 +11558,22 @@ msgstr ""
 "standardmäßig auf die höchstmögliche Nummer gesetzt und daher zuletzt "
 "ausprobiert. Die Auswahl zwischen Spiegelservern mit derselben Priorität "
 "erfolgt wiederum zufällig."
+
+#. type: Content of: <refentry><refsect1><refsect2><para>
+#: apt-transport-mirror.1.xml
+msgid ""
+"Files are by default spread over multiple mirrors of the set with the lowest "
+"priority number: At least three mirrors are used if the set contains enough "
+"mirrors, beyond that their number scales with the square root of the number "
+"of files fetched (e.g. 4 mirrors for 16 files, 10 mirrors for 100 files) and "
+"each file is assigned to the currently least used of these mirrors. This fan-"
+"out can be controlled via the &apt-conf; options "
+"<literal>Acquire::Mirror::Fanout</literal> (<literal>sqrt</literal> (the "
+"default) or <literal>none</literal> to pick a random mirror for each file "
+"independently) and <literal>Acquire::Mirror::Fanout-Limit</literal> (an "
+"upper bound on the number of actively used mirrors, 0 for no limit). Mirrors "
+"of another set are only tried on failure as described above."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><refsect2><title>
 #: apt-transport-mirror.1.xml

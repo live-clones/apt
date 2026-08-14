@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.7.18\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-07-30 20:45+0000\n"
+"POT-Creation-Date: 2026-08-14 14:52+0000\n"
 "PO-Revision-Date: 2010-10-02 23:35+0100\n"
 "Last-Translator: Iñigo Varela <ivarela@softastur.org>\n"
 "Language-Team: Asturian (ast)\n"
@@ -1797,7 +1797,578 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "Nota, escoyendo %s nel llugar de %s\n"
 
 #: apt-private/private-cmndline.cc
+msgid "Show this help message"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid " [Not candidate version]"
+msgid "Show the version"
+msgstr " [Nun ye versión candidata]"
+
+#: apt-private/private-cmndline.cc
+msgid "Enable color output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Reading state information"
+msgid "Output less information"
+msgstr "Lleendo información d'estáu"
+
+#: apt-private/private-cmndline.cc
+msgid "Audit output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set CLI version"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Print only installed packages"
+msgstr "%s axustáu como instaláu manualmente.\n"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Print only upgradeable packages"
+msgstr "Paquetes na chincheta:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Print only manually installed packages"
+msgstr "%s axustáu como instaláu manualmente.\n"
+
+#: apt-private/private-cmndline.cc
+msgid "Include summary"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show all versions"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the target release"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Snapshot to use"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Show source records"
+msgid "Show the full record"
+msgstr "Amuesa los rexistros de fonte"
+
+#: apt-private/private-cmndline.cc
+msgid "Configure an ephemeral source file"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print only important dependencies"
+msgstr "Dependencies totales: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print only installed dependencies"
+msgstr "Dependencies totales: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "PreDepends"
+msgid "Print Pre-Depends"
+msgstr "Predepende de"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "PreDepends"
+msgid "Print Depends"
+msgstr "Predepende de"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Recommends"
+msgid "Print Recommends"
+msgstr "Recomienda"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggests"
+msgid "Print Suggests"
+msgstr "Suxer"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Replaces"
+msgid "Print Replaces"
+msgstr "Sustituye a"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Breaks"
+msgid "Print Breaks"
+msgstr "Ruempe"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Conflicts"
+msgid "Print Conflicts"
+msgstr "En conflictu con"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Enhances"
+msgid "Print Enhances"
+msgstr "Aumenta"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print dependencies recursively"
+msgstr "Dependencies totales: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Print implicit dependencies"
+msgstr "Dependencies totales: "
+
+#: apt-private/private-cmndline.cc
+msgid "Only search names"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "The following packages have unmet dependencies:"
+msgid "Show virtual packages and missing dependencies"
+msgstr "Los siguientes paquetes nun cumplen dependencies:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Internal error getting a package name"
+msgid "Only query source package names"
+msgstr "Fallu internu al obtener un Nome de Paquete"
+
+#: apt-private/private-cmndline.cc
+msgid "Generate the cache"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the location of the pkgcache.bin"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the location of the srcpkgcache.bin"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Auto detect the CD"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Using CD-ROM mount point %s\n"
+msgid "CD mount point"
+msgstr "Usando el puntu de montaxe de CD-ROM %s\n"
+
+#: apt-private/private-cmndline.cc
+msgid "Rename the CD"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Do not mount automatically"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Do a fast operation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Just print, do not act"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Be thorough"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Run solver as the specified user"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Include empty values in output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Output format (shell, ...)"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Temporary directory for extracted templates"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate MD5 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA1 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA256 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA512 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Cache database"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to read the override file %s"
+msgid "Source override file"
+msgstr "Nun pudo lleese'l ficheru de saltos %s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Problem unlinking the file %s"
+msgid "Enable delinking of files"
+msgstr "Hai problemes desvenceyando'l ficheru %s"
+
+#: apt-private/private-cmndline.cc
+msgid "Make cache read-only"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Error writing header to contents file"
+msgid "Generate the contents file"
+msgstr "Error al escribir la cabecera al ficheru de conteníos"
+
+#: apt-private/private-cmndline.cc
+msgid "Only accept files for the given architecture"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Sort source package files"
+msgstr "Nun se puede lleer la llista de paquetes d'oríxenes %s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Unknown compression algorithm '%s'"
+msgid "Set compression algorithm"
+msgstr "Algoritmu de compresión desconocíu '%s'"
+
+#: apt-private/private-cmndline.cc
+msgid "Read/write states from the given file"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Verbose output"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Automatic yes to prompts"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Automatic no to prompts"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "No action; perform a simulation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show user-friendly progress information"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Fix broken dependencies"
+msgstr "Dependencies totales: "
+
+#: apt-private/private-cmndline.cc
+msgid "Use purge instead of remove"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Show reverse dependency information for a package"
+msgid "Show verbose version information"
+msgstr "Amuesa la información de dependencies inverses d'un paquete"
+
+#: apt-private/private-cmndline.cc
+msgid "Show list columns"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Remove automatically all unused packages"
+msgid "Remove automatically installed packages no longer needed"
+msgstr "Desaniciar automáticamente tolos paquetes non usaos"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Reinstall packages"
+msgstr "Paquetes na chincheta:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Building dependency tree"
+msgid "Set the dependency solver"
+msgstr "Creando árbol de dependencies"
+
+#: apt-private/private-cmndline.cc
+msgid "Apply strict pinning"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set the dependency planner"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Add a comment to history"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Reading package lists"
+msgid "Update package lists"
+msgstr "Lleendo llista de paquetes"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "The following packages have unmet dependencies:"
+msgid "Allow installing new packages for upgraded dependencies"
+msgstr "Los siguientes paquetes nun cumplen dependencies:"
+
+#: apt-private/private-cmndline.cc
+msgid "Clean up old list files"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow insecure repositories"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow weak repositories"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow Release info changes"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Origin field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Label field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Version field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Codename field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to Suite field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Allow changes to DefaultPin field"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Fail on the specified error"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Set host architecture"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Compile source packages"
+msgstr "Nun se puede lleer la llista de paquetes d'oríxenes %s"
+
+#: apt-private/private-cmndline.cc
+msgid "Set build profiles"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Download only the diff"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Download source archives"
+msgid "Download only the tar"
+msgstr "Baxar fonte del ficheru"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Download source archives"
+msgid "Download only the dsc"
+msgstr "Baxar fonte del ficheru"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to process build dependencies"
+msgid "Only process architecture-dependent build dependencies"
+msgstr "Fallu al procesar les dependencies de construcción"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Failed to process build dependencies"
+msgid "Only process architecture-independent build dependencies"
+msgstr "Fallu al procesar les dependencies de construcción"
+
+#: apt-private/private-cmndline.cc
+msgid "Output format"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Show release info"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Download only; do not install or unpack"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggested packages:"
+msgid "Show upgraded packages"
+msgstr "Paquetes afalaos:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Broken packages"
+msgid "Download packages"
+msgstr "Paquetes frañaos"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Some packages could not be authenticated"
+msgid "Ignore packages that cannot be retrieved"
+msgstr "Dellos paquetes nun pudieron autenticase"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Pinned packages:"
+msgid "Ignore held packages"
+msgstr "Paquetes na chincheta:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Upgrade packages"
+msgstr "Paquetes frañaos"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Only upgrade packages"
+msgstr "Paquetes frañaos"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Pinned packages:"
+msgid "Allow changing held packages"
+msgstr "Paquetes na chincheta:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Allow removing essential packages"
+msgstr "Paquetes na chincheta:"
+
+#: apt-private/private-cmndline.cc
+msgid "Allow downgrading packages"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Force yes (deprecated)"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Print URIs"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Trivial Only specified but this is not a trivial operation."
+msgid "Only perform trivial operations"
+msgstr "Conseñose Trivial Only pero ésta nun ye una operación trivial."
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Mark packages as automatically installed"
+msgstr "%s axustáu como instaláu automáticamente.\n"
+
+#: apt-private/private-cmndline.cc cmdline/apt-get.cc
+msgid "Remove packages"
+msgstr "Desaniciar paquetes"
+
+#: apt-private/private-cmndline.cc
+msgid "Allow unauthenticated packages"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Recommended packages:"
+msgid "Install recommended packages"
+msgstr "Paquetes encamentaos"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Suggested packages:"
+msgid "Install suggested packages"
+msgstr "Paquetes afalaos:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Total dependencies: "
+msgid "Fix broken policy dependencies"
+msgstr "Dependencies totales: "
+
+#: apt-private/private-cmndline.cc
+msgid "<value>"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Options:"
+msgstr "opcional"
+
+#: apt-private/private-cmndline.cc
+msgid "Common options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Most used commands:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, c-format
+msgid ""
+"See %s, apt.conf(5), sources.list(5), apt_preferences(5),\n"
+"and apt-secure(8) for more information.\n"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -3167,10 +3738,6 @@ msgid "Reinstall packages (pkg is libc6 not libc6.deb)"
 msgstr "Instalar nuevos paquetes (pkg ye libc6 non libc6.deb)"
 
 #: cmdline/apt-get.cc
-msgid "Remove packages"
-msgstr "Desaniciar paquetes"
-
-#: cmdline/apt-get.cc
 msgid "Remove packages and config files"
 msgstr "Quitar y desaniciar paquetes"
 
@@ -3457,6 +4024,117 @@ msgid ""
 "It provides the same functionality as the specialized APT tools,\n"
 "like apt-get and apt-cache, but enables options more suitable for\n"
 "interactive use by default.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] list [pattern(s)]\n"
+"\n"
+"Display packages matching the given names, glob patterns, or\n"
+"apt-patterns. Similar to dpkg-query --list but with filtering.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] search <regex>\n"
+"\n"
+"Search package names and descriptions for the given regex terms\n"
+"and display matches.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] show <package(s)>\n"
+"\n"
+"Show detailed information about the given package(s), including\n"
+"dependencies, install/download size, available sources, and the\n"
+"package description.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+#, c-format
+msgid ""
+"Usage: apt [options] %s <package(s)>\n"
+"\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Install, reinstall, remove, or purge packages specified by name,\n"
+"glob, or regex. Append + to a name to install it, or - to remove it.\n"
+"Select a version with pkg=version, or a release with pkg/codename.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] autoremove\n"
+"\n"
+"Remove packages that were automatically installed to satisfy\n"
+"dependencies and are no longer needed.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] update\n"
+"\n"
+"Download package information from all configured sources.\n"
+"Run this before upgrade or install to ensure you have the latest\n"
+"package lists.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] upgrade [package(s)]\n"
+"\n"
+"Install available upgrades for all installed packages. New packages\n"
+"may be installed to satisfy dependencies, but no installed packages\n"
+"are removed. If a package is given as an argument, it is installed\n"
+"before the upgrade.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] full-upgrade [package(s)]\n"
+"\n"
+"Upgrade the system, removing installed packages if needed to\n"
+"upgrade the system as a whole. If a package is given as an\n"
+"argument, it is installed before the upgrade.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] satisfy <dependency-string(s)>\n"
+"\n"
+"Satisfy the given dependency strings, as used in Build-Depends.\n"
+"Prefix an argument with \"Conflicts: \" to handle conflicts.\n"
+"\n"
+"Example: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] why <package>\n"
+"       apt [options] why-not <package>\n"
+"\n"
+"Explain why a package is or is not installed. The why command\n"
+"shows why an installed package is present; why-not shows why a\n"
+"package cannot be installed. Takes a single package name.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] edit-sources\n"
+"\n"
+"Edit sources.list files in your preferred text editor, with basic\n"
+"sanity checks.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] modernize-sources\n"
+"\n"
+"Convert .list files to the .sources format, adding Signed-By\n"
+"values where possible. Old files are saved as .list.bak.\n"
 msgstr ""
 
 #. query
@@ -4579,9 +5257,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Al procesar dependencies de ficheros nun s'alcontró el paquete %s %s"
 
-#~ msgid "Couldn't stat source package list %s"
-#~ msgstr "Nun se puede lleer la llista de paquetes d'oríxenes %s"
-
 #~ msgid "Collecting File Provides"
 #~ msgstr "Recoyendo ficheros qu'apurren"
 
@@ -4669,9 +5344,6 @@ msgstr ""
 
 #~ msgid "Failed to change to the admin dir %sinfo"
 #~ msgstr "Fallu al camudar al direutoriu d'alministración %sinfo"
-
-#~ msgid "Internal error getting a package name"
-#~ msgstr "Fallu internu al obtener un Nome de Paquete"
 
 #~ msgid "Reading file listing"
 #~ msgstr "Lleendo llistáu de ficheros"
