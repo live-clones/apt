@@ -368,6 +368,9 @@ testequal '2' echo "$USED"
 msgmsg 'fan-out stays within the best priority' 'tier'
 # 24 files would mean 4 active mirrors, but only 2 mirrors have the best
 # priority: the other 4 must remain untouched alternates
+# drop the cached mirror list: revalidation is only timestamp-based (second
+# granularity), so a rewrite in the same second could go unnoticed
+rm -f rootdir/var/lib/apt/lists/auxfiles/*_mirror.txt
 echo "http://localhost:${APTHTTPPORT}/m1	priority:1
 http://localhost:${APTHTTPPORT}/m2	priority:1
 http://localhost:${APTHTTPPORT}/m3
@@ -390,6 +393,9 @@ msgmsg 'failover progresses through mirrors in' 'per-file order'
 # pin the active mirror with a priority and make it fail: all files are
 # assigned to it and have to fail over to their alternates, which should
 # differ per file rather than all landing on the same next mirror
+# drop the cached mirror list: revalidation is only timestamp-based (second
+# granularity), so a rewrite in the same second could go unnoticed
+rm -f rootdir/var/lib/apt/lists/auxfiles/*_mirror.txt
 echo "http://localhost:${APTHTTPPORT}/m1	priority:1" > aptarchive/mirror.txt
 for i in 2 3 4 5 6; do
 	echo "http://localhost:${APTHTTPPORT}/m$i" >> aptarchive/mirror.txt
