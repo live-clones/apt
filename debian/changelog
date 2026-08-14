@@ -1,3 +1,24 @@
+apt (3.3.3) stonking; urgency=medium
+
+  This release introduces initial interactive help output for apt(8)
+
+  [ Julian Andres Klode ]
+  * cmdline: add declarative option help printer
+  * mirror: Scale fan-out with the square root of the number of files
+
+  [ Simon Johnsson ]
+  * cmdline: add command-specific help texts
+
+  [ Zara Grigoryan ]
+  * cmdline: render declarative options in command help
+  * cmdline: mark option descriptions for translation
+  * cmdline: refine command-specific help rendering
+
+  [ Andriy Pysyk ]
+  * Fix fuzzy entries in Ukrainian translation for APT 3.3.2 + terminology consistency improvements
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Fri, 14 Aug 2026 16:48:37 +0200
+
 apt (3.3.2) unstable; urgency=medium
 
   [ Julian Andres Klode ]
