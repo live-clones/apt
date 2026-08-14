@@ -1,0 +1,168 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+# Test that documented commands show command-specific help
+# (Usage line mentions the command, no "Most used commands:" list)
+check_command_help() {
+	local cmd="$1"
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-help.output"
+	# Must have a Usage line mentioning the command name
+	testsuccess grep "^Usage: apt \[options\] ${cmd}" "${cmd}-help.output"
+	# Must NOT fall back to the generic command listing
+	testfailure grep "Most used commands:" "${cmd}-help.output"
+	# Both supported help syntaxes must produce identical output
+	testsuccess apt help "$cmd"
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-help-command.output"
+	testsuccess cmp "${cmd}-help.output" "${cmd}-help-command.output"
+}
+
+msggroup "Checking per-command help for documented commands"
+for cmd in list search show install reinstall remove purge autoremove \
+	   update upgrade full-upgrade satisfy why \
+	   edit-sources modernize-sources; do
+	check_command_help "$cmd"
+done
+msggroup
+
+msggroup "Checking combined why and why-not help"
+testsuccess apt why-not --help
+cp -f rootdir/tmp/testsuccess.output why-not-help.output
+testsuccess grep "^Usage: apt \[options\] why <package>" why-not-help.output
+testsuccess grep "^       apt \[options\] why-not <package>" why-not-help.output
+testfailure grep "Most used commands:" why-not-help.output
+
+testsuccess apt help why-not
+cp -f rootdir/tmp/testsuccess.output why-not-help-command.output
+testsuccess cmp why-not-help.output why-not-help-command.output
+msggroup
+
+# Test that install/reinstall/remove/purge show the correct command name
+# in the Usage line (they share a help function)
+msggroup "Checking shared help shows correct command name"
+for cmd in install reinstall remove purge; do
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-shared-help.output"
+	testsuccess grep "^Usage: apt \[options\] ${cmd} <package(s)>" "${cmd}-shared-help.output"
+done
+msggroup
+
+# Commands without additional prose still receive command-specific option help.
+check_options_only_help() {
+	local cmd="$1"
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-only-help.output"
+	testfailure grep "Most used commands:" "${cmd}-options-only-help.output"
+	testsuccess grep "^Common options:" "${cmd}-options-only-help.output"
+
+	testsuccess apt help "$cmd"
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-only-help-command.output"
+	testsuccess cmp "${cmd}-options-only-help.output" \
+		"${cmd}-options-only-help-command.output"
+}
+
+msggroup "Checking option help for commands without additional prose"
+for cmd in moo dist-upgrade depends policy build-dep source download \
+	   changelog clean autoclean showsrc info; do
+	check_options_only_help "$cmd"
+done
+msggroup
+
+msggroup "Checking canonical alias help"
+testsuccess apt info --help
+cp -f rootdir/tmp/testsuccess.output info-canonical-help.output
+testsuccess grep "^Usage: apt \[options\] show " \
+	info-canonical-help.output
+
+testsuccess apt dist-upgrade --help
+cp -f rootdir/tmp/testsuccess.output dist-upgrade-canonical-help.output
+testsuccess grep "^Usage: apt \[options\] full-upgrade " \
+	dist-upgrade-canonical-help.output
+msggroup
+
+# Test that apt --help (no command) still shows the generic help
+msggroup "Checking generic apt --help"
+testsuccess apt --help
+cp -f rootdir/tmp/testsuccess.output apt-generic-help.output
+testsuccess grep "^Usage: apt \[options\] command" apt-generic-help.output
+testsuccess grep "Most used commands:" apt-generic-help.output
+testsuccess grep "^  list - " apt-generic-help.output
+testsuccess grep "^  install - " apt-generic-help.output
+# Generic help should have the verbose footer and Super Cow
+testsuccess grep "Super Cow Powers" apt-generic-help.output
+msggroup
+
+# History commands receive options-only command-specific help.
+msggroup "Checking option help for history commands"
+for cmd in history-list history-info history-redo history-undo history-rollback; do
+	check_options_only_help "$cmd"
+done
+msggroup
+
+# Test that per-command help includes an Options section where expected
+msggroup "Checking Options section in per-command help"
+for cmd in list search show install autoremove update upgrade full-upgrade satisfy; do
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-help.output"
+	testsuccess grep "^Options:" "${cmd}-options-help.output"
+done
+msggroup
+
+msggroup "Checking declarative option formatting"
+testsuccess apt list --help
+cp -f rootdir/tmp/testsuccess.output list-option-formatting.output
+testsuccess grep -F -- "-u, --upgradeable" list-option-formatting.output
+testsuccess grep -F -- "--target-release <value>" list-option-formatting.output
+testsuccess grep -F -- "--snapshot <value>" list-option-formatting.output
+
+testsuccess apt satisfy --help
+cp -f rootdir/tmp/testsuccess.output satisfy-option-formatting.output
+testsuccess grep -F -- "--host-architecture <value>" satisfy-option-formatting.output
+testsuccess grep -F -- "--solver <value>" satisfy-option-formatting.output
+msggroup
+
+msggroup "Checking common options in per-command help"
+testsuccess apt list --help
+cp -f rootdir/tmp/testsuccess.output list-common-options.output
+testsuccess grep "^Common options:" list-common-options.output
+testsuccess grep -F -- "--with-source <value>" list-common-options.output
+testsuccess grep -F -- "-h, --help" list-common-options.output
+
+# install and search are inherited from apt-get and apt-cache respectively
+testsuccess apt install --help
+cp -f rootdir/tmp/testsuccess.output install-common-options.output
+testsuccess grep -F -- "-y, --yes" install-common-options.output
+testsuccess grep -F -- "-m, --fix-missing" install-common-options.output
+
+testsuccess apt search --help
+cp -f rootdir/tmp/testsuccess.output search-common-options.output
+testsuccess grep -F -- "-g, --generate" search-common-options.output
+msggroup
+
+# Test that commands without notable options don't have an Options section
+msggroup "Checking no Options section for commands without options"
+for cmd in why why-not edit-sources modernize-sources; do
+	testsuccess apt "$cmd" --help
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-nooptions-help.output"
+	testfailure grep "^Options:" "${cmd}-nooptions-help.output"
+done
+msggroup
+
+# Test that per-command help does NOT include Super Cow Powers
+# and uses the shortened footer instead of the verbose one
+msggroup "Checking footer and Super Cow in per-command help"
+testsuccess apt list --help
+cp -f rootdir/tmp/testsuccess.output list-footer-help.output
+# Shortened footer present
+testsuccess grep "See apt(8), apt.conf(5), sources.list(5)" list-footer-help.output
+# Verbose footer absent
+testfailure grep "^Configuration options and syntax" list-footer-help.output
+# Super Cow absent in per-command help
+testfailure grep "Super Cow Powers" list-footer-help.output
+msggroup
