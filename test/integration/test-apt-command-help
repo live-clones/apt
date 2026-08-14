@@ -68,8 +68,7 @@ check_options_only_help() {
 }
 
 msggroup "Checking option help for commands without additional prose"
-for cmd in moo dist-upgrade depends policy build-dep source download \
-	   changelog clean autoclean showsrc info; do
+for cmd in moo; do
 	check_options_only_help "$cmd"
 done
 msggroup
@@ -79,6 +78,24 @@ testsuccess apt info --help
 cp -f rootdir/tmp/testsuccess.output info-canonical-help.output
 testsuccess grep "^Usage: apt \[options\] show " \
 	info-canonical-help.output
+
+testsuccess apt dist-clean --help
+cp -f rootdir/tmp/testsuccess.output dist-clean-canonical-help.output
+testsuccess grep "^Usage: apt \[options\] distclean$" \
+        dist-clean-canonical-help.output
+testsuccess apt help dist-clean
+cp -f rootdir/tmp/testsuccess.output dist-clean-canonical-help-command.output
+testsuccess cmp dist-clean-canonical-help.output \
+        dist-clean-canonical-help-command.output
+
+testsuccess apt auto-clean --help
+cp -f rootdir/tmp/testsuccess.output auto-clean-canonical-help.output
+testsuccess grep "^Usage: apt \[options\] autoclean$" \
+        auto-clean-canonical-help.output
+testsuccess apt help auto-clean
+cp -f rootdir/tmp/testsuccess.output auto-clean-canonical-help-command.output
+testsuccess cmp auto-clean-canonical-help.output \
+        auto-clean-canonical-help-command.output
 
 testsuccess apt dist-upgrade --help
 cp -f rootdir/tmp/testsuccess.output dist-upgrade-canonical-help.output
@@ -98,10 +115,28 @@ testsuccess grep "^  install - " apt-generic-help.output
 testsuccess grep "Super Cow Powers" apt-generic-help.output
 msggroup
 
-# History commands receive options-only command-specific help.
-msggroup "Checking option help for history commands"
+# History commands receive per-command help.
+msggroup "Checking per-command help for history commands"
 for cmd in history-list history-info history-redo history-undo history-rollback; do
-	check_options_only_help "$cmd"
+        check_command_help "$cmd"
+done
+msggroup
+
+msggroup "Checking per-command help for apt-cache compatibility commands"
+for cmd in showsrc depends rdepends policy; do
+        check_command_help "$cmd"
+done
+msggroup
+
+msggroup "Checking per-command help for apt-get compatibility commands"
+for cmd in source build-dep download changelog; do
+        check_command_help "$cmd"
+done
+msggroup
+
+msggroup "Checking per-command help for package-cache maintenance commands"
+for cmd in clean distclean autoclean; do
+        check_command_help "$cmd"
 done
 msggroup
 
@@ -143,6 +178,26 @@ testsuccess grep -F -- "-m, --fix-missing" install-common-options.output
 testsuccess apt search --help
 cp -f rootdir/tmp/testsuccess.output search-common-options.output
 testsuccess grep -F -- "-g, --generate" search-common-options.output
+
+testsuccess apt showsrc --help
+cp -f rootdir/tmp/testsuccess.output showsrc-common-options.output
+testsuccess grep -F -- "--only-source" showsrc-common-options.output
+
+testsuccess apt depends --help
+cp -f rootdir/tmp/testsuccess.output depends-common-options.output
+testsuccess grep -F -- "--installed" depends-common-options.output
+
+testsuccess apt source --help
+cp -f rootdir/tmp/testsuccess.output source-common-options.output
+testsuccess grep -F -- "--dsc-only" source-common-options.output
+
+testsuccess apt build-dep --help
+cp -f rootdir/tmp/testsuccess.output build-dep-common-options.output
+testsuccess grep -F -- "--arch-only" build-dep-common-options.output
+
+testsuccess apt clean --help
+cp -f rootdir/tmp/testsuccess.output clean-common-options.output
+testsuccess grep -F -- "--simulate" clean-common-options.output
 msggroup
 
 # Test that commands without notable options don't have an Options section
