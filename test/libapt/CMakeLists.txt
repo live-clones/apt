@@ -36,6 +36,8 @@ if (WITH_TESTS)
    add_optional_compile_options(Wno-ctor-dtor-privacy)
    # Do not force override for gtest, gtest is missing override specifiers
    add_optional_compile_options(Wno-suggest-override)
+   # gtest's parameterized-test infrastructure is not noexcept-correct
+   add_optional_compile_options(Wno-noexcept)
 
    # Definition of the C++ files used to build the test binary - note that this
    # is expanded at CMake time, so you have to rerun cmake if you add or remove
@@ -43,7 +45,7 @@ if (WITH_TESTS)
    file(GLOB files gtest_runner.cc *-helpers.cc *_test.cc)
    add_executable(lib${PROJECT_NAME}_test ${files})
    target_include_directories(lib${PROJECT_NAME}_test PRIVATE ${GTEST_INCLUDE_DIRS})
-   target_link_libraries(lib${PROJECT_NAME}_test ${GTEST_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_TEST_LIBRARIES})
+   target_link_libraries(lib${PROJECT_NAME}_test ${GTEST_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_TEST_LIBRARIES} OpenSSL::Crypto)
    if (GTEST_DEPENDENCIES)
       add_dependencies(lib${PROJECT_NAME}_test ${GTEST_DEPENDENCIES})
    endif()
