@@ -84,6 +84,39 @@ static bool ShowShowHelp(CommandLine &) /*{{{*/
    return true;
 }
 									/*}}}*/
+static bool ShowShowSrcHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] showsrc <package(s)>\n"
+		  "\n"
+		  "Show source package records matching the given package names.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowDependsHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] depends <package(s)>\n"
+		  "\n"
+		  "Show dependencies of the given packages and the packages that can\n"
+		  "satisfy them.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowRDependsHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] rdepends <package(s)>\n"
+		  "\n"
+		  "Show reverse dependencies of the given packages.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowPolicyHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] policy [<package(s)>]\n"
+		  "\n"
+		  "Show configured source priorities and package policy information.\n");
+   return true;
+}
+									/*}}}*/
 static bool ShowInstallHelp(CommandLine &CmdL) /*{{{*/
 {
    char const *cmd = "install";
@@ -120,6 +153,30 @@ static bool ShowAutoremoveHelp(CommandLine &) /*{{{*/
 		  "\n"
 		  "Remove packages that were automatically installed to satisfy\n"
 		  "dependencies and are no longer needed.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowCleanHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] clean\n"
+		  "\n"
+		  "Remove retrieved package files from the local cache.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowDistCleanHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] distclean\n"
+		  "\n"
+		  "Remove downloaded package-list files, keeping release metadata.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowAutoCleanHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] autoclean\n"
+		  "\n"
+		  "Remove cached package files that can no longer be downloaded.\n");
    return true;
 }
 									/*}}}*/
@@ -165,6 +222,39 @@ static bool ShowSatisfyHelp(CommandLine &) /*{{{*/
    return true;
 }
 									/*}}}*/
+static bool ShowSourceHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] source <package(s)>\n"
+		  "\n"
+		  "Download source packages into the current directory.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowBuildDepHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] build-dep <source-package(s)>\n"
+		  "\n"
+		  "Install or remove packages to satisfy build dependencies for\n"
+		  "source packages.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowDownloadHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] download <package(s)>\n"
+		  "\n"
+		  "Download binary packages into the current directory.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowChangelogHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] changelog <package(s)>\n"
+		  "\n"
+		  "Download and display changelogs for the given packages.\n");
+   return true;
+}
+									/*}}}*/
 static bool ShowWhyHelp(CommandLine &) /*{{{*/
 {
    std::cout << _("Usage: apt [options] why <package>\n"
@@ -191,6 +281,46 @@ static bool ShowModernizeSourcesHelp(CommandLine &) /*{{{*/
 		  "\n"
 		  "Convert .list files to the .sources format, adding Signed-By\n"
 		  "values where possible. Old files are saved as .list.bak.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowHistoryListHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] history-list\n"
+		  "\n"
+		  "List recorded package transactions.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowHistoryInfoHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] history-info <transaction-id(s)>\n"
+		  "\n"
+		  "Show detailed information about recorded package transactions.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowHistoryRedoHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] history-redo <transaction-id>\n"
+		  "\n"
+		  "Reapply the changes from a recorded package transaction.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowHistoryUndoHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] history-undo <transaction-id>\n"
+		  "\n"
+		  "Undo the changes from a recorded package transaction.\n");
+   return true;
+}
+									/*}}}*/
+static bool ShowHistoryRollbackHelp(CommandLine &) /*{{{*/
+{
+   std::cout << _("Usage: apt [options] history-rollback <transaction-id>\n"
+		  "\n"
+		  "Roll back package state to a recorded transaction.\n");
    return true;
 }
 									/*}}}*/
@@ -231,11 +361,11 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"full-upgrade", &DoDistUpgrade, _("upgrade the system by removing/installing/upgrading packages"), &ShowFullUpgradeHelp},
 
       // history stuff
-      {"history-list", &DoHistoryList, _("show list of history"), nullptr},
-      {"history-info", &DoHistoryInfo, _("show info on specific transactions"), nullptr},
-      {"history-redo", &DoHistoryRedo, _("redo transactions"), nullptr},
-      {"history-undo", &DoHistoryUndo, _("undo transactions"), nullptr},
-      {"history-rollback", &DoHistoryRollback, _("rollback transactions"), nullptr},
+      {"history-list", &DoHistoryList, _("show list of history"), &ShowHistoryListHelp},
+      {"history-info", &DoHistoryInfo, _("show info on specific transactions"), &ShowHistoryInfoHelp},
+      {"history-redo", &DoHistoryRedo, _("redo transactions"), &ShowHistoryRedoHelp},
+      {"history-undo", &DoHistoryUndo, _("undo transactions"), &ShowHistoryUndoHelp},
+      {"history-rollback", &DoHistoryRollback, _("rollback transactions"), &ShowHistoryRollbackHelp},
 
       // misc
       {"edit-sources", &EditSources, _("edit the source information file"), &ShowEditSourcesHelp},
@@ -247,19 +377,19 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
 
       // for compat with muscle memory
       {"dist-upgrade", &DoDistUpgrade, nullptr, &ShowFullUpgradeHelp},
-      {"showsrc", &ShowSrcPackage, nullptr, nullptr},
-      {"depends", &Depends, nullptr, nullptr},
-      {"rdepends", &RDepends, nullptr, nullptr},
-      {"policy", &Policy, nullptr, nullptr},
-      {"build-dep", &DoBuildDep, nullptr, nullptr},
-      {"clean", &DoClean, nullptr, nullptr},
-      {"distclean", &DoDistClean, nullptr, nullptr},
-      {"dist-clean", &DoDistClean, nullptr, nullptr},
-      {"autoclean", &DoAutoClean, nullptr, nullptr},
-      {"auto-clean", &DoAutoClean, nullptr, nullptr},
-      {"source", &DoSource, nullptr, nullptr},
-      {"download", &DoDownload, nullptr, nullptr},
-      {"changelog", &DoChangelog, nullptr, nullptr},
+      {"showsrc", &ShowSrcPackage, nullptr, &ShowShowSrcHelp},
+      {"depends", &Depends, nullptr, &ShowDependsHelp},
+      {"rdepends", &RDepends, nullptr, &ShowRDependsHelp},
+      {"policy", &Policy, nullptr, &ShowPolicyHelp},
+      {"build-dep", &DoBuildDep, nullptr, &ShowBuildDepHelp},
+      {"clean", &DoClean, nullptr, &ShowCleanHelp},
+      {"distclean", &DoDistClean, nullptr, &ShowDistCleanHelp},
+      {"dist-clean", &DoDistClean, nullptr, &ShowDistCleanHelp},
+      {"autoclean", &DoAutoClean, nullptr, &ShowAutoCleanHelp},
+      {"auto-clean", &DoAutoClean, nullptr, &ShowAutoCleanHelp},
+      {"source", &DoSource, nullptr, &ShowSourceHelp},
+      {"download", &DoDownload, nullptr, &ShowDownloadHelp},
+      {"changelog", &DoChangelog, nullptr, &ShowChangelogHelp},
       {"info", &ShowPackage, nullptr, &ShowShowHelp},
       {nullptr, nullptr, nullptr, nullptr}};
 }
