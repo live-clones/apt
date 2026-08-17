@@ -5,10 +5,10 @@
 # SPDX-FileCopyrightText: 2014 to 2026 Américo Monteiro <a_monteiro@gmx.com>
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.2.0\n"
+"Project-Id-Version: apt 3.3.3\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-08-14 14:52+0000\n"
-"PO-Revision-Date: 2026-04-16 00:26+0100\n"
+"PO-Revision-Date: 2026-08-15 23:54+0100\n"
 "Last-Translator: Américo Monteiro <a_monteiro@gmx.com>\n"
 "Language-Team: Portuguese <>\n"
 "Language: pt\n"
@@ -2310,6 +2310,9 @@ msgid ""
 "Only process build-dependencies that are neither architecture-dependent nor "
 "architecture-independent; intersection of the previous two options."
 msgstr ""
+"Apenas processa dependências de compilação que não são nem dependentes de "
+"arquitectura nem independentes de arquitectura; cruzamento das duas opções "
+"anteriores."
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt-get.8.xml
@@ -5053,6 +5056,20 @@ msgid ""
 "mirrors are tried as fallbacks in case of failures, as described in &apt-"
 "transport-mirror;."
 msgstr ""
+"AS opções neste escopo configuram o comportamento dos URIs que usam o método "
+"<literal>mirror</literal>, que redireciona cada pedido para um espelho "
+"escolhido de uma lista. <literal>Mirror::Fanout</literal> controla quantos "
+"espelhos são usados em paralelo: <literal>sqrt</literal> (a predefinição) "
+"usa pelo menos 3 espelhos se estiverem disponíveis suficientes e escala "
+"ainda mais o seu número com a raiz quadrada do número de ficheiros obtidos "
+"até ao momento, atribuindo cada ficheiro ao atualmente menos usado destes "
+"espelhos, enquanto <literal>none</literal> escolhe um espelho aleatório para "
+"cada ficheiro independentemente.  <literal>Mirror::Fanout-Limit</literal> "
+"define um limite superior no número de espelhos usados ativamente; a "
+"predefinição de 0 significa nenhum limite. Apenas espelhos com o valor de "
+"<literal>priority</literal> mais baixo são candidatos; os restantes espelhos "
+"são tentados como suplentes em caso de falhas, como descrito em &apt-"
+"transport-mirror;."
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
@@ -8775,6 +8792,10 @@ msgid ""
 "to be included by third-parties when providing <filename>.sources</filename> "
 "files to users."
 msgstr ""
+"No formato deb822, pode ser útil descrever as fontes em mais detalhe.  As "
+"seguintes opções não são usadas diretamente pelo APT, mas são sugeridas a se "
+"incluir por terceiros quando fornecem ficheiros <filename>.sources</"
+"filename> aos utilizadores."
 
 #. type: Content of: <refentry><refsect1><para><itemizedlist><listitem><para>
 #: sources.list.5.xml
@@ -8783,6 +8804,9 @@ msgid ""
 "repository operators on one or more lines.  It should be a comma-separated "
 "list of RFC5322 email addresses or URLs."
 msgstr ""
+"<option>Contact</option> especifica os endereços preferidos para contactar "
+"os operadores do repositório em uma ou mais linhas.  Deve ser uma lista "
+"deparadas por vírgulas de endereços de email RFC5322 ou URLs."
 
 #. type: Content of: <refentry><refsect1><para><itemizedlist><listitem><para>
 #: sources.list.5.xml
@@ -8790,6 +8814,8 @@ msgid ""
 "<option>Bugs</option> specifies an HTTPS URL to a public bug tracker or "
 "instructions on how to report bugs."
 msgstr ""
+"<option>Bugs</option> especifica um URL HTTPS para um rastreador de bug "
+"público ou instruções de como reportar bugs."
 
 #. type: Content of: <refentry><refsect1><para><itemizedlist><listitem><para>
 #: sources.list.5.xml
@@ -8798,6 +8824,9 @@ msgid ""
 "This is a multi-line field, the first line is a summary, the remaining lines "
 "may add more description."
 msgstr ""
+"<option>Description</option> especifica uma descrição para o repositório. "
+"Este é um campo multi-linha, a primeira linha é um sumário, as linhas "
+"restantes podem adicionar mais descrição."
 
 #. type: Content of: <refentry><refsect1><title>
 #: sources.list.5.xml
@@ -8839,14 +8868,6 @@ msgstr ""
 
 #. type: Content of: <refentry><refsect1><para><variablelist><varlistentry><listitem><para>
 #: sources.list.5.xml
-#, fuzzy
-#| msgid ""
-#| "Note that these forms of authentication are insecure as the whole "
-#| "communication with the remote server (or proxy) is not encrypted so a "
-#| "sufficiently capable attacker can observe and record login as well as all "
-#| "other interactions. The attacker can <emphasis>not</emphasis> modify the "
-#| "communication through as APT's data security model is independent of the "
-#| "chosen transport method. See &apt-secure; for details."
 msgid ""
 "Note that these forms of authentication are insecure as the whole "
 "communication with the remote server (or proxy) is not encrypted so a "
@@ -8859,9 +8880,8 @@ msgstr ""
 "com o servidor remoto (ou proxy) não está encriptada, portanto um atacante "
 "suficientemente capaz pode observar e guarda o login assim como todas as "
 "outras interações. O atacante pode <emphasis>não</emphasis> pode modificar a "
-"comunicação totalmente pois o modelo de segurança de dados do APT é "
-"independente do método de transporte escolhido. Veja &apt-secure; para mais "
-"detalhes."
+"comunicação pois o modelo de segurança de dados do APT é independente do "
+"método de transporte escolhido. Veja &apt-secure; para mais detalhes."
 
 #. type: Content of: <refentry><refsect1><para><variablelist><varlistentry><term>
 #: sources.list.5.xml
@@ -11428,6 +11448,18 @@ msgid ""
 "upper bound on the number of actively used mirrors, 0 for no limit). Mirrors "
 "of another set are only tried on failure as described above."
 msgstr ""
+"Por predefinição os ficheiros são espalhados por múltiplos espelhos do "
+"conjunto com o número de prioridade mais baixo: Pelo menos 3 espelhos são "
+"usados se o conjunto conter espelhos suficientes, para além disso o número "
+"aumenta com a raiz quadrada do número de ficheiros obtidos (ex. 4 espelhos "
+"para 16 ficheiros) e cada ficheiro é atribuído ao atualmente menos usado "
+"destes espelhos. Esta disseminação pode ser controlada via opções de &apt-"
+"conf; <literal>Acquire::Mirror::Fanout</literal> (<literal>sqrt</literal> (a "
+"predefinição) ou <literal>none</literal> para escolher um espelho aleatório "
+"para cada ficheiro independentemente) e <literal>Acquire::Mirror::Fanout-"
+"Limit</literal> (um limite superior no número de espelhos usados ativamente, "
+"0 para sem limite). Os espelhos de outro conjunto são apenas tentados em "
+"caso de falha como descrito em cima."
 
 #. type: Content of: <refentry><refsect1><refsect2><title>
 #: apt-transport-mirror.1.xml
@@ -12200,7 +12232,7 @@ msgstr ""
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?depends(PATTERN)</code>"
-msgstr "<code>?depends(PATTERN)</code>"
+msgstr "<code>?depends(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -12209,22 +12241,18 @@ msgstr "<code>~DPATTERN</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
-#, fuzzy
-#| msgid "<code>?pre-depends(PATTERN)</code>"
 msgid "<code>?predepends(PATTERN)</code>"
-msgstr "<code>?pre-depends(PATTERN)</code>"
+msgstr "<code>?predepends(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
-#, fuzzy
-#| msgid "<code>~DPre-Depends:PATTERN</code>"
 msgid "<code>~DPreDepends:PATTERN</code>"
-msgstr "<code>~DPre-Depends:PATTERN</code>"
+msgstr "<code>~DPreDepends:PATTERN</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?suggests(PATTERN)</code>"
-msgstr "<code>?suggests(PATTERN)</code>"
+msgstr "<code>?suggests(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -12234,7 +12262,7 @@ msgstr "<code>~DSuggests:PATTERN</code>"
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?recommends(PATTERN)</code>"
-msgstr "<code>?recommends(PATTERN)</code>"
+msgstr "<code>?recommends(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -12244,7 +12272,7 @@ msgstr "<code>~DRecommends:PATTERN</code>"
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?conflicts(PATTERN)</code>"
-msgstr "<code>?conflicts(PATTERN)</code>"
+msgstr "<code>?conflicts(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -12254,7 +12282,7 @@ msgstr "<code>~DConflicts:PATTERN</code>"
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?replaces(PATTERN)</code>"
-msgstr "<code>?replaces(PATTERN)</code>"
+msgstr "<code>?replaces(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -12264,7 +12292,7 @@ msgstr "<code>~DReplaces:PATTERN</code>"
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?obsoletes(PATTERN)</code>"
-msgstr "<code>?obsoletes(PATTERN)</code>"
+msgstr "<code>?obsoletes(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -12274,7 +12302,7 @@ msgstr "<code>~DObsoletes:PATTERN</code>"
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?breaks(PATTERN)</code>"
-msgstr "<code>?breaks(PATTERN)</code>"
+msgstr "<code>?breaks(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -12284,7 +12312,7 @@ msgstr "<code>~DBreaks:PATTERN</code>"
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
 msgid "<code>?enhances(PATTERN)</code>"
-msgstr "<code>?enhances(PATTERN)</code>"
+msgstr "<code>?enhances(PADRÃO)</code>"
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><term>
 #: apt-patterns.7.xml
@@ -13979,7 +14007,7 @@ msgid ""
 " # awk '{print \"wget -O \" $2 \" \" $1}' &lt; uris &gt; /disc/wget-script\n"
 msgstr ""
 " # apt-get dist-upgrade \n"
-" [ Escolha não quando perguntado, certifique-se que está contente com as ações ]\n"
+" [ Escolha não quando perguntado, certifique-se que concorda com as ações ]\n"
 " # apt-get -qq --print-uris dist-upgrade &gt; uris\n"
 " # awk '{print \"wget -O \" $2 \" \" $1}' &lt; uris &gt; /disc/wget-script\n"
 
