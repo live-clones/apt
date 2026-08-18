@@ -45,6 +45,7 @@
 #include <cstring>
 #include <ctime>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 #include <dirent.h>
@@ -1127,11 +1128,12 @@ protected:
    APT::Configuration::Compressor compressor;
    unsigned int openmode;
    unsigned long long seekpos;
+   std::optional<unsigned long long> size;
 public:
 
    explicit FileFdPrivate(FileFd * const pfilefd) : filefd(pfilefd),
       compressed_fd(-1), compressor_pid(-1), is_pipe(false),
-      openmode(0), seekpos(0) {};
+      openmode(0), seekpos(0), size(std::nullopt) {};
    virtual APT::Configuration::Compressor get_compressor() const
    {
       return compressor;
@@ -1289,7 +1291,9 @@ public:
    }
    virtual unsigned long long InternalSize()
    {
-      unsigned long long size = 0;
+      if (size)
+	 return *size;
+
       unsigned long long const oldSeek = filefd->Tell();
       std::array<char, APT_BUFFER_SIZE> ignore;
       unsigned long long read = 0;
@@ -1302,7 +1306,7 @@ public:
       } while(read != 0);
       size = filefd->Tell();
       filefd->Seek(oldSeek);
-      return size;
+      return *size;
    }
    virtual bool InternalClose(std::string const &FileName) = 0;
    virtual bool InternalStream() const { return false; }
