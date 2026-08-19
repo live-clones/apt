@@ -337,6 +337,9 @@ static bool DoWhy(CommandLine &CmdL) /*{{{*/
       std::cout << APT::Solver::DependencySolver::InternalCliWhy(CacheFile, pkg, decision) << std::flush;
    return not _error->PendingError();
 }
+
+static bool DoShellCompletion(CommandLine &CmdL);
+
 static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
 {
    // advanced commands are left undocumented on purpose
@@ -391,9 +394,44 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"download", &DoDownload, nullptr, &ShowDownloadHelp},
       {"changelog", &DoChangelog, nullptr, &ShowChangelogHelp},
       {"info", &ShowPackage, nullptr, &ShowShowHelp},
+      {"__complete", &DoShellCompletion, nullptr, nullptr},
       {nullptr, nullptr, nullptr, nullptr}};
 }
 									/*}}}*/
+static bool DoShellCompletion(CommandLine &CmdL)
+{
+   if (CmdL.FileSize() == 1)
+   {
+      std::cout << "help" << std::endl;
+      for (auto const &command : GetCommands())
+	 if (command.Match != nullptr && strcmp(command.Match, "__complete") != 0)
+	    std::cout << command.Match << std::endl;
+   }
+   else if (CmdL.FileSize() == 2)
+   {
+      for (auto const &option : getCommandArgs(APT_CMD::APT, CmdL.FileList[1]))
+      {
+	 if (option.ShortOpt == 0 && option.LongOpt == nullptr)
+	    break;
+	 if (option.ShortOpt != 0)
+	    std::cout << '-' << option.ShortOpt << std::endl;
+	 if (option.LongOpt != nullptr)
+	 {
+	    std::cout << "--" << option.LongOpt << std::endl;
+
+	    if (option.Flags == 0 ||
+		(option.Flags & (CommandLine::Boolean |
+				 CommandLine::InvBoolean)) != 0)
+	    {
+	       std::cout << "--no-" << option.LongOpt << std::endl;
+	       std::cout << "--yes-" << option.LongOpt << std::endl;
+	    }
+	 }
+      }
+   }
+
+   return true;
+}
 int main(int argc, const char *argv[])					/*{{{*/
 {
    CommandLine CmdL;
