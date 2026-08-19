@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+msggroup "Checking declarative Bash completion candidates"
+
+testsuccess apt __complete
+cp -f rootdir/tmp/testsuccess.output commands.output
+testsuccess grep -Fx "help" commands.output
+testsuccess grep -Fx "history-rollback" commands.output
+testsuccess grep -Fx "auto-remove" commands.output
+testfailure grep -Fx "__complete" commands.output
+
+testsuccess apt __complete install
+cp -f rootdir/tmp/testsuccess.output install-options.output
+testsuccess grep -Fx -- "-t" install-options.output
+testsuccess grep -Fx -- "--target-release" install-options.output
+testsuccess grep -Fx -- "--allow-downgrades" install-options.output
+testsuccess grep -Fx -- "--no-list-columns" install-options.output
+testsuccess grep -Fx -- "--no-install-recommends" install-options.output
+testsuccess grep -Fx -- "--yes-install-recommends" install-options.output
+
+testsuccess apt __complete update
+cp -f rootdir/tmp/testsuccess.output update-options.output
+testsuccess grep -Fx -- "--allow-insecure-repositories" update-options.output
+
+msggroup
