@@ -17,6 +17,7 @@
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/deblistparser.h>
 #include <apt-pkg/error.h>
+#include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/macros.h>
 #include <apt-pkg/pkgcache.h>
@@ -325,6 +326,10 @@ bool debListParser::UsePackage(pkgCache::PkgIterator &Pkg,
       if (not Ver.PhasedUpdatePercentage(phased))
 	 _error->Warning("Ignoring invalid Phased-Update-Percentage value");
    }
+
+   auto hwcond = Section.Find(pkgTagSection::Key::Hardware_Condition);
+   if (not hwcond.empty())
+      Ver.HardwareCondition(StoreString(pkgCacheGenerator::MIXED, hwcond));
 
    if (ParseStatus(Pkg,Ver) == false)
       return false;
