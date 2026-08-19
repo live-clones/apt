@@ -1237,15 +1237,14 @@ bool pkgProblemResolver::InstOrNewPolicyBroken(pkgCache::PkgIterator I)
    return false;
 }
 									/*}}}*/
-// ProblemResolver::KeepPhasedUpdates - Keep back phased updates	/*{{{*/
+// ProblemResolver::KeepPolicyExcludedUpdates - Keep back excluded updates /*{{{*/
 // ---------------------------------------------------------------------
-// Hold back upgrades to phased versions of already installed packages, unless
-// they are security updates
-bool pkgProblemResolver::KeepPhasedUpdates()
+// Hold back upgrades excluded by phasing or hardware conditions.
+bool pkgProblemResolver::KeepPolicyExcludedUpdates()
 {
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
    {
-      if (not Cache.PhasingApplied(I))
+      if (not Cache.PhasingApplied(I) && not Cache.HardwareConditionApplied(I))
 	 continue;
 
       Cache.MarkKeep(I, false, false);
@@ -1254,6 +1253,14 @@ bool pkgProblemResolver::KeepPhasedUpdates()
    }
 
    return true;
+}
+
+// Now invokes KeepPolicyExcludedUpdates.
+// Kept under original name as a compatibility measure,
+// since this symbol is exported.
+bool pkgProblemResolver::KeepPhasedUpdates()
+{
+   return KeepPolicyExcludedUpdates();
 }
 
 									/*}}}*/
