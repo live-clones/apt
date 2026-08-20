@@ -57,7 +57,17 @@ bool PackageManager::StatusChanged(std::string /*PackageName*/,
 {
    int reporting_steps = _config->FindI("DpkgPM::Reporting-Steps", 1);
    percentage = StepsDone/(double)TotalSteps * 100.0;
-   strprintf(progress_str, _("Progress: [%3li%%]"), std::lround(percentage));
+
+   std::string percent_str;
+   // TRANSLATORS: Percentage value; %d is the number, %% is the sign
+   strprintf(percent_str, _("%d%%"), std::lround(percentage));
+
+   if (percentage < 10)
+      percent_str.insert(0, "  ");
+   else if (percentage < 100)
+      percent_str.insert(0, " ");
+
+   strprintf(progress_str, _("Progress: [%s]"), percent_str.c_str());
 
    if(percentage < (last_reported_progress + reporting_steps))
       return false;
