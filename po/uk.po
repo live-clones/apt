@@ -15,10 +15,10 @@
 # binary = двійковий
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.3.2\n"
+"Project-Id-Version: apt 3.3.3\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-08-14 14:52+0000\n"
-"PO-Revision-Date: 2026-07-31 17:14+0300\n"
+"PO-Revision-Date: 2026-08-24 21:19+0300\n"
 "Last-Translator: Andriy Pysyk <ep.nestor@gmail.com>\n"
 "Language-Team: Українська <uk@li.org>\n"
 "Language: uk\n"
@@ -1843,540 +1843,439 @@ msgstr "Зауважте: вибрано ‘%s’ замість ‘%s’\n"
 
 #: apt-private/private-cmndline.cc
 msgid "Show this help message"
-msgstr ""
+msgstr "Показати це довідкове повідомлення"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid " [Not candidate version]"
 msgid "Show the version"
-msgstr " [Не кандидатна версія]"
+msgstr "Показати версію"
 
 #: apt-private/private-cmndline.cc
 msgid "Enable color output"
-msgstr ""
+msgstr "Увімкнути кольоровий вивід"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Reading state information"
 msgid "Output less information"
-msgstr "Зчитування інформації про стан"
+msgstr "Виводити менше інформації"
 
 #: apt-private/private-cmndline.cc
 msgid "Audit output"
-msgstr ""
+msgstr "Режим аудиту виведення"
 
 #: apt-private/private-cmndline.cc
 msgid "Set CLI version"
-msgstr ""
+msgstr "Встановити версію CLI"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Print the list of manually installed packages"
 msgid "Print only installed packages"
-msgstr "Вивести список пакунків, встановлених вручну"
+msgstr "Виводити лише встановлені пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "reinstall packages"
 msgid "Print only upgradeable packages"
-msgstr "перевстановити пакунки"
+msgstr "Виводити лише пакунки, доступні для оновлення"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Print the list of manually installed packages"
 msgid "Print only manually installed packages"
-msgstr "Вивести список пакунків, встановлених вручну"
+msgstr "Виводити лише пакунки, встановлені вручну"
 
 #: apt-private/private-cmndline.cc
 msgid "Include summary"
-msgstr ""
+msgstr "Включати підсумок"
 
 #: apt-private/private-cmndline.cc
 msgid "Show all versions"
-msgstr ""
+msgstr "Показувати всі версії"
 
 #: apt-private/private-cmndline.cc
 msgid "Set the target release"
-msgstr ""
+msgstr "Задати цільовий випуск"
 
 #: apt-private/private-cmndline.cc
 msgid "Snapshot to use"
-msgstr ""
+msgstr "Знімок, який слід використовувати"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Show source records"
 msgid "Show the full record"
-msgstr "Показати записи джерел"
+msgstr "Показувати повний запис"
 
 #: apt-private/private-cmndline.cc
 msgid "Configure an ephemeral source file"
-msgstr ""
+msgstr "Налаштувати тимчасовий файл джерела"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Solving dependencies"
 msgid "Print only important dependencies"
-msgstr "Вирішення залежностей"
+msgstr "Виводити лише важливі залежності"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Installing dependencies:"
 msgid "Print only installed dependencies"
-msgstr "Встановлення залежностей:"
+msgstr "Виводити лише встановлені залежності"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "PreDepends"
 msgid "Print Pre-Depends"
-msgstr "Попередні залежності"
+msgstr "Виводити попередні залежності"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "PreDepends"
 msgid "Print Depends"
-msgstr "Попередні залежності"
+msgstr "Виводити залежності"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Recommends"
 msgid "Print Recommends"
-msgstr "Рекомендовані"
+msgstr "Виводити рекомендовані залежності"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Suggests"
 msgid "Print Suggests"
-msgstr "Пропоновані"
+msgstr "Виводити пропоновані залежності"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Replaces"
 msgid "Print Replaces"
-msgstr "Замінює"
+msgstr "Виводити ті, що замінюють (Replaces)"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Breaks"
 msgid "Print Breaks"
-msgstr "Порушує"
+msgstr "Виводити несумісні залежності (Breaks)"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Conflicts"
 msgid "Print Conflicts"
-msgstr "Конфліктує"
+msgstr "Виводити залежності, що конфліктують (Conflicts)"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Enhances"
 msgid "Print Enhances"
-msgstr "Покращує"
+msgstr "Виводити залежності, що покращують (Enhances)"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Solving dependencies"
 msgid "Print dependencies recursively"
-msgstr "Вирішення залежностей"
+msgstr "Виводити залежності рекурсивно"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Installing dependencies:"
 msgid "Print implicit dependencies"
-msgstr "Встановлення залежностей:"
+msgstr "Виводити неявні залежності"
 
 #: apt-private/private-cmndline.cc
 msgid "Only search names"
-msgstr ""
+msgstr "Шукати лише імена"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "The following packages have unmet dependencies:"
 msgid "Show virtual packages and missing dependencies"
-msgstr "Наступні пакунки мають невиконані залежності:"
+msgstr "Показати віртуальні пакунки та відсутні залежності"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Internal error getting a package name"
 msgid "Only query source package names"
-msgstr "Внутрішня помилка при отриманні назви пакунку"
+msgstr "Запитувати лише імена вихідних пакунків"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate the cache"
-msgstr ""
+msgstr "Згенерувати кеш"
 
 #: apt-private/private-cmndline.cc
 msgid "Set the location of the pkgcache.bin"
-msgstr ""
+msgstr "Задати розташування pkgcache.bin"
 
 #: apt-private/private-cmndline.cc
 msgid "Set the location of the srcpkgcache.bin"
-msgstr ""
+msgstr "Задати розташування srcpkgcache.bin"
 
 #: apt-private/private-cmndline.cc
 msgid "Auto detect the CD"
-msgstr ""
+msgstr "Автоматично виявляти компакт-диск"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Using CD-ROM mount point %s\n"
 msgid "CD mount point"
-msgstr "Використовується точка монтування CD-ROM %s\n"
+msgstr "Точка монтування компакт-диска"
 
 #: apt-private/private-cmndline.cc
 msgid "Rename the CD"
-msgstr ""
+msgstr "Перейменувати компакт-диск"
 
 #: apt-private/private-cmndline.cc
 msgid "Do not mount automatically"
-msgstr ""
+msgstr "Не монтувати автоматично"
 
 #: apt-private/private-cmndline.cc
 msgid "Do a fast operation"
-msgstr ""
+msgstr "Швидкий режим роботи"
 
 #: apt-private/private-cmndline.cc
 msgid "Just print, do not act"
-msgstr ""
+msgstr "Лише вивести, не виконувати дій"
 
 #: apt-private/private-cmndline.cc
 msgid "Be thorough"
-msgstr ""
+msgstr "Ретельний режим роботи"
 
 #: apt-private/private-cmndline.cc
 msgid "Run solver as the specified user"
-msgstr ""
+msgstr "Запустити розв'язувач від імені вказаного користувача"
 
 #: apt-private/private-cmndline.cc
 msgid "Include empty values in output"
-msgstr ""
+msgstr "Включати порожні значення у виведення"
 
 #: apt-private/private-cmndline.cc
 msgid "Output format (shell, ...)"
-msgstr ""
+msgstr "Формат виведення (оболонка, ...)"
 
 #: apt-private/private-cmndline.cc
 msgid "Temporary directory for extracted templates"
-msgstr ""
+msgstr "Тимчасовий каталог для витягнутих шаблонів"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate MD5 checksums"
-msgstr ""
+msgstr "Генерувати контрольні суми MD5"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate SHA1 checksums"
-msgstr ""
+msgstr "Генерувати контрольні суми SHA1"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate SHA256 checksums"
-msgstr ""
+msgstr "Генерувати контрольні суми SHA256"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate SHA512 checksums"
-msgstr ""
+msgstr "Генерувати контрольні суми SHA512"
 
 #: apt-private/private-cmndline.cc
 msgid "Cache database"
-msgstr ""
+msgstr "База даних кешу"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Failed to read the override file %s"
 msgid "Source override file"
-msgstr "Не вдалося прочитати файл перевизначення %s"
+msgstr "Файл перевизначення джерела"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Problem unlinking the file %s"
 msgid "Enable delinking of files"
-msgstr "Проблема з видаленням файлу %s"
+msgstr "Увімкнути розривання жорстких посилань"
 
 #: apt-private/private-cmndline.cc
 msgid "Make cache read-only"
-msgstr ""
+msgstr "Зробити кеш доступним лише для читання"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Error writing header to contents file"
 msgid "Generate the contents file"
-msgstr "Помилка запису заголовка до файлу вмісту"
+msgstr "Згенерувати файл вмісту"
 
 #: apt-private/private-cmndline.cc
 msgid "Only accept files for the given architecture"
-msgstr ""
+msgstr "Приймати лише файли для заданої архітектури"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Couldn't stat source package list %s"
 msgid "Sort source package files"
-msgstr "Не вдалося прочитати атрибути переліку вихідних текстів %s"
+msgstr "Сортувати файли вихідних пакунків"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Unknown compression algorithm '%s'"
 msgid "Set compression algorithm"
-msgstr "Невідомий алгоритм стиснення '%s'"
+msgstr "Задати алгоритм стиснення"
 
 #: apt-private/private-cmndline.cc
 msgid "Read/write states from the given file"
-msgstr ""
+msgstr "Читати/записувати стани з заданого файлу"
 
 #: apt-private/private-cmndline.cc
 msgid "Verbose output"
-msgstr ""
+msgstr "Детальний вивід"
 
 #: apt-private/private-cmndline.cc
 msgid "Automatic yes to prompts"
-msgstr ""
+msgstr "Автоматично відповідати “так” на запити"
 
 #: apt-private/private-cmndline.cc
 msgid "Automatic no to prompts"
-msgstr ""
+msgstr "Автоматично відповідати “ні” на запити"
 
 #: apt-private/private-cmndline.cc
 msgid "No action; perform a simulation"
-msgstr ""
+msgstr "Жодних дій; виконати симуляцію"
 
 #: apt-private/private-cmndline.cc
 msgid "Show user-friendly progress information"
-msgstr ""
+msgstr "Показувати зручну для користувача інформацію про хід виконання"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Solving dependencies"
 msgid "Fix broken dependencies"
-msgstr "Вирішення залежностей"
+msgstr "Виправляти зламані залежності"
 
 #: apt-private/private-cmndline.cc
 msgid "Use purge instead of remove"
-msgstr ""
+msgstr "Виконати очищення замість видалення"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Show reverse dependency information for a package"
 msgid "Show verbose version information"
-msgstr "Показати інформацію про зворотну залежність для пакунка"
+msgstr "Показати детальну інформацію про версію"
 
 #: apt-private/private-cmndline.cc
 msgid "Show list columns"
-msgstr ""
+msgstr "Показати стовпці списку"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Remove automatically all unused packages"
 msgid "Remove automatically installed packages no longer needed"
-msgstr "Автоматично видалити всі невикористовувані пакунки"
+msgstr "Видаляти автоматично встановлені пакунки, які більше не потрібні"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "reinstall packages"
 msgid "Reinstall packages"
-msgstr "перевстановити пакунки"
+msgstr "Перевстановити пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Satisfy dependency strings"
 msgid "Set the dependency solver"
-msgstr "Задовольнити рядки залежностей"
+msgstr "Задати розв'язувач залежностей"
 
 #: apt-private/private-cmndline.cc
 msgid "Apply strict pinning"
-msgstr ""
+msgstr "Застосувати сувору фіксацію"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Execute external planner"
 msgid "Set the dependency planner"
-msgstr "Запуск зовнішнього планувальника"
+msgstr "Задати планувальник залежностей"
 
 #: apt-private/private-cmndline.cc
 msgid "Add a comment to history"
-msgstr ""
+msgstr "Додати коментар до історії"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Reading package lists"
 msgid "Update package lists"
-msgstr "Читаю переліки пакунків"
+msgstr "Оновити переліки пакунків"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "The following packages have unmet dependencies:"
 msgid "Allow installing new packages for upgraded dependencies"
-msgstr "Наступні пакунки мають невиконані залежності:"
+msgstr "Дозволити встановлення нових пакунків для оновлених залежностей"
 
 #: apt-private/private-cmndline.cc
 msgid "Clean up old list files"
-msgstr ""
+msgstr "Очистити старі файли списків"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow insecure repositories"
-msgstr ""
+msgstr "Дозволити незахищені сховища"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow weak repositories"
-msgstr ""
+msgstr "Дозволити слабко захищені сховища"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow Release info changes"
-msgstr ""
+msgstr "Дозволити зміни інформації Release"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow changes to Origin field"
-msgstr ""
+msgstr "Дозволити зміни в полі Origin"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow changes to Label field"
-msgstr ""
+msgstr "Дозволити зміни в полі Label"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow changes to Version field"
-msgstr ""
+msgstr "Дозволити зміни в полі Version"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow changes to Codename field"
-msgstr ""
+msgstr "Дозволити зміни в полі Codename"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow changes to Suite field"
-msgstr ""
+msgstr "Дозволити зміни в полі Suite"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow changes to DefaultPin field"
-msgstr ""
+msgstr "Дозволити зміни в полі DefaultPin"
 
 #: apt-private/private-cmndline.cc
 msgid "Fail on the specified error"
-msgstr ""
+msgstr "Завершувати роботу при зазначеній помилці"
 
 #: apt-private/private-cmndline.cc
 msgid "Set host architecture"
-msgstr ""
+msgstr "Встановити архітектуру хоста"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Couldn't stat source package list %s"
 msgid "Compile source packages"
-msgstr "Не вдалося прочитати атрибути переліку вихідних текстів %s"
+msgstr "Компілювати вихідні пакунки"
 
 #: apt-private/private-cmndline.cc
 msgid "Set build profiles"
-msgstr ""
+msgstr "Задати профілі збірки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Download Failed"
 msgid "Download only the diff"
-msgstr "Завантаження не вдалося"
+msgstr "Завантажувати лише diff"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Download source archives"
 msgid "Download only the tar"
-msgstr "Завантажити архіви вихідних кодів"
+msgstr "Завантажувати лише tar"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Download Failed"
 msgid "Download only the dsc"
-msgstr "Завантаження не вдалося"
+msgstr "Завантажувати лише dsc"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Failed to process build dependencies"
 msgid "Only process architecture-dependent build dependencies"
-msgstr "Не вдалося обробити залежності збірки"
+msgstr "Обробляти лише залежності збірки, що залежать від архітектури"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Failed to process build dependencies"
 msgid "Only process architecture-independent build dependencies"
-msgstr "Не вдалося обробити залежності збірки"
+msgstr "Обробляти лише залежності збірки, що не залежать від архітектури"
 
 #: apt-private/private-cmndline.cc
 msgid "Output format"
-msgstr ""
+msgstr "Формат виводу"
 
 #: apt-private/private-cmndline.cc
 msgid "Show release info"
-msgstr ""
+msgstr "Показати інформацію про випуск"
 
 #: apt-private/private-cmndline.cc
 msgid "Download only; do not install or unpack"
-msgstr ""
+msgstr "Лише завантажувати; не встановлювати та не розпаковувати"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Suggested packages:"
 msgid "Show upgraded packages"
-msgstr "Пропоновані пакунки:"
+msgstr "Показати оновлені пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Broken packages"
 msgid "Download packages"
-msgstr "Проблемні пакунки"
+msgstr "Завантажити пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Some packages could not be authenticated"
 msgid "Ignore packages that cannot be retrieved"
-msgstr "Деякі пакунки не можуть бути автентифіковані"
+msgstr "Ігнорувати пакунки, які неможливо отримати"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Changing held packages:"
 msgid "Ignore held packages"
-msgstr "Зміна утримуваних пакунків:"
+msgstr "Ігнорувати утримувані пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "remove packages"
 msgid "Upgrade packages"
-msgstr "видалити пакунки"
+msgstr "Оновити пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "remove packages"
 msgid "Only upgrade packages"
-msgstr "видалити пакунки"
+msgstr "Лише оновлювати пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Changing held packages:"
 msgid "Allow changing held packages"
-msgstr "Зміна утримуваних пакунків:"
+msgstr "Дозволити змінювати утримувані пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "reinstall packages"
 msgid "Allow removing essential packages"
-msgstr "перевстановити пакунки"
+msgstr "Дозволити видалення основних пакунків"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow downgrading packages"
-msgstr ""
+msgstr "Дозволити знижувати версії пакунків"
 
 #: apt-private/private-cmndline.cc
 msgid "Force yes (deprecated)"
-msgstr ""
+msgstr "Примусово \"так\" (застаріло)"
 
 #: apt-private/private-cmndline.cc
 msgid "Print URIs"
-msgstr ""
+msgstr "Виводити URI"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Trivial Only specified but this is not a trivial operation."
 msgid "Only perform trivial operations"
-msgstr ""
-"Увімкнено режим Trivial Only, але ця операція не належить до тривіальних."
+msgstr "Виконувати лише тривіальні операції"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Mark the given packages as automatically installed"
 msgid "Mark packages as automatically installed"
-msgstr "Позначити вказані пакунки як автоматично встановлені"
+msgstr "Позначити пакунки як автоматично встановлені"
 
 #: apt-private/private-cmndline.cc cmdline/apt-get.cc
 msgid "Remove packages"
@@ -2384,39 +2283,31 @@ msgstr "Видалити пакунки"
 
 #: apt-private/private-cmndline.cc
 msgid "Allow unauthenticated packages"
-msgstr ""
+msgstr "Дозволити неавтентифіковані пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Recommended packages:"
 msgid "Install recommended packages"
-msgstr "Рекомендовані пакунки:"
+msgstr "Встановити рекомендовані пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Suggested packages:"
 msgid "Install suggested packages"
-msgstr "Пропоновані пакунки:"
+msgstr "Встановити пропоновані пакунки"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "Solving dependencies"
 msgid "Fix broken policy dependencies"
-msgstr "Вирішення залежностей"
+msgstr "Виправляти зламані залежності політики"
 
 #: apt-private/private-cmndline.cc
 msgid "<value>"
-msgstr ""
+msgstr "<значення>"
 
 #: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "optional"
 msgid "Options:"
-msgstr "необов’язковий"
+msgstr "Параметри:"
 
 #: apt-private/private-cmndline.cc
 msgid "Common options:"
-msgstr ""
+msgstr "Загальні параметри:"
 
 #: apt-private/private-cmndline.cc
 msgid "Most used commands:"
@@ -2428,6 +2319,8 @@ msgid ""
 "See %s, apt.conf(5), sources.list(5), apt_preferences(5),\n"
 "and apt-secure(8) for more information.\n"
 msgstr ""
+"Див. %s, apt.conf(5), sources.list(5), apt_preferences(5)\n"
+"та apt-secure(8) для отримання додаткової інформації.\n"
 
 #: apt-private/private-cmndline.cc
 #, c-format
@@ -4128,6 +4021,10 @@ msgid ""
 "Display packages matching the given names, glob patterns, or\n"
 "apt-patterns. Similar to dpkg-query --list but with filtering.\n"
 msgstr ""
+"Використання: apt [опції] list [шаблон(и)]\n"
+"\n"
+"Відображає пакунки, що відповідають заданим іменам, глобальним\n"
+"шаблонам або apt-шаблонам. Подібно до dpkg-query --list, але з фільтрацією.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4136,6 +4033,10 @@ msgid ""
 "Search package names and descriptions for the given regex terms\n"
 "and display matches.\n"
 msgstr ""
+"Використання: apt [опції] search <рег_вираз>\n"
+"\n"
+"Шукає в іменах і описах пакунків задані терміни\n"
+"регулярного виразу та відображає збіги.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4145,6 +4046,11 @@ msgid ""
 "dependencies, install/download size, available sources, and the\n"
 "package description.\n"
 msgstr ""
+"Використання: apt [опції] show <пакунок(и)>\n"
+"\n"
+"Показати детальну інформацію про заданий(і) пакунок(и), включаючи\n"
+"залежності, розмір встановлення/завантаження, доступні джерела та\n"
+"опис пакунка.\n"
 
 #: cmdline/apt.cc
 #, c-format
@@ -4152,6 +4058,8 @@ msgid ""
 "Usage: apt [options] %s <package(s)>\n"
 "\n"
 msgstr ""
+"Використання: apt [опції] %s <пакунок(и)>\n"
+"\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4159,6 +4067,11 @@ msgid ""
 "glob, or regex. Append + to a name to install it, or - to remove it.\n"
 "Select a version with pkg=version, or a release with pkg/codename.\n"
 msgstr ""
+"Встановлює, перевстановлює, видаляє або очищує пакунки,\n"
+"зазначені за назвою, глобальним або регулярним виразом.\n"
+"Додайте + до імені, щоб встановити, або -, щоб видалити.\n"
+"Оберіть версію за допомогою pkg=version або випуск\n"
+"за допомогою pkg/codename.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4167,6 +4080,10 @@ msgid ""
 "Remove packages that were automatically installed to satisfy\n"
 "dependencies and are no longer needed.\n"
 msgstr ""
+"Використання: apt [опції] autoremove\n"
+"\n"
+"Видаляє пакунки, які були автоматично встановлені для\n"
+"задоволення залежностей і більше не потрібні.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4176,6 +4093,11 @@ msgid ""
 "Run this before upgrade or install to ensure you have the latest\n"
 "package lists.\n"
 msgstr ""
+"Використання: apt [опції] update\n"
+"\n"
+"Завантажує інформацію про пакунки з усіх налаштованих джерел.\n"
+"Його слід запускати перед оновленням або встановленням,\n"
+"щоб переконатися, що у вас найновіші списки пакунків.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4186,6 +4108,12 @@ msgid ""
 "are removed. If a package is given as an argument, it is installed\n"
 "before the upgrade.\n"
 msgstr ""
+"Використання: apt [опції] upgrade [пакунок(и)]\n"
+"\n"
+"Встановлює доступні оновлення для всіх встановлених пакунків. Нові пакунки\n"
+"можуть бути встановлені для задоволення залежностей, але встановлені\n"
+"пакунки не видаляються. Якщо пакунок надано як аргумент, він встановлюється\n"
+"перед оновленням.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4195,6 +4123,11 @@ msgid ""
 "upgrade the system as a whole. If a package is given as an\n"
 "argument, it is installed before the upgrade.\n"
 msgstr ""
+"Використання: apt [опції] full-upgrade [пакунок(и)]\n"
+"\n"
+"Оновлює систему, видаливши встановлені пакунки, якщо це\n"
+"необхідно для оновлення системи в цілому. Якщо пакунок задано\n"
+"як аргумент, він встановлюється перед оновленням.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4205,6 +4138,12 @@ msgid ""
 "\n"
 "Example: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n"
 msgstr ""
+"Використання: apt [опції] satisfy <рядок-залежностей>\n"
+"\n"
+"Задовольняє задані рядки залежностей, як використовується в Build-Depends.\n"
+"Додайте перед аргументом префікс \"Conflicts: \" для обробки конфліктів.\n"
+"\n"
+"Приклад: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4215,6 +4154,12 @@ msgid ""
 "shows why an installed package is present; why-not shows why a\n"
 "package cannot be installed. Takes a single package name.\n"
 msgstr ""
+"Використання: apt [опції] why <пакунок>\n"
+"              apt [опції] why-not <пакунок>\n"
+"\n"
+"Пояснює, чому пакунок встановлено або чому його неможливо встановити.\n"
+"Команда why показує, чому встановлений пакунок присутній; why-not показує,\n"
+"чому пакунок неможливо встановити. Приймає одне ім'я пакунка.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4223,6 +4168,10 @@ msgid ""
 "Edit sources.list files in your preferred text editor, with basic\n"
 "sanity checks.\n"
 msgstr ""
+"Використання: apt [опції] edit-sources\n"
+"\n"
+"Редагує файли sources.list у вашому бажаному текстовому редакторі\n"
+"з базовими перевірками коректності.\n"
 
 #: cmdline/apt.cc
 msgid ""
@@ -4231,6 +4180,10 @@ msgid ""
 "Convert .list files to the .sources format, adding Signed-By\n"
 "values where possible. Old files are saved as .list.bak.\n"
 msgstr ""
+"Використання: apt [опції] modernize-sources\n"
+"\n"
+"Перетворює файли .list у формат .sources, додавши значення\n"
+"Signed-By, де це можливо. Старі файли зберігаються як .list.bak.\n"
 
 #. query
 #: cmdline/apt.cc
