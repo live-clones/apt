@@ -74,6 +74,11 @@ token is encountered.</para>
 <listitem><para>The password to be used.</para></listitem>
 </varlistentry>
 
+<varlistentry>
+<term><literal>bearer</literal> <replaceable>string</replaceable></term>
+<listitem><para>A bearer token. If present, login and password are not used. </para></listitem>
+</varlistentry>
+
 </variablelist>
 
 </refsect1>
