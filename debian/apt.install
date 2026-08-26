@@ -18,5 +18,6 @@ usr/lib/apt/planners/dump
 usr/lib/apt/solvers/dump
 usr/lib/dpkg/methods/apt/
 usr/share/bash-completion/completions/
+usr/share/fish/vendor_completions.d/
 usr/share/locale/*/*/apt.mo
 var/

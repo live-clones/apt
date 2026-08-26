@@ -28,53 +28,10 @@ _apt()
     local cur prev words cword
     _init_completion || return
 
-    local GENERIC_APT_GET_OPTIONS='
-        -d --download-only
-        -y --assume-yes
-        --assume-no
-        -u --show-upgraded
-        -m --ignore-missing
-        -t --target-release
-        --download
-        --fix-missing
-        --ignore-hold
-        --upgrade
-        --only-upgrade
-        --allow-change-held-packages
-        --allow-remove-essential
-        --allow-downgrades
-        --print-uris
-        --trivial-only
-        --remove
-        --arch-only
-        --allow-unauthenticated
-        --allow-insecure-repositories
-        --install-recommends
-        --install-suggests
-        --no-install-recommends
-        --no-install-suggests
-        --fix-policy
-    '
+    local -a COMMANDS
+    mapfile -t COMMANDS < <(apt __complete 2>/dev/null)
 
-    # see if the user selected a command already
-    local COMMANDS=(
-        "list"
-        "search"
-        "show" "showsrc"
-        "install" "reinstall" "remove" "purge" "autoremove" "autopurge"
-        "update"
-        "upgrade" "full-upgrade" "dist-upgrade"
-        "edit-sources"
-        "help"
-        "source" "build-dep"
-        "clean" "autoclean"
-        "download" "changelog"
-        "moo"
-        "modernize-sources"
-        "history-list" "history-info" "history-undo" "history-redo" "history-rollback"
-        "depends" "rdepends" "why" "why-not"
-        "policy")
-
+    # See if the user selected a command already.
     local command i
     for (( i=1; i < ${#words[@]}; i++ )); do
         if [[ " ${COMMANDS[*]} " == *" ${words[i]} "* ]]; then
@@ -91,112 +48,13 @@ _apt()
             ;;
     esac
 
-    # When the cursor (cword) is before the command word (i), only suggest
-    # options but not package or file names:
+    # Options come directly from the declarative parser.
     if [[ $cur == -* || ( -v command && $cword -le $i ) ]]; then
-        case ${command-} in
-            install|reinstall|remove|purge|upgrade|dist-upgrade|full-upgrade|autoremove|autopurge)
-                COMPREPLY=( $( compgen -W '--show-progress
-                  --fix-broken --purge --verbose-versions --no-list-columns --auto-remove
-                  -s --simulate --dry-run
-                  --download
-                  --fix-missing
-                  --fix-policy
-                  --ignore-hold
-                  --force-yes
-                  --trivial-only
-                  --reinstall --solver --no-strict-pinning
-                  -t --target-release'"$GENERIC_APT_GET_OPTIONS" -- "$cur" ) )
-                return 0
-                ;;
-            update)
-                COMPREPLY=( $( compgen -W '--list-cleanup
-                  --print-uris
-                  --allow-insecure-repositories
-                  ' -- "$cur" ) )
-                return 0
-                ;;
-            list)
-                COMPREPLY=( $( compgen -W '--installed --upgradable
-                  --manual-installed
-                  -v --verbose
-                  -a --all-versions
-                  -t --target-release
-                  ' -- "$cur" ) )
-                return 0
-                ;;
-            show)
-                COMPREPLY=( $( compgen -W '-a --all-versions
-                  ' -- "$cur" ) )
-                return 0
-                ;;
-            depends|rdepends)
-                COMPREPLY=( $( compgen -W '-i
-                    --important
-                    --installed
-                    --pre-depends
-                    --depends
-                    --recommends
-                    --suggests
-                    --replaces
-                    --breaks
-                    --conflicts
-                    --enhances
-                    --recurse
-                    --implicit' -- "$cur" ) )
-                return 0
-                ;;
-            search)
-                COMPREPLY=( $( compgen -W '
-                    -n --names-only
-                    -f --full' -- "$cur" ) )
-                return 0
-                ;;
-            showsrc)
-                COMPREPLY=( $( compgen -W '
-                    --only-source' -- "$cur" ) )
-                return 0
-                ;;
-            source)
-                COMPREPLY=( $( compgen -W '
-                    -s --simulate --dry-run
-                    -b --compile --build
-                    -P --build-profiles
-                    --diff-only --debian-only
-                    --tar-only
-                    --dsc-only
-                    -t --target-release
-                    '"$GENERIC_APT_GET_OPTIONS" -- "$cur" ) )
-                return 0
-                ;;
-            build-dep)
-                COMPREPLY=( $( compgen -W '
-                    -a --host-architecture
-                    -s --simulate --dry-run
-                    -P --build-profiles
-                    -t --target-release
-                    --purge --solver --no-strict-pinning
-                    '"$GENERIC_APT_GET_OPTIONS" -- "$cur" ) )
-                return 0
-                ;;
-            moo)
-                COMPREPLY=( $( compgen -W '
-                    --color
-                    ' -- "$cur" ) )
-                return 0
-                ;;
-            clean|autoclean)
-                COMPREPLY=( $( compgen -W '
-                    -s --simulate --dry-run
-                    ' -- "$cur" ) )
-                return 0
-                ;;
-        esac
-
-        return
+        COMPREPLY=( $( compgen -W "$(apt __complete "${command-}" 2>/dev/null)" -- "$cur" ) )
+        return 0
     fi
 
-    # specific command arguments
+    # Specific command arguments.
     if [[ -v command ]]; then
         case $command in
             remove|purge|autoremove|autopurge|why)
@@ -256,8 +114,8 @@ _apt()
                 ;;
         esac
     else
-        # no command yet, show what commands we have
-        COMPREPLY=( $( compgen -W '${COMMANDS[@]}' -- "$cur" ) )
+        # No command yet: derive commands from the parser.
+        COMPREPLY=( $( compgen -W "${COMMANDS[*]}" -- "$cur" ) )
     fi
 
     return 0
