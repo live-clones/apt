@@ -40,6 +40,7 @@
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 
 #include "aptmethod.h"
 #include "connect.h"
@@ -541,9 +542,43 @@ ResultState Connect(std::string Host, int Port, const char *Service,
 	 _error->MergeWithStack();
    return ret;
 }
+
 									/*}}}*/
-// UnwrapSocks - Handle SOCKS setup					/*{{{*/
+// ConnectUnixSocket - Connect to a unix socket                         /*{{{*/
 // ---------------------------------------------------------------------
+/* Performs a connection to the socket */
+ResultState ConnectUnixSocket(std::string Path, std::unique_ptr<MethodFd> &Fd,
+                   unsigned long TimeOut, aptMethod *Owner)
+{
+   // Owner->Status(_("Connecting to %s"),Path);
+
+   struct sockaddr_un server_addr;
+   server_addr.sun_family = AF_UNIX;
+   strcpy(server_addr.sun_path, Path.c_str());
+
+   // Get a socket
+   if ((static_cast<FdFd *>(Fd.get())->fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+   {
+      _error->Errno("socket", _("Could not create a socket for %s (f=%u t=%u p=%u)"),
+                   Path, AF_UNIX, SOCK_STREAM, 0);
+      return ResultState::FATAL_ERROR;
+   }
+
+   SetNonBlock(Fd->Fd(), true);
+   if (connect(Fd->Fd(), (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0 &&
+       errno != EINPROGRESS)
+   {
+      _error->Errno("connect", _("Cannot initiate the connection "
+                                "to %s."),
+                   Path);
+      return ResultState::TRANSIENT_ERROR;
+   }
+
+   return ResultState::SUCCESSFUL;
+}
+									/*}}}*/
+// UnwrapSocks - Handle SOCKS setup			                /*{{{*/
+// -------------------------------------------------------------------- 
 /* This does socks magic */
 static bool TalkToSocksProxy(int const ServerFd, std::string const &Proxy,
 			     char const *const type, bool const ReadWrite, uint8_t *const ToFrom,
