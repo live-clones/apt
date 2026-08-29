@@ -1,2 +1,2 @@
 ../lib/apt/apt-extracttemplates usr/bin/apt-extracttemplates
-
+usr/lib/apt/methods/sftp usr/lib/apt/methods/ssh
