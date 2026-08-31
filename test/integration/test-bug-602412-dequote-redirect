@@ -24,6 +24,9 @@ testrun() {
 
 	# check that I-M-S header is kept in redirections
 	testsuccessequal "Hit:1 $2 unstable InRelease
+Hit:2 $2 unstable/main Sources
+Hit:3 $2 unstable/main all Packages
+Hit:4 $2 unstable/main Translation-en
 Reading package lists..." aptget update
 
 	msgtest 'Test redirection works in' 'package download'

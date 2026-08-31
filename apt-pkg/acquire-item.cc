@@ -429,10 +429,8 @@ bool pkgAcqTransactionItem::QueueURI(pkgAcquire::ItemDesc &Item)
    if (TransactionManager->IMSHit)
    {
       std::string const FinalFile = GetFinalFilename();
-      if (FinalFile.empty() || FileExists(FinalFile))
+      if (FinalFile.empty())
       {
-	 if (not FinalFile.empty())
-	    PartialFile = DestFile = FinalFile;
 	 Status = StatDone;
 	 return false;
       }
@@ -1784,10 +1782,7 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
 	 std::string filename = GetExistingFilename(GetFinalFileNameFromURI(Target.URI));
 	 if (filename.empty() == false)
 	 {
-	    // if the Release file is a hit and we have an index it must be the current one
-	    if (TransactionManager->IMSHit == true)
-	       ;
-	    else if (TransactionManager->LastMetaIndexParser != NULL)
+	    if (TransactionManager->LastMetaIndexParser != NULL)
 	    {
 	       // see if the file changed since the last Release file
 	       // we use the uncompressed files as we might compress differently compared to the server,
@@ -3378,7 +3373,7 @@ void pkgAcqIndex::StageDownloadDone(string const &Message)
    {
       Filename = GetExistingFilename(GetFinalFileNameFromURI(Target.URI));
       EraseFileName = DestFile = flCombine(flNotFile(DestFile), std::string{flNotDir(Filename)});
-      if (symlink(Filename.c_str(), DestFile.c_str()) != 0)
+      if (symlink(flAbsPath(Filename).c_str(), DestFile.c_str()) != 0)
 	 _error->WarningE("pkgAcqIndex::StageDownloadDone", "Symlinking file %s to %s failed", Filename.c_str(), DestFile.c_str());
       Stage = STAGE_DECOMPRESS_AND_VERIFY;
       Desc.URI = "store:" + pkgAcquire::URIEncode(DestFile);
