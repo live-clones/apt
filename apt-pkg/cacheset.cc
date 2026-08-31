@@ -569,27 +569,36 @@ bool VersionContainerInterface::FromPackage(VersionContainerInterface * const vc
 	case CacheSetHelper::NEWEST:
 		if (P->VersionList != 0)
 			found |= vci->insert(P.VersionList());
-		else
-			helper.canNotFindVersion(CacheSetHelper::NEWEST, vci, Cache, P);
+		else {
+			V = helper.canNotGetVersion(CacheSetHelper::NEWEST, Cache, P);
+			if (V.end() == false)
+				found |= vci->insert(V);
+		}
 		break;
 	case CacheSetHelper::RELEASE:
 		{
-		pkgVersionMatch Match(helper.getLastVersionMatcher(), pkgVersionMatch::Release);
-		V = Match.Find(P);
-		if (not V.end())
-			found |= vci->insert(V);
-		else
-			helper.canNotFindVersion(CacheSetHelper::RELEASE, vci, Cache, P);
+			pkgVersionMatch Match(helper.getLastVersionMatcher(), pkgVersionMatch::Release);
+			V = Match.Find(P);
+			if (not V.end())
+				found |= vci->insert(V);
+			else {
+				V = helper.canNotGetVersion(CacheSetHelper::RELEASE, Cache, P);
+				if (V.end() == false)
+					found |= vci->insert(V);
+			}
 		}
 		break;
 	case CacheSetHelper::VERSIONNUMBER:
 		{
-		pkgVersionMatch Match(helper.getLastVersionMatcher(), pkgVersionMatch::Version);
-		V = Match.Find(P);
-		if (not V.end())
-			found |= vci->insert(V);
-		else
-			helper.canNotFindVersion(CacheSetHelper::VERSIONNUMBER, vci, Cache, P);
+			pkgVersionMatch Match(helper.getLastVersionMatcher(), pkgVersionMatch::Version);
+			V = Match.Find(P);
+			if (not V.end())
+				found |= vci->insert(V);
+			else {
+				V = helper.canNotGetVersion(CacheSetHelper::VERSIONNUMBER, Cache, P);
+				if (V.end() == false)
+					found |= vci->insert(V);
+			}
 		}
 		break;
 	}

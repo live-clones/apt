@@ -1,0 +1,75 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+buildsimplenativepackage 'provider' 'all' '1' 'unstable' 'Provides: virtual'
+buildsimplenativepackage 'provider1' 'all' '1' 'unstable' 'Provides: virtual1 (= 1)'
+buildsimplenativepackage 'provider22' 'all' '1' 'unstable' 'Provides: virtual22'
+buildsimplenativepackage 'provider2' 'all' '1' 'unstable' 'Provides: virtual2'
+buildsimplenativepackage 'provider5' 'all' '1' 'unstable' 'Provides: virtual2'
+
+setupaptarchive
+
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Note, selecting 'provider' instead of 'virtual'
+The following NEW packages will be installed:
+  provider
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Inst provider (1 unstable [all])
+Conf provider (1 unstable [all])" aptget install virtual -s
+
+testsuccess aptget install virtual -y
+testdpkginstalled provider
+testsuccess aptget remove virtual -y
+testdpkgnotinstalled provider
+
+testsuccess aptget install virtual -y
+testdpkginstalled provider
+testsuccess aptget purge virtual -y
+testdpkgnotinstalled provider
+
+testsuccess aptget install virtual/unstable -y
+testdpkginstalled provider
+testsuccess aptget remove virtual -y
+testdpkgnotinstalled provider
+
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Reading state information...
+Note, selecting 'provider1' instead of 'virtual1'
+The following NEW packages will be installed:
+  provider1
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Inst provider1 (1 unstable [all])
+Conf provider1 (1 unstable [all])" aptget install virtual1=1 -s
+
+testsuccess aptget install virtual1=1 -y
+testdpkginstalled provider1
+testsuccess aptget remove virtual1 -y
+testdpkgnotinstalled provider1
+
+testsuccess aptget install provider22 -y
+testdpkginstalled provider22
+testsuccess aptget remove virtual22 -y
+testdpkgnotinstalled provider22
+
+testsuccess aptget install provider5 -y
+testsuccess aptget install provider2 -y
+testdpkginstalled provider5
+testdpkginstalled provider2
+testsuccessequal "Reading package lists...
+Building dependency tree...
+Reading state information...
+Virtual packages like 'virtual2' can't be removed
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded." aptget remove virtual2 -y
+testdpkginstalled provider5
+testdpkginstalled provider2
+
+
+
+
