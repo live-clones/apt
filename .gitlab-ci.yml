@@ -22,6 +22,10 @@ before_script:
     - sudo -u travis env -C build cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ${APT_CMAKE_BUILD_OPTIONS} -G Ninja ..
     - sudo -u travis --preserve-env=CCACHE_DIR,CCACHE_BASEDIR ninja -C build
 
+stages:
+  - test
+  - package
+
 test as root:
   stage: test
   variables:
@@ -54,3 +58,26 @@ test as user:
     - sudo -u travis CTEST_OUTPUT_ON_FAILURE=1 ninja -C build test
     - chmod -R o-w $PWD
     - sudo -u travis unbuffer ./test/integration/run-tests -q -j 4
+
+# Once all native tests passed, also run Salsa-CI
+Salsa-CI:
+  stage: package
+  trigger:
+    include: debian/salsa-ci.yml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"  # run this job only for scheduled pipelines
+      when: always
+    # Avoid duplicated pipelines, do not run detached pipelines
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    # Do not create a pipeline for tags unless SALSA_CI_ENABLE_PIPELINE_ON_TAGS is set
+    - if: $CI_COMMIT_TAG != null && $SALSA_CI_ENABLE_PIPELINE_ON_TAGS !~ /^(1|yes|true)$/
+      when: never
+    # Otherwise, if there's a debian/ folder, run
+    - exists:
+        - debian/**
+      when: manual
+    # Fallback to not running
+    - when: never
+    # The above modeled after Salsa CI rules at
+    # https://salsa.debian.org/salsa-ci-team/pipeline/-/blob/master/salsa-ci.yml?ref_type=heads#L8
