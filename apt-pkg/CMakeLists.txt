@@ -39,6 +39,11 @@ configure_file(apt-pkg.pc.in ${CMAKE_CURRENT_BINARY_DIR}/apt-pkg.pc @ONLY)
 file(GLOB_RECURSE library "*.cc"  "${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc")
 file(GLOB_RECURSE headers "*.h")
 
+# solver3 requires C++23 (std::ranges, std::erase_if, constexpr map_pointer);
+# edsp.cc needs it as well as it includes solver3.h.
+# Use COMPILE_OPTIONS as directory-level CMAKE_CXX_STANDARD overrides per-source CXX_STANDARD.
+set_source_files_properties(solver3.cc edsp.cc PROPERTIES COMPILE_OPTIONS "-std=gnu++23")
+
 # Create a library using the C++ files
 add_library(apt-pkg SHARED ${library})
 add_dependencies(apt-pkg apt-pkg-versionscript)
