@@ -1192,3 +1192,36 @@ bool Configuration::MatchAgainstConfig::Match(char const * str) const
    return false;
 }
 									/*}}}*/
+// helper for Install-Recommends-Sections and Never-MarkAuto-Sections	/*{{{*/
+static bool ConfigValueInSubTree(Configuration *config, const char *SubTree, APT::StringView const needle)
+{
+   if (needle.empty())
+      return false;
+   Configuration::Item const *Opts = config->Tree(SubTree);
+   if (Opts != nullptr && Opts->Child != nullptr)
+   {
+      Opts = Opts->Child;
+      for (; Opts != nullptr; Opts = Opts->Next)
+      {
+	 if (Opts->Value.empty())
+	    continue;
+	 if (needle == Opts->Value)
+	    return true;
+      }
+   }
+   return false;
+}
+bool Configuration::SectionInSubTree(char const *const SubTree, APT::StringView Needle)
+{
+   if (ConfigValueInSubTree(this, SubTree, Needle))
+      return true;
+   auto const sub = Needle.rfind('/');
+   if (sub == APT::StringView::npos)
+   {
+      std::string special{"/"};
+      special.append(Needle.data(), Needle.size());
+      return ConfigValueInSubTree(this, SubTree, special);
+   }
+   return ConfigValueInSubTree(this, SubTree, Needle.substr(sub + 1));
+}
+									/*}}}*/
