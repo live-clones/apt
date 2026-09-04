@@ -14,6 +14,7 @@
 #include <apt-pkg/edsp.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/hardwarecondition.h>
 #include <apt-pkg/packagemanager.h>
 #include <apt-pkg/perf.h>
 #include <apt-pkg/pkgcache.h>
@@ -75,6 +76,8 @@ static bool WriteScenarioVersion(FileFd &output, pkgCache::PkgIterator const &Pk
    WriteOkay(Okay, output, "\nAPT-ID: ", Ver->ID);
    if (Ver.PhasedUpdatePercentage() != 100)
       WriteOkay(Okay, output, "\nPhased-Update-Percentage: ", Ver.PhasedUpdatePercentage());
+   if (not APT::HardwareCondition::IsSatisfied(Ver))
+      WriteOkay(Okay, output, "\nHardware-Condition-Met: no");
    if ((Pkg->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
       WriteOkay(Okay, output, "\nEssential: yes");
    if ((Ver->MultiArch & pkgCache::Version::Allowed) == pkgCache::Version::Allowed)

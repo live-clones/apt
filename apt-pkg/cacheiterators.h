@@ -281,6 +281,16 @@ class APT_PUBLIC pkgCache::VerIterator : public Iterator<Version, VerIterator> {
 	{
 	   return (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->PhasedUpdatePercentage;
 	}
+	inline void HardwareCondition(map_stringitem_t condition) const
+	{
+	   (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->HardwareCondition = condition;
+	}
+	inline std::string_view HardwareCondition() const
+	{
+	   if (auto I = (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->HardwareCondition)
+	      return Owner->ViewString(I);
+	   return {};
+	}
 	inline void ArchVariant(map_stringitem_t variant) const
 	{
 	   (static_cast<Version::Extra *>(Owner->Map.Data()) + S->d)->ArchVariant = variant;

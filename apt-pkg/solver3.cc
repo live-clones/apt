@@ -1188,18 +1188,16 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
    DefaultRootSetFunc2 rootSet(&cache);
    std::vector<Var> manualPackages;
 
-   // Enforce strict pinning rules by rejecting all forbidden versions.
-   if (StrictPinning)
+   // Reject versions excluded by strict pinning or upgrade policy.
+   for (auto P = cache.PkgBegin(); not P.end(); P++)
    {
-      for (auto P = cache.PkgBegin(); not P.end(); P++)
-      {
-	 bool isForced = depcache[P].Protect() && depcache[P].Install();
-	 bool isPhasing = IsUpgrade && depcache.PhasingApplied(P) && not isForced;
-	 for (auto V = P.VersionList(); not V.end(); ++V)
-	    if (P.CurrentVer() != V && (depcache.GetCandidateVersion(P) != V || isPhasing))
-	       if (not Enqueue(~Var(V), {}))
-		  return false;
-      }
+      bool isForced = depcache[P].Protect() && depcache[P].Install();
+      bool isPhasing = IsUpgrade && depcache.PhasingApplied(P) && not isForced;
+      bool isHardwareCondition = IsUpgrade && depcache.HardwareConditionApplied(P) && not isForced;
+      for (auto V = P.VersionList(); not V.end(); ++V)
+	 if (P.CurrentVer() != V && ((StrictPinning && depcache.GetCandidateVersion(P) != V) || isPhasing || isHardwareCondition))
+	    if (not Enqueue(~Var(V), {}))
+	       return false;
    }
 
    // Clause discovery depends on the manual flag, so we need to set the manual flag first before we discover any packages

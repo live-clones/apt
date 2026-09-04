@@ -140,6 +140,7 @@ class APT_PUBLIC pkgProblemResolver						/*{{{*/
    inline void AllowBrokenPolicy(pkgCache::PkgIterator Pkg) { Flags[Pkg->ID] |= BrokenPolicyAllowed; };
 #endif
 
+   bool KeepPolicyExcludedUpdates();
    bool KeepPhasedUpdates();
 
    // Try to intelligently resolve problems by installing and removing packages
