@@ -72,6 +72,16 @@
 	#define APT_MUSTCHECK
 #endif
 
+#ifdef APT_COMPILING_APT
+// Asserts that the result of expr is true
+#define must_succeed(expr) ({                                                                                   \
+   auto result = (expr);                                                                                        \
+   if (unlikely(not result))                                                                                    \
+      fprintf(stderr, "%s:%d: %s: Assertion `%s` failed.\n", __FILE__, __LINE__, __FUNCTION__, #expr), abort(); \
+   result;                                                                                                      \
+})
+#endif
+
 #if APT_GCC_VERSION >= 0x0400
 	#define APT_SENTINEL	__attribute__((sentinel))
 	#define APT_PUBLIC __attribute__ ((visibility ("default")))
@@ -127,5 +137,16 @@
 
 /* Should be a multiple of the common page size (4096) */
 static constexpr unsigned long long APT_BUFFER_SIZE = 64 * 1024;
+
+template <class F>
+struct AptScopeWrapper {
+   F func;
+   ~AptScopeWrapper() { func(); }
+};
+template <class F>
+AptScopeWrapper(F) -> AptScopeWrapper<F>;
+#define APT_PASTE2(a, b) a##b
+#define APT_PASTE(a, b) APT_PASTE2(a, b)
+#define DEFER(lambda) AptScopeWrapper APT_PASTE(defer, __LINE__){lambda};
 
 #endif
