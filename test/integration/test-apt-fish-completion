@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+if ! command -v fish >/dev/null; then
+        msgskip "fish is not installed"
+        exit 0
+fi
+
+msggroup "Checking Fish completion candidates"
+
+testsuccess fish --no-execute "$TESTDIR/../../completions/fish/apt.fish"
+
+testsuccess fish -c "
+complete -e -c apt
+source '$TESTDIR/../../completions/fish/apt.fish'
+complete -C 'apt hist'
+"
+cp -f rootdir/tmp/testsuccess.output commands.output
+testsuccess grep -Fx "history-rollback" commands.output
+
+testsuccess fish -c "
+complete -e -c apt
+source '$TESTDIR/../../completions/fish/apt.fish'
+complete -C 'apt install --no-l'
+"
+cp -f rootdir/tmp/testsuccess.output install-options.output
+testsuccess grep -Fx -- "--no-list-columns" install-options.output
+
+msggroup
