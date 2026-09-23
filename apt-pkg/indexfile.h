@@ -92,6 +92,7 @@ class APT_PUBLIC IndexTarget							/*{{{*/
       ALLOW_DOWNGRADE_TO_INSECURE,
       INRELEASE_PATH,
       SHADOWED,
+      SIG_FORMAT,
    };
    std::string Option(OptionKeys const Key) const;
    bool OptionBool(OptionKeys const Key) const;

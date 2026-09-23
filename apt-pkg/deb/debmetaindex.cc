@@ -98,7 +98,40 @@ static std::string NormalizeSignedBy(std::string SignedBy, bool const Introducer
    return os.str();
 }
 									/*}}}*/
+static bool IsPemBundleEntry(std::string const &Entry)			/*{{{*/
+{
+   // An absolute path with a .pem suffix. We do not inspect the file content
+   // here as we could be chrooting later.
+   return Entry.empty() == false && Entry[0] == '/' &&
+       APT::String::Endswith(Entry, ".pem");
+}
+									/*}}}*/
+// Signed-By may name a single PEM bundle, and nothing else besides	/*{{{*/
+// Returns true if it does, false if it names no bundle at all. Mixing a
+// bundle with further entries is rejected via the PemError out parameter,
+// as we could not tell which of the two verification schemes to use.
+static bool SignedByHasPemBundle(std::string const &SignedBy, bool &PemError)
+{
+   PemError = false;
+   // an embedded key block is returned verbatim by NormalizeSignedBy and is
+   // never a PEM bundle reference, so do not try to split it into entries
+   if (SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos)
+      return false;
 
+   // normalizing first collapses whitespace (and hence deb822 line folding)
+   // into commas and drops empty entries, so we can just split on commas
+   auto const Entries = VectorizeString(NormalizeSignedBy(SignedBy, true), ',');
+   auto const Bundles = std::count_if(Entries.begin(), Entries.end(), IsPemBundleEntry);
+   if (Bundles == 0)
+      return false;
+   if (Bundles != 1 || Entries.size() != 1)
+   {
+      PemError = true;
+      return false;
+   }
+   return true;
+}
+									/*}}}*/
 class APT_HIDDEN debReleaseIndexPrivate					/*{{{*/
 {
    public:
@@ -1246,6 +1279,21 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
       if (InReleasePath != Options.end())
 	 ReleaseOptions.emplace("INRELEASE_PATH", InReleasePath->second);
 
+      auto SignedBy = Options.find("signed-by");
+      if (SignedBy != Options.end())
+      {
+	 bool PemError = false;
+	 if (SignedByHasPemBundle(SignedBy->second, PemError))
+	    ReleaseOptions.emplace("SIG_FORMAT", "pkcs7");
+	 else if (PemError)
+	 {
+	    _error->Error(_("Invalid value set for option %s regarding source %s %s (%s)"),
+			  "Signed-By", URI.c_str(), Dist.c_str(),
+			  "only a single PEM bundle and nothing else");
+	    return nullptr;
+	 }
+      }
+
       debReleaseIndex * Deb = nullptr;
       std::string const FileName = URItoFileName(constructMetaIndexURI(URI, Dist, "Release"));
       for (auto const &I: List)
@@ -1273,6 +1321,14 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
       // No currently created Release file indexes this entry, so we create a new one.
       if (Deb == nullptr)
       {
+	 /* Warn once per repository rather than once per sources entry, and
+	    only while we cannot actually verify such a repository: the check
+	    makes the warning disappear by itself once the p7s method exists. */
+	 if (ReleaseOptions.find("SIG_FORMAT") != ReleaseOptions.end() &&
+	     Pkcs7MethodAvailable() == false)
+	    _error->Warning(_("Source %s %s uses a PEM bundle in Signed-By, but this APT "
+			      "cannot verify CMS/PKCS#7 signatures: the repository will fail to update"),
+			    URI.c_str(), Dist.c_str());
 	 Deb = new debReleaseIndex(URI, Dist, ReleaseOptions);
 	 List.push_back(Deb);
       }
