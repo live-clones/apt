@@ -1,6 +1,5 @@
 #include <config.h>
 
-#include <apt-pkg/configuration.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/pkcs7.h>
@@ -189,12 +188,7 @@ class PKCS7Test : public ::testing::Test
       // This process owns OpenSSL's error queue, so start each test from a
       // known state regardless of what the previous one planted in it.
       ERR_clear_error();
-      // Make the queue-hygiene note observable, which also turns an unexpected
-      // one in any of the other tests into visible output.
-      _config->Set("Debug::Pkcs7", true);
    }
-
-   void TearDown() override { _config->Set("Debug::Pkcs7", false); }
 
    // Detached CMS over SIGNED_DATA as a PEM block.
    static std::string SignBlock(X509 *cert, EVP_PKEY *key,
@@ -585,10 +579,8 @@ TEST_F(PKCS7Test, VerifyDetachLeavesAPreexistingErrorQueueAlone)
    std::string const errors = DrainErrors();
    // The ASN.1 failure that actually happened ...
    EXPECT_NE(std::string::npos, errors.find("failed to parse the CMS block"));
-   // ... never the PEM error planted above ...
+   // ... and never the PEM error planted above.
    EXPECT_EQ(std::string::npos, errors.find("no start line"));
-   // ... and the degraded reporting path says so.
-   EXPECT_NE(std::string::npos, errors.find("error queue was not empty"));
 
    ERR_clear_error();
 }
@@ -612,10 +604,10 @@ TEST_F(PKCS7Test, VerifyDetachReportsOpenSSLDetailAndLeavesNoResidue)
 
    std::string const errors = DrainErrors();
    EXPECT_NE(std::string::npos, errors.find("failed to parse the CMS block"));
-   // Real detail rather than the placeholder ...
-   EXPECT_EQ(std::string::npos, errors.find("no OpenSSL error details"));
-   // ... and no note about a dirty queue, because there was not one.
-   EXPECT_EQ(std::string::npos, errors.find("error queue was not empty"));
+   // The OpenSSL detail itself is reported alongside it. ERR_error_string_n()
+   // always renders an "error:<code>:..." line, so its presence is what tells
+   // an attributable queue apart from one that had to be left alone.
+   EXPECT_NE(std::string::npos, errors.find("error:"));
 }
 
 // A signature file without any PEM block at all.

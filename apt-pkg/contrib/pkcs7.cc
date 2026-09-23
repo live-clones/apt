@@ -8,7 +8,6 @@
 
 #include <config.h>
 
-#include <apt-pkg/configuration.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/macros.h>
 #include <apt-pkg/pkcs7.h>
@@ -16,6 +15,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdarg>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
@@ -81,38 +82,63 @@ class BaseX509Store::Impl
 
    private:
    bool ReadSignatureBlocks(FileFd &signature, std::vector<CMSUP> &blocks);
-   bool VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data, std::string &failure,
+   bool VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
+		       std::vector<std::string> &failures,
 		       std::vector<std::string> &warnings,
 		       std::vector<X509 *> &signers);
 };
 
 // Scope OpenSSL's thread-local error queue for the duration of an operation.
 //
-// Used for ensuring that previous errors are untouched.
-class OpenSSLErrorScope
+// Ensures that errors from before the scope are left untouched and that
+// errors generated within the scope are cleaned up when it ends.
+class ErrorScope
 {
-   const bool queue_was_empty;
+   // The queue was empty and we are free to drain it.
+   const bool owns_errors;
 
    public:
-   OpenSSLErrorScope() : queue_was_empty(ERR_peek_error() == 0) { ERR_set_mark(); }
-   ~OpenSSLErrorScope()
+   ErrorScope() : owns_errors(ERR_peek_error() == 0) { ERR_set_mark(); }
+   ~ErrorScope()
    {
       // ERR_set_mark() cannot record a mark on an empty queue, so do not send
       // ERR_pop_to_mark() looking for one. Everything queued is ours to drop
       // here, and clearing cannot lose anything that is not.
-      if (queue_was_empty)
+      if (owns_errors)
 	 ERR_clear_error();
       else
 	 ERR_pop_to_mark();
    }
-   OpenSSLErrorScope(const OpenSSLErrorScope &) = delete;
-   OpenSSLErrorScope &operator=(const OpenSSLErrorScope &) = delete;
+   ErrorScope(const ErrorScope &) = delete;
+   ErrorScope &operator=(const ErrorScope &) = delete;
 
-   // Render the errors this scope is responsible for, joined with "; ",
-   // consuming them where that is safe.
+   // Report a failure to the APT error stack.
    //
-   // Return a placeholder if there are none.
-   std::string Errors();
+   // The formatted message is always added as an APT error in its own right.
+   // If this scope owns the OpenSSL error queue, every entry on it is then
+   // drained and added as a further APT error. Otherwise the queue belongs to
+   // the caller and is left untouched.
+   //
+   // Always returns false, for use directly from failure paths.
+   bool Error(const char *fmt, ...) APT_PRINTF(2);
+
+   // Return the OpenSSL errors associated with this scope.
+   //
+   // If this scope owns the error queue, drain all errors into the result.
+   // Otherwise, leave the queue untouched and return its most recent error.
+   std::vector<std::string> Errors();
+
+   // Conclude an otherwise successful operation.
+   //
+   // If this scope owns the error queue, drain whatever OpenSSL left on it
+   // onto the APT error stack and report whether it was clean.
+   //
+   // A queue that was already dirty when the scope opened is a failure too:
+   // its entries cannot be attributed, so neither we nor the caller can tell
+   // an error of ours from one some earlier invocation left behind.
+   //
+   // Returns true if there were no errors, false otherwise.
+   bool MaybeErrors();
 
    // Whether the newest error reports the absence of a further PEM block, which
    // is how a complete bundle ends rather than a failure. Only meaningful
@@ -125,39 +151,78 @@ class OpenSSLErrorScope
    }
 };
 
-std::string OpenSSLErrorScope::Errors()
+bool ErrorScope::Error(const char *fmt, ...)
 {
-   if (not queue_was_empty)
+   // GlobalError::Insert() reports back that its buffer was too small rather
+   // than growing it itself, so keep handing it the grown msgSize until it
+   // takes the message. This is the same loop GlobalError's own varargs
+   // members run.
+   va_list args;
+   size_t msgSize = 400;
+   bool retry;
+   do
    {
-      // Peek, never pop: the caller's entries are older than ours, so draining
-      // would report and destroy theirs instead.
-      //
-      // GlobalError::Insert() writes every DEBUG message straight to clog, so
-      // this has to stay behind an option rather than telling every apt run
-      // about a queue it cannot do anything about.
-      if (_config->FindB("Debug::Pkcs7", false))
-	 _error->Debug("OpenSSL's error queue was not empty when the operation "
-		       "started, so only its most recent error is reported");
+      va_start(args, fmt);
+      retry = _error->Insert(GlobalError::ERROR, fmt, args, msgSize);
+      va_end(args);
+   } while (retry);
+
+   if (owns_errors)
+   {
+      while (const unsigned long err = ERR_get_error())
+      {
+	 char buf[256];
+	 ERR_error_string_n(err, buf, sizeof(buf));
+	 _error->Error("%s", buf);
+      }
+   }
+   return false;
+}
+
+std::vector<std::string> ErrorScope::Errors()
+{
+   std::vector<std::string> errors;
+
+   if (owns_errors)
+   {
+      while (const unsigned long err = ERR_get_error())
+      {
+	 char buf[256];
+	 ERR_error_string_n(err, buf, sizeof(buf));
+	 errors.emplace_back(buf);
+      }
+   }
+   else
+   {
       const unsigned long err = ERR_peek_last_error();
-      if (err == 0)
-	 return _("no OpenSSL error details");
-      char buf[256];
-      ERR_error_string_n(err, buf, sizeof(buf));
-      return buf;
+      if (err != 0)
+      {
+	 char buf[256];
+	 ERR_error_string_n(err, buf, sizeof(buf));
+	 errors.emplace_back(buf);
+      }
    }
 
-   std::string out;
+   return errors;
+}
+
+bool ErrorScope::MaybeErrors()
+{
+   // Pre-existing entries are not attributable: neither we nor the caller can
+   // tell an error of ours from one an earlier invocation left behind, so do
+   // not touch them and do not claim success either.
+   if (not owns_errors)
+      return false;
+
+   const bool hasErr = ERR_peek_error() != 0;
    while (const unsigned long err = ERR_get_error())
    {
       char buf[256];
       ERR_error_string_n(err, buf, sizeof(buf));
-      if (not out.empty())
-	 out += "; ";
-      out += buf;
+      _error->Error("%s", buf);
    }
-   if (out.empty())
-      out = _("no OpenSSL error details");
-   return out;
+
+   return not hasErr;
 }
 
 static std::string HexEncode(const unsigned char *data, size_t len)
@@ -213,41 +278,50 @@ static std::string DescribeCert(X509 *cert)
    return subject;
 }
 
-// Collect everything the current error frame holds into out, joined with "; ",
-// then discard the frame. Must be paired with a _error->PushToStack().
+// Drain all messages from the current error frame and return the non-empty
+// messages in order. The frame is discarded afterward; this must be paired
+// with a preceding _error->PushToStack().
 //
-// PopMessage's return value distinguishes errors from warnings rather than
-// signalling exhaustion, so empty() has to drive the loop. Every MsgType is
-// >= DEBUG, so empty(DEBUG) is false for as long as any message remains.
-static void DrainErrorFrame(std::string &out)
+// PopMessage() returns whether the popped message is an error or warning,
+// not whether another message remains. Use empty(DEBUG) to detect exhaustion:
+// every message type is >= DEBUG, so empty(DEBUG) remains false while the
+// frame contains any messages.
+static std::vector<std::string> DrainErrorFrame()
 {
+   std::vector<std::string> errors;
    while (not _error->empty(GlobalError::DEBUG))
    {
       std::string message;
       _error->PopMessage(message);
-      if (message.empty())
-	 continue;
-      if (not out.empty())
-	 out += "; ";
-      out += message;
+      if (not message.empty())
+	 errors.emplace_back(std::move(message));
    }
+
    _error->RevertToStack();
+   return errors;
+}
+
+// Move every message of more onto the end of out.
+static void AppendErrors(std::vector<std::string> &out,
+			 std::vector<std::string> &&more)
+{
+   out.insert(out.end(), std::make_move_iterator(more.begin()),
+	      std::make_move_iterator(more.end()));
 }
 
 bool BaseX509Store::Impl::LoadCert(FileFd &fd)
 {
-   OpenSSLErrorScope errors;
+   ErrorScope errScope;
 
    if (not fd.Seek(0))
-      return _error->Error(_("LoadCert: cannot rewind the certificate bundle"));
+      return errScope.Error(_("LoadCert: cannot rewind the certificate bundle"));
 
    // Lazily initialize the store.
    // Build the new store separately to avoid leaving a partially populated
    // trust store behind.
    X509StoreUP newStore(X509_STORE_new());
    if (newStore == nullptr)
-      return _error->Error(_("LoadCert: X509_STORE_new failed: %s"),
-			   errors.Errors().c_str());
+      return errScope.Error(_("LoadCert: X509_STORE_new failed"));
 
    // CMS_verify applies the "smime_sign" defaults (purpose SMIME_SIGN, trust EMAIL)
    // to every field the store's param leaves unset, which rejects a signer whose
@@ -259,36 +333,31 @@ bool BaseX509Store::Impl::LoadCert(FileFd &fd)
    X509_VERIFY_PARAM *const param = X509_STORE_get0_param(newStore.get());
    if (param == nullptr ||
        X509_VERIFY_PARAM_set_purpose(param, X509_PURPOSE_ANY) != 1)
-      return _error->Error(_("LoadCert: cannot set the trust store purpose: %s"),
-			   errors.Errors().c_str());
+      return errScope.Error(_("LoadCert: cannot set the trust store purpose"));
    // Use the fd to prevent a TOCTOU race based on pathname
    BIOUP bio(BIO_new(BIO_s_fd()));
    if (bio == nullptr)
-      return _error->Error(_("LoadCert: BIO_new failed: %s"),
-			   errors.Errors().c_str());
+      return errScope.Error(_("LoadCert: BIO_new failed"));
    if (BIO_set_fd(bio.get(), fd.Fd(), BIO_NOCLOSE) != 1)
-      return _error->Error(_("LoadCert: BIO_set fd failed: %s"),
-			   errors.Errors().c_str());
+      return errScope.Error(_("LoadCert: BIO_set fd failed"));
 
    std::vector<X509UP> newCerts;
    while (true)
    {
       // Scope every read, so that AtEndOfPEMBundle() reports on this read and
       // nothing else, and so that a tolerated one leaves the queue as it was.
-      OpenSSLErrorScope readErrors;
+      ErrorScope readErrScope;
       X509UP cert(PEM_read_bio_X509(bio.get(), nullptr, nullptr, nullptr));
       if (cert == nullptr)
       {
 	 // Running out of PEM blocks is how a complete bundle ends.
-	 if (readErrors.AtEndOfPEMBundle())
+	 if (readErrScope.AtEndOfPEMBundle())
 	    break;
 
-	 return _error->Error(_("LoadCert: failed to read certificate: %s"),
-			      readErrors.Errors().c_str());
+	 return readErrScope.Error(_("LoadCert: failed to read certificate"));
       }
       if (X509_STORE_add_cert(newStore.get(), cert.get()) != 1)
-	 return _error->Error(_("LoadCert: failed to add certificate: %s"),
-			      readErrors.Errors().c_str());
+	 return readErrScope.Error(_("LoadCert: failed to add certificate"));
 
       // Keep an owning handle so LoadedCerts() can hand the bundle to a
       // subclass' trust anchor policy, as X509_STORE_add_cert only up-refs.
@@ -296,11 +365,11 @@ bool BaseX509Store::Impl::LoadCert(FileFd &fd)
    }
 
    if (newCerts.empty())
-      return _error->Error(_("LoadCert: no certificates found"));
+      return errScope.Error(_("LoadCert: no certificates found"));
 
    store = std::move(newStore);
    certs = std::move(newCerts);
-   return true;
+   return errScope.MaybeErrors();
 }
 
 // Accepted detached signature labels
@@ -322,26 +391,24 @@ static constexpr unsigned long long MaxSignatureBytes = 1024 * 1024;
 bool BaseX509Store::Impl::ReadSignatureBlocks(FileFd &signature,
 					      std::vector<CMSUP> &blocks)
 {
-   OpenSSLErrorScope errors;
+   ErrorScope errScope;
 
    if (not signature.Seek(0))
-      return _error->Error(_("VerifyDetach: cannot rewind the signature file"));
+      return errScope.Error(_("VerifyDetach: cannot rewind the signature file"));
 
    const unsigned long long fileSize = signature.FileSize();
    if (signature.Failed())
-      return _error->Error(_("VerifyDetach: cannot determine the signature file size"));
+      return errScope.Error(_("VerifyDetach: cannot determine the signature file size"));
    if (fileSize > MaxSignatureBytes)
-      return _error->Error(_("VerifyDetach: signature file exceeds %llu bytes"),
-			   MaxSignatureBytes);
+      return errScope.Error(_("VerifyDetach: signature file exceeds %llu bytes"),
+			    MaxSignatureBytes);
 
    // Use the fd to prevent a TOCTOU race based on pathname
    BIOUP bio(BIO_new(BIO_s_fd()));
    if (bio == nullptr)
-      return _error->Error(_("VerifyDetach: BIO_new failed: %s"),
-			   errors.Errors().c_str());
+      return errScope.Error(_("VerifyDetach: BIO_new failed"));
    if (BIO_set_fd(bio.get(), signature.Fd(), BIO_NOCLOSE) != 1)
-      return _error->Error(_("VerifyDetach: BIO_set fd failed: %s"),
-			   errors.Errors().c_str());
+      return errScope.Error(_("VerifyDetach: BIO_set fd failed"));
 
    unsigned long long total = 0;
    while (true)
@@ -353,16 +420,14 @@ bool BaseX509Store::Impl::ReadSignatureBlocks(FileFd &signature,
 
       // Scope every block, so that AtEndOfPEMBundle() reports on this read and
       // nothing else, and so that a tolerated one leaves the queue as it was.
-      OpenSSLErrorScope blockErrors;
+      ErrorScope blockErrScope;
       if (PEM_read_bio(bio.get(), &name, &header, &der, &derLen) != 1)
       {
 	 // Running out of PEM blocks is how a complete file ends.
-	 if (blockErrors.AtEndOfPEMBundle())
+	 if (blockErrScope.AtEndOfPEMBundle())
 	    break;
 
-	 return _error->Error(
-	    _("VerifyDetach: failed to read signature block: %s"),
-	    blockErrors.Errors().c_str());
+	 return blockErrScope.Error(_("VerifyDetach: failed to read signature block"));
       }
       // On success PEM_read_bio hands out three OPENSSL_malloc'd buffers.
       DEFER([&]
@@ -372,54 +437,53 @@ bool BaseX509Store::Impl::ReadSignatureBlocks(FileFd &signature,
       if (std::none_of(SignatureLabels.begin(), SignatureLabels.end(),
 		       [&label](const char *const known)
 		       { return label == known; }))
-	 return _error->Error(
+	 return blockErrScope.Error(
 	    _("VerifyDetach: unexpected PEM label \"%s\" in the signature file"),
 	    label.c_str());
 
       if (derLen < 0)
-	 return _error->Error(_("VerifyDetach: signature block has a negative length"));
+	 return blockErrScope.Error(_("VerifyDetach: signature block has a negative length"));
       total += static_cast<unsigned long long>(derLen);
       if (total > MaxSignatureBytes)
-	 return _error->Error(_("VerifyDetach: signature file exceeds %llu bytes"),
-			      MaxSignatureBytes);
+	 return blockErrScope.Error(_("VerifyDetach: signature file exceeds %llu bytes"),
+				    MaxSignatureBytes);
 
       const unsigned char *p = der;
       CMSUP cms(d2i_CMS_ContentInfo(nullptr, &p, derLen));
       if (cms == nullptr)
-	 return _error->Error(_("VerifyDetach: failed to parse the %s block: %s"),
-			      label.c_str(),
-			      blockErrors.Errors().c_str());
+	 return blockErrScope.Error(_("VerifyDetach: failed to parse the %s block"),
+				    label.c_str());
 
       // Refuse rather than truncate: silently ignoring trailing blocks would
       // hide signatures the caller believes were taken into account.
       if (blocks.size() >= MaxSignatureBlocks)
-	 return _error->Error(_("VerifyDetach: more than %zu signature blocks"),
-			      MaxSignatureBlocks);
+	 return blockErrScope.Error(_("VerifyDetach: more than %zu signature blocks"),
+				    MaxSignatureBlocks);
 
       blocks.push_back(std::move(cms));
    }
 
    if (blocks.empty())
-      return _error->Error(_("VerifyDetach: no signature blocks found"));
+      return errScope.Error(_("VerifyDetach: no signature blocks found"));
 
-   return true;
+   return errScope.MaybeErrors();
 }
 
 // Verify one CMS block against the trust store and data, appending every
 // accepted signer to signers.
 //
-// A hard failure of the block itself is described in failure, whereas the
+// A hard failure of the block itself is appended to failures, whereas the
 // rejection of an individual signer is appended to warnings. The caller
 // decides which of the two ends up being fatal.
 bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
-					 std::string &failure,
+					 std::vector<std::string> &failures,
 					 std::vector<std::string> &warnings,
 					 std::vector<X509 *> &signers)
 {
    // A block that fails while another one verifies is only a warning, so scope
    // this block's errors to keep them out of the diagnostics of the blocks that
    // follow, and off the caller's queue entirely.
-   OpenSSLErrorScope errors;
+   ErrorScope errScope;
 
    // signers is accumulated across blocks, so remember where this one starts.
    const size_t before = signers.size();
@@ -429,33 +493,33 @@ bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
    BIOUP dataBio(BIO_new(BIO_s_fd()));
    if (dataBio == nullptr)
    {
-      failure = errors.Errors();
+      AppendErrors(failures, errScope.Errors());
       return false;
    }
    if (BIO_set_fd(dataBio.get(), data.Fd(), BIO_NOCLOSE) != 1)
    {
-      failure = errors.Errors();
+      AppendErrors(failures, errScope.Errors());
       return false;
    }
 
    if (CMS_verify(cms, nullptr, store.get(), dataBio.get(), nullptr,
 		  CMS_DETACHED | CMS_BINARY) != 1)
    {
-      failure = errors.Errors();
+      AppendErrors(failures, errScope.Errors());
       return false;
    }
 
    X509StackNoFreeUP certStack(CMS_get0_signers(cms));
    if (certStack == nullptr)
    {
-      failure = _("CMS_get0_signers returned null");
+      failures.push_back(_("CMS_get0_signers returned null"));
       return false;
    }
    // CMS_get0_SignerInfos returns an internal pointer — no free.
    const STACK_OF(CMS_SignerInfo) *infos = CMS_get0_SignerInfos(cms);
    if (infos == nullptr)
    {
-      failure = _("CMS_get0_SignerInfos returned null");
+      failures.push_back(_("CMS_get0_SignerInfos returned null"));
       return false;
    }
 
@@ -494,40 +558,40 @@ bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
 	 // The hooks are handed raw OpenSSL handles, so they may well queue
 	 // errors of their own. Those are neither ours to report nor ours to
 	 // leave lying around.
-	 OpenSSLErrorScope hookErrors;
+	 ErrorScope hookErrors;
 	 if (not owner.VerifySignature(si, cert))
 	    rejection = _("signature rejected by policy");
 	 else if (not owner.VerifyCert(cert))
 	    rejection = _("certificate rejected by policy");
       }
-      std::string detail;
-      DrainErrorFrame(detail);
+      auto details = DrainErrorFrame();
 
       if (rejection == nullptr)
       {
 	 // A hook may annotate a signer it accepts - keep that visible.
-	 if (not detail.empty())
+	 for (auto &detail : details)
 	    warnings.push_back(std::move(detail));
+
 	 signers.push_back(cert);
 	 continue;
       }
 
       std::string warning;
-      if (detail.empty())
+      if (details.empty())
 	 strprintf(warning, "%s: %s", DescribeCert(cert).c_str(), rejection);
       else
-	 strprintf(warning, "%s: %s: %s", DescribeCert(cert).c_str(),
-		   rejection, detail.c_str());
+	 strprintf(warning, "%s: %s: %s", DescribeCert(cert).c_str(), rejection,
+		   APT::String::Join(details, "; ").c_str());
       warnings.push_back(std::move(warning));
    }
 
    if (signers.size() == before)
    {
-      failure = _("no signer passed the certificate policy");
+      failures.push_back(_("no signer passed the certificate policy"));
       return false;
    }
 
-   return true;
+   return errScope.MaybeErrors();
 }
 
 bool BaseX509Store::Impl::VerifyDetach(FileFd &signature, FileFd &data,
@@ -535,12 +599,12 @@ bool BaseX509Store::Impl::VerifyDetach(FileFd &signature, FileFd &data,
 {
    // Nothing here talks to OpenSSL directly, but scope the queue anyway so that
    // whatever the steps below leave behind cannot escape to the caller.
-   OpenSSLErrorScope errors;
+   ErrorScope errScope;
 
    result.signers.clear();
 
    if (store == nullptr)
-      return _error->Error(_("VerifyDetach: no trust store loaded"));
+      return errScope.Error(_("VerifyDetach: no trust store loaded"));
 
    std::vector<CMSUP> blocks;
    if (not ReadSignatureBlocks(signature, blocks))
@@ -549,40 +613,45 @@ bool BaseX509Store::Impl::VerifyDetach(FileFd &signature, FileFd &data,
    // Non-owning: the certificates belong to the CMS structures held in blocks,
    // which outlive the loop below.
    std::vector<X509 *> accepted;
-   std::vector<std::string> failures;
-   std::vector<std::string> warnings;
+   std::vector<std::string> blockFailures;
+   std::vector<std::string> signerWarnings;
    for (size_t i = 0; i < blocks.size(); ++i)
    {
       // An unrewindable data file affects every block equally, so this is fatal
       // rather than a per-block failure. Keeping it out here also keeps the
       // Errno that FileFd pushes off the soft-failure path.
       if (not data.Seek(0))
-	 return _error->Error(_("VerifyDetach: cannot rewind the data file"));
+	 return errScope.Error(_("VerifyDetach: cannot rewind the data file"));
 
-      std::string failure;
-      if (VerifyOneBlock(blocks[i].get(), data, failure, warnings, accepted))
+      std::vector<std::string> failures;
+      if (VerifyOneBlock(blocks[i].get(), data, failures, signerWarnings, accepted))
 	 continue;
 
-      std::string message;
-      strprintf(message, _("signature block %zu: %s"), i + 1, failure.c_str());
-      failures.push_back(std::move(message));
+      for (const auto &message : failures)
+      {
+	 std::string detail;
+	 strprintf(detail, _("signature block %zu: %s"), i + 1, message.c_str());
+	 blockFailures.push_back(std::move(detail));
+      }
    }
 
    // We didn't accept any signers.
+   // We've already handled all ssl errors by creating the warnings and
+   // failures, so explicitly create APT errors and warnings.
    if (accepted.empty())
    {
-      for (const auto &warning : warnings)
+      for (const auto &warning : signerWarnings)
 	 _error->Warning("VerifyDetach: %s", warning.c_str());
-      for (const auto &failure : failures)
+      for (const auto &failure : blockFailures)
 	 _error->Error("VerifyDetach: %s", failure.c_str());
-      return _error->Error(_("VerifyDetach: no acceptable signature found"));
+      return errScope.Error(_("VerifyDetach: no acceptable signature found"));
    }
 
    // At least one block yielded an accepted signer, so everything that did not
    // work out is informational only.
-   for (const auto &failure : failures)
+   for (const auto &failure : blockFailures)
       _error->Warning("VerifyDetach: %s", failure.c_str());
-   for (const auto &warning : warnings)
+   for (const auto &warning : signerWarnings)
       _error->Warning("VerifyDetach: %s", warning.c_str());
 
    for (X509 *const cert : accepted)
@@ -590,9 +659,9 @@ bool BaseX509Store::Impl::VerifyDetach(FileFd &signature, FileFd &data,
       const auto fingerprint = CertFingerprint(cert);
       // Failure to calculate the fingerprint is fatal.
       if (not fingerprint)
-	 return _error->Error(
+	 return errScope.Error(
 	    _("VerifyDetach: cannot calculate certificate fingerprint for %s"),
-	      DescribeCert(cert).c_str());
+	    DescribeCert(cert).c_str());
 
       SignerIdentity identity{SubjectOneline(cert), *fingerprint};
       // One certificate may well have signed more than one block.
@@ -603,7 +672,7 @@ bool BaseX509Store::Impl::VerifyDetach(FileFd &signature, FileFd &data,
       result.signers.push_back(std::move(identity));
    }
 
-   return true;
+   return errScope.MaybeErrors();
 }
 
 BaseX509Store::BaseX509Store() : d(std::make_unique<Impl>(*this)) {}
