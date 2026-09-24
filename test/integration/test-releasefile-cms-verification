@@ -1,0 +1,235 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+APT_P7S_EKU='1.3.6.1.4.1.99999.2'
+
+# --------------------------------------------------------------------------- #
+# Generate test PKI at runtime (no committed certs)
+#
+# Signed-By is a CA bundle. The p7s file is signed by a leaf certificate issued
+# by that CA and carrying the required extensions and SAN.
+# --------------------------------------------------------------------------- #
+CERTDIR="${TMPWORKINGDIRECTORY}/certs"
+mkdir -p "$CERTDIR"
+
+# Trusted root CA
+openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/test-ca.key" \
+    -out    "$CERTDIR/test-ca.cert" \
+    -days 1 -subj "/CN=APT Test P7S CA" \
+    -addext "basicConstraints = critical,CA:TRUE" \
+    -addext "keyUsage = critical,keyCertSign,cRLSign" 2>/dev/null
+
+# Signing leaf for suite "stable"
+openssl req -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/test-leaf.key" \
+    -out    "$CERTDIR/test-leaf.csr" \
+    -subj "/CN=APT Test P7S Leaf" 2>/dev/null
+openssl x509 -req \
+    -in      "$CERTDIR/test-leaf.csr" \
+    -CA      "$CERTDIR/test-ca.cert" \
+    -CAkey   "$CERTDIR/test-ca.key" \
+    -CAcreateserial \
+    -out     "$CERTDIR/test-leaf.cert" \
+    -days    1 \
+    -extfile /dev/stdin <<EOF 2>/dev/null
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = ${APT_P7S_EKU}
+subjectAltName = DNS:stable
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+EOF
+
+# A second, unrelated CA and leaf for negative tests
+openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/other-ca.key" \
+    -out    "$CERTDIR/other-ca.cert" \
+    -days 1 -subj "/CN=APT Other P7S CA" \
+    -addext "basicConstraints = critical,CA:TRUE" \
+    -addext "keyUsage = critical,keyCertSign,cRLSign" 2>/dev/null
+
+openssl req -newkey rsa:2048 -nodes \
+    -keyout "$CERTDIR/other-leaf.key" \
+    -out    "$CERTDIR/other-leaf.csr" \
+    -subj "/CN=APT Other P7S Leaf" 2>/dev/null
+openssl x509 -req \
+    -in      "$CERTDIR/other-leaf.csr" \
+    -CA      "$CERTDIR/other-ca.cert" \
+    -CAkey   "$CERTDIR/other-ca.key" \
+    -CAcreateserial \
+    -out     "$CERTDIR/other-leaf.cert" \
+    -days    1 \
+    -extfile /dev/stdin <<EOF 2>/dev/null
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = ${APT_P7S_EKU}
+subjectAltName = DNS:stable
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+EOF
+
+# --------------------------------------------------------------------------- #
+# Set up a minimal package archive
+# --------------------------------------------------------------------------- #
+insertpackage 'stable' 'testpkg' 'amd64' '1.0'
+setupaptarchive --no-update
+
+# --------------------------------------------------------------------------- #
+# Scenario 1: Only p7s sig present — must succeed via p7s path
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 1: p7s-only repository — update succeeds'
+
+export APT_DONT_SIGN='Release.gpg'
+signreleasefiles 'Joe Sixpack'
+find aptarchive -name InRelease -delete
+signreleasewithp7s "$CERTDIR/test-leaf.cert" "$CERTDIR/test-leaf.key" "$CERTDIR/test-ca.cert"
+changetowebserver
+
+rm -f rootdir/etc/apt/sources.list.d/*.list
+
+echo "deb [signed-by=${CERTDIR}/test-ca.cert] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+
+rm -rf rootdir/var/lib/apt/lists
+testsuccess aptget update
+
+# --------------------------------------------------------------------------- #
+# Scenario 2: p7s-only, but wrong CA → must fail
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 2: wrong CA — update fails'
+
+rm -rf rootdir/var/lib/apt/lists
+echo "deb [signed-by=${CERTDIR}/other-ca.cert] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+testfailure aptget update
+
+# --------------------------------------------------------------------------- #
+# Scenario 3: X.509 source with no p7s (404), InRelease present — update FAILS
+#
+# There is no fallback to GPG for X.509 sources.  If the repo declares a
+# PEM Signed-By but does not publish a Release.p7s, the update must fail.
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 3: X.509 source, no p7s (404) — update fails (no fallback)'
+
+unset APT_DONT_SIGN
+find aptarchive -type d -name 'signed-by' | xargs rm -rf 2>/dev/null || true
+signreleasefiles 'Joe Sixpack'
+
+rm -rf rootdir/var/lib/apt/lists
+echo "deb [signed-by=${CERTDIR}/test-ca.cert] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+testfailure aptget update
+
+# --------------------------------------------------------------------------- #
+# Scenario 4: No p7s, no InRelease, no Release.gpg → must fail
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 4: no signatures at all — update fails'
+
+find aptarchive -type d -name 'signed-by' | xargs rm -rf 2>/dev/null || true
+find aptarchive -name InRelease -o -name 'Release.gpg' | xargs rm -f 2>/dev/null || true
+
+rm -rf rootdir/var/lib/apt/lists
+echo "deb [signed-by=${CERTDIR}/test-ca.cert] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+testfailure aptget update
+
+# --------------------------------------------------------------------------- #
+# Scenario 5: X.509 source with missing p7s, --allow-insecure-repositories
+# → proceeds untrusted
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 5: X.509 source, no p7s, --allow-insecure-repositories — untrusted'
+
+unset APT_DONT_SIGN
+find aptarchive -type d -name 'signed-by' | xargs rm -rf 2>/dev/null || true
+signreleasefiles 'Joe Sixpack'
+
+rm -rf rootdir/var/lib/apt/lists
+echo "deb [signed-by=${CERTDIR}/test-ca.cert] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+testwarning aptget update -o Acquire::AllowInsecureRepositories=true
+
+# --------------------------------------------------------------------------- #
+# Scenario 6: IsTrusted() — repo verified via p7s is considered trusted
+#
+# Verifies that debReleaseIndex::IsTrusted() returns true after a p7s-verified
+# update.  The cached signature is stored as Release.p7s (not by-hash).
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 6: IsTrusted() returns true after p7s update'
+
+unset APT_DONT_SIGN
+export APT_DONT_SIGN='Release.gpg'
+signreleasefiles 'Joe Sixpack'
+find aptarchive -name InRelease -delete
+signreleasewithp7s "$CERTDIR/test-leaf.cert" "$CERTDIR/test-leaf.key" "$CERTDIR/test-ca.cert"
+
+rm -rf rootdir/var/lib/apt/lists
+echo "deb [signed-by=${CERTDIR}/test-ca.cert] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+testsuccess aptget update
+
+msgtest 'After p7s update' 'apt-cache show returns package info'
+testsuccess --nomsg aptcache show testpkg
+
+msgtest 'p7s sig file' 'cached as Release.p7s in lists directory'
+testsuccess --nomsg ls rootdir/var/lib/apt/lists/*Release.p7s
+
+msgtest 'IsTrusted()' 'apt-get install -s does not warn about unauthenticated'
+testsuccess --nomsg aptget install -s testpkg
+
+# --------------------------------------------------------------------------- #
+# Scenario 7: gpg-signed repo (Signed-By is a GPG key) with a *planted* p7s at
+# the derived URL must NOT attempt the p7s path. Regression guard against
+# unconditional probing: the planted .p7s is signed by an unrelated CA's leaf,
+# so if APT ever fed it to the p7s method the update would hard-fail instead
+# of verifying via gpg.
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 7: gpg repo with planted (wrong-CA) p7s — p7s skipped, gpg succeeds'
+
+unset APT_DONT_SIGN
+signreleasefiles 'Joe Sixpack'
+signreleasewithp7s "$CERTDIR/other-leaf.cert" "$CERTDIR/other-leaf.key" "$CERTDIR/other-ca.cert"
+
+rm -rf rootdir/var/lib/apt/lists
+echo "deb [signed-by=${TMPWORKINGDIRECTORY}/keys/joesixpack.pub] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+testsuccess aptget update
+
+msgtest 'gpg repo' 'verified via InRelease, not p7s'
+testsuccess --nomsg ls rootdir/var/lib/apt/lists/*InRelease
+
+msgtest 'gpg repo' 'no p7s signature cached in lists directory'
+if ls rootdir/var/lib/apt/lists/*.p7s >/dev/null 2>&1; then
+    msgfail 'a p7s signature was cached for a gpg-signed source'
+else
+    msgpass
+fi
+
+# --------------------------------------------------------------------------- #
+# Scenario 8: same gpg repo, but the planted p7s is a non-CMS "soft 404" body
+# (HTTP 200 + HTML, as some CDNs/mirrors serve for missing paths). The p7s path
+# must still be skipped so the update succeeds via gpg rather than choking on
+# the bogus signature body.
+# --------------------------------------------------------------------------- #
+msgmsg 'Scenario 8: gpg repo with soft-404 p7s body — update still succeeds'
+
+unset APT_DONT_SIGN
+signreleasefiles 'Joe Sixpack'
+find aptarchive -type d -name 'signed-by' | xargs rm -rf 2>/dev/null || true
+for RELEASE in $(find aptarchive/ -name 'Release'); do
+    HASH="$(sha256sum "${RELEASE}" | cut -d' ' -f1)"
+    SIGDIR="${RELEASE%/Release}/signed-by/SHA256"
+    mkdir -p "${SIGDIR}"
+    printf '<html><body>404 Not Found</body></html>\n' > "${SIGDIR}/${HASH}.p7s"
+done
+
+rm -rf rootdir/var/lib/apt/lists
+echo "deb [signed-by=${TMPWORKINGDIRECTORY}/keys/joesixpack.pub] http://localhost:${APTHTTPPORT}/ stable main" \
+    > rootdir/etc/apt/sources.list
+testsuccess aptget update

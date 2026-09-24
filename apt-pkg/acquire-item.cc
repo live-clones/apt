@@ -1447,6 +1447,17 @@ void pkgAcqMetaBase::QueueForSignatureVerify(pkgAcqTransactionItem * const I, st
    I->SetActiveSubprocess("gpgv");
 }
 									/*}}}*/
+// AcqMetaBase::QueueForCMSVerify					/*{{{*/
+void pkgAcqMetaBase::QueueForCMSVerify(pkgAcqTransactionItem * const I,
+   std::string const &File, std::string const &Signature)
+{
+   AuthPass = true;
+   I->Desc.URI = "cms:" + pkgAcquire::URIEncode(Signature);
+   I->DestFile = File;
+   QueueURI(I->Desc);
+   I->SetActiveSubprocess("openssl-cms");
+}
+									/*}}}*/
 // AcqMetaBase::CheckDownloadDone					/*{{{*/
 bool pkgAcqMetaBase::CheckDownloadDone(pkgAcqTransactionItem * const I, const std::string &Message, HashStringList const &Hashes) const
 {
@@ -1988,8 +1999,9 @@ pkgAcqMetaBase::~pkgAcqMetaBase()
 pkgAcqMetaClearSig::pkgAcqMetaClearSig(pkgAcquire * const Owner,	/*{{{*/
       IndexTarget const &ClearsignedTarget,
       IndexTarget const &DetachedDataTarget, IndexTarget const &DetachedSigTarget,
-      metaIndex * const MetaIndexParser) :
-   pkgAcqMetaIndex(Owner, this, ClearsignedTarget, DetachedSigTarget),
+      metaIndex * const MetaIndexParser,
+      bool const DeferStart) :
+   pkgAcqMetaIndex(Owner, this, ClearsignedTarget, DetachedSigTarget, DeferStart),
    d(NULL), DetachedDataTarget(DetachedDataTarget),
    MetaIndexParser(MetaIndexParser), LastMetaIndexParser(NULL)
 {
@@ -2028,7 +2040,17 @@ void pkgAcqMetaClearSig::Finished()					/*{{{*/
       std::clog << "Finished: " << DestFile <<std::endl;
    if(TransactionManager->State == TransactionStarted &&
       TransactionManager->TransactionHasError() == false)
+   {
       TransactionManager->CommitTransaction();
+   }
+   // When useCMS is true the transaction manager (pkgAcqMetaClearSig) is
+   // constructed with DeferStart=true and empty GPG targets, so its URI is
+   // never queued and Status stays StatIdle.  If the CMS path succeeded,
+   // CommitTransaction() was already called by pkgAcqMetaCMSSig::Done()
+   // (State == TransactionCommit).  Mark StatDone so update.cc does not
+   // report "Failed to fetch" for us.
+   if (TransactionManager->State == TransactionCommit && Status == StatIdle)
+      Status = StatDone;
 }
 									/*}}}*/
 bool pkgAcqMetaClearSig::VerifyDone(std::string const &Message,		/*{{{*/
@@ -2155,8 +2177,9 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
 
 pkgAcqMetaIndex::pkgAcqMetaIndex(pkgAcquire * const Owner,		/*{{{*/
                                  pkgAcqMetaClearSig * const TransactionManager,
-				 IndexTarget const &DataTarget,
-				 IndexTarget const &DetachedSigTarget) :
+			 IndexTarget const &DataTarget,
+			 IndexTarget const &DetachedSigTarget,
+			 bool const DeferStart) :
    pkgAcqMetaBase(Owner, TransactionManager, DataTarget), d(NULL),
    DetachedSigTarget(DetachedSigTarget)
 {
@@ -2183,7 +2206,8 @@ pkgAcqMetaIndex::pkgAcqMetaIndex(pkgAcquire * const Owner,		/*{{{*/
       Desc.URI = DataTarget.URI;
    }
 
-   QueueURI(Desc);
+   if (DeferStart == false)
+      QueueURI(Desc);
 }
 									/*}}}*/
 void pkgAcqMetaIndex::Done(string const &Message,			/*{{{*/
@@ -2371,6 +2395,225 @@ void pkgAcqMetaSig::Failed(string const &Message,pkgAcquire::MethodConfig const 
       // Ignore this
       Status = StatDone;
    }
+}
+									/*}}}*/
+
+
+// pkgAcqMetaCMS - Constructor					/*{{{*/
+pkgAcqMetaCMS::pkgAcqMetaCMS(pkgAcquire * const Owner,
+      pkgAcqMetaClearSig * const TransactionManager,
+      IndexTarget const &DataTarget) :
+    // Inherit pkgAcqMetaIndex: it sets up DestFile, Desc, and queues the
+    // Release download immediately (DeferStart=false).  We pass a dummy
+    // IndexTarget as the DetachedSigTarget — it is never used because our
+    // overridden Done() shadows pkgAcqMetaIndex::Done().
+    pkgAcqMetaIndex(Owner, TransactionManager, DataTarget,
+		    IndexTarget("", "", "", "", false, false, DataTarget.Options)),
+    d(NULL)
+{
+   if (_config->FindB("Debug::Acquire::Transaction", false) == true)
+      std::clog << "New pkgAcqMetaCMS with TransactionManager "
+                << TransactionManager << std::endl;
+}
+									/*}}}*/
+pkgAcqMetaCMS::~pkgAcqMetaCMS() {}
+
+// pkgAcqMetaCMS::Done - Release downloaded, queue p7s sig		/*{{{*/
+void pkgAcqMetaCMS::Done(string const &Message, HashStringList const &Hashes,
+                              pkgAcquire::MethodConfig const * const Cfg)
+{
+   Item::Done(Message, Hashes, Cfg);
+
+   if (CheckDownloadDone(this, Message, Hashes) == false)
+      return;
+
+   // Compute SHA256 of the downloaded Release file to derive the p7s URL.
+   // The signature lives at: <base>signed-by/SHA256/<sha256hex>.p7s
+   ::Hashes hasher(::Hashes::SHA256SUM);
+   FileFd fd;
+   if (fd.Open(DestFile, FileFd::ReadOnly) == false || hasher.AddFD(fd) == false)
+   {
+      Status = StatError;
+      ErrorText = "Failed to hash Release file for p7s URL derivation";
+      return;
+   }
+   HashStringList const hsl = hasher.GetHashStringList();
+   HashString const * const sha256entry = hsl.find("SHA256");
+   if (sha256entry == nullptr)
+   {
+      Status = StatError;
+      ErrorText = "SHA256 hash unavailable for p7s URL derivation";
+      return;
+   }
+   std::string const sha256hex = sha256entry->HashValue();
+
+   // Strip the trailing "Release" filename and append the p7s path.
+   std::string const baseURI = Target.URI.substr(0, Target.URI.rfind('/') + 1);
+   std::string const p7sURI = baseURI + "signed-by/SHA256/" + sha256hex + ".p7s";
+
+   IndexTarget const p7sTarget(
+      "",                          // MetaKey
+      "Release.p7s",               // ShortDesc
+      Target.Description + ".p7s", // Description
+      p7sURI,
+      true,                        // IsOptional — 404 triggers fallback, not hard error
+      false,                       // KeepCompressed
+      Target.Options);
+
+   new pkgAcqMetaCMSSig(Owner, TransactionManager, p7sTarget, this);
+}
+									/*}}}*/
+// pkgAcqMetaCMS::Failed - Release download failed, no fallback	/*{{{*/
+void pkgAcqMetaCMS::Failed(string const &Message,
+                                pkgAcquire::MethodConfig const * const Cnf)
+{
+   Item::Failed(Message, Cnf);
+   // No Release = repo is broken.  There is no GPG fallback for X.509
+   // sources; the transaction will abort via the standard error path.
+}
+									/*}}}*/
+
+
+// pkgAcqMetaCMSSig - Constructor					/*{{{*/
+pkgAcqMetaCMSSig::pkgAcqMetaCMSSig(pkgAcquire * const Owner,
+      pkgAcqMetaClearSig * const TransactionManager,
+      IndexTarget const &Target,
+      pkgAcqMetaCMS * const MetaIndex) :
+   pkgAcqTransactionItem(Owner, TransactionManager, Target), d(NULL),
+   MetaIndex(MetaIndex)
+{
+   DestFile = GetPartialFileNameFromURI(Target.URI);
+
+   // Remove any pre-existing partial file — it is small and stale partial
+   // downloads can confuse proxies
+   RemoveFile("pkgAcqMetaCMSSig", DestFile);
+
+   if (_config->FindB("Debug::Acquire::Transaction", false) == true)
+      std::clog << "New pkgAcqMetaCMSSig with TransactionManager "
+                << TransactionManager << std::endl;
+
+   Desc.Description = Target.Description;
+   Desc.Owner = this;
+   Desc.ShortDesc = Target.ShortDesc;
+   Desc.URI = Target.URI;
+
+   QueueURI(Desc);
+}
+									/*}}}*/
+pkgAcqMetaCMSSig::~pkgAcqMetaCMSSig() {}
+
+std::string pkgAcqMetaCMSSig::GetFinalFilename() const			/*{{{*/
+{
+   // Store as Release.p7s (not by-hash) so IsTrusted() can find it via
+   // MetaIndexFile("Release.p7s").
+   std::string const baseURI = MetaIndex->Target.URI.substr(0, MetaIndex->Target.URI.rfind('/') + 1);
+   return GetFinalFileNameFromURI(baseURI + "Release.p7s");
+}
+									/*}}}*/
+// pkgAcqMetaCMSSig::Custom600Headers					/*{{{*/
+std::string pkgAcqMetaCMSSig::Custom600Headers() const
+{
+   std::string Header = pkgAcqTransactionItem::Custom600Headers();
+   std::string const key = TransactionManager->MetaIndexParser->GetSignedBy();
+   if (key.empty() == false)
+      Header += "\nSigned-By: " + QuoteString(key, "");
+   std::string const suite = TransactionManager->MetaIndexParser->GetExpectedDist();
+   if (suite.empty() == false)
+      Header += "\nSuite: " + QuoteString(suite, "");
+   std::string const origin = TransactionManager->MetaIndexParser->GetOrigin();
+   if (origin.empty() == false)
+      Header += "\nOrigin: " + QuoteString(origin, "");
+   return Header;
+}
+									/*}}}*/
+// pkgAcqMetaCMSSig::Done - p7s downloaded or verified			/*{{{*/
+void pkgAcqMetaCMSSig::Done(string const &Message, HashStringList const &Hashes,
+                            pkgAcquire::MethodConfig const * const Cfg)
+{
+   // Restore DestFile from the auth pass if needed (mirrors pkgAcqMetaSig)
+   if (MetaIndexFileSignature.empty() == false)
+   {
+      DestFile = MetaIndexFileSignature;
+      MetaIndexFileSignature.clear();
+   }
+   Item::Done(Message, Hashes, Cfg);
+
+   if (MetaIndex->AuthPass == false)
+   {
+      if (MetaIndex->CheckDownloadDone(this, Message, Hashes) == true)
+      {
+         // Save the sig path before DestFile is overwritten by QueueForCMSVerify
+         MetaIndexFileSignature = DestFile;
+         MetaIndex->QueueForCMSVerify(this, MetaIndex->DestFile, DestFile);
+      }
+      return;
+   }
+    else if (MetaIndex->CheckAuthDone(Message, Cfg) == true)
+    {
+       auto const CMSSig = GetFinalFilename();
+       auto const Release = MetaIndex->GetFinalFilename();
+       if (TransactionManager->IMSHit == false ||
+           (FileExists(CMSSig) == false && FileExists(Release) == true))
+       {
+          TransactionManager->TransactionStageCopy(this, DestFile, CMSSig);
+          TransactionManager->TransactionStageCopy(MetaIndex, MetaIndex->DestFile, Release);
+       }
+    }
+   else if (MetaIndex->Status != StatAuthError)
+   {
+      std::string const FinalFile = MetaIndex->GetFinalFilename();
+      if (TransactionManager->IMSHit == false)
+         TransactionManager->TransactionStageCopy(MetaIndex, MetaIndex->DestFile, FinalFile);
+      else
+         TransactionManager->TransactionStageCopy(MetaIndex, FinalFile, FinalFile);
+   }
+}
+									/*}}}*/
+// pkgAcqMetaCMSSig::Failed - p7s download or verification failed	/*{{{*/
+void pkgAcqMetaCMSSig::Failed(string const &Message,
+                              pkgAcquire::MethodConfig const * const Cnf)
+{
+   Item::Failed(Message, Cnf);
+
+   // Verification failure — do not proceed (downgrade guard)
+   if (MetaIndex->AuthPass == true && MetaIndex->CheckStopAuthentication(this, Message))
+      return;
+
+   // Restore DestFile to the sig path for the removal stage
+   if (MetaIndexFileSignature.empty() == false)
+   {
+      DestFile = MetaIndexFileSignature;
+      MetaIndexFileSignature.clear();
+   }
+
+   // p7s missing (404) or verification failed: NO fallback to GPG.
+   // Consult AllowInsecureRepositories — if allowed, load the Release
+   // untrusted; otherwise mark it .FAILED and abort.
+   TransactionManager->TransactionStageRemoval(this, DestFile);
+   if (AllowInsecureRepositories(InsecureType::UNSIGNED, MetaIndex->Target.Description,
+                                  TransactionManager->MetaIndexParser,
+                                  TransactionManager, this) == true)
+   {
+      string const FinalRelease = MetaIndex->GetFinalFilename();
+      string const FinalInRelease = TransactionManager->GetFinalFilename();
+      LoadLastMetaIndexParser(TransactionManager, FinalRelease, FinalInRelease);
+
+      bool const GoodLoad = TransactionManager->MetaIndexParser->Load(
+         MetaIndex->DestFile, &ErrorText);
+      if (MetaIndex->VerifyVendor(Message) == false)
+         /* expired Release files still require extra force */;
+      else
+      {
+         TransactionManager->TransactionStageCopy(MetaIndex, MetaIndex->DestFile, FinalRelease);
+         TransactionManager->QueueIndexes(GoodLoad);
+      }
+   }
+   else if (TransactionManager->IMSHit == false)
+      Rename(MetaIndex->DestFile, MetaIndex->DestFile + ".FAILED");
+
+   if (Cnf->LocalOnly == true ||
+       StringToBool(LookupTag(Message, "Transient-Failure"), false) == false)
+      Status = StatDone;
 }
 									/*}}}*/
 

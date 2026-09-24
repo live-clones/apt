@@ -884,11 +884,11 @@ bool pkgAcquire::Clean(std::string Dir)
       "pkgAcquire::Clean"
    );
 }
-                           /*}}}*/
+									/*}}}*/
 // Acquire::CleanLists - Cleans a directory of list files		/*{{{*/
 bool pkgAcquire::CleanLists(std::string const &Dir)
 {
-   std::regex const KeepPattern(".*_(Release|Release\\.gpg|InRelease)");
+   static std::regex const KeepPattern(".*_(Release|Release\\.gpg|InRelease|Release\\.p7s)");
    return CleanDir(
       Dir,
       [&KeepPattern](std::string_view const FName) noexcept {
