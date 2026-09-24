@@ -199,6 +199,52 @@
    this mechanism can complement a per-package signature.</para>
 </refsect1>
 
+<refsect1><title>CMS/PKCS#7 Signed Repositories</title>
+   <para>
+   A repository can be signed with a CMS/PKCS#7 (S/MIME) signature instead of
+   an OpenPGP one. This is requested per source by pointing the
+   <option>Signed-By</option> option at a single PEM bundle of X.509
+   certificates rather than at a keyring and fingerprints, see
+   &sources-list;. The bundle is the set of trust anchors the signature has to
+   chain up to; nothing else may be listed alongside it.
+   </para>
+
+   <para>
+   Such a repository does not provide a clear-signed
+   <filename>InRelease</filename> file. APT acquires the detached
+   <filename>Release</filename> file first and then its signature, which is
+   published under the hash of the very <filename>Release</filename> file it
+   signs:
+   </para>
+
+   <literallayout>dists/&lt;suite&gt;/Release
+dists/&lt;suite&gt;/by-hash/SHA512/&lt;sha512 of Release&gt;.p7s</literallayout>
+
+   <para>
+   Naming the signature after its subject establishes an identity between the
+   two files: a mirror can not serve a signature belonging to a
+   <filename>Release</filename> file other than the one just downloaded,
+   replacing both files is atomic for clients fetching them, and the signature
+   can be cached indefinitely as its contents can never change. As a
+   consequence there is no way to ask for the signature without naming the file
+   it signs, and APT will therefore never look for a signature at any other
+   location; in particular it does not fall back to a
+   <filename>dists/&lt;suite&gt;/Release.p7s</filename>. Repositories must
+   publish the signature under the hashed name, regardless of whether they set
+   <literal>Acquire-By-Hash</literal> for their index files.
+   </para>
+
+   <para>
+   Locally the signature is stored under its ordinary name
+   (<filename>Release.p7s</filename>) in
+   <filename>&statedir;/lists/</filename>, like a
+   <filename>Release.gpg</filename> would be. Note that
+   <command>apt-get update --print-uris</command> can not list the signature,
+   as its location is unknown until the <filename>Release</filename> file has
+   been acquired.
+   </para>
+</refsect1>
+
 <refsect1><title>Information changes</title>
    <para>
    A Release file contains beside the checksums for the files in the repository
