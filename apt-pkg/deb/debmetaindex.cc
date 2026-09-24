@@ -784,9 +784,11 @@ bool debReleaseIndex::parseSumData(const char *&Start, const char *End,	/*{{{*/
 
 bool debReleaseIndex::GetIndexes(pkgAcquire *Owner, bool const &GetAll)/*{{{*/
 {
+   auto const sigFormat = d->ReleaseOptions.find("SIG_FORMAT");
+   bool const isP7S = sigFormat != d->ReleaseOptions.end() && sigFormat->second == "pkcs7";
 #define APT_TARGET(X) IndexTarget("", X, MetaIndexInfo(X), MetaIndexURI(X), false, false, d->ReleaseOptions)
    pkgAcqMetaClearSig * const TransactionManager = new pkgAcqMetaClearSig(Owner,
-	 APT_TARGET("InRelease"), APT_TARGET("Release"), APT_TARGET("Release.gpg"), this);
+	 APT_TARGET("InRelease"), APT_TARGET("Release"), APT_TARGET( isP7S ? "Release.p7s" : "Release.gpg"), this);
 #undef APT_TARGET
    // special case for --print-uris
    if (GetAll)
@@ -1325,7 +1327,7 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
 	    only while we cannot actually verify such a repository: the check
 	    makes the warning disappear by itself once the p7s method exists. */
 	 if (ReleaseOptions.find("SIG_FORMAT") != ReleaseOptions.end() &&
-	     Pkcs7MethodAvailable() == false)
+	     PKCS7MethodAvailable() == false)
 	    _error->Warning(_("Source %s %s uses a PEM bundle in Signed-By, but this APT "
 			      "cannot verify CMS/PKCS#7 signatures: the repository will fail to update"),
 			    URI.c_str(), Dist.c_str());

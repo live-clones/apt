@@ -124,6 +124,73 @@ static std::string GetDiffIndexURI(IndexTarget const &Target)		/*{{{*/
    return Target.URI + ".diff/Index";
 }
 									/*}}}*/
+bool PKCS7MethodAvailable()						/*{{{*/
+{
+   // CMS/PKCS#7 verification is provided by the p7s acquire method, which
+   // does not exist yet. This is the scaffolding for it, and until it is added
+   // every pkcs7 repository terminates in an error.
+   constexpr char const * const confItem = "Dir::Bin::Methods::p7s";
+   std::string const Method = _config->Exists(confItem) ?
+      _config->FindFile(confItem) : _config->FindDir("Dir::Bin::Methods") + "p7s";
+   return FileExists(Method);
+}
+									/*}}}*/
+static bool IsPKCS7Signed(IndexTarget const &Target)			/*{{{*/
+{
+   return Target.Option(IndexTarget::SIG_FORMAT) == "pkcs7";
+}
+									/*}}}*/
+/* A CMS/PKCS#7 signature is not fetched under a fixed name, but under the
+   hash of the very Release file it signs:
+
+	<dists>/by-hash/SHA512/<sha512 of Release>.p7s
+
+   That establishes an identity between the two files: 
+   * a mirror cannot hand us a signature belonging to a different Release than 
+     the one we just downloaded
+   * publishing a new pair is atomic
+   * and caches can treat the signature as immutable. 
+
+   Consequently the Release file has to be fetched
+   first, which is the order pkgAcqMetaIndex::Done() implements anyway.
+
+   There is deliberately NO fallback to a flat Release.p7s.
+
+   Note that the hash goes into the URI only. On disk the signature keeps its
+   canonical name (lists/<...>_Release.p7s), see pkgAcqMetaSig's constructor. */
+static constexpr char const * const PKCS7ByHashAlgorithm = "SHA512";
+static std::string GetPKCS7SignatureURI(IndexTarget const &SigTarget, std::string const &ReleaseHash)/*{{{*/
+{
+   if (unlikely(ReleaseHash.empty()))
+      return {};
+   // parse instead of cutting the string to be sure we never touch the authority
+   ::URI uri{SigTarget.URI};
+   auto const trailing_slash = uri.Path.find_last_of('/');
+   if (unlikely(trailing_slash == std::string::npos))
+      return {};
+   uri.Path = uri.Path.substr(0, trailing_slash + 1)
+		 .append("by-hash/")
+		 .append(PKCS7ByHashAlgorithm)
+		 .append("/")
+		 .append(ReleaseHash)
+		 .append(".p7s");
+   return uri;
+}
+									/*}}}*/
+static std::string SHA512OfFile(std::string const &File)		/*{{{*/
+/* The methods usually hand us all hashes of the Release file, but not on an
+   IMS-Hit: a 304 carries no body and hence no digests. We still need the hash
+   to name the signature, so compute it from the copy we have on disk. */
+{
+   FileFd Fd;
+   if (Fd.Open(File, FileFd::ReadOnly) == false)
+      return {};
+   ::Hashes Hash(::Hashes::SHA512SUM);
+   if (Hash.AddFD(Fd) == false || Fd.Failed())
+      return {};
+   return Hash.GetHashString(::Hashes::SHA512SUM).HashValue();
+}
+									/*}}}*/
 
 static void ReportMirrorFailureToCentral(pkgAcquire::Item const &I, std::string const &FailCode, std::string const &Details)/*{{{*/
 {
@@ -717,6 +784,19 @@ bool pkgAcqIndexMergeDiffs::AcquireByHash() const
 bool pkgAcqIndexDiffs::AcquireByHash() const
 {
    return false;
+}
+/* A CMS/PKCS#7 signature is already addressed by the hash of the Release file
+   it signs, so the generic rewriting must not append a second by-hash element
+   to its URI. This can only ever trigger if an archive lists Release.p7s in the
+   checksum sections of its own Release file, but as the result would be a URI
+   nobody publishes, spell it out. OpenPGP signatures are intentionally left to
+   the generic logic so their (equally unlisted, but long-standing) handling of
+   mirror alternatives stays untouched. */
+bool pkgAcqMetaSig::AcquireByHash() const
+{
+   if (IsPKCS7Signed(Target))
+      return false;
+   return pkgAcqTransactionItem::AcquireByHash();
 }
 									/*}}}*/
 
@@ -1433,6 +1513,22 @@ string pkgAcqMetaBase::Custom600Headers() const
 void pkgAcqMetaBase::QueueForSignatureVerify(pkgAcqTransactionItem * const I, std::string const &File, std::string const &Signature)
 {
    AuthPass = true;
+   if (IsPKCS7Signed(Target))
+   {
+      if (PKCS7MethodAvailable() == false)
+      {
+	 // Expected on this branch: the p7s method is added separately, so
+	 // this is the designed terminal state, not an oversight.
+	 I->Status = StatAuthError;
+	 _error->Error(_("The repository requires CMS/PKCS#7 signature verification (Release.p7s), which is not supported by this APT"));
+	 return;
+      }
+      I->Desc.URI = "p7s:" + pkgAcquire::URIEncode(Signature);
+      I->DestFile = File;
+      QueueURI(I->Desc);
+      I->SetActiveSubprocess("p7s");
+      return;
+   }
 #ifdef SQV_EXECUTABLE
    if (not _config->Find("APT::Key::GPGVCommand").empty() || not FileExists(SQV_EXECUTABLE))
       I->Desc.URI = "gpgv:" + pkgAcquire::URIEncode(Signature);
@@ -1993,6 +2089,25 @@ pkgAcqMetaClearSig::pkgAcqMetaClearSig(pkgAcquire * const Owner,	/*{{{*/
    d(NULL), DetachedDataTarget(DetachedDataTarget),
    MetaIndexParser(MetaIndexParser), LastMetaIndexParser(NULL)
 {
+   if (IsPKCS7Signed(ClearsignedTarget))
+   {
+      /* This object stays a placeholder: the base pkgAcqMetaIndex constructor
+	 ran with TransactionManager == this and returned early without queuing
+	 anything, which is what suppresses the InRelease fetch. We drop a
+	 possibly stale InRelease/Release.gpg pair and start straight at the
+	 detached Release + Release.p7s pair instead.
+
+	 Derive the Release.gpg URI from the detached data target rather than
+	 from the clearsigned one: the latter may point at an arbitrary file
+	 via inrelease-path, in which case no cleanup would happen at all. */
+      TransactionStageRemoval(this, GetFinalFilename());   // stale InRelease
+      IndexTarget GpgTarget = DetachedDataTarget;
+      GpgTarget.URI += ".gpg";
+      new CleanupItem(Owner, TransactionManager, GpgTarget);
+      new pkgAcqMetaIndex(Owner, TransactionManager, DetachedDataTarget, DetachedSigTarget);
+      Status = StatDone;
+      // NOTE: deliberately no return here, the bookkeeping below still applies
+   }
    // index targets + (worst case:) Release/Release.gpg
    ExpectedAdditionalItems = std::numeric_limits<decltype(ExpectedAdditionalItems)>::max();
    TransactionManager->Add(this);
@@ -2183,6 +2298,15 @@ pkgAcqMetaIndex::pkgAcqMetaIndex(pkgAcquire * const Owner,		/*{{{*/
       Desc.URI = DataTarget.URI;
    }
 
+   /* CMS/PKCS#7 signed sources have no InRelease at all. When we are the
+      transaction manager itself (i.e. we are the pkgAcqMetaClearSig base
+      being constructed) we must not queue anything: returning here is what
+      keeps the InRelease off the wire. pkgAcqMetaClearSig's constructor then
+      queues the detached Release + Release.p7s pair instead. Changing this
+      condition will silently re-enable the InRelease fetch. */
+   if (TransactionManager == this && IsPKCS7Signed(DataTarget))
+      return;
+
    QueueURI(Desc);
 }
 									/*}}}*/
@@ -2194,10 +2318,31 @@ void pkgAcqMetaIndex::Done(string const &Message,			/*{{{*/
 
    if(CheckDownloadDone(this, Message, Hashes))
    {
+      /* A CMS/PKCS#7 signature is addressed by the hash of the Release file it
+	 signs, so it can only be named now that we have that file. Note that
+	 CheckDownloadDone() has pointed DestFile at the local Release by now,
+	 which is what we can hash if the method reported no digests (IMS-Hit). */
+      std::string SignatureURI; // empty: fetch the signature under its own name
+      if (IsPKCS7Signed(Target))
+      {
+	 auto const * const SHA512 = Hashes.find(PKCS7ByHashAlgorithm);
+	 SignatureURI = GetPKCS7SignatureURI(DetachedSigTarget,
+	       SHA512 != nullptr ? SHA512->HashValue() : SHA512OfFile(DestFile));
+	 if (SignatureURI.empty())
+	 {
+	    // StatError lets pkgAcqMetaClearSig::Finished() abort the transaction
+	    Status = StatError;
+	    strprintf(ErrorText, _("Unable to determine the %s hash of %s, which is "
+				   "needed to locate its CMS/PKCS#7 signature"),
+		      PKCS7ByHashAlgorithm, Target.URI.c_str());
+	    _error->Error("%s", ErrorText.c_str());
+	    return;
+	 }
+      }
       // we have a Release file, now download the Signature, all further
       // verify/queue for additional downloads will be done in the
       // pkgAcqMetaSig::Done() code
-      new pkgAcqMetaSig(Owner, TransactionManager, DetachedSigTarget, this);
+      new pkgAcqMetaSig(Owner, TransactionManager, DetachedSigTarget, this, SignatureURI);
    }
 }
 									/*}}}*/
@@ -2232,9 +2377,14 @@ pkgAcqMetaIndex::~pkgAcqMetaIndex() {}
 pkgAcqMetaSig::pkgAcqMetaSig(pkgAcquire * const Owner,
       pkgAcqMetaClearSig * const TransactionManager,
       IndexTarget const &Target,
-      pkgAcqMetaIndex * const MetaIndex) :
+      pkgAcqMetaIndex * const MetaIndex,
+      std::string const &SignatureURI) :
    pkgAcqTransactionItem(Owner, TransactionManager, Target), d(NULL), MetaIndex(MetaIndex)
 {
+   /* Everything about the file on disk is derived from Target.URI, only the URI
+      we fetch from may differ (see below). That is what keeps a CMS/PKCS#7
+      signature in lists/<...>_Release.p7s instead of under its by-hash name,
+      and hence what keeps pkgAcquire::CleanLists' keep-pattern working. */
    DestFile = GetPartialFileNameFromURI(Target.URI);
 
    // remove any partial downloaded sig-file in partial/.
@@ -2251,7 +2401,11 @@ pkgAcqMetaSig::pkgAcqMetaSig(pkgAcquire * const Owner,
    Desc.Description = Target.Description;
    Desc.Owner = this;
    Desc.ShortDesc = Target.ShortDesc;
-   Desc.URI = Target.URI;
+   /* A CMS/PKCS#7 signature lives at by-hash/SHA512/<hash of Release>.p7s, so
+      our caller hands us that URI. The Description is left alone on purpose:
+      the progress and error lines keep naming Release.p7s, just like they name
+      the plain index file for by-hash index fetches. */
+   Desc.URI = SignatureURI.empty() ? Target.URI : SignatureURI;
 
    // If we got a hit for Release, we will get one for Release.gpg too (or obscure errors),
    // so we skip the download step and go instantly to verification
