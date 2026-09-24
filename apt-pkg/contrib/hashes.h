@@ -34,6 +34,9 @@ class APT_PUBLIC HashString
  protected:
    std::string Type;
    std::string Hash;
+   // Ordered strongest first. FromFile() picks [0] when no type is given,
+   // HashStringList::find(NULL) returns the first type present, and the
+   // acquire worker reads hashes out of method messages in this order.
    static const char * _SupportedHashes[10];
 
    // internal helper
@@ -197,7 +200,7 @@ class APT_PUBLIC Hashes
    {return Add(Beg,End-Beg);};
 
    enum SupportedHashes { MD5SUM = (1 << 0), SHA1SUM = (1 << 1), SHA256SUM = (1 << 2),
-      SHA512SUM = (1 << 3) };
+      SHA512SUM = (1 << 3), SHA3_256SUM = (1 << 4), SHA3_512SUM = (1 << 5) };
    bool AddFD(int const Fd,unsigned long long Size = 0);
    bool AddFD(FileFd &Fd,unsigned long long Size = 0);
 
