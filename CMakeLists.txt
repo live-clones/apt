@@ -93,7 +93,7 @@ if (BERKELEY_FOUND)
   set(HAVE_BDB 1)
 endif()
 
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL 1.1.1 REQUIRED)
 
 # (De)Compressor libraries
 find_package(ZLIB REQUIRED)

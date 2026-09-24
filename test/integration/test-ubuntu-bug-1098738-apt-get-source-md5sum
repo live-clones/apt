@@ -245,6 +245,8 @@ Err:1 http://localhost:${APTHTTPPORT}  $1 1.0 (dsc)
    - MD5Sum:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa [weak]
    - Filesize:3 [weak]
   Hashes of received file:
+   - SHA3-512:b9b0519528854e7523acf6f4ef5f51a53aedb7929f403d369de702a23269cf0526250aaa05f33180e9a2979e54d19f45f36eb4a3d8c62e146fa0b6309b67589c
+   - SHA3-256:1e6b26637df5a7a4a128ea67862e062c992cca3c031db9a12fe3b237abf8f649
    - SHA512:e52b7bb395ea3f46974f1f65b7c5975839aad32d4e2ec0f458f735d5aa24d2bf36d7816ed1e01dc3c493e11879e9a8f66dfca42821608cfe993996929a6be18a
    - SHA256:943d3bf22ac661fb0f59bc4ff68cc12b04ff17a838dfcc2537008eb9c7f3770a
    - SHA1:324f464e6151a92cf57b26ef95dcfcf2059a8c44 [weak]
@@ -258,6 +260,8 @@ Err:2 http://localhost:${APTHTTPPORT}  $1 1.0 (tar)
    - MD5Sum:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb [weak]
    - Filesize:3 [weak]
   Hashes of received file:
+   - SHA3-512:f2262e0520d29d2b6bb61ffacdfdd965a218f45763c3a752b1f70931c404e835e0b7c900b80113624d4976fc811d9fab05daba1e2e63519834aa8e962e51b468
+   - SHA3-256:f07cc4fb85d7be2882db80246010920cdf027384391e6604879e562556008c3c
    - SHA512:5aa4cad81553320574eb72ee92bd45a1f0575528e257749dff298b2a33df9e7fc7f5c1c87fc1c8fde230f1234cca3a99bf8625a0ff7bb3238eb7e5473f9b43c0
    - SHA256:90aebae315675cbf04612de4f7d5874850f48e0b8dd82becbeaa47ca93f5ebfb
    - SHA1:680254bad1d7ca0d65ec46aaa315d363abf6a50a [weak]
@@ -269,6 +273,8 @@ E: Failed to fetch http://localhost:${APTHTTPPORT}/${1}_1.0.dsc  Hash Sum mismat
     - MD5Sum:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa [weak]
     - Filesize:3 [weak]
    Hashes of received file:
+    - SHA3-512:b9b0519528854e7523acf6f4ef5f51a53aedb7929f403d369de702a23269cf0526250aaa05f33180e9a2979e54d19f45f36eb4a3d8c62e146fa0b6309b67589c
+    - SHA3-256:1e6b26637df5a7a4a128ea67862e062c992cca3c031db9a12fe3b237abf8f649
     - SHA512:e52b7bb395ea3f46974f1f65b7c5975839aad32d4e2ec0f458f735d5aa24d2bf36d7816ed1e01dc3c493e11879e9a8f66dfca42821608cfe993996929a6be18a
     - SHA256:943d3bf22ac661fb0f59bc4ff68cc12b04ff17a838dfcc2537008eb9c7f3770a
     - SHA1:324f464e6151a92cf57b26ef95dcfcf2059a8c44 [weak]
@@ -280,6 +286,8 @@ E: Failed to fetch http://localhost:${APTHTTPPORT}/${1}_1.0.tar.gz  Hash Sum mis
     - MD5Sum:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb [weak]
     - Filesize:3 [weak]
    Hashes of received file:
+    - SHA3-512:f2262e0520d29d2b6bb61ffacdfdd965a218f45763c3a752b1f70931c404e835e0b7c900b80113624d4976fc811d9fab05daba1e2e63519834aa8e962e51b468
+    - SHA3-256:f07cc4fb85d7be2882db80246010920cdf027384391e6604879e562556008c3c
     - SHA512:5aa4cad81553320574eb72ee92bd45a1f0575528e257749dff298b2a33df9e7fc7f5c1c87fc1c8fde230f1234cca3a99bf8625a0ff7bb3238eb7e5473f9b43c0
     - SHA256:90aebae315675cbf04612de4f7d5874850f48e0b8dd82becbeaa47ca93f5ebfb
     - SHA1:680254bad1d7ca0d65ec46aaa315d363abf6a50a [weak]
