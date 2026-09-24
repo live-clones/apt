@@ -369,6 +369,16 @@ Signed-By:
  3bHcln8DMpIJVXht78sL
  =IE0r
  -----END PGP PUBLIC KEY BLOCK-----</literallayout>
+	  </para>
+
+	  <para>The option may alternatively be set to the absolute path of a single
+		file with a <literal>.pem</literal> extension, which is understood as a
+		bundle of X.509 certificates in PEM format. Such a repository is
+		verified with a CMS/PKCS#7 signature instead of an OpenPGP one, as
+		described in &apt-secure;. A PEM bundle can not be combined with any
+		other <option>Signed-By</option> entry (neither with a keyring, nor
+		with a fingerprint, nor with a second bundle), as it would be ambiguous
+		which of the two verification schemes applies.
 	  </para></listitem>
 
 	  <listitem><para><option>Check-Valid-Until</option> (<option>check-valid-until</option>)
