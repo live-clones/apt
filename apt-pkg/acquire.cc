@@ -733,7 +733,16 @@ pkgAcquire::RunResult pkgAcquire::Run(int PulseInterval)
 
 	 auto f = I->Items->GetFetchAfter();
 
-	 if (f == time_point() || I->Items->Owner->Status != pkgAcquire::Item::StatIdle)
+	 // Normal item with no delay
+	 if (f == time_point())
+	 {
+	    // Only skip if pipeline is flowing, otherwise try to unstuck
+	    if (I->Items->Owner->Status == pkgAcquire::Item::StatIdle && I->PipeDepth == 0 && not I->Cycle())
+	       goto stop;
+	    continue;
+	 }
+
+	 if (I->Items->Owner->Status != pkgAcquire::Item::StatIdle)
 	    continue;
 
 	 if (f <= now)
