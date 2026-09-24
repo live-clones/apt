@@ -43,7 +43,9 @@ if (WITH_TESTS)
    file(GLOB files gtest_runner.cc *-helpers.cc *_test.cc)
    add_executable(lib${PROJECT_NAME}_test ${files})
    target_include_directories(lib${PROJECT_NAME}_test PRIVATE ${GTEST_INCLUDE_DIRS})
-   target_link_libraries(lib${PROJECT_NAME}_test ${GTEST_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_TEST_LIBRARIES})
+   # pkcs7-helpers.cc calls OpenSSL directly to mint test certificates; apt-pkg
+   # links OpenSSL::Crypto PRIVATE, so it does not propagate to this target.
+   target_link_libraries(lib${PROJECT_NAME}_test ${GTEST_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_TEST_LIBRARIES} OpenSSL::Crypto)
    if (GTEST_DEPENDENCIES)
       add_dependencies(lib${PROJECT_NAME}_test ${GTEST_DEPENDENCIES})
    endif()
