@@ -50,32 +50,40 @@ struct option
    const char *description = nullptr;
    const char flag = 0;
 };
+// A help section; parser arguments retain their declaration order within it.
+struct option_group
+{
+   const char *heading = nullptr;
+   const std::initializer_list<option> options;
+};
 struct command
 {
    const std::initializer_list<std::string_view> commands;
-   const std::initializer_list<option> options;
+   const option_group group;
 };
 struct binary
 {
    APT_CMD binary;
    const std::initializer_list<command> commands;
-   const std::initializer_list<option> options;
+   const option_group group;
    const std::initializer_list<APT_CMD> inherits = {};
 };
 
 using commands = std::initializer_list<command>;
-using options = std::initializer_list<option>;
 
-constexpr options globalOptions{
-   {'h', "help", "help", N_("Show this help message"), 0},
-   {'v', "version", "version", N_("Show the version"), 0},
-   {0, "color", "APT::Color", N_("Enable color output"), 0},
-   {'q', "quiet", "quiet", N_("Output less information"), CommandLine::IntLevel},
-   {0, "audit", "APT::Audit", N_("Audit output"), 0},
-   {'q', "silent", "quiet", nullptr, CommandLine::IntLevel},
-   {'c', "config-file", 0, "Read a configuration file", CommandLine::ConfigFile},
-   {'o', "option", 0, "Set a configuration option", CommandLine::ArbItem},
-   {0, "cli-version", "APT::Version", N_("Set CLI version"), CommandLine::HasArg},
+constexpr option_group globalOptions{
+   N_("Global options:"),
+   {
+      {'h', "help", "help", N_("Show this help message"), 0},
+      {'v', "version", "version", N_("Show the version"), 0},
+      {0, "color", "APT::Color", N_("Enable color output"), 0},
+      {'q', "quiet", "quiet", N_("Output less information"), CommandLine::IntLevel},
+      {0, "audit", "APT::Audit", N_("Audit output"), 0},
+      {'q', "silent", "quiet", nullptr, CommandLine::IntLevel},
+      {'c', "config-file", 0, "Read a configuration file", CommandLine::ConfigFile},
+      {'o', "option", 0, "Set a configuration option", CommandLine::ArbItem},
+      {0, "cli-version", "APT::Version", N_("Set CLI version"), CommandLine::HasArg},
+   },
 };
 
 constexpr std::initializer_list<binary> binaries{
@@ -85,28 +93,37 @@ constexpr std::initializer_list<binary> binaries{
 	 command{
 	    {"list"},
 	    {
-	       {'i', "installed", "APT::Cmd::Installed", N_("Print only installed packages"), 0},
-	       {'u', "upgradeable", "APT::Cmd::Upgradable", N_("Print only upgradeable packages"), 0},
-	       {0, "upgradable", "APT::Cmd::Upgradable", nullptr, 0},
-	       {0, "manual-installed", "APT::Cmd::Manual-Installed", N_("Print only manually installed packages"), 0},
-	       {'v', "verbose", "APT::Cmd::List-Include-Summary", N_("Include summary"), 0},
-	       {'a', "all-versions", "APT::Cmd::All-Versions", N_("Show all versions"), 0},
-	       {'t', "target-release", "APT::Default-Release", N_("Set the target release"), CommandLine::HasArg},
-	       {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
-	       {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
+	       N_("List options:"),
+	       {
+		  {'i', "installed", "APT::Cmd::Installed", N_("Print only installed packages"), 0},
+		  {'u', "upgradeable", "APT::Cmd::Upgradable", N_("Print only upgradeable packages"), 0},
+		  {0, "upgradable", "APT::Cmd::Upgradable", nullptr, 0},
+		  {0, "manual-installed", "APT::Cmd::Manual-Installed", N_("Print only manually installed packages"), 0},
+		  {'v', "verbose", "APT::Cmd::List-Include-Summary", N_("Include summary"), 0},
+		  {'a', "all-versions", "APT::Cmd::All-Versions", N_("Show all versions"), 0},
+		  {'t', "target-release", "APT::Default-Release", N_("Set the target release"), CommandLine::HasArg},
+		  {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+		  {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
+	       },
 	    },
 	 },
 	 command{
 	    {"show", "info"},
 	    {
-	       {'a', "all-versions", "APT::Cache::AllVersions", N_("Show all versions"), 0},
-	       {'f', "full", "APT::Cache::ShowFull", N_("Show the full record"), 0},
-	       {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
+	       N_("Package information options:"),
+	       {
+		  {'a', "all-versions", "APT::Cache::AllVersions", N_("Show all versions"), 0},
+		  {'f', "full", "APT::Cache::ShowFull", N_("Show the full record"), 0},
+		  {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
+	       },
 	    },
 	 },
       },
-      options{
-	 {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+      option_group{
+	 N_("Source configuration options:"),
+	 {
+	    {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+	 },
       },
       {APT_CMD::APT_GET, APT_CMD::APT_CACHE},
    },
@@ -116,49 +133,67 @@ constexpr std::initializer_list<binary> binaries{
 	 command{
 	    {"depends", "rdepends"},
 	    {
-	       {'i', "important", "APT::Cache::Important", N_("Print only important dependencies")},
-	       {0, "installed", "APT::Cache::Installed", N_("Print only installed dependencies")},
-	       {0, "pre-depends", "APT::Cache::ShowPre-Depends", N_("Print Pre-Depends")},
-	       {0, "depends", "APT::Cache::ShowDepends", N_("Print Depends")},
-	       {0, "recommends", "APT::Cache::ShowRecommends", N_("Print Recommends")},
-	       {0, "suggests", "APT::Cache::ShowSuggests", N_("Print Suggests")},
-	       {0, "replaces", "APT::Cache::ShowReplaces", N_("Print Replaces")},
-	       {0, "breaks", "APT::Cache::ShowBreaks", N_("Print Breaks")},
-	       {0, "conflicts", "APT::Cache::ShowConflicts", N_("Print Conflicts")},
-	       {0, "enhances", "APT::Cache::ShowEnhances", N_("Print Enhances")},
-	       {0, "recurse", "APT::Cache::RecurseDepends", N_("Print dependencies recursively")},
-	       {0, "implicit", "APT::Cache::ShowImplicit", N_("Print implicit dependencies")},
+	       N_("Dependency options:"),
+	       {
+		  {'i', "important", "APT::Cache::Important", N_("Print only important dependencies")},
+		  {0, "installed", "APT::Cache::Installed", N_("Print only installed dependencies")},
+		  {0, "pre-depends", "APT::Cache::ShowPre-Depends", N_("Print Pre-Depends")},
+		  {0, "depends", "APT::Cache::ShowDepends", N_("Print Depends")},
+		  {0, "recommends", "APT::Cache::ShowRecommends", N_("Print Recommends")},
+		  {0, "suggests", "APT::Cache::ShowSuggests", N_("Print Suggests")},
+		  {0, "replaces", "APT::Cache::ShowReplaces", N_("Print Replaces")},
+		  {0, "breaks", "APT::Cache::ShowBreaks", N_("Print Breaks")},
+		  {0, "conflicts", "APT::Cache::ShowConflicts", N_("Print Conflicts")},
+		  {0, "enhances", "APT::Cache::ShowEnhances", N_("Print Enhances")},
+		  {0, "recurse", "APT::Cache::RecurseDepends", N_("Print dependencies recursively")},
+		  {0, "implicit", "APT::Cache::ShowImplicit", N_("Print implicit dependencies")},
+	       },
 	    },
 	 },
 	 command{
 	    {"search"},
 	    {
-	       {'n', "names-only", "APT::Cache::NamesOnly", N_("Only search names")},
-	       {'f', "full", "APT::Cache::ShowFull", N_("Show the full record")},
+	       N_("Search options:"),
+	       {
+		  {'n', "names-only", "APT::Cache::NamesOnly", N_("Only search names")},
+		  {'f', "full", "APT::Cache::ShowFull", N_("Show the full record")},
+	       },
 	    },
 	 },
 	 command{
 	    {"show", "info"},
 	    {
-	       {'a', "all-versions", "APT::Cache::AllVersions", N_("Show all versions")},
+	       N_("Package information options:"),
+	       {
+		  {'a', "all-versions", "APT::Cache::AllVersions", N_("Show all versions")},
+	       },
 	    },
 	 },
 	 command{
 	    {"pkgnames"},
 	    {
-	       {0, "all-names", "APT::Cache::AllNames", N_("Show virtual packages and missing dependencies")},
+	       N_("Package name options:"),
+	       {
+		  {0, "all-names", "APT::Cache::AllNames", N_("Show virtual packages and missing dependencies")},
+	       },
 	    },
 	 },
 	 command{
 	    {"unmet"},
 	    {
-	       {'i', "important", "APT::Cache::Important", N_("Print only important dependencies")},
+	       N_("Unmet dependency options:"),
+	       {
+		  {'i', "important", "APT::Cache::Important", N_("Print only important dependencies")},
+	       },
 	    },
 	 },
 	 command{
 	    {"showsrc"},
 	    {
-	       {0, "only-source", "APT::Cache::Only-Source", N_("Only query source package names")},
+	       N_("Source package options:"),
+	       {
+		  {0, "only-source", "APT::Cache::Only-Source", N_("Only query source package names")},
+	       },
 	    },
 	 },
 	 command{
@@ -166,15 +201,18 @@ constexpr std::initializer_list<binary> binaries{
 	    {},
 	 },
       },
-      options{
-	 {'g', "generate", "APT::Cache::Generate", N_("Generate the cache")},
-	 {'t', "target-release", "APT::Default-Release", N_("Set the target release"), CommandLine::HasArg},
-	 {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
-	 {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
+      option_group{
+	 N_("Cache options:"),
+	 {
+	    {'g', "generate", "APT::Cache::Generate", N_("Generate the cache")},
+	    {'t', "target-release", "APT::Default-Release", N_("Set the target release"), CommandLine::HasArg},
+	    {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+	    {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
 
-	 {'p', "pkg-cache", "Dir::Cache::pkgcache", N_("Set the location of the pkgcache.bin"), CommandLine::HasArg},
-	 {'s', "src-cache", "Dir::Cache::srcpkgcache", N_("Set the location of the srcpkgcache.bin"), CommandLine::HasArg},
-	 {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+	    {'p', "pkg-cache", "Dir::Cache::pkgcache", N_("Set the location of the pkgcache.bin"), CommandLine::HasArg},
+	    {'s', "src-cache", "Dir::Cache::srcpkgcache", N_("Set the location of the srcpkgcache.bin"), CommandLine::HasArg},
+	    {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+	 },
       },
    },
    binary{
@@ -183,36 +221,42 @@ constexpr std::initializer_list<binary> binaries{
 	 {
 	    {"add", "ident"},
 	    {
-	       {0, "auto-detect", "Acquire::cdrom::AutoDetect", N_("Auto detect the CD"), CommandLine::Boolean},
-	       {'d', "cdrom", "Acquire::cdrom::mount", N_("CD mount point"), CommandLine::HasArg},
-	       {'r', "rename", "APT::CDROM::Rename", N_("Rename the CD")},
-	       {'m', "no-mount", "APT::CDROM::NoMount", N_("Do not mount automatically")},
-	       {'f', "fast", "APT::CDROM::Fast", N_("Do a fast operation")},
-	       {'n', "just-print", "APT::CDROM::NoAct", N_("Just print, do not act")},
-	       {'n', "recon", "APT::CDROM::NoAct", N_("Just print, do not act")},
-	       {'n', "no-act", "APT::CDROM::NoAct", N_("Just print, do not act")},
-	       {'a', "thorough", "APT::CDROM::Thorough", N_("Be thorough")},
+	       N_("CD-ROM options:"),
+	       {
+		  {0, "auto-detect", "Acquire::cdrom::AutoDetect", N_("Auto detect the CD"), CommandLine::Boolean},
+		  {'d', "cdrom", "Acquire::cdrom::mount", N_("CD mount point"), CommandLine::HasArg},
+		  {'r', "rename", "APT::CDROM::Rename", N_("Rename the CD")},
+		  {'m', "no-mount", "APT::CDROM::NoMount", N_("Do not mount automatically")},
+		  {'f', "fast", "APT::CDROM::Fast", N_("Do a fast operation")},
+		  {'n', "just-print", "APT::CDROM::NoAct", N_("Just print, do not act")},
+		  {'n', "recon", "APT::CDROM::NoAct", N_("Just print, do not act")},
+		  {'n', "no-act", "APT::CDROM::NoAct", N_("Just print, do not act")},
+		  {'a', "thorough", "APT::CDROM::Thorough", N_("Be thorough")},
+	       },
 	    },
 	 },
       },
-      options{},
+      option_group{},
    },
    binary{
       APT_CMD::APT_DUMP_SOLVER,
       commands{},
-      options{
-	 {0, "user", "APT::Solver::RunAsUser", N_("Run solver as the specified user"), CommandLine::HasArg},
+      option_group{
+	 N_("Solver options:"),
+	 {
+	    {0, "user", "APT::Solver::RunAsUser", N_("Run solver as the specified user"), CommandLine::HasArg},
+	 },
       },
    },
    binary{
       APT_CMD::APT_INTERNAL_PLANNER,
       commands{},
-      options{},
+      option_group{},
    },
    binary{
       APT_CMD::APT_INTERNAL_SOLVER,
       commands{},
-      options{},
+      option_group{},
    },
    binary{
       APT_CMD::APT_CONFIG,
@@ -220,8 +264,11 @@ constexpr std::initializer_list<binary> binaries{
 	 command{
 	    {"dump"},
 	    {
-	       {0, "empty", "APT::Config::Dump::EmptyValue", N_("Include empty values in output"), CommandLine::Boolean},
-	       {0, "format", "APT::Config::Dump::Format", N_("Output format (shell, ...)"), CommandLine::HasArg},
+	       N_("Configuration output options:"),
+	       {
+		  {0, "empty", "APT::Config::Dump::EmptyValue", N_("Include empty values in output"), CommandLine::Boolean},
+		  {0, "format", "APT::Config::Dump::Format", N_("Output format (shell, ...)"), CommandLine::HasArg},
+	       },
 	    },
 	 },
 	 command{
@@ -229,45 +276,57 @@ constexpr std::initializer_list<binary> binaries{
 	    {},
 	 },
       },
-      options{},
+      option_group{},
    },
    binary{
       APT_CMD::APT_EXTRACTTEMPLATES,
       commands{},
-      options{
-	 {'t', "tempdir", "APT::ExtractTemplates::TempDir", N_("Temporary directory for extracted templates"), CommandLine::HasArg},
+      option_group{
+	 N_("Template extraction options:"),
+	 {
+	    {'t', "tempdir", "APT::ExtractTemplates::TempDir", N_("Temporary directory for extracted templates"), CommandLine::HasArg},
+	 },
       },
    },
    binary{
       APT_CMD::APT_FTPARCHIVE,
       commands{},
-      options{
-	 {0, "md5", "APT::FTPArchive::MD5", N_("Generate MD5 checksums"), 0},
-	 {0, "sha1", "APT::FTPArchive::SHA1", N_("Generate SHA1 checksums"), 0},
-	 {0, "sha256", "APT::FTPArchive::SHA256", N_("Generate SHA256 checksums"), 0},
-	 {0, "sha512", "APT::FTPArchive::SHA512", N_("Generate SHA512 checksums"), 0},
-	 {'d', "db", "APT::FTPArchive::DB", N_("Cache database"), CommandLine::HasArg},
-	 {'s', "source-override", "APT::FTPArchive::SourceOverride", N_("Source override file"), CommandLine::HasArg},
-	 {0, "delink", "APT::FTPArchive::DeLinkAct", N_("Enable delinking of files"), 0},
-	 {0, "readonly", "APT::FTPArchive::ReadOnlyDB", N_("Make cache read-only"), 0},
-	 {0, "contents", "APT::FTPArchive::Contents", N_("Generate the contents file"), 0},
-	 {'a', "arch", "APT::FTPArchive::Architecture", N_("Only accept files for the given architecture"), CommandLine::HasArg},
+      option_group{
+	 N_("Archive options:"),
+	 {
+	    {0, "md5", "APT::FTPArchive::MD5", N_("Generate MD5 checksums"), 0},
+	    {0, "sha1", "APT::FTPArchive::SHA1", N_("Generate SHA1 checksums"), 0},
+	    {0, "sha256", "APT::FTPArchive::SHA256", N_("Generate SHA256 checksums"), 0},
+	    {0, "sha512", "APT::FTPArchive::SHA512", N_("Generate SHA512 checksums"), 0},
+	    {'d', "db", "APT::FTPArchive::DB", N_("Cache database"), CommandLine::HasArg},
+	    {'s', "source-override", "APT::FTPArchive::SourceOverride", N_("Source override file"), CommandLine::HasArg},
+	    {0, "delink", "APT::FTPArchive::DeLinkAct", N_("Enable delinking of files"), 0},
+	    {0, "readonly", "APT::FTPArchive::ReadOnlyDB", N_("Make cache read-only"), 0},
+	    {0, "contents", "APT::FTPArchive::Contents", N_("Generate the contents file"), 0},
+	    {'a', "arch", "APT::FTPArchive::Architecture", N_("Only accept files for the given architecture"), CommandLine::HasArg},
+	 },
       },
    },
    binary{
       APT_CMD::APT_SORTPKG,
       commands{},
-      options{
-	 {'s', "source", "APT::SortPkgs::Source", N_("Sort source package files"), 0},
+      option_group{
+	 N_("Package sorting options:"),
+	 {
+	    {'s', "source", "APT::SortPkgs::Source", N_("Sort source package files"), 0},
+	 },
       },
    },
    binary{
       APT_CMD::RRED,
       commands{},
-      options{
-	 {'t', nullptr, "Rred::T", nullptr, 0},
-	 {'f', nullptr, "Rred::F", nullptr, 0},
-	 {'C', "compress", "Rred::Compress", N_("Set compression algorithm"), CommandLine::HasArg},
+      option_group{
+	 N_("Patch options:"),
+	 {
+	    {'t', nullptr, "Rred::T", nullptr, 0},
+	    {'f', nullptr, "Rred::F", nullptr, 0},
+	    {'C', "compress", "Rred::Compress", N_("Set compression algorithm"), CommandLine::HasArg},
+	 },
       },
    },
    binary{
@@ -276,11 +335,14 @@ constexpr std::initializer_list<binary> binaries{
 	 command{
 	    {"cat-file"},
 	    {
-	       {'C', "compress", "Apt-Helper::Cat-File::Compress", N_("Set compression algorithm"), CommandLine::HasArg},
+	       N_("File output options:"),
+	       {
+		  {'C', "compress", "Apt-Helper::Cat-File::Compress", N_("Set compression algorithm"), CommandLine::HasArg},
+	       },
 	    },
 	 },
       },
-      options{},
+      option_group{},
    },
    binary{
       APT_CMD::APT_MARK,
@@ -289,7 +351,10 @@ constexpr std::initializer_list<binary> binaries{
 	    {"auto", "manual", "hold", "unhold", "markauto", "unmarkauto", "minimize-manual",
 	     "showauto", "showmanual", "showhold", "showholds", "showheld"},
 	    {
-	       {'f', "file", "Dir::State::extended_states", N_("Read/write states from the given file"), CommandLine::HasArg},
+	       N_("Package state options:"),
+	       {
+		  {'f', "file", "Dir::State::extended_states", N_("Read/write states from the given file"), CommandLine::HasArg},
+	       },
 	    },
 	 },
 	 command{
@@ -300,31 +365,43 @@ constexpr std::initializer_list<binary> binaries{
 	 command{
 	    {"markauto", "unmarkauto"},
 	    {
-	       {'v', "verbose", "APT::MarkAuto::Verbose", N_("Verbose output"), 0},
+	       N_("Output options:"),
+	       {
+		  {'v', "verbose", "APT::MarkAuto::Verbose", N_("Verbose output"), 0},
+	       },
 	    },
 	 },
 	 command{
 	    {"minimize-manual"},
 	    {
-	       {'y', "yes", "APT::Get::Assume-Yes", N_("Automatic yes to prompts"), 0},
-	       {'y', "assume-yes", "APT::Get::Assume-Yes", nullptr, 0},
-	       {0, "assume-no", "APT::Get::Assume-No", N_("Automatic no to prompts"), 0},
+	       N_("Prompt options:"),
+	       {
+		  {'y', "yes", "APT::Get::Assume-Yes", N_("Automatic yes to prompts"), 0},
+		  {'y', "assume-yes", "APT::Get::Assume-Yes", nullptr, 0},
+		  {0, "assume-no", "APT::Get::Assume-No", N_("Automatic no to prompts"), 0},
+	       },
 	    },
 	 },
 	 command{
 	    {"auto", "manual", "hold", "unhold", "markauto", "unmarkauto", "minimize-manual",
 	     "install", "reinstall", "remove", "deinstall", "purge"},
 	    {
-	       {'s', "simulate", "APT::Mark::Simulate", N_("No action; perform a simulation"), 0},
-	       {'s', "just-print", "APT::Mark::Simulate", nullptr, 0},
-	       {'s', "recon", "APT::Mark::Simulate", nullptr, 0},
-	       {'s', "dry-run", "APT::Mark::Simulate", nullptr, 0},
-	       {'s', "no-act", "APT::Mark::Simulate", nullptr, 0},
+	       N_("Simulation options:"),
+	       {
+		  {'s', "simulate", "APT::Mark::Simulate", N_("No action; perform a simulation"), 0},
+		  {'s', "just-print", "APT::Mark::Simulate", nullptr, 0},
+		  {'s', "recon", "APT::Mark::Simulate", nullptr, 0},
+		  {'s', "dry-run", "APT::Mark::Simulate", nullptr, 0},
+		  {'s', "no-act", "APT::Mark::Simulate", nullptr, 0},
+	       },
 	    },
 	 },
       },
-      options{
-	 {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+      option_group{
+	 N_("Source configuration options:"),
+	 {
+	    {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+	 },
       },
    },
    binary{
@@ -334,79 +411,100 @@ constexpr std::initializer_list<binary> binaries{
 	    {"install", "reinstall", "remove", "purge", "upgrade", "dist-upgrade",
 	     "dselect-upgrade", "autoremove", "auto-remove", "autopurge", "full-upgrade"},
 	    {
-	       {0, "show-progress", "DpkgPM::Progress", N_("Show user-friendly progress information"), 0},
-	       {'f', "fix-broken", "APT::Get::Fix-Broken", N_("Fix broken dependencies"), 0},
-	       {0, "purge", "APT::Get::Purge", N_("Use purge instead of remove"), 0},
-	       {'V', "verbose-versions", "APT::Get::Show-Versions", N_("Show verbose version information"), 0},
-	       {0, "list-columns", "APT::Get::List-Columns", N_("Show list columns"), 0},
-	       {0, "autoremove", "APT::Get::AutomaticRemove", N_("Remove automatically installed packages no longer needed"), 0},
-	       {0, "auto-remove", "APT::Get::AutomaticRemove", nullptr, 0},
-	       {0, "reinstall", "APT::Get::ReInstall", N_("Reinstall packages"), 0},
-	       {0, "solver", "APT::Solver", N_("Set the dependency solver"), CommandLine::HasArg},
-	       {0, "strict-pinning", "APT::Solver::Strict-Pinning", N_("Apply strict pinning"), 0},
-	       {0, "planner", "APT::Planner", N_("Set the dependency planner"), CommandLine::HasArg},
-	       {0, "comment", "APT::History::Comment", N_("Add a comment to history"), CommandLine::HasArg},
-	       {'U', "update", "APT::Update", N_("Update package lists"), 0},
+	       N_("Package management options:"),
+	       {
+		  {0, "show-progress", "DpkgPM::Progress", N_("Show user-friendly progress information"), 0},
+		  {'f', "fix-broken", "APT::Get::Fix-Broken", N_("Fix broken dependencies"), 0},
+		  {0, "purge", "APT::Get::Purge", N_("Use purge instead of remove"), 0},
+		  {'V', "verbose-versions", "APT::Get::Show-Versions", N_("Show verbose version information"), 0},
+		  {0, "list-columns", "APT::Get::List-Columns", N_("Show list columns"), 0},
+		  {0, "autoremove", "APT::Get::AutomaticRemove", N_("Remove automatically installed packages no longer needed"), 0},
+		  {0, "auto-remove", "APT::Get::AutomaticRemove", nullptr, 0},
+		  {0, "reinstall", "APT::Get::ReInstall", N_("Reinstall packages"), 0},
+		  {0, "solver", "APT::Solver", N_("Set the dependency solver"), CommandLine::HasArg},
+		  {0, "strict-pinning", "APT::Solver::Strict-Pinning", N_("Apply strict pinning"), 0},
+		  {0, "planner", "APT::Planner", N_("Set the dependency planner"), CommandLine::HasArg},
+		  {0, "comment", "APT::History::Comment", N_("Add a comment to history"), CommandLine::HasArg},
+		  {'U', "update", "APT::Update", N_("Update package lists"), 0},
+	       },
 	    },
 	 },
 	 command{
 	    {"upgrade"},
 	    {
-	       {0, "new-pkgs", "APT::Get::Upgrade-Allow-New", N_("Allow installing new packages for upgraded dependencies"), CommandLine::Boolean},
+	       N_("Upgrade options:"),
+	       {
+		  {0, "new-pkgs", "APT::Get::Upgrade-Allow-New", N_("Allow installing new packages for upgraded dependencies"), CommandLine::Boolean},
+	       },
 	    },
 	 },
 	 command{
 	    {"update"},
 	    {
-	       {0, "list-cleanup", "APT::Get::List-Cleanup", N_("Clean up old list files"), 0},
-	       {0, "allow-insecure-repositories", "Acquire::AllowInsecureRepositories", N_("Allow insecure repositories"), 0},
-	       {0, "allow-weak-repositories", "Acquire::AllowWeakRepositories", N_("Allow weak repositories"), 0},
-	       {0, "allow-releaseinfo-change", "Acquire::AllowReleaseInfoChange", N_("Allow Release info changes"), 0},
-	       {0, "allow-releaseinfo-change-origin", "Acquire::AllowReleaseInfoChange::Origin", N_("Allow changes to Origin field"), 0},
-	       {0, "allow-releaseinfo-change-label", "Acquire::AllowReleaseInfoChange::Label", N_("Allow changes to Label field"), 0},
-	       {0, "allow-releaseinfo-change-version", "Acquire::AllowReleaseInfoChange::Version", N_("Allow changes to Version field"), 0},
-	       {0, "allow-releaseinfo-change-codename", "Acquire::AllowReleaseInfoChange::Codename", N_("Allow changes to Codename field"), 0},
-	       {0, "allow-releaseinfo-change-suite", "Acquire::AllowReleaseInfoChange::Suite", N_("Allow changes to Suite field"), 0},
-	       {0, "allow-releaseinfo-change-defaultpin", "Acquire::AllowReleaseInfoChange::DefaultPin", N_("Allow changes to DefaultPin field"), 0},
-	       {'e', "error-on", "APT::Update::Error-Mode", N_("Fail on the specified error"), CommandLine::HasArg},
+	       N_("Update options:"),
+	       {
+		  {0, "list-cleanup", "APT::Get::List-Cleanup", N_("Clean up old list files"), 0},
+		  {0, "allow-insecure-repositories", "Acquire::AllowInsecureRepositories", N_("Allow insecure repositories"), 0},
+		  {0, "allow-weak-repositories", "Acquire::AllowWeakRepositories", N_("Allow weak repositories"), 0},
+		  {0, "allow-releaseinfo-change", "Acquire::AllowReleaseInfoChange", N_("Allow Release info changes"), 0},
+		  {0, "allow-releaseinfo-change-origin", "Acquire::AllowReleaseInfoChange::Origin", N_("Allow changes to Origin field"), 0},
+		  {0, "allow-releaseinfo-change-label", "Acquire::AllowReleaseInfoChange::Label", N_("Allow changes to Label field"), 0},
+		  {0, "allow-releaseinfo-change-version", "Acquire::AllowReleaseInfoChange::Version", N_("Allow changes to Version field"), 0},
+		  {0, "allow-releaseinfo-change-codename", "Acquire::AllowReleaseInfoChange::Codename", N_("Allow changes to Codename field"), 0},
+		  {0, "allow-releaseinfo-change-suite", "Acquire::AllowReleaseInfoChange::Suite", N_("Allow changes to Suite field"), 0},
+		  {0, "allow-releaseinfo-change-defaultpin", "Acquire::AllowReleaseInfoChange::DefaultPin", N_("Allow changes to DefaultPin field"), 0},
+		  {'e', "error-on", "APT::Update::Error-Mode", N_("Fail on the specified error"), CommandLine::HasArg},
+	       },
 	    },
 	 },
 	 command{
 	    {"source"},
 	    {
-	       {'a', "host-architecture", "APT::Get::Host-Architecture", N_("Set host architecture"), CommandLine::HasArg},
-	       {'b', "compile", "APT::Get::Compile", N_("Compile source packages"), 0},
-	       {'b', "build", "APT::Get::Compile", nullptr, 0},
-	       {'P', "build-profiles", "APT::Build-Profiles", N_("Set build profiles"), CommandLine::HasArg},
-	       {0, "diff-only", "APT::Get::Diff-Only", N_("Download only the diff"), 0},
-	       {0, "debian-only", "APT::Get::Diff-Only", nullptr, 0},
-	       {0, "tar-only", "APT::Get::Tar-Only", N_("Download only the tar"), 0},
-	       {0, "dsc-only", "APT::Get::Dsc-Only", N_("Download only the dsc"), 0},
+	       N_("Source package options:"),
+	       {
+		  {'a', "host-architecture", "APT::Get::Host-Architecture", N_("Set host architecture"), CommandLine::HasArg},
+		  {'b', "compile", "APT::Get::Compile", N_("Compile source packages"), 0},
+		  {'b', "build", "APT::Get::Compile", nullptr, 0},
+		  {'P', "build-profiles", "APT::Build-Profiles", N_("Set build profiles"), CommandLine::HasArg},
+		  {0, "diff-only", "APT::Get::Diff-Only", N_("Download only the diff"), 0},
+		  {0, "debian-only", "APT::Get::Diff-Only", nullptr, 0},
+		  {0, "tar-only", "APT::Get::Tar-Only", N_("Download only the tar"), 0},
+		  {0, "dsc-only", "APT::Get::Dsc-Only", N_("Download only the dsc"), 0},
+	       },
 	    },
 	 },
 	 command{
 	    {"build-dep", "satisfy"},
 	    {
-	       {'a', "host-architecture", "APT::Get::Host-Architecture", N_("Set host architecture"), CommandLine::HasArg},
-	       {'P', "build-profiles", "APT::Build-Profiles", N_("Set build profiles"), CommandLine::HasArg},
-	       {0, "purge", "APT::Get::Purge", N_("Use purge instead of remove"), 0},
-	       {0, "solver", "APT::Solver", N_("Set the dependency solver"), CommandLine::HasArg},
-	       {0, "strict-pinning", "APT::Solver::Strict-Pinning", N_("Apply strict pinning"), 0},
-	       {'f', "fix-broken", "APT::Get::Fix-Broken", N_("Fix broken dependencies"), 0},
+	       N_("Dependency resolution options:"),
+	       {
+		  {'a', "host-architecture", "APT::Get::Host-Architecture", N_("Set host architecture"), CommandLine::HasArg},
+		  {'P', "build-profiles", "APT::Build-Profiles", N_("Set build profiles"), CommandLine::HasArg},
+		  {0, "purge", "APT::Get::Purge", N_("Use purge instead of remove"), 0},
+		  {0, "solver", "APT::Solver", N_("Set the dependency solver"), CommandLine::HasArg},
+		  {0, "strict-pinning", "APT::Solver::Strict-Pinning", N_("Apply strict pinning"), 0},
+		  {'f', "fix-broken", "APT::Get::Fix-Broken", N_("Fix broken dependencies"), 0},
+	       },
 	    },
 	 },
 	 command{
 	    {"build-dep"},
 	    {
-	       {0, "arch-only", "APT::Get::Arch-Only", N_("Only process architecture-dependent build dependencies"), 0},
-	       {0, "indep-only", "APT::Get::Indep-Only", N_("Only process architecture-independent build dependencies"), 0},
+	       N_("Build dependency options:"),
+	       {
+		  {0, "arch-only", "APT::Get::Arch-Only", N_("Only process architecture-dependent build dependencies"), 0},
+		  {0, "indep-only", "APT::Get::Indep-Only", N_("Only process architecture-independent build dependencies"), 0},
+	       },
 	    },
 	 },
 	 command{
 	    {"indextargets"},
 	    {
-	       {0, "format", "APT::Get::IndexTargets::Format", N_("Output format"), CommandLine::HasArg},
-	       {0, "release-info", "APT::Get::IndexTargets::ReleaseInfo", N_("Show release info"), 0},
+	       N_("Index target options:"),
+	       {
+		  {0, "format", "APT::Get::IndexTargets::Format", N_("Output format"), CommandLine::HasArg},
+		  {0, "release-info", "APT::Get::IndexTargets::ReleaseInfo", N_("Show release info"), 0},
+	       },
 	    },
 	 },
 	 command{
@@ -419,43 +517,49 @@ constexpr std::initializer_list<binary> binaries{
 	     "source", "build-dep", "satisfy",
 	     "clean", "autoclean", "auto-clean", "distclean", "dist-clean", "check"},
 	    {
-	       {'s', "simulate", "APT::Get::Simulate", N_("No action; perform a simulation"), 0},
-	       {'s', "just-print", "APT::Get::Simulate", nullptr, 0},
-	       {'s', "recon", "APT::Get::Simulate", nullptr, 0},
-	       {'s', "dry-run", "APT::Get::Simulate", nullptr, 0},
-	       {'s', "no-act", "APT::Get::Simulate", nullptr, 0},
+	       N_("Simulation options:"),
+	       {
+		  {'s', "simulate", "APT::Get::Simulate", N_("No action; perform a simulation"), 0},
+		  {'s', "just-print", "APT::Get::Simulate", nullptr, 0},
+		  {'s', "recon", "APT::Get::Simulate", nullptr, 0},
+		  {'s', "dry-run", "APT::Get::Simulate", nullptr, 0},
+		  {'s', "no-act", "APT::Get::Simulate", nullptr, 0},
+	       },
 	    },
 	 },
       },
-      options{
-	 {'d', "download-only", "APT::Get::Download-Only", N_("Download only; do not install or unpack"), 0},
-	 {'y', "yes", "APT::Get::Assume-Yes", N_("Automatic yes to prompts"), 0},
-	 {'y', "assume-yes", "APT::Get::Assume-Yes", nullptr, 0},
-	 {0, "assume-no", "APT::Get::Assume-No", N_("Automatic no to prompts"), 0},
-	 {'u', "show-upgraded", "APT::Get::Show-Upgraded", N_("Show upgraded packages"), 0},
-	 {'t', "target-release", "APT::Default-Release", N_("Set the target release"), CommandLine::HasArg},
-	 {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
-	 {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
-	 {0, "download", "APT::Get::Download", N_("Download packages"), 0},
-	 {0, "ignore-missing", "APT::Get::Fix-Missing", nullptr, 0},
-	 {'m', "fix-missing", "APT::Get::Fix-Missing", N_("Ignore packages that cannot be retrieved"), 0},
-	 {0, "ignore-hold", "APT::Ignore-Hold", N_("Ignore held packages"), 0},
-	 {0, "upgrade", "APT::Get::upgrade", N_("Upgrade packages"), 0},
-	 {0, "only-upgrade", "APT::Get::Only-Upgrade", N_("Only upgrade packages"), 0},
-	 {0, "allow-change-held-packages", "APT::Get::allow-change-held-packages", N_("Allow changing held packages"), CommandLine::Boolean},
-	 {0, "allow-remove-essential", "APT::Get::allow-remove-essential", N_("Allow removing essential packages"), CommandLine::Boolean},
-	 {0, "allow-downgrades", "APT::Get::allow-downgrades", N_("Allow downgrading packages"), CommandLine::Boolean},
-	 {0, "force-yes", "APT::Get::force-yes", N_("Force yes (deprecated)"), 0},
-	 {0, "print-uris", "APT::Get::Print-URIs", N_("Print URIs"), 0},
-	 {0, "trivial-only", "APT::Get::Trivial-Only", N_("Only perform trivial operations"), 0},
-	 {0, "mark-auto", "APT::Get::Mark-Auto", N_("Mark packages as automatically installed"), 0},
-	 {0, "remove", "APT::Get::Remove", N_("Remove packages"), 0},
-	 {0, "only-source", "APT::Get::Only-Source", N_("Only query source package names"), 0},
-	 {0, "allow-unauthenticated", "APT::Get::AllowUnauthenticated", N_("Allow unauthenticated packages"), 0},
-	 {0, "install-recommends", "APT::Install-Recommends", N_("Install recommended packages"), CommandLine::Boolean},
-	 {0, "install-suggests", "APT::Install-Suggests", N_("Install suggested packages"), CommandLine::Boolean},
-	 {0, "fix-policy", "APT::Get::Fix-Policy-Broken", N_("Fix broken policy dependencies"), 0},
-	 {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+      option_group{
+	 N_("Common package management options:"),
+	 {
+	    {'d', "download-only", "APT::Get::Download-Only", N_("Download only; do not install or unpack"), 0},
+	    {'y', "yes", "APT::Get::Assume-Yes", N_("Automatic yes to prompts"), 0},
+	    {'y', "assume-yes", "APT::Get::Assume-Yes", nullptr, 0},
+	    {0, "assume-no", "APT::Get::Assume-No", N_("Automatic no to prompts"), 0},
+	    {'u', "show-upgraded", "APT::Get::Show-Upgraded", N_("Show upgraded packages"), 0},
+	    {'t', "target-release", "APT::Default-Release", N_("Set the target release"), CommandLine::HasArg},
+	    {'t', "default-release", "APT::Default-Release", nullptr, CommandLine::HasArg},
+	    {'S', "snapshot", "APT::Snapshot", N_("Snapshot to use"), CommandLine::HasArg},
+	    {0, "download", "APT::Get::Download", N_("Download packages"), 0},
+	    {0, "ignore-missing", "APT::Get::Fix-Missing", nullptr, 0},
+	    {'m', "fix-missing", "APT::Get::Fix-Missing", N_("Ignore packages that cannot be retrieved"), 0},
+	    {0, "ignore-hold", "APT::Ignore-Hold", N_("Ignore held packages"), 0},
+	    {0, "upgrade", "APT::Get::upgrade", N_("Upgrade packages"), 0},
+	    {0, "only-upgrade", "APT::Get::Only-Upgrade", N_("Only upgrade packages"), 0},
+	    {0, "allow-change-held-packages", "APT::Get::allow-change-held-packages", N_("Allow changing held packages"), CommandLine::Boolean},
+	    {0, "allow-remove-essential", "APT::Get::allow-remove-essential", N_("Allow removing essential packages"), CommandLine::Boolean},
+	    {0, "allow-downgrades", "APT::Get::allow-downgrades", N_("Allow downgrading packages"), CommandLine::Boolean},
+	    {0, "force-yes", "APT::Get::force-yes", N_("Force yes (deprecated)"), 0},
+	    {0, "print-uris", "APT::Get::Print-URIs", N_("Print URIs"), 0},
+	    {0, "trivial-only", "APT::Get::Trivial-Only", N_("Only perform trivial operations"), 0},
+	    {0, "mark-auto", "APT::Get::Mark-Auto", N_("Mark packages as automatically installed"), 0},
+	    {0, "remove", "APT::Get::Remove", N_("Remove packages"), 0},
+	    {0, "only-source", "APT::Get::Only-Source", N_("Only query source package names"), 0},
+	    {0, "allow-unauthenticated", "APT::Get::AllowUnauthenticated", N_("Allow unauthenticated packages"), 0},
+	    {0, "install-recommends", "APT::Install-Recommends", N_("Install recommended packages"), CommandLine::Boolean},
+	    {0, "install-suggests", "APT::Install-Suggests", N_("Install suggested packages"), CommandLine::Boolean},
+	    {0, "fix-policy", "APT::Get::Fix-Policy-Broken", N_("Fix broken policy dependencies"), 0},
+	    {0, "with-source", "APT::Sources::With::", N_("Configure an ephemeral source file"), CommandLine::HasArg},
+	 },
       },
    },
 };
@@ -473,7 +577,7 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
       for (auto &command : binary->commands)
 	 if (std::ranges::contains(command.commands, std::string_view(Cmd)))
 	 {
-	    for (auto &option : command.options)
+	    for (auto &option : command.group.options)
 	       addArg(option.shrt, option.lng, option.option, option.flag);
 	    matched = true;
 	 }
@@ -485,7 +589,7 @@ static bool addArguments(APT_CMD Binary, std::vector<CommandLine::Args> &Args, c
    }
 
    bool addedArgs = not Args.empty();
-   for (auto &option : binary->options)
+   for (auto &option : binary->group.options)
       addArg(option.shrt, option.lng, option.option, option.flag);
 
    return addedArgs;
@@ -498,7 +602,7 @@ std::vector<CommandLine::Args> getCommandArgs(APT_CMD const Program, char const 
    if (Cmd == nullptr || strcmp(Cmd, "help") != 0)
       addArguments(Program, Args, Cmd);
 
-   for (auto &option : globalOptions)
+   for (auto &option : globalOptions.options)
       addArg(option.shrt, option.lng, option.option, option.flag);
    addArg(0, nullptr, nullptr, 0);
 
@@ -512,7 +616,7 @@ struct OptionPrinter
    size_t const valueLength = strlen(_("<value>"));
    size_t width = 0;
    const binary *bin;
-   std::vector<option const *> commandOptions;
+   std::vector<option_group const *> commandOptionGroups;
 
    OptionPrinter(const binary &b) : bin(&b)
    {
@@ -522,7 +626,7 @@ struct OptionPrinter
    OptionPrinter(const binary &b, char const *const cmd) : bin(&b)
    {
       if (auto const *commandBinary =
-	     collect_command_options(b, cmd, commandOptions);
+	     collect_command_option_groups(b, cmd, commandOptionGroups);
 	  commandBinary != nullptr)
 	 bin = commandBinary;
 
@@ -559,10 +663,10 @@ struct OptionPrinter
       return result;
    }
 
-   static binary const *collect_command_options(
+   static binary const *collect_command_option_groups(
       binary const &candidate,
       char const *const cmd,
-      std::vector<option const *> &options)
+      std::vector<option_group const *> &groups)
    {
       bool matched = false;
 
@@ -573,8 +677,7 @@ struct OptionPrinter
 	    continue;
 
 	 matched = true;
-	 for (auto const &option : command.options)
-	    options.push_back(&option);
+	 groups.push_back(&command.group);
       }
 
       if (matched)
@@ -590,7 +693,7 @@ struct OptionPrinter
 	    continue;
 
 	 auto const *commandBinary =
-	    collect_command_options(*inherited, cmd, options);
+	    collect_command_option_groups(*inherited, cmd, groups);
 	 if (commandBinary != nullptr)
 	    return commandBinary;
       }
@@ -598,79 +701,61 @@ struct OptionPrinter
       return nullptr;
    }
 
-   void calculate_width()
+   static bool is_visible(option const &o)
    {
-      for (auto const *option : commandOptions)
-      {
-	 if (option->description != nullptr)
-	    width = std::max(option_width(*option), width);
-      }
+      return o.description != nullptr &&
+             o.flag != CommandLine::ArbItem &&
+             o.flag != CommandLine::ConfigFile;
+   }
 
-      for (auto const &option : bin->options)
+   void calculate_group_width(option_group const &group)
+   {
+      for (auto const &option : group.options)
       {
-	 if (option.description != nullptr)
+	 if (is_visible(option))
 	    width = std::max(option_width(option), width);
       }
+   }
 
-      for (auto const &option : globalOptions)
+   void calculate_width()
+   {
+      for (auto const *group : commandOptionGroups)
+	 calculate_group_width(*group);
+
+      calculate_group_width(bin->group);
+      calculate_group_width(globalOptions);
+   }
+
+   void print_group(option_group const &group) const
+   {
+      bool printedHeading = false;
+      for (auto const &option : group.options)
       {
-	 if (option.description == nullptr ||
-	     option.flag == CommandLine::ArbItem ||
-	     option.flag == CommandLine::ConfigFile)
+	 if (not is_visible(option))
 	    continue;
 
-	 width = std::max(option_width(option), width);
+	 if (not printedHeading)
+	 {
+	    std::cout << std::endl
+		      << _(group.heading) << std::endl;
+	    printedHeading = true;
+	 }
+	 print_option(option);
       }
    }
 
    void print_command() const
    {
-      bool hasOptions = false;
-      for (auto const *option : commandOptions)
-      {
-	 if (option->description != nullptr)
-	 {
-	    hasOptions = true;
-	    break;
-	 }
-      }
-
-      if (hasOptions)
-      {
-	 std::cout << std::endl
-		   << _("Options:") << std::endl;
-	 for (auto const *option : commandOptions)
-	 {
-	    if (option->description == nullptr)
-	       continue;
-
-	    print_option(*option);
-	 }
-      }
+      for (auto const *group : commandOptionGroups)
+	 print_group(*group);
 
       print_common();
    }
 
    void print_common() const
    {
-      std::cout << std::endl
-		<< _("Common options:") << std::endl;
-
-      for (auto const &option : bin->options)
-      {
-	 if (option.description == nullptr)
-	    continue;
-	 print_option(option);
-      }
-
-      for (auto const &option : globalOptions)
-      {
-	 if (option.description == nullptr ||
-	     option.flag == CommandLine::ArbItem ||
-	     option.flag == CommandLine::ConfigFile)
-	    continue;
-	 print_option(option);
-      }
+      print_group(bin->group);
+      print_group(globalOptions);
    }
 
    void print_option(option const &o) const

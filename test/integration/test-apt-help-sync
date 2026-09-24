@@ -83,8 +83,7 @@ while IFS='	' read -r cmd desc; do
 
             # Compare only the command prose, excluding options and footer.
             help_text=$(sed \
-                    -e '/^Options:/,$d' \
-                    -e '/^Common options:/,$d' \
+                    -e '/^[^[:space:]].* options:$/,$d' \
                     -e '/^See apt(8)/,$d' \
                     "${c}-sync-help.output")
 

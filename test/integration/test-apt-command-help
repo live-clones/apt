@@ -59,7 +59,7 @@ check_options_only_help() {
 	testsuccess apt "$cmd" --help
 	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-only-help.output"
 	testfailure grep "Most used commands:" "${cmd}-options-only-help.output"
-	testsuccess grep "^Common options:" "${cmd}-options-only-help.output"
+	testsuccess grep -Fx "Global options:" "${cmd}-options-only-help.output"
 
 	testsuccess apt help "$cmd"
 	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-only-help-command.output"
@@ -113,6 +113,8 @@ testsuccess grep "^  list - " apt-generic-help.output
 testsuccess grep "^  install - " apt-generic-help.output
 # Generic help should have the verbose footer and Super Cow
 testsuccess grep "Super Cow Powers" apt-generic-help.output
+testsuccessequal 'Source configuration options:
+Global options:' grep -E '^[^[:space:]].* options:$' apt-generic-help.output
 msggroup
 
 # History commands receive per-command help.
@@ -140,13 +142,82 @@ for cmd in clean distclean autoclean; do
 done
 msggroup
 
-# Test that per-command help includes an Options section where expected
-msggroup "Checking Options section in per-command help"
-for cmd in list search show install autoremove update upgrade full-upgrade satisfy; do
+# Check the complete section sequence, including commands with multiple groups.
+check_option_groups() {
+	local cmd="$1"
+	local expected="$2"
 	testsuccess apt "$cmd" --help
-	cp -f rootdir/tmp/testsuccess.output "${cmd}-options-help.output"
-	testsuccess grep "^Options:" "${cmd}-options-help.output"
+	cp -f rootdir/tmp/testsuccess.output "${cmd}-groups.output"
+	testsuccessequal "$expected" grep -E '^[^[:space:]].* options:$' "${cmd}-groups.output"
+	testfailure grep -E '^(Options|Common options):$' "${cmd}-groups.output"
+}
+
+msggroup "Checking named option groups"
+check_option_groups list 'List options:
+Source configuration options:
+Global options:'
+check_option_groups search 'Search options:
+Cache options:
+Global options:'
+check_option_groups show 'Package information options:
+Source configuration options:
+Global options:'
+for cmd in install reinstall remove purge autoremove full-upgrade; do
+	check_option_groups "$cmd" 'Package management options:
+Simulation options:
+Common package management options:
+Global options:'
 done
+check_option_groups upgrade 'Package management options:
+Upgrade options:
+Simulation options:
+Common package management options:
+Global options:'
+check_option_groups update 'Update options:
+Common package management options:
+Global options:'
+check_option_groups satisfy 'Dependency resolution options:
+Simulation options:
+Common package management options:
+Global options:'
+check_option_groups build-dep 'Dependency resolution options:
+Build dependency options:
+Simulation options:
+Common package management options:
+Global options:'
+# policy matches a declaration with an empty group: do not print an empty heading.
+check_option_groups policy 'Cache options:
+Global options:'
+check_option_groups clean 'Simulation options:
+Common package management options:
+Global options:'
+msggroup
+
+# A heading alone is insufficient: verify that options belong to that section.
+option_group_body() {
+	awk -v heading="$1" '
+		$0 == heading { printing = 1; next }
+		printing && /^$/ { exit }
+		printing { print }
+	' "$2"
+}
+
+msggroup "Checking options within their named groups"
+option_group_body 'Simulation options:' install-groups.output > simulation-group.output
+testsuccess grep -F -- '-s, --simulate' simulation-group.output
+testfailure grep -E -- '--(fix-broken|yes|help|just-print|recon|dry-run|no-act)([[:space:]]|$)' simulation-group.output
+option_group_body 'Package management options:' install-groups.output > management-group.output
+testsuccess grep -F -- '-f, --fix-broken' management-group.output
+testfailure grep -F -- '--simulate' management-group.output
+option_group_body 'Common package management options:' install-groups.output > common-group.output
+testsuccess grep -F -- '-y, --yes' common-group.output
+testsuccess grep -F -- '-m, --fix-missing' common-group.output
+option_group_body 'Cache options:' search-groups.output > cache-group.output
+testsuccess grep -F -- '-g, --generate' cache-group.output
+option_group_body 'Global options:' list-groups.output > global-group.output
+testsuccess grep -F -- '-h, --help' global-group.output
+testfailure grep -E -- '--(config-file|option|silent)([[:space:]]|$)' list-groups.output
+testfailure grep -E -- '--(upgradable|default-release)([[:space:]]|$)' list-groups.output
 msggroup
 
 msggroup "Checking declarative option formatting"
@@ -165,7 +236,7 @@ msggroup
 msggroup "Checking common options in per-command help"
 testsuccess apt list --help
 cp -f rootdir/tmp/testsuccess.output list-common-options.output
-testsuccess grep "^Common options:" list-common-options.output
+testsuccess grep -Fx "Global options:" list-common-options.output
 testsuccess grep -F -- "--with-source <value>" list-common-options.output
 testsuccess grep -F -- "-h, --help" list-common-options.output
 
@@ -200,12 +271,11 @@ cp -f rootdir/tmp/testsuccess.output clean-common-options.output
 testsuccess grep -F -- "--simulate" clean-common-options.output
 msggroup
 
-# Test that commands without notable options don't have an Options section
-msggroup "Checking no Options section for commands without options"
+# Commands without command-specific options should only show common groups.
+msggroup "Checking commands without command-specific option groups"
 for cmd in why why-not edit-sources modernize-sources; do
-	testsuccess apt "$cmd" --help
-	cp -f rootdir/tmp/testsuccess.output "${cmd}-nooptions-help.output"
-	testfailure grep "^Options:" "${cmd}-nooptions-help.output"
+	check_option_groups "$cmd" 'Source configuration options:
+Global options:'
 done
 msggroup
 
