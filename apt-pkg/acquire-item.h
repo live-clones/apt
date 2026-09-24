@@ -368,6 +368,15 @@ class APT_PUBLIC pkgAcquire::Item : public WeakPointable				/*{{{*/
    friend class pkgAcqMetaClearSig;
 };
 									/*}}}*/
+/** \brief Is the p7s acquire method available in this installation?	{{{
+ *
+ *  CMS/PKCS#7 verification of Release.p7s is performed by a separate "p7s"
+ *  acquire method, which is not part of APT yet. Repositories asking for it
+ *  can therefore be recognized, but not verified. Declared here so both the
+ *  sources.list parser and the acquire code agree on how it is looked up.
+ */
+APT_HIDDEN bool PKCS7MethodAvailable();
+									/*}}}*/
 class APT_HIDDEN pkgAcqTransactionItem: public pkgAcquire::Item		/*{{{*/
 /** \brief baseclass for the indexes files to manage them all together */
 {
@@ -549,6 +558,7 @@ class APT_HIDDEN pkgAcqMetaSig final : public pkgAcqTransactionItem
 
    public:
    [[nodiscard]] bool HashesRequired() const override { return false; }
+   [[nodiscard]] bool AcquireByHash() const override;
 
    // Specialized action members
    void Failed(std::string const &Message, pkgAcquire::MethodConfig const *Cnf) override;
@@ -556,9 +566,17 @@ class APT_HIDDEN pkgAcqMetaSig final : public pkgAcqTransactionItem
 		     pkgAcquire::MethodConfig const *Cnf) override;
    [[nodiscard]] std::string Custom600Headers() const override;
 
-   /** \brief Create a new pkgAcqMetaSig. */
+   /** \brief Create a new pkgAcqMetaSig.
+    *
+    *  \param SignatureURI if not empty, the URI to fetch the signature from
+    *  instead of \b Target.URI. Used for CMS/PKCS#7 signatures, which are
+    *  addressed by the hash of the Release file they sign. \b Target is still
+    *  what names the file on disk, so this does not affect where the signature
+    *  is stored.
+    */
    pkgAcqMetaSig(pkgAcquire * const Owner, pkgAcqMetaClearSig * const TransactionManager,
-	 IndexTarget const &Target, pkgAcqMetaIndex * const MetaIndex) APT_NONNULL(2, 3, 5);
+	 IndexTarget const &Target, pkgAcqMetaIndex * const MetaIndex,
+	 std::string const &SignatureURI = "") APT_NONNULL(2, 3, 5);
    ~pkgAcqMetaSig() override;
 };
 									/*}}}*/

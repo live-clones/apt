@@ -1,0 +1,224 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+buildsimplenativepackage 'coolstuff' 'all' '1.0' 'stable'
+setupaptarchive --no-update
+
+# This branch only provides the scaffolding for CMS/PKCS#7 verification, the
+# p7s acquire method itself is added separately. Point the lookup at a path
+# which cannot exist so the unsupported state is deterministic. Note that
+# rootdir/usr/lib/apt/methods is a symlink into the build tree, so removing a
+# method file there would damage the build instead of the test environment.
+NOP7S="$PWD/no-such-dir/p7s"
+echo "Dir::Bin::Methods::p7s \"$NOP7S\";" > rootdir/etc/apt/apt.conf.d/99no-p7s-method
+
+# Only an absolute path with a .pem suffix matters for detection; the content
+# is never read as we could be chrooting later.
+PEM="$PWD/cms.pem"
+printf '%s\n' '-----BEGIN CERTIFICATE-----' 'ZHVtbXk=' '-----END CERTIFICATE-----' > "$PEM"
+PEM2="$PWD/other.pem"
+cp "$PEM" "$PEM2"
+FPR='DE66AECA9151AFA1877EC31DE8525D47528144E2'
+KEYRING='/etc/apt/keyrings/example.gpg'
+
+resetsources() {
+	rm -f rootdir/etc/apt/sources.list
+	rm -f rootdir/etc/apt/sources.list.d/* 2>/dev/null || true
+}
+
+# the last block of this test swings this over to the webserver
+SOURCEURI="file://$PWD/aptarchive"
+
+pemsource() {
+	resetsources
+	echo "deb [signed-by=$1] $SOURCEURI stable main" > rootdir/etc/apt/sources.list
+}
+
+plainsource() {
+	resetsources
+	echo "deb $SOURCEURI stable main" > rootdir/etc/apt/sources.list
+}
+
+DISTDIR="$PWD/aptarchive/dists/stable"
+BYHASHDIR="$DISTDIR/by-hash/SHA512"
+RELEASESHA512="$(sha512sum "$DISTDIR/Release" | cut -d' ' -f1)"
+
+# A CMS/PKCS#7 signature is only ever published under the hash of the Release
+# file it signs, never under a flat name. Publishing it by-hash *only* is what
+# lets the assertions below distinguish "APT asked for the by-hash URI" from
+# "APT asked for something else and we happened to serve it": reaching the
+# verification step at all proves the hash-addressed URI was requested.
+publishp7s() {
+	rm -rf "$DISTDIR/by-hash" "$DISTDIR/Release.p7s"
+	mkdir -p "$BYHASHDIR"
+	echo 'dummy p7s payload' > "$BYHASHDIR/${1:-$RELEASESHA512}.p7s"
+}
+publishp7s
+
+msgmsg 'PKCS#7 source fetches Release first, then the signature by-hash'
+pemsource "$PEM"
+testfailure aptget update
+cp rootdir/tmp/testfailure.output p7supdate.output
+testsuccess grep -E '^Get:[0-9]+ .* Release( |$)' p7supdate.output
+# the progress line keeps naming the signature Release.p7s, as by-hash index
+# fetches keep naming the plain index file
+testsuccess grep -E 'Release\.p7s' p7supdate.output
+testsuccess grep 'not supported by this APT' p7supdate.output
+testsuccess grep 'PEM bundle in Signed-By' p7supdate.output
+# Release has to be ordered before its signature: the signature cannot even be
+# named before the hash of the Release file is known.
+firstlinematching() { grep -nE "$1" "$2" | head -n1 | cut -d: -f1; }
+testsuccess test "$(firstlinematching '^Get:[0-9]+ .* Release( |$)' p7supdate.output)" \
+	-lt "$(firstlinematching '^Get:[0-9]+ .* Release\.p7s( |$)' p7supdate.output)"
+
+msgmsg 'the signature is requested under by-hash/SHA512/<hash of Release>.p7s'
+# pin the literal URI once so a future refactoring cannot silently move it
+testfailure aptget update -o Debug::pkgAcquire::Worker=1
+testsuccess grep -F "/dists/stable/by-hash/SHA512/${RELEASESHA512}.p7s" rootdir/tmp/testfailure.output
+testfailure grep -E "URI: file:.*/dists/stable/Release\.p7s" rootdir/tmp/testfailure.output
+
+msgmsg 'the signature is bound to the Release file it signs'
+# a signature published under any other hash is simply not where APT looks
+publishp7s "$(echo 'not the Release file' | sha512sum | cut -d' ' -f1)"
+testfailure aptget update
+cp rootdir/tmp/testfailure.output wronghash.output
+testsuccess grep 'is not signed' wronghash.output
+testfailure grep 'not supported by this APT' wronghash.output
+
+msgmsg 'there is no fallback to a flat Release.p7s'
+rm -rf "$DISTDIR/by-hash"
+echo 'dummy p7s payload' > "$DISTDIR/Release.p7s"
+testfailure aptget update
+cp rootdir/tmp/testfailure.output flatp7s.output
+testsuccess grep 'is not signed' flatp7s.output
+# if a fallback had been (re)introduced, the fetch would succeed and we would
+# get as far as the verification step instead
+testfailure grep 'not supported by this APT' flatp7s.output
+rm -f "$DISTDIR/Release.p7s"
+publishp7s
+
+msgmsg 'PKCS#7 source never falls back to the OpenPGP pair'
+# these are the assertions the feature exists for: no InRelease, no Release.gpg
+# and no gpgv involvement whatsoever
+testfailure grep -E '^Get:[0-9]+ .*(InRelease|Release\.gpg)' p7supdate.output
+testfailure grep -E 'NO_PUBKEY|NODATA|unsupported filetype' p7supdate.output
+testempty find rootdir/var/lib/apt/lists/ -mindepth 1 -maxdepth 1 -name '*_Release*'
+testempty find rootdir/var/lib/apt/lists/ -mindepth 1 -maxdepth 1 -name '*_InRelease'
+
+msgmsg 'PKCS#7 source with a missing Release.p7s fails to update'
+mv "$DISTDIR/by-hash" "$DISTDIR/by-hash.bak"
+testfailure aptget update
+cp rootdir/tmp/testfailure.output nop7sfile.output
+testsuccess grep -E 'Release\.p7s' nop7sfile.output
+testsuccess grep 'is not signed' nop7sfile.output
+# it fails while fetching, so it never reaches the verification step
+testfailure grep 'not supported by this APT' nop7sfile.output
+mv "$DISTDIR/by-hash.bak" "$DISTDIR/by-hash"
+
+msgmsg 'a source without a PEM bundle in Signed-By is unaffected'
+plainsource
+testsuccess aptget update
+cp rootdir/tmp/testsuccess.output plainupdate.output
+testfailure grep -E 'PEM bundle|Release\.p7s' plainupdate.output
+# Positive control for the negative assertions above: prove that the very same
+# pattern does match when the OpenPGP pair really is fetched, so those
+# assertions cannot quietly turn vacuous again.
+testsuccess grep -E '^Get:[0-9]+ .*(InRelease|Release\.gpg)' plainupdate.output
+testsuccess test -n "$(find rootdir/var/lib/apt/lists/ -maxdepth 1 -name '*_InRelease')"
+testempty find rootdir/var/lib/apt/lists/ -mindepth 1 -maxdepth 1 -name '*_Release.p7s'
+
+msgmsg 'PKCS#7 detection works for a folded deb822 Signed-By'
+resetsources
+cat > rootdir/etc/apt/sources.list.d/p7s.sources <<EOF
+Types: deb
+URIs: $SOURCEURI
+Suites: stable
+Components: main
+Signed-By:
+ $PEM
+EOF
+testfailure aptget update
+cp rootdir/tmp/testfailure.output deb822.output
+testsuccess grep 'not supported by this APT' deb822.output
+testfailure grep -E '^Get:[0-9]+ .*(InRelease|Release\.gpg)' deb822.output
+
+msgmsg 'the unsupported warning tracks the availability of the p7s method'
+pemsource "$PEM"
+testwarning aptcache policy
+testsuccess grep 'PEM bundle in Signed-By' rootdir/tmp/testwarning.output
+# with a method in place the repository is no longer known-broken, so the
+# warning has to disappear on its own without this test being touched again
+testsuccess aptcache policy -o "Dir::Bin::Methods::p7s=/bin/true"
+testfailure grep 'PEM bundle in Signed-By' rootdir/tmp/testsuccess.output
+
+msgmsg 'Signed-By accepts only a single PEM bundle and nothing else'
+for BAD in "$PEM,$PEM2" "$PEM,$FPR" "$FPR,$PEM" "$PEM,$KEYRING" "$KEYRING,$PEM"; do
+	pemsource "$BAD"
+	testfailure aptcache policy
+	cp rootdir/tmp/testfailure.output badsignedby.output
+	testsuccess grep 'only a single PEM bundle' badsignedby.output
+	testsuccess grep 'Signed-By' badsignedby.output
+done
+
+msgmsg 'a lone PEM bundle is still accepted'
+pemsource "$PEM"
+testwarning aptcache policy
+
+msgmsg 'mixing a PEM and a non-PEM source for one repository conflicts'
+pemsource "$PEM"
+echo "deb $SOURCEURI stable main" >> rootdir/etc/apt/sources.list
+testfailure aptcache policy
+testsuccess grep 'Conflicting values set for option SIG_FORMAT' rootdir/tmp/testfailure.output
+
+msgmsg '--print-uris does not offer the OpenPGP pair either'
+pemsource "$PEM"
+testwarning aptget update --print-uris
+cp rootdir/tmp/testwarning.output printuris.output
+testfailure grep -E "'.*InRelease'|'.*Release\.gpg'" printuris.output
+testsuccess grep -E "'.*/Release'" printuris.output
+# the signature URI is not knowable before the Release file has been fetched,
+# so --print-uris cannot offer it at all
+testfailure grep -E 'by-hash|Release\.p7s' printuris.output
+
+msgmsg 'list cleanup keeps Release.p7s'
+plainsource
+testsuccess aptget update
+touch 'rootdir/var/lib/apt/lists/example.invalid_dists_stable_Release.p7s'
+touch 'rootdir/var/lib/apt/lists/example.invalid_dists_stable_Packages'
+testsuccess aptget distclean
+testsuccess test -f 'rootdir/var/lib/apt/lists/example.invalid_dists_stable_Release.p7s'
+testfailure test -f 'rootdir/var/lib/apt/lists/example.invalid_dists_stable_Packages'
+
+msgmsg 'the signature is named after the local Release file on an IMS-Hit'
+# A 304 carries no body and hence no hashes, so the hash the signature is named
+# after has to come from the Release file we already have on disk. Needs a real
+# webserver: the file method does not report IMS-Hits for Release.
+rm -rf rootdir/var/lib/apt/lists
+changetowebserver --no-rewrite
+SOURCEURI="http://localhost:${APTHTTPPORT}"
+pemsource "$PEM"
+
+# get a Release file into lists/ to have something to get an IMS-Hit on. With no
+# signature published the repository is merely unsigned, which --allow-insecure-
+# repositories turns into a warning and stores the Release file.
+rm -rf "$DISTDIR/by-hash"
+testwarning aptget update --allow-insecure-repositories
+testsuccess test -f "rootdir/var/lib/apt/lists/localhost:${APTHTTPPORT}_dists_stable_Release"
+testfailure test -f "rootdir/var/lib/apt/lists/localhost:${APTHTTPPORT}_dists_stable_Release.p7s"
+
+publishp7s
+testfailure aptget update -o Debug::pkgAcquire::Worker=1
+cp rootdir/tmp/testfailure.output imshit.output
+testsuccess grep -E '^Hit:[0-9]+ .* Release( |$)' imshit.output
+# the hash came from the file on disk, so we still end up at the right URI …
+testsuccess grep -F "/dists/stable/by-hash/SHA512/${RELEASESHA512}.p7s" imshit.output
+# … and hence at the verification step, rather than at 'is not signed' (wrong
+# URI) or at the hash-unavailable error (no hash at all)
+testsuccess grep 'not supported by this APT' imshit.output
+testfailure grep -E 'is not signed|Unable to determine the SHA512 hash' imshit.output

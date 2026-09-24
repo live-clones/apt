@@ -29,7 +29,7 @@ bool CanURIBeAccessedViaProxy(URI const &URL)				/*{{{*/
    if (URL.Host.empty() ||
        APT::String::Startswith(URL.Access, "mirror+") || URL.Access.find("+mirror+") != std::string::npos || APT::String::Endswith(URL.Access, "+mirror"))
       return false;
-   std::array const noproxy{"file", "copy", "store", "gpgv", "rred", "cdrom", "mirror"};
+   std::array const noproxy{"file", "copy", "store", "gpgv", "p7s", "rred", "cdrom", "mirror"};
    return std::find(noproxy.begin(), noproxy.end(), URL.Access) == noproxy.end();
 }
 									/*}}}*/
