@@ -93,6 +93,10 @@
      packages).</para></listitem>
      </varlistentry>
 
+     <varlistentry><term><option>full-upgrade</option></term>
+     <listitem><para><literal>full-upgrade</literal> is an alias for <literal>dist-upgrade</literal>.</para></listitem>
+     </varlistentry>
+
      <varlistentry><term><option>install</option></term>
      <listitem>
 	 <para><literal>install</literal> is followed by one or more 
