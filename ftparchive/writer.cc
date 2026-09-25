@@ -65,12 +65,14 @@ static void ConfigToDoHashes(unsigned int &DoHashes, std::string const &Conf)
    SingleConfigToDoHashes(DoHashes, Conf + "::SHA1", Hashes::SHA1SUM);
    SingleConfigToDoHashes(DoHashes, Conf + "::SHA256", Hashes::SHA256SUM);
    SingleConfigToDoHashes(DoHashes, Conf + "::SHA512", Hashes::SHA512SUM);
+   SingleConfigToDoHashes(DoHashes, Conf + "::SHA3-256", Hashes::SHA3_256SUM);
+   SingleConfigToDoHashes(DoHashes, Conf + "::SHA3-512", Hashes::SHA3_512SUM);
 }
 									/*}}}*/
 
 // FTWScanner::FTWScanner - Constructor					/*{{{*/
 FTWScanner::FTWScanner(FileFd * const GivenOutput, string const &Arch, bool const IncludeArchAll)
-   : Arch(Arch), IncludeArchAll(IncludeArchAll), DoHashes(~0)
+   : Arch(Arch), IncludeArchAll(IncludeArchAll), DoHashes(~(Hashes::SHA3_256SUM | Hashes::SHA3_512SUM))
 {
    if (GivenOutput == NULL)
    {
@@ -1144,6 +1146,10 @@ void ReleaseWriter::Finish()
       printChecksumTypeRecord(*Output, "SHA256", CheckSums);
    if ((DoHashes & Hashes::SHA512SUM) == Hashes::SHA512SUM)
       printChecksumTypeRecord(*Output, "SHA512", CheckSums);
+   if ((DoHashes & Hashes::SHA3_256SUM) == Hashes::SHA3_256SUM)
+      printChecksumTypeRecord(*Output, "SHA3-256", CheckSums);
+   if ((DoHashes & Hashes::SHA3_512SUM) == Hashes::SHA3_512SUM)
+      printChecksumTypeRecord(*Output, "SHA3-512", CheckSums);
 
    // go by-hash cleanup
    map<string,ReleaseWriter::CheckSum>::const_iterator prev = CheckSums.begin();
