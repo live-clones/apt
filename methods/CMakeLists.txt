@@ -13,6 +13,13 @@ add_executable(sqv sqv.cc)
 install(TARGETS sqv
         RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/apt/methods)
 endif()
+# Deliberately absent from install(TARGETS) below as P7SStore imposes no
+# constraints yet (see methods/p7s-store.h), so the method must not be
+# reachable by a real source. 
+add_executable(p7s p7s.cc p7s-store.cc)
+# apt-pkg links OpenSSL PRIVATE, so neither the library nor its include
+# directories propagate to us and apt-pkg/pkcs7.h includes <openssl/types.h>.
+target_link_libraries(p7s OpenSSL::Crypto)
 add_executable(cdrom cdrom.cc)
 add_executable(http http.cc basehttp.cc $<TARGET_OBJECTS:connectlib>)
 add_executable(mirror mirror.cc)
