@@ -1,0 +1,220 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+# The p7s method is deliberately not installed while P7SStore's constraints are
+# examples rather than a policy (see methods/p7s-store.h), and it cannot be built
+# against a released libapt-pkg either, as BaseX509Store is not exported there
+# yet. Both resolve themselves once the method ships, at which point this guard
+# stops triggering and the test runs against the installed binary too.
+msgtest 'Check for the' 'p7s method'
+if [ ! -x "${METHODSDIR}/p7s" ]; then
+	msgskip 'not built or installed'
+	exit 0
+fi
+msgpass
+
+DATA="$PWD/Release"
+printf 'Origin: Debian\nSuite: stable\n' > "$DATA"
+SIG="$PWD/Release.p7s"
+printf 'not a CMS signature at all\n' > "$SIG"
+
+# A real trust anchor, so that LoadCert() succeeds and VerifyDetach() becomes
+# reachable. apt.pem is the webserver fixture the https tests use: a self-signed
+# certificate valid until 2120, preceded by its private key. Only the certificate
+# block is wanted here, as everything in a Signed-By bundle becomes a trust
+# anchor. It never has to verify anything -- it only has to parse.
+BUNDLE="$PWD/anchors.pem"
+sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' \
+	"${TESTDIRECTORY}/apt.pem" > "$BUNDLE"
+
+# A bundle which is shaped like PEM but holds no decodable certificate, to fail
+# in LoadCert() rather than later.
+BADBUNDLE="$PWD/unparseable.pem"
+printf '%s\n' '-----BEGIN CERTIFICATE-----' 'ZHVtbXk=' '-----END CERTIFICATE-----' > "$BADBUNDLE"
+
+EMPTYBUNDLE="$PWD/empty.pem"
+: > "$EMPTYBUNDLE"
+
+# Set to a non-empty value to omit the opt-in and exercise the policy refusal.
+GATED=''
+
+# $1 is the Signed-By value; leave it empty to send no Signed-By tag at all.
+# $2 overrides the signature path, $3 the signed data path.
+# The message is assembled line by line rather than as one heredoc: a
+# conditionally omitted Config-Item would otherwise leave a blank line behind and
+# split the 601 message in two.
+p7smethod() {
+	{
+		echo '601 Configuration'
+		echo 'Config-Item: Debug::Acquire::p7s=1'
+		if [ -z "$GATED" ]; then
+			echo 'Config-Item: Acquire::p7s::Allow-Unconstrained-Policy=1'
+		fi
+		echo ''
+		echo '600 URI Acquire'
+		echo "URI: p7s:${2:-$SIG}"
+		echo "Filename: ${3:-$DATA}"
+		if [ -n "$1" ]; then
+			echo "Signed-By: $1"
+		fi
+		echo ''
+	} | runapt "${METHODSDIR}/p7s"
+}
+
+# $1 describes the case, $2 is a fragment of the reason the method has to give,
+# $3..$5 are passed to p7smethod. Only for messages this method produces itself.
+testp7sfailure() {
+	local DESC="$1" REASON="$2"
+	shift 2
+	p7smethod "$@" >method.output 2>&1 || true
+	msgtest "$DESC" 'is rejected'
+	testsuccess --nomsg grep '^400 URI Failure$' method.output
+	msgtest "The reason given names" "$REASON"
+	testsuccess --nomsg grep -- "$REASON" method.output
+}
+
+# Asserts only that the method failed. Used where the message comes from
+# BaseX509Store, so that this test does not pin another component's wording.
+testp7sfails() {
+	local DESC="$1"
+	shift
+	msgtest "$DESC" 'is rejected'
+	p7smethod "$@" >method.output 2>&1 || true
+	testsuccess --nomsg grep '^400 URI Failure$' method.output
+}
+
+msgmsg 'The method refuses to verify while its certificate policy is unconstrained'
+# P7SStore::PolicyIsConstrained is false, so a policy that is not yet a policy
+# must never accept a signature. Every case below opts out of this refusal in
+# order to reach the protocol handling it guards.
+GATED='yes'
+testp7sfailure 'A source verified by an unconstrained APT' \
+	'certificate policy is unconstrained' "$BUNDLE"
+GATED=''
+
+msgmsg 'A source without Signed-By cannot be verified'
+testp7sfailure 'A source naming no PEM bundle' 'names no PEM bundle' ''
+
+msgmsg 'Signed-By must name exactly one PEM bundle and nothing besides'
+testp7sfailure 'A fingerprint alongside a bundle' \
+	'must name a single PEM bundle' "$BUNDLE,DE66AECA9151AFA1877EC31DE8525D47528144E2"
+testp7sfailure 'Two bundles' 'must name a single PEM bundle' "$BUNDLE,$BUNDLE"
+# gpgv and sqv accept an inline PGP key block in Signed-By. There is no inline
+# form here, so a certificate pasted into the option is a path like any other.
+testp7sfailure 'An inline certificate instead of a path' 'is not an absolute path' \
+	"$(cat "$BUNDLE")"
+
+msgmsg 'Signed-By must name an absolute path with a .pem suffix'
+testp7sfailure 'A relative path' 'is not an absolute path' 'anchors.pem'
+testp7sfailure 'A keyring' 'does not end in .pem' '/etc/apt/keyrings/example.gpg'
+
+msgmsg 'An unreadable bundle names the option the user has to fix'
+testp7sfailure 'A missing bundle' 'Could not read the PEM bundle' "$PWD/does-not-exist.pem"
+
+msgmsg 'The signature and the signed data may never be the same file'
+# There is no clear-signed form of a CMS repository signature, so unlike gpgv and
+# sqv this is a caller bug rather than a request to split the file.
+testp7sfailure 'A signature which is also the signed data' \
+	'both the signature and the signed data' "$BUNDLE" "$DATA" "$DATA"
+
+msgmsg 'A bundle which yields no certificate is fatal'
+testp7sfails 'An empty bundle' "$EMPTYBUNDLE"
+testp7sfails 'A bundle holding no decodable certificate' "$BADBUNDLE"
+
+msgmsg 'A signature which is not CMS at all is fatal'
+# The anchor parses, so this reaches VerifyDetach, which has to reject the
+# signature rather than ignore the bytes it cannot parse.
+testp7sfails 'A non-CMS signature under a real anchor' "$BUNDLE"
+
+### Everything below needs real signatures, which the openssl tool mints for us.
+
+if ! command -v openssl >/dev/null 2>&1; then
+	msgtest 'Check for the' 'openssl tool'
+	msgskip 'not available to mint signatures'
+	exit 0
+fi
+
+msgmsg 'Minting a trust anchor and signers'
+mkpki() {
+	openssl req -x509 -newkey rsa:2048 -noenc -keyout ca.key -out ca.pem -days 3650 \
+		-subj '/CN=APT Testcases CA' -addext 'basicConstraints=critical,CA:TRUE'
+	# A signer APT must accept, and one whose key is below the security floor
+	# RequireStrongKey() imposes.
+	openssl req -newkey rsa:2048 -noenc -keyout good.key -out good.csr -subj '/CN=Good Signer'
+	openssl x509 -req -in good.csr -CA ca.pem -CAkey ca.key -out good.pem -days 3650
+	openssl req -newkey rsa:1024 -noenc -keyout weak.key -out weak.csr -subj '/CN=Weak Signer'
+	openssl x509 -req -in weak.csr -CA ca.pem -CAkey ca.key -out weak.pem -days 3650
+	# An anchor the bundle will not contain, to produce a block that cannot verify.
+	openssl req -x509 -newkey rsa:2048 -noenc -keyout other-ca.key -out other-ca.pem \
+		-days 3650 -subj '/CN=Untrusted CA' -addext 'basicConstraints=critical,CA:TRUE'
+	openssl req -newkey rsa:2048 -noenc -keyout other.key -out other.csr -subj '/CN=Untrusted Signer'
+	openssl x509 -req -in other.csr -CA other-ca.pem -CAkey other-ca.key -out other.pem -days 3650
+
+	# openssl cms -sign is detached unless told otherwise, which is the only
+	# form this method accepts.
+	openssl cms -sign -binary -in "$DATA" -signer good.pem -inkey good.key -outform PEM -out good.p7s
+	openssl cms -sign -binary -in "$DATA" -signer good.pem -inkey good.key -md sha1 \
+		-outform PEM -out sha1.p7s
+	openssl cms -sign -binary -in "$DATA" -signer weak.pem -inkey weak.key -outform PEM -out weak.p7s
+	openssl cms -sign -binary -in "$DATA" -signer other.pem -inkey other.key -outform PEM -out other.p7s
+	# A signature carrying an unverifiable block ahead of a good one, which is
+	# what a repository looks like midway through an anchor rotation.
+	cat other.p7s good.p7s > mixed.p7s
+}
+msgtest 'Mint certificates and signatures with' 'openssl'
+if mkpki >mkpki.output 2>&1; then
+	msgpass
+else
+	msgskip 'openssl could not produce the fixtures'
+	cat mkpki.output
+	exit 0
+fi
+
+CA="$PWD/ca.pem"
+# The method reports SHA-256 over the DER of the signer certificate, hex encoded
+# and lowercase. Derive the expectation from the certificate rather than pinning
+# a literal, as the key is fresh on every run.
+GOODFPR="$(openssl x509 -in good.pem -noout -fingerprint -sha256 \
+	| cut -d= -f2 | tr -d ':' | tr 'A-F' 'a-f')"
+
+msgmsg 'A good signature is reported with the signer fingerprint'
+p7smethod "$CA" "$PWD/good.p7s" >method.output 2>&1
+msgtest 'A signature from a trusted signer' 'is accepted'
+testsuccess --nomsg grep '^201 URI Done$' method.output
+# pkgAcqMetaBase::CheckAuthDone() hard-errors on an empty Signed-By for any
+# method not claiming version 1.0, so this field is what makes the method usable
+# at all.
+msgtest 'The accepted signer is reported in' 'Signed-By'
+testsuccess --nomsg grep "^Signed-By: ${GOODFPR}\$" method.output
+msgtest 'An accepted signature produces no' 'warning'
+testfailure --nomsg grep '^104 Warning$' method.output
+
+msgmsg 'The example constraints reject what they are meant to reject'
+# Neither is enforced by BaseX509Store, which is the point of the hooks.
+testp7sfailure 'A SHA-1 signature' 'digest SHA1' "$CA" "$PWD/sha1.p7s"
+testp7sfailure 'A 1024 bit signing key' 'bits of security' "$CA" "$PWD/weak.p7s"
+# A rejection has to say which signer it applies to, as a signature may carry
+# several and only one of them may be at fault.
+msgtest 'The rejection is attributed to the' 'signer'
+testsuccess --nomsg grep 'Weak Signer' method.output
+
+msgmsg 'A rejected block does not fail a signature another signer verified'
+p7smethod "$CA" "$PWD/mixed.p7s" >method.output 2>&1
+msgtest 'A signature with one good and one unverifiable block' 'is accepted'
+testsuccess --nomsg grep '^201 URI Done$' method.output
+msgtest 'Only the verifying signer appears in' 'Signed-By'
+testsuccess --nomsg grep "^Signed-By: ${GOODFPR}\$" method.output
+# The detail is raw OpenSSL diagnostics that nobody can act on, so it belongs in
+# --audit; a single warning is what makes a user look.
+msgtest 'The rejected block is reported as an' 'audit message'
+testsuccess --nomsg grep '^105 Audit$' method.output
+msgtest 'The rejection is summarised in a single' 'warning'
+testsuccess --nomsg test "$(grep -c '^104 Warning$' method.output)" = '1'
+msgtest 'The unverifiable signer is not reported in' 'Signed-By'
+testfailure --nomsg grep 'Untrusted Signer' method.output
