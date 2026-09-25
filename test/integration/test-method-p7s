@@ -1,0 +1,120 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+# Real X.509 and CMS behaviour is covered by the unit tests in test/libapt, which
+# mint certificates in-process. What can only be tested through the binary is the
+# method protocol itself: which messages a given 600 URI Acquire produces. None of
+# the cases below need a valid signature for that, so this test performs no
+# cryptography and ships no fixtures of its own.
+
+DATA="$PWD/Release"
+printf 'Origin: Debian\nSuite: stable\n' > "$DATA"
+SIG="$PWD/Release.p7s"
+printf 'not a CMS signature at all\n' > "$SIG"
+
+# A real trust anchor, so that LoadCert() succeeds and VerifyDetach() becomes
+# reachable. apt.pem is the webserver fixture the https tests use: a self-signed
+# certificate valid until 2120, preceded by its private key. Only the certificate
+# block is wanted here, as everything in a Signed-By bundle becomes a trust
+# anchor. It never has to verify anything -- it only has to parse.
+BUNDLE="$PWD/anchors.pem"
+sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' \
+	"${TESTDIRECTORY}/apt.pem" > "$BUNDLE"
+
+# A bundle which is shaped like PEM but holds no decodable certificate, to fail
+# in LoadCert() rather than later.
+BADBUNDLE="$PWD/unparseable.pem"
+printf '%s\n' '-----BEGIN CERTIFICATE-----' 'ZHVtbXk=' '-----END CERTIFICATE-----' > "$BADBUNDLE"
+
+EMPTYBUNDLE="$PWD/empty.pem"
+: > "$EMPTYBUNDLE"
+
+# Set to a non-empty value to omit the opt-in and exercise the policy refusal.
+GATED=''
+
+# $1 is the Signed-By value; leave it empty to send no Signed-By tag at all.
+# $2 overrides the signature path, $3 the signed data path.
+# The message is assembled line by line rather than as one heredoc: a
+# conditionally omitted Config-Item would otherwise leave a blank line behind and
+# split the 601 message in two.
+p7smethod() {
+	{
+		echo '601 Configuration'
+		echo 'Config-Item: Debug::Acquire::p7s=1'
+		if [ -z "$GATED" ]; then
+			echo 'Config-Item: Acquire::p7s::Allow-Unconstrained-Policy=1'
+		fi
+		echo ''
+		echo '600 URI Acquire'
+		echo "URI: p7s:${2:-$SIG}"
+		echo "Filename: ${3:-$DATA}"
+		if [ -n "$1" ]; then
+			echo "Signed-By: $1"
+		fi
+		echo ''
+	} | runapt "${METHODSDIR}/p7s"
+}
+
+# Asserts the failure and the reported reason. Only for messages this method
+# produces itself.
+testp7sfailure() {
+	msgtest "$1" "$2"
+	p7smethod "$3" "$4" "$5" >method.output 2>&1 || true
+	testsuccess --nomsg grep '^400 URI Failure$' method.output
+	msgtest 'The reported reason mentions' "$2"
+	testsuccess --nomsg grep -- "$2" method.output
+}
+
+# Asserts only that the method failed. Used where the message comes from
+# BaseX509Store, so that this test does not pin another component's wording.
+testp7sfails() {
+	msgtest "$1" 'fails'
+	p7smethod "$2" "$3" "$4" >method.output 2>&1 || true
+	testsuccess --nomsg grep '^400 URI Failure$' method.output
+}
+
+msgmsg 'The method refuses to verify while its certificate policy is empty'
+# P7SStore::PolicyIsConstrained is false, so a policy-free store must never
+# accept a signature. Every case below opts out of this refusal in order to reach
+# the protocol handling it guards.
+GATED='yes'
+testp7sfailure 'The refusal is reported as' 'certificate policy is unconstrained' "$BUNDLE"
+GATED=''
+
+msgmsg 'A source without Signed-By cannot be verified'
+testp7sfailure 'No PEM bundle is reported as' 'names no PEM bundle' ''
+
+msgmsg 'Signed-By must name exactly one PEM bundle and nothing besides'
+testp7sfailure 'A fingerprint alongside a bundle is reported as' \
+	'must name a single PEM bundle' "$BUNDLE,DE66AECA9151AFA1877EC31DE8525D47528144E2"
+testp7sfailure 'Two bundles are reported as' \
+	'must name a single PEM bundle' "$BUNDLE,$BUNDLE"
+
+msgmsg 'Signed-By must name an absolute path with a .pem suffix'
+testp7sfailure 'A relative path is reported as' 'is not an absolute path' 'anchors.pem'
+testp7sfailure 'A keyring is reported as' 'does not end in .pem' '/etc/apt/keyrings/example.gpg'
+
+msgmsg 'An unreadable bundle names the option the user has to fix'
+testp7sfailure 'A missing bundle is reported as' \
+	'Could not read the PEM bundle' "$PWD/does-not-exist.pem"
+
+msgmsg 'The signature and the signed data may never be the same file'
+# There is no clear-signed form of a CMS repository signature, so unlike gpgv and
+# sqv this is a caller bug rather than a request to split the file.
+testp7sfailure 'Signature equal to data is reported as' \
+	'both the signature and the signed data' "$BUNDLE" "$DATA" "$DATA"
+
+msgmsg 'A bundle which yields no certificate is fatal'
+testp7sfails 'An empty bundle' "$EMPTYBUNDLE"
+testp7sfails 'A bundle holding no decodable certificate' "$BADBUNDLE"
+
+msgmsg 'A signature which is not CMS at all is fatal'
+# The anchor parses, so this reaches VerifyDetach, which has to reject the
+# signature rather than ignore the bytes it cannot parse.
+testp7sfails 'A non-CMS signature under a real anchor' "$BUNDLE"
