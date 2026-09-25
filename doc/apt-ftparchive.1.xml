@@ -516,9 +516,12 @@ for i in Sections do
 	 <term><option>--sha1</option></term>
 	 <term><option>--sha256</option></term>
 	 <term><option>--sha512</option></term>
+	 <term><option>--sha3-256</option></term>
+	 <term><option>--sha3-512</option></term>
      <listitem><para>
      Generate the given checksum. These options default to on, when turned off the generated
      index files will not have the checksum fields where possible.
+     <option>--sha3-256</option> and <option>--sha3-512</option> are the exception and default to off.
      Configuration Items: <literal>APT::FTPArchive::<replaceable>Checksum</replaceable></literal> and
      <literal>APT::FTPArchive::<replaceable>Index</replaceable>::<replaceable>Checksum</replaceable></literal> where
      <literal><replaceable>Index</replaceable></literal> can be <literal>Packages</literal>, <literal>Sources</literal> or
