@@ -60,6 +60,10 @@ runtest() {
 
 msgmsg 'InRelease'
 EXPECT="Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists..."
 echo 'Acquire::GzipIndexes "0";' > rootdir/etc/apt/apt.conf.d/02compressindex
 runtest
@@ -70,6 +74,10 @@ msgmsg 'Release/Release.gpg'
 EXPECT="Ign:1 http://localhost:${APTHTTPPORT} unstable InRelease
   404  Not Found
 Hit:2 http://localhost:${APTHTTPPORT} unstable Release
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:6 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:7 http://localhost:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists..."
 find aptarchive -name 'InRelease' -delete
 logcurrentarchivedirectory
@@ -84,6 +92,10 @@ EXPECT="Ign:1 http://localhost:${APTHTTPPORT} unstable InRelease
 Hit:2 http://localhost:${APTHTTPPORT} unstable Release
 Ign:3 http://localhost:${APTHTTPPORT} unstable Release.gpg
   404  Not Found
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:6 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:7 http://localhost:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists...
 W: The repository 'http://localhost:${APTHTTPPORT} unstable Release' is not signed.
 N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.

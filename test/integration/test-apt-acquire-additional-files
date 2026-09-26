@@ -71,8 +71,14 @@ testequal "'http://localhost:${APTHTTPPORT}/dists/unstable/InRelease' localhost:
 
 # apt believes the Contents files we faked are good
 testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
+Get:6 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
+Get:7 http://localhost:${APTHTTPPORT} unstable/main all Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
 Reading package lists..." aptget update
-testequal "$(readfile Contents-amd64.gz Contents-all.gz)" aptget indextargets --format '$(FILENAME)' 'Identifier: Contents'
+testequal "$(readfile Contents-amd64 Contents-all)" aptget indextargets --format '$(FILENAME)' 'Identifier: Contents'
 
 find rootdir/var/lib/apt/lists -name '*Contents*' -delete
 
@@ -85,8 +91,12 @@ testequal "'http://localhost:${APTHTTPPORT}/dists/unstable/InRelease' localhost:
 'http://localhost:${APTHTTPPORT}/dists/unstable/main/Contents-all.xz' localhost:${APTHTTPPORT}_dists_unstable_main_Contents-all 0 " aptget update --print-uris
 
 testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
-Get:2 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
-Get:3 http://localhost:${APTHTTPPORT} unstable/main all Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
+Get:6 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
+Get:7 http://localhost:${APTHTTPPORT} unstable/main all Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
 Reading package lists..." aptget update
 
 testequal "rootdir/var/lib/apt/lists/localhost:${APTHTTPPORT}_dists_unstable_main_Contents-amd64" find rootdir/var/lib/apt/lists -name '*Contents-amd64*'
@@ -103,8 +113,12 @@ testempty aptget indextargets --format '$(FILENAME)' 'Identifier: Contents'
 msgmsg "Normal Contents file with KeepCompressed"
 echo 'Acquire::IndexTargets::deb::Contents::KeepCompressed "true";' >> rootdir/etc/apt/apt.conf.d/content-target.conf
 testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
-Get:2 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
-Get:3 http://localhost:${APTHTTPPORT} unstable/main all Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
+Get:6 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
+Get:7 http://localhost:${APTHTTPPORT} unstable/main all Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
 Reading package lists..." aptget update
 
 testequal "rootdir/var/lib/apt/lists/localhost:${APTHTTPPORT}_dists_unstable_main_Contents-amd64.$LOWCOSTEXT" find rootdir/var/lib/apt/lists -name '*Contents-amd64*'
@@ -139,8 +153,12 @@ runthistest() {
 'http://localhost:${APTHTTPPORT}/dists/unstable/main/Contents-all.gz.xz' localhost:${APTHTTPPORT}_dists_unstable_main_Contents-all.gz 0 " aptget update --print-uris
 
 	testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
-Get:2 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents.gz [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
-Get:3 http://localhost:${APTHTTPPORT} unstable/main all Contents.gz [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
+Get:6 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents.gz [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
+Get:7 http://localhost:${APTHTTPPORT} unstable/main all Contents.gz [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
 Reading package lists..." aptget update
 
 	testequal "rootdir/var/lib/apt/lists/localhost:${APTHTTPPORT}_dists_unstable_main_Contents-amd64.gz" find rootdir/var/lib/apt/lists -name '*Contents-amd64*'
@@ -190,7 +208,11 @@ testequal "'http://localhost:${APTHTTPPORT}/dists/unstable/InRelease' localhost:
 'http://localhost:${APTHTTPPORT}/dists/unstable/main/i18n/Translation-en.xz' localhost:${APTHTTPPORT}_dists_unstable_main_i18n_Translation-en 0 
 'http://localhost:${APTHTTPPORT}/dists/unstable/main/Contents-amd64.xz' localhost:${APTHTTPPORT}_dists_unstable_main_Contents-amd64 0 " aptget update --print-uris
 testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
-Get:2 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
+Get:6 http://localhost:${APTHTTPPORT} unstable/main amd64 Contents [$(stat -c%s aptarchive/dists/unstable/main/Contents-amd64.gz) B]
 Reading package lists..." aptget update
 testequal "rootdir/var/lib/apt/lists/localhost:${APTHTTPPORT}_dists_unstable_main_Contents-amd64" find rootdir/var/lib/apt/lists -name '*Contents*'
 testequal "$(readfile Contents-amd64)" aptget indextargets --format '$(FILENAME)' 'Identifier: Contents'
@@ -207,7 +229,11 @@ testequal "'http://localhost:${APTHTTPPORT}/dists/unstable/InRelease' localhost:
 'http://localhost:${APTHTTPPORT}/dists/unstable/main/i18n/Translation-en.xz' localhost:${APTHTTPPORT}_dists_unstable_main_i18n_Translation-en 0 
 'http://localhost:${APTHTTPPORT}/dists/unstable/main/Contents-i386.xz' localhost:${APTHTTPPORT}_dists_unstable_main_Contents-i386 0 " aptget update --print-uris
 testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
-Get:2 http://localhost:${APTHTTPPORT} unstable all Contents3 [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
+Get:6 http://localhost:${APTHTTPPORT} unstable all Contents3 [$(stat -c%s aptarchive/dists/unstable/main/Contents-all.gz) B]
 Reading package lists..." aptget update
 testequal "rootdir/var/lib/apt/lists/localhost:${APTHTTPPORT}_dists_unstable_main_Contents-all" find rootdir/var/lib/apt/lists -name '*Contents*'
 testequal "$(readfile Contents-all)" aptget indextargets --format '$(FILENAME)' 'Identifier: Contents'
@@ -227,6 +253,10 @@ testequal "'http://localhost:${APTHTTPPORT}/dists/unstable/InRelease' localhost:
 'http://localhost:${APTHTTPPORT}/dists/unstable/main/i18n/Translation-en.xz' localhost:${APTHTTPPORT}_dists_unstable_main_i18n_Translation-en 0 " aptget update --print-uris
 
 testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} unstable InRelease
+Hit:2 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:3 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
+Hit:4 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists..." aptget update
 
 testempty find rootdir/var/lib/apt/lists -name '*Contents*'

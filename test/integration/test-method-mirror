@@ -120,6 +120,12 @@ webserverconfig 'aptwebserver::redirect::replace::/mirror.txt' "http://127.0.0.2
 testsuccessequal "Get:1 http://localhost:${APTHTTPPORT}/mirror.txt Mirrorlist [$(stat -c%s aptarchive/mirror2.txt) B]
 Hit:2 http://localhost:${APTHTTPPORT} stable InRelease
 Hit:3 http://localhost:${APTHTTPPORT} unstable InRelease
+Hit:4 http://localhost:${APTHTTPPORT} stable/main Sources
+Hit:5 http://localhost:${APTHTTPPORT} stable/main all Packages
+Hit:6 http://localhost:${APTHTTPPORT} stable/main Translation-en
+Hit:7 http://localhost:${APTHTTPPORT} unstable/main Sources
+Hit:8 http://localhost:${APTHTTPPORT} unstable/main all Packages
+Hit:9 http://localhost:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists...
 Building dependency tree...
 Reading state information...
@@ -205,6 +211,9 @@ Ign:2 http://localhost:${APTHTTPPORT}/failure2 unstable InRelease
 Ign:2 https://localhost:${APTHTTPSPORT}/failure unstable InRelease
   404  Not Found
 Hit:2 http://localhost:${APTHTTPPORT}/redirectme unstable InRelease
+Hit:3 http://localhost:${APTHTTPPORT}/redirectme unstable/main Sources
+Hit:4 http://localhost:${APTHTTPPORT}/redirectme unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT}/redirectme unstable/main Translation-en
 Reading package lists...
 Building dependency tree...
 Reading state information...
@@ -214,6 +223,9 @@ Ign:2 https://localhost:${APTHTTPSPORT}/failure unstable InRelease
 Ign:2 http://localhost:${APTHTTPPORT}/failure2 unstable InRelease
   404  Not Found
 Hit:2 http://localhost:${APTHTTPPORT}/failure2 unstable InRelease
+Hit:3 http://localhost:${APTHTTPPORT}/failure2 unstable/main Sources
+Hit:4 http://localhost:${APTHTTPPORT}/failure2 unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT}/failure2 unstable/main Translation-en
 Reading package lists...
 Building dependency tree...
 Reading state information...
@@ -247,6 +259,9 @@ echo "http://localhost:${APTHTTPPORT}/redirectme
 " > aptarchive/mirror.txt
 testsuccessequal "Get:1 file:${APTARCHIVE}/mirror.txt Mirrorlist [$(stat -c%s 'aptarchive/mirror.txt') B]
 Hit:2 http://localhost:${APTHTTPPORT}/redirectme unstable InRelease
+Hit:3 http://localhost:${APTHTTPPORT}/redirectme unstable/main Sources
+Hit:4 http://localhost:${APTHTTPPORT}/redirectme unstable/main all Packages
+Hit:5 http://localhost:${APTHTTPPORT}/redirectme unstable/main Translation-en
 Reading package lists...
 Building dependency tree...
 Reading state information...
@@ -258,6 +273,9 @@ testsuccess grep 'package apt-transport-foo installed' rootdir/tmp/testfailure.o
 echo 'Dir::Bin::Methods::foo+file "file";' >> rootdir/etc/apt/apt.conf.d/99add-foo-method
 testsuccessequal "Get:1 foo+file:${APTARCHIVE}/mirror.txt Mirrorlist [$(stat -c%s 'aptarchive/mirror.txt') B]
 Hit:2 foo+http://localhost:${APTHTTPPORT}/redirectme unstable InRelease
+Hit:3 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main Sources
+Hit:4 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main all Packages
+Hit:5 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main Translation-en
 Reading package lists...
 Building dependency tree...
 Reading state information...
@@ -271,6 +289,15 @@ testsuccessequal "Get:1 foo+file:${APTARCHIVE}/mirror.txt Mirrorlist [$(stat -c%
 Ign:2 foo+file:/nonexistent/apt/archive unstable InRelease
   File not found - /nonexistent/apt/archive/dists/unstable/InRelease (2: No such file or directory)
 Hit:2 foo+http://localhost:${APTHTTPPORT}/redirectme unstable InRelease
+Ign:3 foo+file:/nonexistent/apt/archive unstable/main Sources
+  File not found - /nonexistent/apt/archive/dists/unstable/main/source/Sources.gz (2: No such file or directory)
+Ign:4 foo+file:/nonexistent/apt/archive unstable/main all Packages
+  File not found - /nonexistent/apt/archive/dists/unstable/main/binary-all/Packages.gz (2: No such file or directory)
+Ign:5 foo+file:/nonexistent/apt/archive unstable/main Translation-en
+  File not found - /nonexistent/apt/archive/dists/unstable/main/i18n/Translation-en.gz (2: No such file or directory)
+Hit:3 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main Sources
+Hit:4 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main all Packages
+Hit:5 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main Translation-en
 Reading package lists...
 Building dependency tree...
 Reading state information...
@@ -281,6 +308,9 @@ testrundownload 'foo=2'
 
 testsuccessequal "Get:1 foo+http://localhost:${APTHTTPPORT}/mirror.txt Mirrorlist [$(stat -c%s 'aptarchive/mirror.txt') B]
 Hit:2 foo+http://localhost:${APTHTTPPORT}/redirectme unstable InRelease
+Hit:3 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main Sources
+Hit:4 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main all Packages
+Hit:5 foo+http://localhost:${APTHTTPPORT}/redirectme unstable/main Translation-en
 Reading package lists...
 Building dependency tree...
 Reading state information...

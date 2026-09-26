@@ -144,6 +144,10 @@ mv rootdir/media/cdrom-unmounted rootdir/media/cdrom-ejected
 msgmsg "ensure an update doesn't mess with cdrom sources"
 testsuccess aptget update
 testfileequal rootdir/tmp/testsuccess.output 'Hit:1 cdrom://Debian APT Testdisk 0.8.15 stable InRelease
+Hit:2 cdrom://Debian APT Testdisk 0.8.15 stable/main Sources
+Hit:3 cdrom://Debian APT Testdisk 0.8.15 stable/main amd64 Packages
+Hit:4 cdrom://Debian APT Testdisk 0.8.15 stable/main i386 Packages
+Hit:5 cdrom://Debian APT Testdisk 0.8.15 stable/main Translation-en
 Reading package lists...'
 mv rootdir/media/cdrom-ejected rootdir/media/cdrom-unmounted
 testcdromusage
@@ -151,6 +155,10 @@ testcdromusage
 msgmsg 'and again to check that it withstands the temptation even if it could mount'
 testsuccess aptget update
 testfileequal rootdir/tmp/testsuccess.output 'Hit:1 cdrom://Debian APT Testdisk 0.8.15 stable InRelease
+Hit:2 cdrom://Debian APT Testdisk 0.8.15 stable/main Sources
+Hit:3 cdrom://Debian APT Testdisk 0.8.15 stable/main amd64 Packages
+Hit:4 cdrom://Debian APT Testdisk 0.8.15 stable/main i386 Packages
+Hit:5 cdrom://Debian APT Testdisk 0.8.15 stable/main Translation-en
 Reading package lists...'
 testcdromusage
 

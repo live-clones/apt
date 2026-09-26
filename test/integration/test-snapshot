@@ -86,10 +86,14 @@ cp -a aptarchive/dists aptarchive/snapshot/BANANA
 
 testsuccessequal "Hit:1 http://localhost:${APTHTTPPORT} stable InRelease
 Get:2 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable InRelease [$(stat -c %s aptarchive/dists/stable/InRelease) B]
-Get:3 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main Sources [$(stat -c %s aptarchive/dists/stable/main/source/Sources.gz) B]
-Get:4 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main amd64 Packages [$(stat -c %s aptarchive/dists/stable/main/binary-amd64/Packages.gz) B]
-Get:5 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main all Packages [$(stat -c %s aptarchive/dists/stable/main/binary-all/Packages.gz) B]
-Get:6 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main Translation-en [$(stat -c %s aptarchive/dists/stable/main/i18n/Translation-en.gz) B]
+Hit:3 http://localhost:${APTHTTPPORT} stable/main Sources
+Hit:4 http://localhost:${APTHTTPPORT} stable/main amd64 Packages
+Hit:5 http://localhost:${APTHTTPPORT} stable/main all Packages
+Hit:6 http://localhost:${APTHTTPPORT} stable/main Translation-en
+Get:7 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main Sources [$(stat -c %s aptarchive/dists/stable/main/source/Sources.gz) B]
+Get:8 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main amd64 Packages [$(stat -c %s aptarchive/dists/stable/main/binary-amd64/Packages.gz) B]
+Get:9 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main all Packages [$(stat -c %s aptarchive/dists/stable/main/binary-all/Packages.gz) B]
+Get:10 http://localhost:${APTHTTPPORT}/snapshot/BANANA stable/main Translation-en [$(stat -c %s aptarchive/dists/stable/main/i18n/Translation-en.gz) B]
 Reading package lists..." \
 	aptget update  -o Acquire::Snapshots::URI::Label::Testcases="http://localhost:${APTHTTPPORT}/snapshot/@SNAPSHOTID@/" -SBANANA
 

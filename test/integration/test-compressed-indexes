@@ -103,12 +103,13 @@ testovermethod() {
 
 	for INDEX in 'false' 'true'; do
 		rm -rf rootdir/var/lib/apt/lists
-		echo "Acquire::GzipIndexes \"${INDEX}\";" > rootdir/etc/apt/apt.conf.d/02compressindex
 		local INDCOMP
 		if [ "$INDEX" = 'false' -o "$1" = 'cdrom' ]; then
 			INDCOMP='uncompressed'
+			echo "Acquire::GzipIndexes \"false\";" > rootdir/etc/apt/apt.conf.d/02compressindex
 		else
 			INDCOMP='compressed'
+			echo "Acquire::GzipIndexes \"true\";" > rootdir/etc/apt/apt.conf.d/02compressindex
 			echo 'APT::Compressor::lz4::Name "lz4";' >> rootdir/etc/apt/apt.conf.d/02compressindex
 		fi
 
