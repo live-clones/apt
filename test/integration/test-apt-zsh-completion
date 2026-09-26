@@ -1,0 +1,42 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+if ! command -v zsh >/dev/null; then
+        msgskip "zsh is not installed"
+        exit 0
+fi
+
+msggroup "Checking Zsh completion candidates"
+
+testsuccess zsh -fc "
+source '$TESTDIR/../../completions/zsh/_apt'
+words=(apt hist)
+CURRENT=2
+__apt_complete
+"
+cp -f rootdir/tmp/testsuccess.output commands.output
+testsuccess grep -Fx "history-rollback" commands.output
+
+testsuccess zsh -fc "
+source '$TESTDIR/../../completions/zsh/_apt'
+words=(apt install --no-l)
+CURRENT=3
+__apt_complete
+"
+cp -f rootdir/tmp/testsuccess.output install-options.output
+testsuccess grep -Fx -- "--no-list-columns" install-options.output
+
+testsuccess zsh -fc "
+fpath=('$TESTDIR/../../completions/zsh' \$fpath)
+autoload -Uz compinit
+compinit -D
+[[ \$_comps[apt] == _apt ]]
+"
+
+msggroup

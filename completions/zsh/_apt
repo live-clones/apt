@@ -1,0 +1,32 @@
+#compdef apt
+
+__apt_complete()
+{
+    local -a commands
+    local selected_command word
+    local current=$words[CURRENT]
+
+    commands=("${(@f)$(command apt __complete 2>/dev/null)}")
+
+    local i
+    for (( i = 2; i < CURRENT; i++ )); do
+        word=$words[i]
+        if [[ -n ${commands[(Ie)$word]} ]]; then
+            selected_command=$word
+            break
+        fi
+    done
+
+    if [[ $current == -* ]]; then
+        command apt __complete "$selected_command" 2>/dev/null
+    elif (( CURRENT == 2 )); then
+        print -rl -- "${commands[@]}"
+    fi
+}
+
+_apt()
+{
+    local -a candidates
+    candidates=("${(@f)$(__apt_complete)}")
+    compadd -- "${candidates[@]}"
+}
