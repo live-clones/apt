@@ -904,9 +904,30 @@ static void * handleClient(int const client, size_t const id)		/*{{{*/
 	    }
 
 	    addFileHeaders(headers, data);
-	    sendHead(log, client, 200, headers);
-	    if (sendContent == true)
-	       sendFile(client, headers, data);
+	    unsigned long long const truncateAfter = _config->FindI("aptwebserver::truncate-after::" + filename, 0);
+	    if (truncateAfter != 0 && truncateAfter < data.FileSize())
+	    {
+	       // simulate an interrupted download: announce the complete file,
+	       // but send only a part of it and close the connection mid-body
+	       headers.push_back("Connection: close");
+	       sendHead(log, client, 200, headers);
+	       if (sendContent == true)
+	       {
+		  std::string content;
+		  content.resize(truncateAfter);
+		  unsigned long long actual = 0;
+		  if (data.Read(content.data(), content.size(), &actual) == false)
+		     actual = 0;
+		  content.resize(actual);
+		  sendData(client, headers, content);
+	       }
+	    }
+	    else
+	    {
+	       sendHead(log, client, 200, headers);
+	       if (sendContent == true)
+		  sendFile(client, headers, data);
+	    }
 	 }
 	 else if (DirectoryExists(filename) == true)
 	 {

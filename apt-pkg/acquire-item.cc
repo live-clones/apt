@@ -4110,8 +4110,17 @@ void pkgAcqAuxFile::Failed(std::string const &Message, pkgAcquire::MethodConfig 
    pkgAcqFile::Failed(Message, Cnf);
    if (Status == StatIdle)
       return;
+   /* The file was downloaded to a temporary name, so a preexisting copy
+      is untouched by a failed download and can be used by the requester
+      as a fallback making the failure ignorable rather than fatal.
+      Rename the (partial) temporary file to ".FAILED" for debugging. */
    if (RealFileExists(DestFile))
-      Rename(DestFile, DestFile + ".FAILED");
+      Rename(DestFile, FinalFile + ".FAILED");
+   if (RealFileExists(FinalFile))
+   {
+      DestFile = FinalFile;
+      Status = StatDone;
+   }
    Desc.URI = OriginalURI;
    Worker->ReplyAux(Desc);
 }
@@ -4122,6 +4131,21 @@ void pkgAcqAuxFile::Done(std::string const &Message, HashStringList const &CalcH
    pkgAcqFile::Done(Message, CalcHashes, Cnf);
    if (Status == StatDone || Status == StatAuthError || Status == StatError)
    {
+      /* the file was downloaded to a temporary name, so move it into place
+	 now that we know it is good - or deal with it like a failed download
+	 (see Failed) keeping a preexisting copy usable as a fallback */
+      if (Status == StatDone && Rename(DestFile, FinalFile))
+	 DestFile = FinalFile;
+      if (Status != StatDone)
+      {
+	 if (RealFileExists(DestFile))
+	    Rename(DestFile, FinalFile + ".FAILED");
+	 if (RealFileExists(FinalFile))
+	 {
+	    DestFile = FinalFile;
+	    Status = StatDone;
+	 }
+      }
       Desc.URI = OriginalURI;
       Worker->ReplyAux(Desc);
    }
@@ -4153,7 +4177,8 @@ void pkgAcqAuxFile::Finished() /*{{{*/
    {
       dirname = flNotFile(DestFile);
       RemoveFile("pkgAcqAuxFile::Finished", DestFile);
-      RemoveFile("pkgAcqAuxFile::Finished", DestFile + ".FAILED");
+      RemoveFile("pkgAcqAuxFile::Finished", FinalFile);
+      RemoveFile("pkgAcqAuxFile::Finished", FinalFile + ".FAILED");
       rmdir(dirname.c_str());
    }
    DestFile.clear();
@@ -4204,9 +4229,25 @@ static std::string GetAuxFileNameFromURI(std::string const &uri)
 									/*}}}*/
 pkgAcqAuxFile::pkgAcqAuxFile(pkgAcquire::Item *const Owner, pkgAcquire::Worker *const Worker,
 			     std::string const &ShortDesc, std::string const &Desc, std::string const &URI,
-			     HashStringList const &Hashes, unsigned long long const MaximumSize) : pkgAcqFile(Owner->GetOwner(), URI, Hashes, Hashes.FileSize(), Desc, ShortDesc, "", GetAuxFileNameFromURI(URI), false),
-												   Owner(Owner), Worker(Worker), MaximumSize(MaximumSize), OriginalURI(this->Desc.URI)
+			     HashStringList const &Hashes, unsigned long long const MaximumSize) : pkgAcqAuxFile(Owner, Worker, ShortDesc, Desc, URI, Hashes, MaximumSize, GetAuxFileNameFromURI(URI))
 {
+}
+/* the file is downloaded to a temporary name and renamed to its final
+   name only on success, so a failed download never modifies a
+   preexisting copy of the file (see Failed) */
+pkgAcqAuxFile::pkgAcqAuxFile(pkgAcquire::Item *const Owner, pkgAcquire::Worker *const Worker,
+			     std::string const &ShortDesc, std::string const &Desc, std::string const &URI,
+			     HashStringList const &Hashes, unsigned long long const MaximumSize,
+			     std::string const &FinalFileName) : pkgAcqFile(Owner->GetOwner(), URI, Hashes, Hashes.FileSize(), Desc, ShortDesc, "", FinalFileName + ".tmp", false),
+								 Owner(Owner), Worker(Worker), MaximumSize(MaximumSize), OriginalURI(this->Desc.URI), FinalFile(FinalFileName)
+{
+   /* remember if we have an old copy of the file around so that we can
+      keep it as a fallback in case the download fails (see Failed).
+      There is no point in retrying a failed download then as we can
+      use the old copy instead straight away. */
+   if (RealFileExists(FinalFile))
+      Retries = 0;
+
    /* very bad failures can happen while constructing which causes
       us to hang as the aux request is never answered (e.g. method not available)
       Ideally we catch failures earlier, but a safe guard can't hurt. */
