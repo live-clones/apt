@@ -22,6 +22,10 @@ Checksums-Sha256:
  14d09b2c1e13f9a70aac3322987ff26f36c53010639763573c9aa4987e52e47a 2095076 apt_1.5~rc1.tar.xz
 Checksums-Sha512:
  4f570c10c3fd549b2e27db4481fbc1ebebed52bd06a8ba7c0716b3917a8452bb3d3cd4fbb02561e02af09b1973a65a4cc69a42c21e858b1d5c3caa970aea4fd4 2095076 apt_1.5~rc1.tar.xz
+Checksums-Sha3-256:
+ a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a 2095076 apt_1.5~rc1.tar.xz
+Checksums-Sha3-512:
+ a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26 2095076 apt_1.5~rc1.tar.xz
 Files:
  7ea24e77b6203e08ca4158831df26825 2095076 apt_1.5~rc1.tar.xz
 EOF
@@ -29,7 +33,28 @@ EOF
 
 rm rootdir/etc/apt/apt.conf.d/*
 
-for HASH in MD5 SHA1 SHA256 SHA512; do
+# SHA3 is opt-in: unconfigured, its blocks are dropped although the .dsc has them
+testsuccess aptftparchive -qq sources "aptarchive/"
+cp rootdir/tmp/testsuccess.output aptarchive/Sources
+testsuccess grep '^Checksums-Sha512:' aptarchive/Sources
+testfailure grep '^Checksums-Sha3-' aptarchive/Sources
+
+cat > rootdir/etc/apt/apt.conf.d/sha3.conf << EOF
+APT::FTPArchive::SHA3-256 "true";
+APT::FTPArchive::SHA3-512 "true";
+EOF
+
+# with SHA3 enabled and nothing disabled every checksum type is written
+testsuccess aptftparchive -qq sources "aptarchive/"
+cp rootdir/tmp/testsuccess.output aptarchive/Sources
+for FIELD in Files Checksums-Sha1 Checksums-Sha256 Checksums-Sha512 Checksums-Sha3-256 Checksums-Sha3-512; do
+    testsuccess grep "^$FIELD:" aptarchive/Sources
+    # the .dsc lists only the tarball; its own line is added by apt-ftparchive
+    grep -A2 "^$FIELD:" aptarchive/Sources > "$FIELD.block"
+    testsuccess grep 'apt_1.5~rc1.dsc$' "$FIELD.block"
+done
+
+for HASH in MD5 SHA1 SHA256 SHA512 SHA3-256 SHA3-512; do
     testsuccess aptftparchive -qq sources  -o APT::FTPArchive::$HASH=false "aptarchive/"
     cp rootdir/tmp/testsuccess.output aptarchive/Sources
     if [ "$HASH" = "MD5" ]; then

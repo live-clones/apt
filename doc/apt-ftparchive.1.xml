@@ -526,7 +526,8 @@ for i in Sections do
      <literal>APT::FTPArchive::<replaceable>Index</replaceable>::<replaceable>Checksum</replaceable></literal> where
      <literal><replaceable>Index</replaceable></literal> can be <literal>Packages</literal>, <literal>Sources</literal> or
      <literal>Release</literal> and <literal><replaceable>Checksum</replaceable></literal> can be <literal>MD5</literal>,
-     <literal>SHA1</literal>, <literal>SHA256</literal> or <literal>SHA512</literal>.</para></listitem>
+     <literal>SHA1</literal>, <literal>SHA256</literal>, <literal>SHA512</literal>,
+     <literal>SHA3-256</literal> or <literal>SHA3-512</literal>.</para></listitem>
      </varlistentry>
 
      <varlistentry><term><option>-d</option></term><term><option>--db</option></term>
