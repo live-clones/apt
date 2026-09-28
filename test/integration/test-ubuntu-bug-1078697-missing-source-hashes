@@ -36,3 +36,21 @@ for hash in sha512sum sha256sum sha1sum; do
 	testsuccess --nomsg grep "$NEEDLE" aptarchive/Sources
     done
 done
+
+# the fill-in loop used to walk the Files field apt-ftparchive generates for
+# MD5, so with MD5 disabled it walked nothing and Sources got no checksums at
+# all; it now walks the .dsc's own Files field whatever hashes are requested
+msgmsg 'Test apt-ftparchive sources with MD5 disabled'
+confighashes 'SHA256' 'SHA512'
+testsuccess aptftparchive sources aptarchive/
+cp rootdir/tmp/testsuccess.output aptarchive/Sources
+testfailure grep '^Files:' aptarchive/Sources
+testsuccess grep '^Checksums-Sha256:' aptarchive/Sources
+testsuccess grep '^Checksums-Sha512:' aptarchive/Sources
+for hash in sha512sum sha256sum; do
+    for f in foo_1.0.tar.gz foo_1.0.dsc; do
+        NEEDLE="$($hash aptarchive/$f | cut -d' ' -f1) $(stat -c%s aptarchive/$f) $f"
+        msgtest "Test $hash hash matches for $f without MD5"
+        testsuccess --nomsg grep "$NEEDLE" aptarchive/Sources
+    done
+done

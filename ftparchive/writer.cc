@@ -732,9 +732,14 @@ bool SourcesWriter::DoPackage(string FileName)
 
    string Directory = flNotFile(OriginalPath);
 
-   // Perform operation over all of the files
+   // Perform operation over all of the files. Walk the .dsc itself and every
+   // file listed in its Files field, which names every file of the source
+   // package, so that any checksums the .dsc lacks get filled in below.
+   // Only the file name column is used.
+   std::string const FileList = "\n - " + std::to_string(St.st_size) + " " +
+      std::string(strippedName) + "\n " + std::string(Tags.Find(pkgTagSection::Key::Files));
    string ParseJnk;
-   const char *C = Files.c_str();
+   const char *C = FileList.c_str();
    char *RealPath = NULL;
    for (;isspace(*C); C++);
    while (*C != 0)
