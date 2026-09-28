@@ -720,6 +720,8 @@ bool SourcesWriter::DoPackage(string FileName)
    std::string ChecksumsSha1 = getDscHash(DoHashes, Hashes::SHA1SUM, Tags, pkgTagSection::Key::Checksums_Sha1, Db.HashesList.find("SHA1"), St.st_size, strippedName);
    std::string ChecksumsSha256 = getDscHash(DoHashes, Hashes::SHA256SUM, Tags, pkgTagSection::Key::Checksums_Sha256, Db.HashesList.find("SHA256"), St.st_size, strippedName);
    std::string ChecksumsSha512 = getDscHash(DoHashes, Hashes::SHA512SUM, Tags, pkgTagSection::Key::Checksums_Sha512, Db.HashesList.find("SHA512"), St.st_size, strippedName);
+   std::string ChecksumsSha3_256 = getDscHash(DoHashes, Hashes::SHA3_256SUM, Tags, pkgTagSection::Key::Checksums_Sha3_256, Db.HashesList.find("SHA3-256"), St.st_size, strippedName);
+   std::string ChecksumsSha3_512 = getDscHash(DoHashes, Hashes::SHA3_512SUM, Tags, pkgTagSection::Key::Checksums_Sha3_512, Db.HashesList.find("SHA3-512"), St.st_size, strippedName);
 
    // Strip the DirStrip prefix from the FileName and add the PathPrefix
    string NewFileName;
@@ -757,7 +759,9 @@ bool SourcesWriter::DoPackage(string FileName)
       // Add missing hashes to source files
       if (((DoHashes & Hashes::SHA1SUM) == Hashes::SHA1SUM && not Tags.Exists(pkgTagSection::Key::Checksums_Sha1)) ||
           ((DoHashes & Hashes::SHA256SUM) == Hashes::SHA256SUM && not Tags.Exists(pkgTagSection::Key::Checksums_Sha256)) ||
-          ((DoHashes & Hashes::SHA512SUM) == Hashes::SHA512SUM && not Tags.Exists(pkgTagSection::Key::Checksums_Sha512)))
+          ((DoHashes & Hashes::SHA512SUM) == Hashes::SHA512SUM && not Tags.Exists(pkgTagSection::Key::Checksums_Sha512)) ||
+          ((DoHashes & Hashes::SHA3_256SUM) == Hashes::SHA3_256SUM && not Tags.Exists(pkgTagSection::Key::Checksums_Sha3_256)) ||
+          ((DoHashes & Hashes::SHA3_512SUM) == Hashes::SHA3_512SUM && not Tags.Exists(pkgTagSection::Key::Checksums_Sha3_512)))
       {
          if (Db.GetFileInfo(OriginalPath,
                             false, /* DoControl */
@@ -790,6 +794,16 @@ bool SourcesWriter::DoPackage(string FileName)
 	    {
 	       fieldkey = pkgTagSection::Key::Checksums_Sha512;
 	       out = &ChecksumsSha512;
+	    }
+	    else if (hs->HashType() == "SHA3-256")
+	    {
+	       fieldkey = pkgTagSection::Key::Checksums_Sha3_256;
+	       out = &ChecksumsSha3_256;
+	    }
+	    else if (hs->HashType() == "SHA3-512")
+	    {
+	       fieldkey = pkgTagSection::Key::Checksums_Sha3_512;
+	       out = &ChecksumsSha3_512;
 	    }
 	    else
 	    {
@@ -846,6 +860,14 @@ bool SourcesWriter::DoPackage(string FileName)
       Changes.push_back(pkgTagSection::Tag::Rewrite("Checksums-Sha512", ChecksumsSha512));
    else
       Changes.push_back(pkgTagSection::Tag::Remove("Checksums-Sha512"));
+   if (ChecksumsSha3_256.empty() == false)
+      Changes.push_back(pkgTagSection::Tag::Rewrite("Checksums-Sha3-256", ChecksumsSha3_256));
+   else
+      Changes.push_back(pkgTagSection::Tag::Remove("Checksums-Sha3-256"));
+   if (ChecksumsSha3_512.empty() == false)
+      Changes.push_back(pkgTagSection::Tag::Rewrite("Checksums-Sha3-512", ChecksumsSha3_512));
+   else
+      Changes.push_back(pkgTagSection::Tag::Remove("Checksums-Sha3-512"));
    if (Directory != "./")
       Changes.push_back(pkgTagSection::Tag::Rewrite("Directory", Directory));
    Changes.push_back(pkgTagSection::Tag::Rewrite("Priority", BestPrio));
