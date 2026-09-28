@@ -499,13 +499,14 @@ bool CacheDB::GetHashes(bool const GenOnly, unsigned int const DoHashes)
       return true;
 
    bool ret = true;
-#define PUSH_BACK_HASH(FLAG, TYPE, VALUE) \
-   if ((CurStat.Flags & FLAG) == FLAG) \
+   // hand out only what was asked for: the cache may hold more
+#define PUSH_BACK_HASH(FLAG, BIT, TYPE, VALUE) \
+   if ((CurStat.Flags & FLAG) == FLAG && (DoHashes & BIT) == BIT) \
       ret &= HashesList.push_back(HashString(TYPE, bytes2hex(VALUE, sizeof(VALUE))));
-   PUSH_BACK_HASH(FlMD5, "MD5Sum", CurStat.MD5);
-   PUSH_BACK_HASH(FlSHA1, "SHA1", CurStat.SHA1);
-   PUSH_BACK_HASH(FlSHA256, "SHA256", CurStat.SHA256);
-   PUSH_BACK_HASH(FlSHA512, "SHA512", CurStat.SHA512);
+   PUSH_BACK_HASH(FlMD5, Hashes::MD5SUM, "MD5Sum", CurStat.MD5);
+   PUSH_BACK_HASH(FlSHA1, Hashes::SHA1SUM, "SHA1", CurStat.SHA1);
+   PUSH_BACK_HASH(FlSHA256, Hashes::SHA256SUM, "SHA256", CurStat.SHA256);
+   PUSH_BACK_HASH(FlSHA512, Hashes::SHA512SUM, "SHA512", CurStat.SHA512);
    return ret;
 }
 									/*}}}*/

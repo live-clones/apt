@@ -56,4 +56,11 @@ $db_dump old-format.db > old-format.dump
 
 testsuccess grep 7da58ff901a40ecf42a730dc33198b182e9ba9ec98799fc2c2b6fabeeee40cc12a0e7cadb4b66764235c56e1009dbfe8a9a566fb1eedf47a992d1fff2cc3332c old-format.dump
 
-
+# a cached hash that is no longer requested is not written out, but stays
+# in the cache for when it is requested again
+testsuccess aptftparchive --db old-format.db -o APT::FTPArchive::SHA512=false packages .
+cp rootdir/tmp/testsuccess.output nosha512.packages
+testfailure grep '^SHA512: ' nosha512.packages
+testsuccess grep '^SHA256: 3750a2c9c6b5beee7f307564be3d51d3ec7cbb78fa4f0b47f84a7c41477bff59$' nosha512.packages
+$db_dump old-format.db > old-format.dump
+testsuccess grep 7da58ff901a40ecf42a730dc33198b182e9ba9ec98799fc2c2b6fabeeee40cc12a0e7cadb4b66764235c56e1009dbfe8a9a566fb1eedf47a992d1fff2cc3332c old-format.dump
