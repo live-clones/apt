@@ -121,6 +121,7 @@ void ShowNew(std::ostream &out,CacheFile &Cache);
 void ShowDel(std::ostream &out,CacheFile &Cache);
 void ShowKept(std::ostream &out,CacheFile &Cache, APT::PackageVector const &HeldBackPackages);
 void ShowPhasing(std::ostream &out, CacheFile &Cache, APT::PackageVector const &HeldBackPackages);
+void ShowHardwareConditionDeferred(std::ostream &out, CacheFile &Cache, APT::PackageVector const &HeldBackPackages);
 void ShowUpgraded(std::ostream &out,CacheFile &Cache);
 bool ShowDowngraded(std::ostream &out,CacheFile &Cache);
 bool ShowHold(std::ostream &out,CacheFile &Cache);

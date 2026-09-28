@@ -43,7 +43,7 @@ static bool pkgDistUpgrade(pkgDepCache &Cache, OpProgress * const Progress)
       a new one (if the old solver is not the first one [anymore]) */
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
    {
-      if (Cache.PhasingApplied(I))
+      if (Cache.PhasingApplied(I) || Cache.HardwareConditionApplied(I))
 	 continue;
       if (I->CurrentVer != 0)
 	 Cache.MarkInstall(I, false, 0, false);
@@ -56,7 +56,7 @@ static bool pkgDistUpgrade(pkgDepCache &Cache, OpProgress * const Progress)
       for the installation */
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
    {
-      if (Cache.PhasingApplied(I))
+      if (Cache.PhasingApplied(I) || Cache.HardwareConditionApplied(I))
 	 continue;
       if (I->CurrentVer != 0)
 	 Cache.MarkInstall(I, true, 0, false);
@@ -84,19 +84,19 @@ static bool pkgDistUpgrade(pkgDepCache &Cache, OpProgress * const Progress)
 	       instEssential = true;
 	       break;
 	    }
-	 }
-	 if (isEssential == false || instEssential == true)
-	    continue;
-	 pkgCache::PkgIterator P = G.FindPreferredPkg();
-	 if (Cache.PhasingApplied(P))
-	    continue;
-	 Cache.MarkInstall(P, true, 0, false);
+        }
+        if (isEssential == false || instEssential == true)
+           continue;
+        pkgCache::PkgIterator P = G.FindPreferredPkg();
+        if (Cache.PhasingApplied(P) || Cache.HardwareConditionApplied(P))
+           continue;
+        Cache.MarkInstall(P, true, 0, false);
       }
    }
    else if (essential != "none")
       for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
       {
-	 if (Cache.PhasingApplied(I))
+	 if (Cache.PhasingApplied(I) || Cache.HardwareConditionApplied(I))
 	    continue;
 	 if ((I->Flags & pkgCache::Flag::Essential) == pkgCache::Flag::Essential)
 	    Cache.MarkInstall(I, true, 0, false);
@@ -109,7 +109,7 @@ static bool pkgDistUpgrade(pkgDepCache &Cache, OpProgress * const Progress)
       conflict resolution on them all. */
    for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
    {
-      if (Cache.PhasingApplied(I))
+      if (Cache.PhasingApplied(I) || Cache.HardwareConditionApplied(I))
 	 continue;
       if (I->CurrentVer != 0)
 	 Cache.MarkInstall(I, false, 0, false);
@@ -144,13 +144,13 @@ static bool pkgDistUpgrade(pkgDepCache &Cache, OpProgress * const Progress)
       // even if Upgrade already decided this is fine, so we will mark all
       // packages that dist-upgrade decided may have a broken policy as allowed
       // to do so such that we do not keep them back again.
-      pkgProblemResolver FixPhasing(&Cache);
+      pkgProblemResolver FixExclusions(&Cache);
 
       for (pkgCache::PkgIterator I = Cache.PkgBegin(); I.end() == false; ++I)
-	 if (Cache[I].InstPolicyBroken())
-	    FixPhasing.AllowBrokenPolicy(I);
-      FixPhasing.KeepPhasedUpdates();
-      success = FixPhasing.ResolveByKeepInternal();
+        if (Cache[I].InstPolicyBroken())
+           FixExclusions.AllowBrokenPolicy(I);
+      FixExclusions.KeepPolicyExcludedUpdates();
+      success = FixExclusions.ResolveByKeepInternal();
    }
 
    if (Progress != NULL)
@@ -181,7 +181,7 @@ static bool pkgAllUpgradeNoNewPackages(pkgDepCache &Cache, OpProgress * const Pr
 	 if (I->SelectedState == pkgCache::State::Hold)
 	    continue;
 
-      if (Cache.PhasingApplied(I))
+      if (Cache.PhasingApplied(I) || Cache.HardwareConditionApplied(I))
 	 continue;
 
       if (I->CurrentVer != 0 && Cache[I].InstallVer != 0)
@@ -191,7 +191,7 @@ static bool pkgAllUpgradeNoNewPackages(pkgDepCache &Cache, OpProgress * const Pr
    if (Progress != NULL)
       Progress->Progress(50);
 
-   Fix.KeepPhasedUpdates();
+   Fix.KeepPolicyExcludedUpdates();
 
    // resolve remaining issues via keep
    bool const success = Fix.ResolveByKeepInternal();
@@ -229,7 +229,7 @@ static bool pkgAllUpgradeWithNewPackages(pkgDepCache &Cache, OpProgress * const 
          if (_config->FindB("APT::Ignore-Hold",false) == false)
             if (I->SelectedState == pkgCache::State::Hold)
                continue;
-	 if (Cache.PhasingApplied(I))
+	 if (Cache.PhasingApplied(I) || Cache.HardwareConditionApplied(I))
 	    continue;
 
 	 Cache.MarkInstall(I, false, 0, false);
@@ -255,7 +255,7 @@ static bool pkgAllUpgradeWithNewPackages(pkgDepCache &Cache, OpProgress * const 
    if (Progress != NULL)
       Progress->Progress(60);
 
-   Fix.KeepPhasedUpdates();
+   Fix.KeepPolicyExcludedUpdates();
 
    // resolve remaining issues via keep
    bool const success = Fix.ResolveByKeepInternal();
