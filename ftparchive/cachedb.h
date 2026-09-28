@@ -88,6 +88,7 @@ class CacheDB
 
    // GetCurStat needs some compat code, see lp #1274466)
    bool GetCurStatCompatOldFormat();
+   bool GetCurStatCompatSha2Format();
    bool GetCurStatCompatNewFormat();
    bool GetCurStat();
 
@@ -100,7 +101,8 @@ class CacheDB
    // Stat info stored in the DB, Fixed types since it is written to disk.
    enum FlagList {FlControl = (1<<0),FlMD5=(1<<1),FlContents=(1<<2),
                   FlSize=(1<<3), FlSHA1=(1<<4), FlSHA256=(1<<5),
-                  FlSHA512=(1<<6), FlSource=(1<<7)
+                  FlSHA512=(1<<6), FlSource=(1<<7), FlSHA3_256=(1<<8),
+                  FlSHA3_512=(1<<9)
    };
 
    // the on-disk format changed (FileSize increased to 64bit) in 
@@ -115,6 +117,18 @@ class CacheDB
       uint8_t  SHA256[32];
    } CurStatOldFormat;
 
+   // the on-disk format before the SHA3 digests were appended
+   struct StatStoreSha2Format
+   {
+      uint32_t Flags;
+      uint32_t mtime;
+      uint64_t FileSize;
+      uint8_t  MD5[16];
+      uint8_t  SHA1[20];
+      uint8_t  SHA256[32];
+      uint8_t  SHA512[64];
+   } CurStatSha2Format;
+
    // WARNING: this struct is read/written to the DB so do not change the
    //          layout of the fields (see lp #1274466), only append to it
    struct StatStore
@@ -126,6 +140,8 @@ class CacheDB
       uint8_t  SHA1[20];
       uint8_t  SHA256[32];
       uint8_t  SHA512[64];
+      uint8_t  SHA3_256[32];
+      uint8_t  SHA3_512[64];
    } CurStat;
    struct StatStore OldStat;
    
@@ -150,6 +166,8 @@ class CacheDB
       double SHA1Bytes;
       double SHA256Bytes;
       double SHA512Bytes;
+      double SHA3_256Bytes;
+      double SHA3_512Bytes;
       unsigned long Packages;
       unsigned long Misses;  
       unsigned long long DeLinkBytes;
@@ -160,12 +178,15 @@ class CacheDB
          SHA1Bytes += S.SHA1Bytes; 
 	 SHA256Bytes += S.SHA256Bytes;
 	 SHA512Bytes += S.SHA512Bytes;
+	 SHA3_256Bytes += S.SHA3_256Bytes;
+	 SHA3_512Bytes += S.SHA3_512Bytes;
 	 Packages += S.Packages;
          Misses += S.Misses; 
          DeLinkBytes += S.DeLinkBytes;
       };
       Stats() : Bytes(0), MD5Bytes(0), SHA1Bytes(0), SHA256Bytes(0),
-		SHA512Bytes(0),Packages(0), Misses(0), DeLinkBytes(0) {};
+		SHA512Bytes(0), SHA3_256Bytes(0), SHA3_512Bytes(0),
+		Packages(0), Misses(0), DeLinkBytes(0) {};
    } Stats;
    
    bool ReadyDB(std::string const &DB = "");
