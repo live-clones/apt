@@ -1082,6 +1082,18 @@ APT::Compressor::rev {
      </varlistentry>
 
      <varlistentry>
+       <term><option>Debug::Acquire::p7s</option></term>
+
+       <listitem>
+	 <para>
+	   Print information related to verifying detached CMS/PKCS#7
+	   repository signatures, including the certificate fingerprint and
+	   subject of every accepted signer.
+	 </para>
+       </listitem>
+     </varlistentry>
+
+     <varlistentry>
        <term><option>Debug::aptcdrom</option></term>
 
        <listitem>
