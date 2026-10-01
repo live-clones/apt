@@ -77,7 +77,7 @@ msgstr ""
 "X-POFile-SpellExtra: autoclean showsrc desactualizados clean gzip TYPE\n"
 "X-POFile-SpellExtra: sinfo Acquire secure helper Tor unauthenticated CDs\n"
 "X-Generator: Poedit 3.6\n"
-"X-POFile-SpellExtra: solucionador Desactualizando OpenPGPG resolutor\n"
+"X-POFile-SpellExtra: solucionador Desactualizando OpenPGP resolutor\n"
 "X-POFile-SpellExtra: desactualizada apt EDSP\n"
 
 #: apt-pkg/acquire-item.cc

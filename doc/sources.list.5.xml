@@ -353,7 +353,7 @@ deb-src [ option1=value1 option2=value2 ] uri suite [component1] [component2] [.
 		Otherwise all keys in the trusted keyrings are considered valid
 		signers for this repository.
 
-		The option may also be set directly to an embedded GPG public key block. Special
+		The option may also be set directly to an embedded OpenPGP public key block. Special
 		care is needed to encode the empty line with leading spaces and ".":
    <literallayout>Types: deb
 URIs: https://deb.debian.org
