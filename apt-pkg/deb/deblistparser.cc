@@ -720,6 +720,8 @@ const char *debListParser::ParseDepends(const char *Start, const char *Stop,
 	 // we can just skip to the end of the current list
 	 if (applies1) {
 	    for (;End != Stop && *End != '>'; ++End);
+	    if (unlikely(End == Stop))
+	       return 0;
 	    I = ++End;
 	    // skip whitespace
 	    for (;I != Stop && isspace_ascii(*I) != 0; I++);
@@ -732,6 +734,7 @@ const char *debListParser::ParseDepends(const char *Start, const char *Stop,
 	    {
 	       // look for whitespace or ending '>'
 	       // End now points to the character after the current term
+	       End = I;
 	       for (;End != Stop && !isspace_ascii(*End) && *End != '>'; ++End);
 
 	       if (unlikely(End == Stop))
@@ -760,6 +763,9 @@ const char *debListParser::ParseDepends(const char *Start, const char *Stop,
 		     for (; End != Stop && *End != '>'; ++End);
 		  }
 	       }
+
+	       if (unlikely(End == Stop))
+		  return 0;
 
 	       if (*End++ == '>') {
 		  I = End;
