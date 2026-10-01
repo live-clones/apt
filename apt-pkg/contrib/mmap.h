@@ -33,6 +33,7 @@
 
 #include <sys/mman.h>
 
+#include "macros.h"
 
 class FileFd;
 
@@ -41,7 +42,7 @@ class FileFd;
    instead of this internal type */
 typedef unsigned int map_ptrloc;
 
-class MMap
+class APT_PUBLIC MMap
 {
    protected:
    
