@@ -362,6 +362,17 @@ Acquire
    Options {"--ignore-time-conflict";}	// not very useful on a normal system
   };
 
+  p7s
+  {
+   /* Development switch only. The p7s method refuses to verify anything while
+      its certificate policy is not yet a policy, and this opts out of that
+      refusal so that the method can be exercised. Never set it on a system you
+      rely on: it is the only thing standing between an incomplete policy and a
+      repository being trusted on its strength. It has no effect, and warns, once
+      the policy is constrained. */
+   Allow-Unconstrained-Policy "<BOOL>";
+  };
+
   /* CompressionTypes
   {
     bz2 "bzip2";
@@ -574,6 +585,7 @@ Debug
   Acquire::tor+http "<BOOL>";
   Acquire::tor+https "<BOOL>";
   Acquire::gpgv "<BOOL>";   // Show the gpgv traffic
+  Acquire::p7s "<BOOL>";    // Show the CMS/PKCS#7 verification traffic
   Acquire::cdrom "<BOOL>";   // Show cdrom debug output
   Acquire::Transaction "<BOOL>";
   Acquire::Progress "<BOOL>";
