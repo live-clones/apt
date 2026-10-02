@@ -82,3 +82,7 @@ Version
 ### APPEND BELOW, sort in with next ABI break ###
 Source-Version
 Architecture-Variant
+SHA3-256
+SHA3-512
+Checksums-Sha3-256
+Checksums-Sha3-512

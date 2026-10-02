@@ -1,0 +1,115 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+buildsimplenativepackage 'foo' 'amd64' '1' 'unstable'
+setupaptarchive --no-update
+changetowebserver
+
+RELEASE='aptarchive/dists/unstable/Release'
+PACKAGES='aptarchive/dists/unstable/main/binary-amd64/Packages'
+SOURCES='aptarchive/dists/unstable/main/source/Sources'
+
+listhashsections() {
+	grep -E '^(MD5Sum|SHA1|SHA256|SHA512|SHA3-256|SHA3-512):$' "$RELEASE"
+}
+
+# regenerate and resign the repository with the given hashes only
+rebuildarchive() {
+	confighashes "$@"
+	buildaptarchive
+	signreleasefiles 'Joe Sixpack'
+	rm -rf rootdir/var/lib/apt/lists
+	rm -f aptarchive/webserver.log.client*.log
+}
+
+testsha3only() {
+	local H="$1"
+	local CHECKSUMS="Checksums-Sha3-${H#SHA3-}"
+
+	msgmsg "Repository listing only $H is generated as such"
+	rebuildarchive "$H"
+	testequal "$H:" listhashsections
+	testsuccess grep "^$H: " "$PACKAGES"
+	testfailure grep '^SHA256: ' "$PACKAGES"
+	testsuccess grep "^$CHECKSUMS:" "$SOURCES"
+	testfailure grep '^Checksums-Sha256:' "$SOURCES"
+
+	msgmsg "Client accepts $H as a strong hash"
+	testsuccess aptget update
+	testsuccess aptcache show foo
+	testsuccess aptget install foo -s
+
+	msgmsg "Client verifies downloads with $H"
+	# downloaded/ is the one directory _apt can write to when running as root
+	cd downloaded
+	testsuccess aptget download foo
+	testsuccess test -s foo_1_amd64.deb
+	rm -f foo_1_amd64.deb
+	testsuccess aptget source foo
+	testsuccess test -d foo-1
+	rm -rf foo-1 foo_1.dsc foo_1.tar.*
+	cd "$OLDPWD"
+
+	msgmsg "Corrupted package is rejected under $H"
+	local DEB="aptarchive/$(sed -n 's/^Filename: //p' "$PACKAGES")"
+	breakfiles "$DEB"
+	testfailure aptget download foo
+	testsuccess grep 'Hash Sum mismatch' rootdir/tmp/testfailure.output
+	unbreakfiles "$DEB"
+
+	msgmsg "Corrupted index is rejected under $H"
+	local INDEXES="$(ls "$PACKAGES"*)"
+	breakfiles $INDEXES
+	rm -rf rootdir/var/lib/apt/lists
+	testfailure aptget update
+	testsuccess grep 'Hash Sum mismatch' rootdir/tmp/testfailure.output
+	unbreakfiles $INDEXES
+
+	msgmsg "$H marked untrusted leaves the repository without a strong hash"
+	echo "APT::Hashes::$H::Untrusted \"true\";" > rootdir/etc/apt/apt.conf.d/untrusted-sha3
+	rm -rf rootdir/var/lib/apt/lists
+	testfailure aptget update
+	testsuccess grep 'provides only weak security information' rootdir/tmp/testfailure.output
+	rm rootdir/etc/apt/apt.conf.d/untrusted-sha3
+}
+testsha3only 'SHA3-256'
+testsha3only 'SHA3-512'
+
+echo 'APT::FTPArchive::DoByHash "1";' > rootdir/etc/apt/apt.conf.d/byhash.conf
+
+msgmsg 'by-hash uses SHA3 when it is the only hash offered'
+rebuildarchive 'SHA3-256'
+testsuccess grep '^Acquire-By-Hash: yes' "$RELEASE"
+testsuccess aptget update
+testsuccess grep 'by-hash/SHA3-256/' aptarchive/webserver.log.client*.log
+
+msgmsg 'by-hash prefers SHA3-256 when SHA2 and SHA3 are both offered'
+rebuildarchive 'SHA256' 'SHA3-256'
+testsuccess aptget update
+testsuccess grep 'by-hash/SHA3-256/' aptarchive/webserver.log.client*.log
+testfailure grep 'by-hash/SHA256/' aptarchive/webserver.log.client*.log
+
+msgmsg 'update succeeds when the archive lists SHA3 but has no SHA3 by-hash files'
+rebuildarchive 'SHA256' 'SHA3-256'
+find aptarchive -type d -path '*/by-hash/SHA3-256' -exec rm -rf {} +
+testsuccess aptget update
+testsuccess grep 'by-hash/SHA3-256/' aptarchive/webserver.log.client*.log
+testsuccess grep 'binary-amd64/Packages' aptarchive/webserver.log.client*.log
+testsuccess aptcache show foo
+
+msgmsg 'a wrong SHA3 digest is rejected even though SHA256 still matches'
+rm rootdir/etc/apt/apt.conf.d/byhash.conf
+rebuildarchive 'SHA256' 'SHA3-256'
+# flip the first hex digit of every digest in the SHA3-256 section only
+sed -i '/^SHA3-256:$/,/^[A-Z]/{ /^ /{ s/^ 0/ #/; s/^ [1-9a-f]/ 0/; s/^ #/ 1/ } }' "$RELEASE"
+testsuccess grep "^ $(sha256sum "$PACKAGES" | cut -d' ' -f1) " "$RELEASE"
+signreleasefiles 'Joe Sixpack'
+rm -rf rootdir/var/lib/apt/lists
+testfailure aptget update
+testsuccess grep 'Hash Sum mismatch' rootdir/tmp/testfailure.output
