@@ -522,6 +522,7 @@ bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
    if (certStack == nullptr)
    {
       failures.push_back(_("CMS_get0_signers returned null"));
+      AppendErrors(failures, errScope.Errors());
       return false;
    }
    // CMS_get0_SignerInfos returns an internal pointer — no free.
@@ -529,6 +530,7 @@ bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
    if (infos == nullptr)
    {
       failures.push_back(_("CMS_get0_SignerInfos returned null"));
+      AppendErrors(failures, errScope.Errors());
       return false;
    }
 
@@ -602,6 +604,7 @@ bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
    if (signers.size() == before)
    {
       failures.push_back(_("no signer passed the certificate policy"));
+      AppendErrors(failures, errScope.Errors());
       return false;
    }
 
