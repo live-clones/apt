@@ -312,6 +312,8 @@ static void AppendErrors(std::vector<std::string> &out,
 bool BaseX509Store::Impl::LoadCert(FileFd &fd)
 {
    ErrorScope errScope;
+   if (not errScope.MaybeErrors())
+      return errScope.Error(_("LoadCert: cannot attribute pre-existing OpenSSL errors"));
 
    if (not fd.Seek(0))
       return errScope.Error(_("LoadCert: cannot rewind the certificate bundle"));
@@ -367,9 +369,12 @@ bool BaseX509Store::Impl::LoadCert(FileFd &fd)
    if (newCerts.empty())
       return errScope.Error(_("LoadCert: no certificates found"));
 
+   // Only commit if we successfully handled all errors
+   if (not errScope.MaybeErrors())
+      return false;
    store = std::move(newStore);
    certs = std::move(newCerts);
-   return errScope.MaybeErrors();
+   return true;
 }
 
 // Accepted detached signature labels
@@ -392,6 +397,8 @@ bool BaseX509Store::Impl::ReadSignatureBlocks(FileFd &signature,
 					      std::vector<CMSUP> &blocks)
 {
    ErrorScope errScope;
+   if (not errScope.MaybeErrors())
+      return errScope.Error(_("LoadCert: cannot attribute pre-existing OpenSSL errors"));
 
    if (not signature.Seek(0))
       return errScope.Error(_("VerifyDetach: cannot rewind the signature file"));
@@ -484,6 +491,8 @@ bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
    // this block's errors to keep them out of the diagnostics of the blocks that
    // follow, and off the caller's queue entirely.
    ErrorScope errScope;
+   if (not errScope.MaybeErrors())
+      return errScope.Error(_("LoadCert: cannot attribute pre-existing OpenSSL errors"));
 
    // signers is accumulated across blocks, so remember where this one starts.
    const size_t before = signers.size();
@@ -600,6 +609,8 @@ bool BaseX509Store::Impl::VerifyDetach(FileFd &signature, FileFd &data,
    // Nothing here talks to OpenSSL directly, but scope the queue anyway so that
    // whatever the steps below leave behind cannot escape to the caller.
    ErrorScope errScope;
+   if (not errScope.MaybeErrors())
+      return errScope.Error(_("LoadCert: cannot attribute pre-existing OpenSSL errors"));
 
    result.signers.clear();
 
