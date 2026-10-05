@@ -578,8 +578,13 @@ bool BaseX509Store::Impl::VerifyOneBlock(CMS_ContentInfo *cms, FileFd &data,
       if (rejection == nullptr)
       {
 	 // A hook may annotate a signer it accepts - keep that visible.
+	 std::string warning;
 	 for (auto &detail : details)
-	    warnings.push_back(std::move(detail));
+	 {
+	    strprintf(warning, "%s: %s: %s", DescribeCert(cert).c_str(), rejection,
+		      detail.c_str());
+	    warnings.push_back(std::move(warning));
+	 }
 
 	 signers.push_back(cert);
 	 continue;
