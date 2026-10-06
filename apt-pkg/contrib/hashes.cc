@@ -13,6 +13,7 @@
 #include <config.h>
 
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/macros.h>
@@ -33,6 +34,8 @@
 
 #include <openssl/err.h>
 #include <openssl/evp.h>
+
+#include <apti18n.h>
 									/*}}}*/
 
 const char * HashString::_SupportedHashes[] =
@@ -334,6 +337,16 @@ static APT_PURE std::string HexDigest(std::span<unsigned char> const &Sum)
    return Result;
 };
 
+// Report an OpenSSL failure through _error with the reason of the newest
+// record on the thread's error queue. The caller removes only the records
+// the failed call raised so nothing older on the queue is lost.
+static void ReportOpenSSLError(char const *const algo)
+{
+   auto const err = ERR_peek_last_error();
+   char const *const reason = err == 0 ? nullptr : ERR_reason_error_string(err);
+   _error->Error(_("Computing the %s hash failed: %s"), algo, reason == nullptr ? "unknown error" : reason);
+}
+
 // PrivateHashes							/*{{{*/
 class PrivateHashes
 {
@@ -363,10 +376,16 @@ class PrivateHashes
 
    bool Write(unsigned char const *Data, size_t Size)
    {
-      for (auto &context : contexts)
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
+      for (auto const &algo : Algorithms)
       {
-	 if (context)
-	    EVP_DigestUpdate(context, Data, Size);
+	 auto const context = contexts[algo.index];
+	 if (context != nullptr && EVP_DigestUpdate(context, Data, Size) != 1)
+	 {
+	    ReportOpenSSLError(algo.name);
+	    return false;
+	 }
       }
       return true;
    }
@@ -379,14 +398,26 @@ class PrivateHashes
       if (contexts[algo.index] == nullptr)
 	 return std::string();
 
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
       auto Size = EVP_MD_size(algo.evpLink());
       unsigned char Sum[Size];
 
       // We need to work on a copy, as we update the hash after creating a digest...
       auto tmpContext = EVP_MD_CTX_create();
-      EVP_MD_CTX_copy(tmpContext, contexts[algo.index]);
-      EVP_DigestFinal_ex(tmpContext, Sum, nullptr);
+      if (tmpContext == nullptr)
+      {
+	 ReportOpenSSLError(algo.name);
+	 return std::string();
+      }
+      bool const finished = EVP_MD_CTX_copy(tmpContext, contexts[algo.index]) == 1 &&
+			    EVP_DigestFinal_ex(tmpContext, Sum, nullptr) == 1;
       EVP_MD_CTX_destroy(tmpContext);
+      if (not finished)
+      {
+	 ReportOpenSSLError(algo.name);
+	 return std::string();
+      }
 
       return ::HexDigest(std::span<unsigned char>(Sum, Size));
    }

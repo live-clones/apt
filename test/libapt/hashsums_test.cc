@@ -19,12 +19,18 @@
 #include "file-helpers.h"
 
 /* OpenSSL offers no way to make a digest operation fail on demand, so this
-   binary defines the function itself. The dynamic linker searches the
-   executable before libcrypto, so the call in libapt-pkg lands here and is
-   passed on to the real function unless a test asked for a failure. A
+   binary defines the functions itself. The dynamic linker searches the
+   executable before libcrypto, so the calls in libapt-pkg land here and are
+   passed on to the real functions unless a test asked for a failure. A
    failing OpenSSL function leaves a record on the error queue, so the
-   stand-in does the same. */
+   stand-ins do the same. A test must set a flag around exactly one call, so
+   the code under test reports exactly once, and check that report with
+   expectReportedFailure() before forcing the next failure. */
 static bool failDigestInit = false;
+static bool failDigestUpdate = false;
+static bool failDigestCopy = false;
+static bool failDigestFinal = false;
+
 static int failOpenSSL()
 {
    ERR_put_error(ERR_LIB_EVP, 0, ERR_R_INTERNAL_ERROR, __FILE__, __LINE__);
@@ -36,6 +42,42 @@ extern "C" int EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *im
       return failOpenSSL();
    static auto const real = reinterpret_cast<decltype(&EVP_DigestInit_ex)>(dlsym(RTLD_NEXT, "EVP_DigestInit_ex"));
    return real(ctx, type, impl);
+}
+extern "C" int EVP_DigestUpdate(EVP_MD_CTX *ctx, const void *d, size_t cnt)
+{
+   if (failDigestUpdate)
+      return failOpenSSL();
+   static auto const real = reinterpret_cast<decltype(&EVP_DigestUpdate)>(dlsym(RTLD_NEXT, "EVP_DigestUpdate"));
+   return real(ctx, d, cnt);
+}
+extern "C" int EVP_MD_CTX_copy(EVP_MD_CTX *out, const EVP_MD_CTX *in)
+{
+   if (failDigestCopy)
+      return failOpenSSL();
+   static auto const real = reinterpret_cast<decltype(&EVP_MD_CTX_copy)>(dlsym(RTLD_NEXT, "EVP_MD_CTX_copy"));
+   return real(out, in);
+}
+extern "C" int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s)
+{
+   if (failDigestFinal)
+      return failOpenSSL();
+   static auto const real = reinterpret_cast<decltype(&EVP_DigestFinal_ex)>(dlsym(RTLD_NEXT, "EVP_DigestFinal_ex"));
+   return real(ctx, md, s);
+}
+/* The failure must reach the caller through _error, naming the algorithm and
+   OpenSSL's reason. The error stack must be exactly as it was prior to the
+   failing call being made. */
+static void expectReportedFailure(char const * const algo, unsigned long const remaining = 0)
+{
+   std::string msg;
+   EXPECT_TRUE(_error->PopMessage(msg));
+   EXPECT_TRUE(msg.contains(algo)) << msg;
+   // the text OpenSSL gives for the record, which failOpenSSL() pushes
+   char const *const reason = ERR_reason_error_string(ERR_PACK(ERR_LIB_EVP, 0, ERR_R_INTERNAL_ERROR));
+   EXPECT_TRUE(msg.contains(reason)) << msg;
+   EXPECT_TRUE(_error->empty());
+   EXPECT_EQ(remaining, ERR_peek_error());
+   EXPECT_EQ(remaining, ERR_peek_last_error());
 }
 template <class T> void Test(const char *In,const char *Out)
 {
@@ -299,7 +341,90 @@ TEST(HashSumsTest, UnavailableDigestFailsVerify)
    EXPECT_TRUE(_error->empty());
    EXPECT_EQ(0u, ERR_peek_error());
 }
+TEST(HashSumsTest, FailingDigestUpdate)
+{
+   Hashes hashes(Hashes::SHA256SUM);
+   EXPECT_TRUE(hashes.Add("abc"));
 
+   auto const file = createTemporaryFile("failingupdate", "abc");
+   FileFd fd(file.Name(), FileFd::ReadOnly);
+   failDigestUpdate = true;
+   bool const added = hashes.Add("abc");
+   failDigestUpdate = false;
+   EXPECT_FALSE(added);
+   expectReportedFailure("SHA256");
+
+   failDigestUpdate = true;
+   bool const addedFD = hashes.AddFD(fd);
+   failDigestUpdate = false;
+   EXPECT_FALSE(addedFD);
+   expectReportedFailure("SHA256");
+   // rejected data is not counted as hashed bytes.
+   EXPECT_EQ(3u, hashes.GetHashStringList().FileSize());
+}
+TEST(HashSumsTest, FailingDigestFinal)
+{
+   std::string const abc256 = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+   Hashes hashes(Hashes::SHA256SUM);
+   EXPECT_TRUE(hashes.Add("abc"));
+   EXPECT_EQ(abc256, hashes.GetHashString(Hashes::SHA256SUM).HashValue());
+
+   failDigestCopy = true;
+   HashString const failedCopy = hashes.GetHashString(Hashes::SHA256SUM);
+   failDigestCopy = false;
+   EXPECT_EQ("", failedCopy.HashValue());
+   expectReportedFailure("SHA256");
+
+   failDigestFinal = true;
+   HashStringList const failedFinal = hashes.GetHashStringList();
+   failDigestFinal = false;
+   EXPECT_EQ(nullptr, failedFinal.find("SHA256"));
+   EXPECT_EQ(3u, failedFinal.FileSize());
+   expectReportedFailure("SHA256");
+
+   // the failures were on copies, the digest itself is intact
+   EXPECT_EQ(abc256, hashes.GetHashString(Hashes::SHA256SUM).HashValue());
+}
+/* A failure in hashing is allowed to remove only the error stack entries it
+   raised, not those that were there before. Whatever was on the OpenSSL error
+   stack before the failed hashing call was pushed by something else, e.g. TLS
+   in the same process, or a hashing call that did not handle its errors.
+   This test verifies that Write() and HexDigest() remove only the records
+   from the failed call. */
+TEST(HashSumsTest, FailureLeavesOlderErrorsOnQueue)
+{
+   Hashes hashes(Hashes::SHA256SUM);
+   EXPECT_TRUE(hashes.Add("abc"));
+
+   // a record from someone else, distinct from what the stand-ins push
+   ERR_put_error(ERR_LIB_SYS, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+   unsigned long remaining = ERR_peek_last_error();
+   failDigestUpdate = true;
+   bool const added = hashes.Add("abc");
+   failDigestUpdate = false;
+   EXPECT_FALSE(added);
+   expectReportedFailure("SHA256", remaining);
+   // the record was the test's own, clear it before next test
+   ERR_clear_error();
+
+   ERR_put_error(ERR_LIB_SYS, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+   remaining = ERR_peek_last_error();
+   failDigestCopy = true;
+   HashString const failedCopy = hashes.GetHashString(Hashes::SHA256SUM);
+   failDigestCopy = false;
+   EXPECT_EQ("", failedCopy.HashValue());
+   expectReportedFailure("SHA256", remaining);
+   ERR_clear_error();
+
+   ERR_put_error(ERR_LIB_SYS, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+   remaining = ERR_peek_last_error();
+   failDigestFinal = true;
+   HashString const failedFinal = hashes.GetHashString(Hashes::SHA256SUM);
+   failDigestFinal = false;
+   EXPECT_EQ("", failedFinal.HashValue());
+   expectReportedFailure("SHA256", remaining);
+   ERR_clear_error();
+}
 TEST(HashSumsTest, HashStringList)
 {
    _config->Clear("Acquire::ForceHash");
