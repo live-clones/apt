@@ -1,6 +1,7 @@
 #include <config.h>
 
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/strutl.h>
@@ -9,10 +10,33 @@
 #include <iostream>
 #include <string>
 
+#include <dlfcn.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+
 #include "common.h"
 
 #include "file-helpers.h"
 
+/* OpenSSL offers no way to make a digest operation fail on demand, so this
+   binary defines the function itself. The dynamic linker searches the
+   executable before libcrypto, so the call in libapt-pkg lands here and is
+   passed on to the real function unless a test asked for a failure. A
+   failing OpenSSL function leaves a record on the error queue, so the
+   stand-in does the same. */
+static bool failDigestInit = false;
+static int failOpenSSL()
+{
+   ERR_put_error(ERR_LIB_EVP, 0, ERR_R_INTERNAL_ERROR, __FILE__, __LINE__);
+   return 0;
+}
+extern "C" int EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *impl)
+{
+   if (failDigestInit)
+      return failOpenSSL();
+   static auto const real = reinterpret_cast<decltype(&EVP_DigestInit_ex)>(dlsym(RTLD_NEXT, "EVP_DigestInit_ex"));
+   return real(ctx, type, impl);
+}
 template <class T> void Test(const char *In,const char *Out)
 {
    T Sum;
@@ -257,6 +281,23 @@ TEST(HashSumsTest, SHA3KnownAnswer)
    EXPECT_TRUE(sha3_512.VerifyFile(file.Name()));
    HashString const wrong("SHA3-256", empty256);
    EXPECT_FALSE(wrong.VerifyFile(file.Name()));
+}
+TEST(HashSumsTest, UnavailableDigestFailsVerify)
+{
+   auto const file = createTemporaryFile("unavailable", "abc");
+   HashStringList expected;
+   EXPECT_TRUE(expected.push_back(HashString("SHA256", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")));
+   EXPECT_TRUE(expected.FileSize(3));
+   EXPECT_TRUE(expected.usable());
+   EXPECT_TRUE(expected.VerifyFile(file.Name()));
+
+   // OpenSSL cannot provide SHA256, so apt cannot check the one hash it has
+   failDigestInit = true;
+   bool const verified = expected.VerifyFile(file.Name());
+   failDigestInit = false;
+   EXPECT_FALSE(verified);
+   EXPECT_TRUE(_error->empty());
+   EXPECT_EQ(0u, ERR_peek_error());
 }
 
 TEST(HashSumsTest, HashStringList)

@@ -279,6 +279,10 @@ bool HashStringList::VerifyFile(std::string filename) const		/*{{{*/
    }
    hashes.AddFD(file);
    HashStringList const hsl = hashes.GetHashStringList();
+   // operator== skips types only one side has, so a list without any usable
+   // hash (OpenSSL could not provide it) would match on the file size alone
+   if (hsl.usable() == false)
+      return false;
    return hsl == *this;
 }
 									/*}}}*/
