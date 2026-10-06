@@ -540,6 +540,13 @@ bool pkgAcquire::Worker::RunMessages()
 		     so all we have to ensure later is that we are not stalled. */
 		  consideredOkay = isIMSHit;
 	       }
+	       else if (ExpectedHashes.usable() && not ReceivedHashes.usable())
+	       {
+		  /* The comparison below skips hash types only one side has,
+		     so a computed list without any usable hash (OpenSSL could
+		     not provide it) would match on the file size alone. */
+		  consideredOkay = false;
+	       }
 	       else if (ReceivedHashes == ExpectedHashes)
 		  consideredOkay = true;
 	       else
