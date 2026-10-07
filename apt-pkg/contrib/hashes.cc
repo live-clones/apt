@@ -104,54 +104,6 @@ bool HashString::FromFile(std::string filename)          		/*{{{*/
    return true;
 }
 									/*}}}*/
-std::string HashString::GetHashForFile(std::string filename) const      /*{{{*/
-{
-   std::string fileHash;
-
-   FileFd Fd(filename, FileFd::ReadOnly);
-   if(strcasecmp(Type.c_str(), "MD5Sum") == 0)
-   {
-      Hashes MD5(Hashes::MD5SUM);
-      MD5.AddFD(Fd);
-      fileHash = MD5.GetHashString(Hashes::MD5SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA1") == 0)
-   {
-      Hashes SHA1(Hashes::SHA1SUM);
-      SHA1.AddFD(Fd);
-      fileHash = SHA1.GetHashString(Hashes::SHA1SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA256") == 0)
-   {
-      Hashes SHA256(Hashes::SHA256SUM);
-      SHA256.AddFD(Fd);
-      fileHash = SHA256.GetHashString(Hashes::SHA256SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA512") == 0)
-   {
-      Hashes SHA512(Hashes::SHA512SUM);
-      SHA512.AddFD(Fd);
-      fileHash = SHA512.GetHashString(Hashes::SHA512SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA3-256") == 0)
-   {
-      Hashes SHA3(Hashes::SHA3_256SUM);
-      SHA3.AddFD(Fd);
-      fileHash = SHA3.GetHashString(Hashes::SHA3_256SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA3-512") == 0)
-   {
-      Hashes SHA3(Hashes::SHA3_512SUM);
-      SHA3.AddFD(Fd);
-      fileHash = SHA3.GetHashString(Hashes::SHA3_512SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "Checksum-FileSize") == 0)
-      strprintf(fileHash, "%llu", Fd.FileSize());
-   Fd.Close();
-
-   return fileHash;
-}
-									/*}}}*/
 const char** HashString::SupportedHashes()				/*{{{*/
 {
    return _SupportedHashes;
@@ -470,6 +422,27 @@ class PrivateHashes
       }
    }
 };
+									/*}}}*/
+std::string HashString::GetHashForFile(std::string filename) const      /*{{{*/
+{
+   std::string fileHash;
+
+   FileFd Fd(filename, FileFd::ReadOnly);
+   if (strcasecmp(Type.c_str(), "Checksum-FileSize") == 0)
+      strprintf(fileHash, "%llu", Fd.FileSize());
+   else
+      for (auto const &Algo : PrivateHashes::Algorithms)
+	 if (strcasecmp(Type.c_str(), Algo.name) == 0)
+	 {
+	    Hashes hashes(Algo.ourAlgo);
+	    if (hashes.AddFD(Fd))
+	       fileHash = hashes.GetHashString(Algo.ourAlgo).Hash;
+	    break;
+	 }
+   Fd.Close();
+
+   return fileHash;
+}
 									/*}}}*/
 // Hashes::Add* - Add the contents of data or FD			/*{{{*/
 bool Hashes::Add(const unsigned char * const Data, unsigned long long const Size)

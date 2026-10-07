@@ -425,6 +425,26 @@ TEST(HashSumsTest, FailureLeavesOlderErrorsOnQueue)
    expectReportedFailure("SHA256", remaining);
    ERR_clear_error();
 }
+/* GetHashForFile() is protected, so a derived type is needed to call it. */
+struct ExposedHashString : HashString
+{
+   using HashString::HashString;
+   using HashString::GetHashForFile;
+};
+/* A digest that was not fed must not be handed out as the file's hash. */
+TEST(HashSumsTest, FailingDigestUpdateGivesNoFileHash)
+{
+   std::string const abc256 = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+   auto const file = createTemporaryFile("filehash", "abc");
+   ExposedHashString const expected("SHA256", abc256);
+   EXPECT_EQ(abc256, expected.GetHashForFile(file.Name()));
+
+   failDigestUpdate = true;
+   std::string const fileHash = expected.GetHashForFile(file.Name());
+   failDigestUpdate = false;
+   EXPECT_EQ("", fileHash);
+   expectReportedFailure("SHA256");
+}
 TEST(HashSumsTest, HashStringList)
 {
    _config->Clear("Acquire::ForceHash");
