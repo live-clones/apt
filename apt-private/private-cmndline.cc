@@ -298,6 +298,8 @@ constexpr std::initializer_list<binary> binaries{
 	    {0, "sha1", "APT::FTPArchive::SHA1", N_("Generate SHA1 checksums"), 0},
 	    {0, "sha256", "APT::FTPArchive::SHA256", N_("Generate SHA256 checksums"), 0},
 	    {0, "sha512", "APT::FTPArchive::SHA512", N_("Generate SHA512 checksums"), 0},
+	    {0, "sha3-256", "APT::FTPArchive::SHA3-256", N_("Generate SHA3-256 checksums"), 0},
+	    {0, "sha3-512", "APT::FTPArchive::SHA3-512", N_("Generate SHA3-512 checksums"), 0},
 	    {'d', "db", "APT::FTPArchive::DB", N_("Cache database"), CommandLine::HasArg},
 	    {'s', "source-override", "APT::FTPArchive::SourceOverride", N_("Source override file"), CommandLine::HasArg},
 	    {0, "delink", "APT::FTPArchive::DeLinkAct", N_("Enable delinking of files"), 0},

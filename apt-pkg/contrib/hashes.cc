@@ -37,11 +37,13 @@
 
 const char * HashString::_SupportedHashes[] =
 {
-   "SHA512", "SHA256", "SHA1", "MD5Sum", "Checksum-FileSize", NULL
+   "SHA3-512", "SHA3-256", "SHA512", "SHA256", "SHA1", "MD5Sum", "Checksum-FileSize", NULL
 };
 std::vector<HashString::HashSupportInfo> HashString::SupportedHashesInfo()
 {
    return {{
+      { "SHA3-512", pkgTagSection::Key::SHA3_512, "Checksums-Sha3-512", pkgTagSection::Key::Checksums_Sha3_512},
+      { "SHA3-256", pkgTagSection::Key::SHA3_256, "Checksums-Sha3-256", pkgTagSection::Key::Checksums_Sha3_256},
       { "SHA512",  pkgTagSection::Key::SHA512,"Checksums-Sha512", pkgTagSection::Key::Checksums_Sha512},
       { "SHA256", pkgTagSection::Key::SHA256, "Checksums-Sha256", pkgTagSection::Key::Checksums_Sha256},
       { "SHA1", pkgTagSection::Key::SHA1, "Checksums-Sha1", pkgTagSection::Key::Checksums_Sha1 },
@@ -127,6 +129,18 @@ std::string HashString::GetHashForFile(std::string filename) const      /*{{{*/
       Hashes SHA512(Hashes::SHA512SUM);
       SHA512.AddFD(Fd);
       fileHash = SHA512.GetHashString(Hashes::SHA512SUM).Hash;
+   }
+   else if (strcasecmp(Type.c_str(), "SHA3-256") == 0)
+   {
+      Hashes SHA3(Hashes::SHA3_256SUM);
+      SHA3.AddFD(Fd);
+      fileHash = SHA3.GetHashString(Hashes::SHA3_256SUM).Hash;
+   }
+   else if (strcasecmp(Type.c_str(), "SHA3-512") == 0)
+   {
+      Hashes SHA3(Hashes::SHA3_512SUM);
+      SHA3.AddFD(Fd);
+      fileHash = SHA3.GetHashString(Hashes::SHA3_512SUM).Hash;
    }
    else if (strcasecmp(Type.c_str(), "Checksum-FileSize") == 0)
       strprintf(fileHash, "%llu", Fd.FileSize());
@@ -323,7 +337,7 @@ class PrivateHashes
    unsigned long long FileSize{0};
 
    private:
-   std::array<EVP_MD_CTX *, 4> contexts{};
+   std::array<EVP_MD_CTX *, 6> contexts{};
 
    public:
    struct HashAlgo
@@ -334,11 +348,13 @@ class PrivateHashes
       Hashes::SupportedHashes ourAlgo;
    };
 
-   static constexpr std::array<HashAlgo, 4> Algorithms{
+   static constexpr std::array<HashAlgo, 6> Algorithms{
       HashAlgo{0, "MD5Sum", EVP_md5, Hashes::MD5SUM},
       HashAlgo{1, "SHA1", EVP_sha1, Hashes::SHA1SUM},
       HashAlgo{2, "SHA256", EVP_sha256, Hashes::SHA256SUM},
       HashAlgo{3, "SHA512", EVP_sha512, Hashes::SHA512SUM},
+      HashAlgo{4, "SHA3-256", EVP_sha3_256, Hashes::SHA3_256SUM},
+      HashAlgo{5, "SHA3-512", EVP_sha3_512, Hashes::SHA3_512SUM},
    };
 
    bool Write(unsigned char const *Data, size_t Size)

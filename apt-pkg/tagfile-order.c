@@ -59,6 +59,8 @@ static const char *iTFRewritePackageOrder[] = {
    "SHA1",
    "SHA256",
    "SHA512",
+   "SHA3-256",
+   "SHA3-512",
    "Homepage",
    "Description",
    "Description-md5",
@@ -110,6 +112,8 @@ static const char *iTFRewriteSourceOrder[] = {
    "Checksums-Sha1",
    "Checksums-Sha256",
    "Checksums-Sha512",
+   "Checksums-Sha3-256",
+   "Checksums-Sha3-512",
    0,
 };
 

@@ -1,0 +1,65 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+insertpackage 'unstable' 'foo' 'amd64' '1'
+buildaptarchive
+
+RELEASE='aptarchive/dists/unstable/Release'
+PACKAGES='main/binary-amd64/Packages'
+
+listhashsections() {
+    grep -E '^(MD5Sum|SHA1|SHA256|SHA512|SHA3-256|SHA3-512):$' "$RELEASE"
+}
+
+msgmsg 'setupenvironment configures SHA256 only'
+testequal 'SHA256:' listhashsections
+
+msgmsg 'SHA3 enabled alongside SHA256'
+confighashes 'SHA256' 'SHA3-256' 'SHA3-512'
+generatereleasefiles
+testequal 'SHA256:
+SHA3-256:
+SHA3-512:' listhashsections
+
+msgmsg 'SHA3 sections hold the digests of the listed files'
+if command -v openssl >/dev/null 2>&1; then
+    SIZE="$(stat -c%s "aptarchive/dists/unstable/$PACKAGES")"
+    for HASH in sha3-256 sha3-512; do
+        DIGEST="$(openssl dgst "-$HASH" -r "aptarchive/dists/unstable/$PACKAGES" | cut -d' ' -f1)"
+        testsuccess grep -E "^ $DIGEST +$SIZE $PACKAGES\$" "$RELEASE"
+    done
+else
+    msgskip 'openssl not available'
+fi
+
+msgmsg 'no configuration: SHA3 is opt-in'
+rm rootdir/etc/apt/apt.conf.d/ftparchive-hashes.conf
+generatereleasefiles
+testequal 'MD5Sum:
+SHA1:
+SHA256:
+SHA512:' listhashsections
+
+msgmsg 'Release-specific option enables one SHA3 type'
+testsuccess aptftparchiverelease -o APT::FTPArchive::Release::SHA3-512=true aptarchive/dists/unstable
+cp rootdir/tmp/testsuccess.output "$RELEASE"
+testequal 'MD5Sum:
+SHA1:
+SHA256:
+SHA512:
+SHA3-512:' listhashsections
+
+msgmsg 'command line flag enables one SHA3 type'
+testsuccess aptftparchiverelease --sha3-256 aptarchive/dists/unstable
+cp rootdir/tmp/testsuccess.output "$RELEASE"
+testequal 'MD5Sum:
+SHA1:
+SHA256:
+SHA512:
+SHA3-256:' listhashsections

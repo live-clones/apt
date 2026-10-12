@@ -42,6 +42,8 @@ test_apt_helper_download() {
    Hashes of expected file:
     - MD5Sum:aabbcc [weak]
    Hashes of received file:
+    - SHA3-512:6f1b16155d5f87af947270b2202c9432b64ff07880e3bd104a50605bc0f949d4e4bf30cddbb257a7f3a54881429f45efdb43fbe14371f9f7f5cb16789db9175d
+    - SHA3-256:5218df10c0ebe3b38d74fe0040d13198ac49646a43bad373b91ed887dd734fcf
     - SHA512:0cf9180a764aba863a67b6d72f0918bc131c6772642cb2dce5a34f0a702f9470ddc2bf125c12198b1995c233c34b4afd346c54a2334c350a948a51b6e8b4e6b6
     - SHA256:b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c
     - SHA1:f1d2d2f924e986ac86fdf7b36c94bcdf32beec15 [weak]

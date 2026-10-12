@@ -210,6 +210,31 @@ bool CacheDB::GetCurStatCompatOldFormat()
    return true;
 }
 									/*}}}*/
+// CacheDB::GetCurStatCompatSha2Format				/*{{{*/
+// ---------------------------------------------------------------------
+/* Read the StateStore format from before the SHA3 digests were appended.
+   The SHA3 fields stay zeroed and unflagged, so they get computed. */
+bool CacheDB::GetCurStatCompatSha2Format()
+{
+   InitQueryStats();
+   Data.data = &CurStatSha2Format;
+   Data.flags = DB_DBT_USERMEM;
+   Data.ulen = sizeof(CurStatSha2Format);
+   if (Get() == false)
+   {
+      CurStat.Flags = 0;
+   } else {
+      CurStat.Flags = CurStatSha2Format.Flags;
+      CurStat.mtime = CurStatSha2Format.mtime;
+      CurStat.FileSize = CurStatSha2Format.FileSize;
+      memcpy(CurStat.MD5, CurStatSha2Format.MD5, sizeof(CurStat.MD5));
+      memcpy(CurStat.SHA1, CurStatSha2Format.SHA1, sizeof(CurStat.SHA1));
+      memcpy(CurStat.SHA256, CurStatSha2Format.SHA256, sizeof(CurStat.SHA256));
+      memcpy(CurStat.SHA512, CurStatSha2Format.SHA512, sizeof(CurStat.SHA512));
+   }
+   return true;
+}
+									/*}}}*/
 // CacheDB::GetCurStatCompatOldFormat           			/*{{{*/
 // ---------------------------------------------------------------------
 /* Read the new (64bit FileSize) StateStore format from disk */
@@ -251,6 +276,11 @@ bool CacheDB::GetCurStat()
       else if(Data.size == sizeof(CurStatOldFormat))
       {
          GetCurStatCompatOldFormat();
+      }
+      // or before the SHA3 digests were appended
+      else if(Data.size == sizeof(CurStatSha2Format))
+      {
+         GetCurStatCompatSha2Format();
       }
       else if(Data.size == sizeof(CurStat))
       {
@@ -447,6 +477,14 @@ bool CacheDB::GetHashes(bool const GenOnly, unsigned int const DoHashes)
    {
       notCachedHashes = notCachedHashes | Hashes::SHA512SUM;
    }
+   if ((CurStat.Flags & FlSHA3_256) != FlSHA3_256)
+   {
+      notCachedHashes = notCachedHashes | Hashes::SHA3_256SUM;
+   }
+   if ((CurStat.Flags & FlSHA3_512) != FlSHA3_512)
+   {
+      notCachedHashes = notCachedHashes | Hashes::SHA3_512SUM;
+   }
    unsigned int FlHashes = DoHashes & notCachedHashes;
    HashesList.clear();
 
@@ -468,6 +506,18 @@ bool CacheDB::GetHashes(bool const GenOnly, unsigned int const DoHashes)
 	    Stats.SHA512Bytes += CurStat.FileSize;
 	    hex2bytes(CurStat.SHA512, hs->HashValue().data(), sizeof(CurStat.SHA512));
 	    CurStat.Flags |= FlSHA512;
+	 }
+	 else if (strcasecmp(hs->HashType().c_str(), "SHA3-256") == 0)
+	 {
+	    Stats.SHA3_256Bytes += CurStat.FileSize;
+	    hex2bytes(CurStat.SHA3_256, hs->HashValue().data(), sizeof(CurStat.SHA3_256));
+	    CurStat.Flags |= FlSHA3_256;
+	 }
+	 else if (strcasecmp(hs->HashType().c_str(), "SHA3-512") == 0)
+	 {
+	    Stats.SHA3_512Bytes += CurStat.FileSize;
+	    hex2bytes(CurStat.SHA3_512, hs->HashValue().data(), sizeof(CurStat.SHA3_512));
+	    CurStat.Flags |= FlSHA3_512;
 	 }
 	 else if (strcasecmp(hs->HashType().c_str(), "SHA256") == 0)
 	 {
@@ -499,13 +549,16 @@ bool CacheDB::GetHashes(bool const GenOnly, unsigned int const DoHashes)
       return true;
 
    bool ret = true;
-#define PUSH_BACK_HASH(FLAG, TYPE, VALUE) \
-   if ((CurStat.Flags & FLAG) == FLAG) \
+   // hand out only what was asked for: the cache may hold more
+#define PUSH_BACK_HASH(FLAG, BIT, TYPE, VALUE) \
+   if ((CurStat.Flags & FLAG) == FLAG && (DoHashes & BIT) == BIT) \
       ret &= HashesList.push_back(HashString(TYPE, bytes2hex(VALUE, sizeof(VALUE))));
-   PUSH_BACK_HASH(FlMD5, "MD5Sum", CurStat.MD5);
-   PUSH_BACK_HASH(FlSHA1, "SHA1", CurStat.SHA1);
-   PUSH_BACK_HASH(FlSHA256, "SHA256", CurStat.SHA256);
-   PUSH_BACK_HASH(FlSHA512, "SHA512", CurStat.SHA512);
+   PUSH_BACK_HASH(FlMD5, Hashes::MD5SUM, "MD5Sum", CurStat.MD5);
+   PUSH_BACK_HASH(FlSHA1, Hashes::SHA1SUM, "SHA1", CurStat.SHA1);
+   PUSH_BACK_HASH(FlSHA256, Hashes::SHA256SUM, "SHA256", CurStat.SHA256);
+   PUSH_BACK_HASH(FlSHA512, Hashes::SHA512SUM, "SHA512", CurStat.SHA512);
+   PUSH_BACK_HASH(FlSHA3_256, Hashes::SHA3_256SUM, "SHA3-256", CurStat.SHA3_256);
+   PUSH_BACK_HASH(FlSHA3_512, Hashes::SHA3_512SUM, "SHA3-512", CurStat.SHA3_512);
    return ret;
 }
 									/*}}}*/

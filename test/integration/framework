@@ -749,7 +749,7 @@ confighashes() {
 				printf "\t\"true\";\n"
 				shift
 			done
-			for h in 'MD5' 'SHA1' 'SHA256' 'SHA512'; do
+			for h in 'MD5' 'SHA1' 'SHA256' 'SHA512' 'SHA3-256' 'SHA3-512'; do
 				printf "$h\t\"false\";\n"
 			done
 		} | awk '!x[$1]++'

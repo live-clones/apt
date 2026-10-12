@@ -5,7 +5,7 @@ TESTDIR="$(readlink -f "$(dirname "$0")")"
 . "$TESTDIR/framework"
 setupenvironment
 configarchitecture "i386"
-confighashes 'MD5' 'SHA1' 'SHA256' 'SHA512'
+confighashes 'MD5' 'SHA1' 'SHA256' 'SHA512' 'SHA3-256' 'SHA3-512'
 
 msgtest 'Test apt-ftparchive source with missing hashes in .dsc'
 
@@ -26,6 +26,8 @@ EOF
 testsuccess aptftparchive sources aptarchive/
 cp rootdir/tmp/testsuccess.output aptarchive/Sources
 testsuccess grep Checksums-Sha512 aptarchive/Sources
+testsuccess grep Checksums-Sha3-256 aptarchive/Sources
+testsuccess grep Checksums-Sha3-512 aptarchive/Sources
 
 for hash in sha512sum sha256sum sha1sum; do
     for f in foo_1.0.tar.gz foo_1.0.dsc; do
@@ -34,5 +36,39 @@ for hash in sha512sum sha256sum sha1sum; do
 	testsuccess test -n "$SUM"
 	msgtest "Test $hash hash matches for $f"
 	testsuccess --nomsg grep "$NEEDLE" aptarchive/Sources
+    done
+done
+
+# same check for SHA3: each line must carry the right file's digest and
+# size under the right field. No coreutils tool exists, so use openssl.
+if command -v openssl >/dev/null 2>&1; then
+    for hash in sha3-512 sha3-256; do
+        for f in foo_1.0.tar.gz foo_1.0.dsc; do
+            SUM=$(openssl dgst "-$hash" -r aptarchive/$f | cut -d' ' -f1)
+            NEEDLE="$SUM $(stat -c%s aptarchive/$f) $f"
+            testsuccess test -n "$SUM"
+            msgtest "Test $hash hash matches for $f"
+            testsuccess --nomsg grep "$NEEDLE" aptarchive/Sources
+        done
+    done
+else
+    msgskip 'openssl not available for SHA3'
+fi
+
+# the fill-in loop used to walk the Files field apt-ftparchive generates for
+# MD5, so with MD5 disabled it walked nothing and Sources got no checksums at
+# all; it now walks the .dsc's own Files field whatever hashes are requested
+msgmsg 'Test apt-ftparchive sources with MD5 disabled'
+confighashes 'SHA256' 'SHA512'
+testsuccess aptftparchive sources aptarchive/
+cp rootdir/tmp/testsuccess.output aptarchive/Sources
+testfailure grep '^Files:' aptarchive/Sources
+testsuccess grep '^Checksums-Sha256:' aptarchive/Sources
+testsuccess grep '^Checksums-Sha512:' aptarchive/Sources
+for hash in sha512sum sha256sum; do
+    for f in foo_1.0.tar.gz foo_1.0.dsc; do
+        NEEDLE="$($hash aptarchive/$f | cut -d' ' -f1) $(stat -c%s aptarchive/$f) $f"
+        msgtest "Test $hash hash matches for $f without MD5"
+        testsuccess --nomsg grep "$NEEDLE" aptarchive/Sources
     done
 done
