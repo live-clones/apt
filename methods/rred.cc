@@ -667,7 +667,7 @@ class RredMethod : public aptMethod {
 	       std::clog << "FAILED to open inp " << Path << std::endl;
 	    return _error->Error("Failed to open inp %s", Path.c_str());
 	 }
-	 if (out.Open(Itm->DestFile, FileFd::WriteOnly | FileFd::Create | FileFd::Empty | FileFd::BufferedWrite, FileFd::Extension) == false)
+	 if (out.Open(Itm->DestFile, FileFd::WriteOnly | FileFd::Create | FileFd::Exclusive | FileFd::BufferedWrite, FileFd::Extension) == false)
 	 {
 	    if (Debug == true)
 	       std::clog << "FAILED to open out " << Itm->DestFile << std::endl;
@@ -768,7 +768,7 @@ int main(int argc, char **argv)
       FileFd out, inp;
       std::cerr << "Patching " << argv[2] << " into " << argv[3] << "\n";
       inp.Open(argv[2], FileFd::ReadOnly,FileFd::Extension);
-      out.Open(argv[3], FileFd::WriteOnly | FileFd::Create | FileFd::Empty | FileFd::BufferedWrite, FileFd::Extension);
+      out.Open(argv[3], FileFd::WriteOnly | FileFd::Create | FileFd::Exclusive | FileFd::BufferedWrite, FileFd::Extension);
       patch.apply_against_file(out, inp);
       out.Close();
    } else if (just_diff) {

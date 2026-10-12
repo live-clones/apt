@@ -422,8 +422,22 @@ bool HttpsMethod::Fetch(FetchItem *Itm)
       curl_easy_setopt(curl, CURLOPT_TIMEVALUE, Itm->LastModified);
    }
 
-   // go for it - if the file exists, append on it
-   File = new FileFd(Itm->DestFile, FileFd::WriteAny);
+   // If we are resuming, we first need to rescue the data we already have
+   FileFd partial;
+   if (stat(Itm->DestFile.c_str(),&SBuf) >= 0 && SBuf.st_size > 0)
+   {
+      if (not partial.Open(Itm->DestFile, FileFd::ReadOnly))
+	 return false;
+   }
+   // Open the file exclusively to avoid injection attacks by links
+   File = new FileFd(Itm->DestFile, FileFd::WriteAny | FileFd::Exclusive);
+   if (partial.IsOpen())
+   {
+      // The exclusive open unlinked the old file; copy its content
+      // into the new one and rewind for hashing.
+      if (not CopyFile(partial, *File) || not partial.Close() || not File->Seek(0))
+	 return false;
+   }
    Server = CreateServerState(Itm->Uri);
    if (Server->InitHashes(Itm->ExpectedHashes) == false)
       return false;
