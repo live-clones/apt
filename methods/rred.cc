@@ -718,7 +718,7 @@ class RredMethod final : public aptMethod {
 	       std::clog << "FAILED to open inp " << Path << std::endl;
 	    return _error->Error("Failed to open inp %s", Path.c_str());
 	 }
-	 if (out.Open(Itm->DestFile, FileFd::WriteOnly | FileFd::Create | FileFd::Empty | FileFd::BufferedWrite, FileFd::Extension) == false)
+	 if (out.Open(Itm->DestFile, FileFd::WriteOnly | FileFd::Create | FileFd::Exclusive | FileFd::BufferedWrite, FileFd::Extension) == false)
 	 {
 	    if (Debug == true)
 	       std::clog << "FAILED to open out " << Itm->DestFile << std::endl;
@@ -834,9 +834,9 @@ int main(int argc, const char *argv[])
 	 std::clog << "Patching " << CmdL.FileList[0] << " into " << CmdL.FileList[1] << "\n";
       input.Open(CmdL.FileList[0], FileFd::ReadOnly,FileFd::Extension);
       if (compressor == nullptr)
-	 output.Open(CmdL.FileList[1], FileFd::WriteOnly | FileFd::Create | FileFd::Empty | FileFd::BufferedWrite, FileFd::Extension);
+	 output.Open(CmdL.FileList[1], FileFd::WriteOnly | FileFd::Create | FileFd::Exclusive | FileFd::BufferedWrite, FileFd::Extension);
       else
-	 output.Open(CmdL.FileList[1], FileFd::WriteOnly | FileFd::Create | FileFd::Empty | FileFd::BufferedWrite, *compressor);
+	 output.Open(CmdL.FileList[1], FileFd::WriteOnly | FileFd::Create | FileFd::Exclusive | FileFd::BufferedWrite, *compressor);
       argi = 2;
    }
    else
