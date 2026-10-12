@@ -1,0 +1,71 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+changetowebserver
+webserverconfig 'aptwebserver::support::range' 'true'
+webserverconfig 'aptwebserver::response-header::Accept-Ranges' 'bytes'
+
+TESTFILE='aptarchive/testfile'
+cp -a "${TESTDIR}/framework" "$TESTFILE"
+DOWN='downloaded/testfile'
+VICTIM='downloaded/victim'
+DOWNLOADLOG='rootdir/tmp/testdownloadfile.log'
+
+testdownload() {
+	rm -f "$DOWNLOADLOG"
+	msgtest "Download testfile over $1"
+	if downloadfile "http://localhost:${APTHTTPPORT}/testfile" "$DOWN" '' > "$DOWNLOADLOG" 2>&1; then
+		msgpass
+	else
+		cat >&2 "$DOWNLOADLOG"
+		msgfail
+	fi
+	msgtest 'Downloaded file has the expected content'
+	if cmp --silent "$DOWN" "$TESTFILE"; then
+		msgpass
+	else
+		msgfail
+	fi
+	msgtest 'Victim file was not modified by the download'
+	if cmp --silent "$VICTIM" victim.expected; then
+		msgpass
+	else
+		msgfail
+	fi
+	testsuccess test ! "$DOWN" -ef "$VICTIM"
+}
+
+msgmsg 'Fresh download onto a hardlink to the victim file'
+echo 'do not modify me' > "$VICTIM"
+cp -a "$VICTIM" victim.expected
+ln -f "$VICTIM" "$DOWN"
+testdownload 'hardlink'
+testwebserverlaststatuscode '200' "$DOWNLOADLOG"
+
+msgmsg 'Resumed download onto a hardlink to the victim file'
+rm -f "$DOWN" "$VICTIM"
+dd if="$TESTFILE" of="$VICTIM" bs=1 count=$(( $(stat -c '%s' "$TESTFILE") / 2 )) 2>/dev/null
+touch -d "$(stat --format '%y' "$TESTFILE")" "$VICTIM"
+cp -a "$VICTIM" victim.expected
+ln -f "$VICTIM" "$DOWN"
+testdownload 'partial hardlink'
+testwebserverlaststatuscode '206' "$DOWNLOADLOG"
+
+msgmsg 'Fresh download onto a symlink to the victim file'
+rm -f "$DOWN" "$VICTIM"
+echo 'do not modify me' > "$VICTIM"
+cp -a "$VICTIM" victim.expected
+ln -s "$(readlink -f "$VICTIM")" "$DOWN"
+testdownload 'symlink'
+testwebserverlaststatuscode '200' "$DOWNLOADLOG"
+msgtest 'Symlink was replaced by a regular file'
+if [ -L "$DOWN" ]; then
+	msgfail
+else
+	msgpass
+fi
