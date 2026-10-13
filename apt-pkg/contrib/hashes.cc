@@ -38,22 +38,6 @@
 #include <apti18n.h>
 									/*}}}*/
 
-const char * HashString::_SupportedHashes[] =
-{
-   "SHA3-512", "SHA3-256", "SHA512", "SHA256", "SHA1", "MD5Sum", "Checksum-FileSize", NULL
-};
-std::vector<HashString::HashSupportInfo> HashString::SupportedHashesInfo()
-{
-   return {{
-      { "SHA3-512", pkgTagSection::Key::SHA3_512, "Checksums-Sha3-512", pkgTagSection::Key::Checksums_Sha3_512},
-      { "SHA3-256", pkgTagSection::Key::SHA3_256, "Checksums-Sha3-256", pkgTagSection::Key::Checksums_Sha3_256},
-      { "SHA512",  pkgTagSection::Key::SHA512,"Checksums-Sha512", pkgTagSection::Key::Checksums_Sha512},
-      { "SHA256", pkgTagSection::Key::SHA256, "Checksums-Sha256", pkgTagSection::Key::Checksums_Sha256},
-      { "SHA1", pkgTagSection::Key::SHA1, "Checksums-Sha1", pkgTagSection::Key::Checksums_Sha1 },
-      { "MD5Sum", pkgTagSection::Key::MD5sum, "Files", pkgTagSection::Key::Files },
-   }};
-}
-
 HashString::HashString()
 {
 }
@@ -315,15 +299,20 @@ class PrivateHashes
       const char *name;
       const EVP_MD *(*evpLink)(void);
       Hashes::SupportedHashes ourAlgo;
+      pkgTagSection::Key namekey;
+      const char *chksumsname;
+      pkgTagSection::Key chksumskey;
    };
 
+   // Ordered strongest first: _SupportedHashes and SupportedHashesInfo()
+   // are built from this order and their readers rely on it.
    static constexpr std::array<HashAlgo, 6> Algorithms{
-      HashAlgo{0, "MD5Sum", EVP_md5, Hashes::MD5SUM},
-      HashAlgo{1, "SHA1", EVP_sha1, Hashes::SHA1SUM},
-      HashAlgo{2, "SHA256", EVP_sha256, Hashes::SHA256SUM},
-      HashAlgo{3, "SHA512", EVP_sha512, Hashes::SHA512SUM},
-      HashAlgo{4, "SHA3-256", EVP_sha3_256, Hashes::SHA3_256SUM},
-      HashAlgo{5, "SHA3-512", EVP_sha3_512, Hashes::SHA3_512SUM},
+      HashAlgo{0, "SHA3-512", EVP_sha3_512, Hashes::SHA3_512SUM, pkgTagSection::Key::SHA3_512, "Checksums-Sha3-512", pkgTagSection::Key::Checksums_Sha3_512},
+      HashAlgo{1, "SHA3-256", EVP_sha3_256, Hashes::SHA3_256SUM, pkgTagSection::Key::SHA3_256, "Checksums-Sha3-256", pkgTagSection::Key::Checksums_Sha3_256},
+      HashAlgo{2, "SHA512", EVP_sha512, Hashes::SHA512SUM, pkgTagSection::Key::SHA512, "Checksums-Sha512", pkgTagSection::Key::Checksums_Sha512},
+      HashAlgo{3, "SHA256", EVP_sha256, Hashes::SHA256SUM, pkgTagSection::Key::SHA256, "Checksums-Sha256", pkgTagSection::Key::Checksums_Sha256},
+      HashAlgo{4, "SHA1", EVP_sha1, Hashes::SHA1SUM, pkgTagSection::Key::SHA1, "Checksums-Sha1", pkgTagSection::Key::Checksums_Sha1},
+      HashAlgo{5, "MD5Sum", EVP_md5, Hashes::MD5SUM, pkgTagSection::Key::MD5sum, "Files", pkgTagSection::Key::Files},
    };
 
    bool Write(unsigned char const *Data, size_t Size)
@@ -423,6 +412,26 @@ class PrivateHashes
    }
 };
 									/*}}}*/
+static_assert(PrivateHashes::Algorithms.size() == 6,
+	      "add the new algorithm to _SupportedHashes below");
+const char * HashString::_SupportedHashes[] =
+{
+   PrivateHashes::Algorithms[0].name,
+   PrivateHashes::Algorithms[1].name,
+   PrivateHashes::Algorithms[2].name,
+   PrivateHashes::Algorithms[3].name,
+   PrivateHashes::Algorithms[4].name,
+   PrivateHashes::Algorithms[5].name,
+   "Checksum-FileSize", NULL
+};
+std::vector<HashString::HashSupportInfo> HashString::SupportedHashesInfo()
+{
+   std::vector<HashSupportInfo> result;
+   result.reserve(PrivateHashes::Algorithms.size());
+   for (auto const &algo : PrivateHashes::Algorithms)
+      result.push_back({algo.name, algo.namekey, algo.chksumsname, algo.chksumskey});
+   return result;
+}
 std::string HashString::GetHashForFile(std::string filename) const      /*{{{*/
 {
    std::string fileHash;
