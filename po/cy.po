@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-08-14 14:52+0000\n"
+"POT-Creation-Date: 2026-10-19 18:41+0000\n"
 "PO-Revision-Date: 2005-06-06 13:46+0100\n"
 "Last-Translator: Dafydd Harries <daf@muse.19inch.net>\n"
 "Language-Team: Welsh <cy@pengwyn.linux.org.uk>\n"
@@ -838,6 +838,12 @@ msgstr "Ni ellir gwneud stat() o %s"
 #, c-format
 msgid "Unable to write to %s"
 msgstr "Ni ellir ysgrifennu i %s"
+
+#: apt-pkg/contrib/hashes.cc
+#, fuzzy, c-format
+#| msgid "Could not open file %s"
+msgid "Computing the %s hash failed: %s"
+msgstr "Methwyd agor ffeil %s"
 
 #: apt-pkg/contrib/mmap.cc
 msgid "Can't mmap an empty file"
@@ -1790,6 +1796,12 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "Sylwer, yn dewis %s yn hytrach na %s\n"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Global options:"
+msgstr "opsiynnol"
+
+#: apt-private/private-cmndline.cc
 msgid "Show this help message"
 msgstr ""
 
@@ -1814,6 +1826,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set CLI version"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "List options:"
+msgstr "opsiynnol"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1847,14 +1865,29 @@ msgid "Snapshot to use"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Package information options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 #, fuzzy
 #| msgid "Show source records"
 msgid "Show the full record"
 msgstr "Dangos cofnodion ffynhonell"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Opening configuration file %s"
+msgid "Source configuration options:"
+msgstr "Yn agor y ffeil cyfluniad %s"
+
+#: apt-private/private-cmndline.cc
 msgid "Configure an ephemeral source file"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Dependency options:"
+msgstr "Cynhyrchaid Dibyniaeth"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1921,8 +1954,19 @@ msgid "Print implicit dependencies"
 msgstr "Cyfanswm Dibyniaethau: "
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Search options:"
+msgstr "opsiynnol"
+
+#: apt-private/private-cmndline.cc
 msgid "Only search names"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Package name options:"
+msgstr "  Pin Pecyn: "
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1930,11 +1974,28 @@ msgstr ""
 msgid "Show virtual packages and missing dependencies"
 msgstr "Mae gan y pecynnau canlynol ddibyniaethau heb eu bodloni:"
 
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Unmet dependency options:"
+msgstr "Yn Aideladu Coeden Dibyniaeth"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Source package options:"
+msgstr "Methwyd stat() o'r rhestr pecyn ffynhonell %s"
+
 # FIXME
 #: apt-private/private-cmndline.cc
 #, fuzzy
 msgid "Only query source package names"
 msgstr "Gwall mewnol wrth gyrchu enw pecyn"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Cache options:"
+msgstr "opsiynnol"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate the cache"
@@ -1947,6 +2008,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set the location of the srcpkgcache.bin"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "CD-ROM options:"
+msgstr "opsiynnol"
 
 #: apt-private/private-cmndline.cc
 msgid "Auto detect the CD"
@@ -1977,7 +2044,17 @@ msgid "Be thorough"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Solver options:"
+msgstr "opsiynnol"
+
+#: apt-private/private-cmndline.cc
 msgid "Run solver as the specified user"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Configuration output options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -1989,8 +2066,18 @@ msgid "Output format (shell, ...)"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Template extraction options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Temporary directory for extracted templates"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Archive is too short"
+msgid "Archive options:"
+msgstr "Mae'r archif yn rhy fyr"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate MD5 checksums"
@@ -2006,6 +2093,14 @@ msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Generate SHA512 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-256 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-512 checksums"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2039,9 +2134,20 @@ msgstr ""
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+msgid "Package sorting options:"
+msgstr "  Pin Pecyn: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Couldn't stat source package list %s"
 msgid "Sort source package files"
 msgstr "Methwyd stat() o'r rhestr pecyn ffynhonell %s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Patch options:"
+msgstr "opsiynnol"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -2049,12 +2155,33 @@ msgid "Set compression algorithm"
 msgstr "Dull Cywasgu Anhysbys '%s'"
 
 #: apt-private/private-cmndline.cc
+msgid "File output options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Package state options:"
+msgstr "  Pin Pecyn: "
+
+#: apt-private/private-cmndline.cc
 msgid "Read/write states from the given file"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Output options:"
+msgstr "opsiynnol"
+
+#: apt-private/private-cmndline.cc
 msgid "Verbose output"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Protocol corruption"
+msgid "Prompt options:"
+msgstr "Llygr protocol"
 
 #: apt-private/private-cmndline.cc
 msgid "Automatic yes to prompts"
@@ -2065,7 +2192,15 @@ msgid "Automatic no to prompts"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Simulation options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "No action; perform a simulation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2123,9 +2258,20 @@ msgstr "Yn Darllen Rhestrau Pecynnau"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+msgid "Upgrade options:"
+msgstr "Pecynnau wedi torri"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "The following packages have unmet dependencies:"
 msgid "Allow installing new packages for upgraded dependencies"
 msgstr "Mae gan y pecynnau canlynol ddibyniaethau heb eu bodloni:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Update options:"
+msgstr "opsiynnol"
 
 #: apt-private/private-cmndline.cc
 msgid "Clean up old list files"
@@ -2203,6 +2349,16 @@ msgstr "Lawrlwytho archifau ffynhonell"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+msgid "Dependency resolution options:"
+msgstr "Cynhyrchaid Dibyniaeth"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+msgid "Build dependency options:"
+msgstr "Yn Aideladu Coeden Dibyniaeth"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Failed to process build dependencies"
 msgid "Only process architecture-dependent build dependencies"
 msgstr "Methwyd prosesu dibyniaethau adeiladu"
@@ -2214,11 +2370,19 @@ msgid "Only process architecture-independent build dependencies"
 msgstr "Methwyd prosesu dibyniaethau adeiladu"
 
 #: apt-private/private-cmndline.cc
+msgid "Index target options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Output format"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Show release info"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Common package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2317,16 +2481,6 @@ msgstr "Cyfanswm Dibyniaethau: "
 
 #: apt-private/private-cmndline.cc
 msgid "<value>"
-msgstr ""
-
-#: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "optional"
-msgid "Options:"
-msgstr "opsiynnol"
-
-#: apt-private/private-cmndline.cc
-msgid "Common options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -4028,6 +4182,35 @@ msgid ""
 msgstr ""
 
 #: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] showsrc <package(s)>\n"
+"\n"
+"Show source package records matching the given package names.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] depends <package(s)>\n"
+"\n"
+"Show dependencies of the given packages and the packages that can\n"
+"satisfy them.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] rdepends <package(s)>\n"
+"\n"
+"Show reverse dependencies of the given packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] policy [<package(s)>]\n"
+"\n"
+"Show configured source priorities and package policy information.\n"
+msgstr ""
+
+#: cmdline/apt.cc
 #, c-format
 msgid ""
 "Usage: apt [options] %s <package(s)>\n"
@@ -4047,6 +4230,27 @@ msgid ""
 "\n"
 "Remove packages that were automatically installed to satisfy\n"
 "dependencies and are no longer needed.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] clean\n"
+"\n"
+"Remove retrieved package files from the local cache.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] distclean\n"
+"\n"
+"Remove downloaded package-list files, keeping release metadata.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] autoclean\n"
+"\n"
+"Remove cached package files that can no longer be downloaded.\n"
 msgstr ""
 
 #: cmdline/apt.cc
@@ -4089,6 +4293,35 @@ msgstr ""
 
 #: cmdline/apt.cc
 msgid ""
+"Usage: apt [options] source <package(s)>\n"
+"\n"
+"Download source packages into the current directory.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] build-dep <source-package(s)>\n"
+"\n"
+"Install or remove packages to satisfy build dependencies for\n"
+"source packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] download <package(s)>\n"
+"\n"
+"Download binary packages into the current directory.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] changelog <package(s)>\n"
+"\n"
+"Download and display changelogs for the given packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
 "Usage: apt [options] why <package>\n"
 "       apt [options] why-not <package>\n"
 "\n"
@@ -4111,6 +4344,41 @@ msgid ""
 "\n"
 "Convert .list files to the .sources format, adding Signed-By\n"
 "values where possible. Old files are saved as .list.bak.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-list\n"
+"\n"
+"List recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-info <transaction-id(s)>\n"
+"\n"
+"Show detailed information about recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-redo <transaction-id>\n"
+"\n"
+"Reapply the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-undo <transaction-id>\n"
+"\n"
+"Undo the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-rollback <transaction-id>\n"
+"\n"
+"Roll back package state to a recorded transaction.\n"
 msgstr ""
 
 #. query
@@ -4854,9 +5122,6 @@ msgstr ""
 #~ msgid "A response overflowed the buffer."
 #~ msgstr "Gorlifodd ateb y byffer."
 
-#~ msgid "Protocol corruption"
-#~ msgstr "Llygr protocol"
-
 #~ msgid "Could not create a socket"
 #~ msgstr "Methwyd creu soced"
 
@@ -5019,9 +5284,6 @@ msgstr ""
 #~ msgid "No entry found in mirror file '%s'"
 #~ msgstr "Methwyd agor ffeil %s"
 
-#~ msgid "Opening configuration file %s"
-#~ msgstr "Yn agor y ffeil cyfluniad %s"
-
 #~ msgid "Opening %s"
 #~ msgstr "Yn agor %s"
 
@@ -5034,10 +5296,6 @@ msgstr ""
 
 #~ msgid "(not found)"
 #~ msgstr "(heb ganfod)"
-
-#, fuzzy
-#~ msgid "  Package pin: "
-#~ msgstr "  Pin Pecyn: "
 
 #, fuzzy
 #~ msgid "The repository is insufficiently signed by key %s (%s)"

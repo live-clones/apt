@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-08-14 14:52+0000\n"
+"POT-Creation-Date: 2026-10-19 18:41+0000\n"
 "PO-Revision-Date: 2022-08-14 14:30+0900\n"
 "Last-Translator: Hideki Yamane <henrich@debian.org>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
@@ -890,6 +890,12 @@ msgstr "mkstemp %s を実行できません"
 #, c-format
 msgid "Unable to write to %s"
 msgstr "%s に書き込めません"
+
+#: apt-pkg/contrib/hashes.cc
+#, fuzzy, c-format
+#| msgid "Could not open file %s"
+msgid "Computing the %s hash failed: %s"
+msgstr "ファイル %s をオープンできませんでした"
 
 #: apt-pkg/contrib/mmap.cc
 msgid "Can't mmap an empty file"
@@ -1862,6 +1868,12 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "注意、'%2$s' の代わりに '%1$s' を選択します\n"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Global options:"
+msgstr "任意"
+
+#: apt-private/private-cmndline.cc
 msgid "Show this help message"
 msgstr ""
 
@@ -1888,6 +1900,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set CLI version"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "List options:"
+msgstr "任意"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1924,14 +1942,30 @@ msgid "Snapshot to use"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Package information options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 #, fuzzy
 #| msgid "Show source records"
 msgid "Show the full record"
 msgstr "ソースレコードを表示する"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "show the active configuration setting"
+msgid "Source configuration options:"
+msgstr "アクティブな設定を表示"
+
+#: apt-private/private-cmndline.cc
 msgid "Configure an ephemeral source file"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency options:"
+msgstr "依存関係の生成"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -2006,8 +2040,20 @@ msgid "Print implicit dependencies"
 msgstr "依存関係総数: "
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Search options:"
+msgstr "任意"
+
+#: apt-private/private-cmndline.cc
 msgid "Only search names"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Package files:"
+msgid "Package name options:"
+msgstr "パッケージファイル:"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -2016,8 +2062,26 @@ msgid "Show virtual packages and missing dependencies"
 msgstr "以下のパッケージには満たせない依存関係があります:"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Building dependency tree"
+msgid "Unmet dependency options:"
+msgstr "依存関係ツリーを作成しています"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "show package details"
+msgid "Source package options:"
+msgstr "パッケージの詳細を表示"
+
+#: apt-private/private-cmndline.cc
 msgid "Only query source package names"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Cache options:"
+msgstr "任意"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate the cache"
@@ -2030,6 +2094,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set the location of the srcpkgcache.bin"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "CD-ROM options:"
+msgstr "任意"
 
 #: apt-private/private-cmndline.cc
 msgid "Auto detect the CD"
@@ -2062,7 +2132,17 @@ msgid "Be thorough"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Solver options:"
+msgstr "任意"
+
+#: apt-private/private-cmndline.cc
 msgid "Run solver as the specified user"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Configuration output options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2074,8 +2154,18 @@ msgid "Output format (shell, ...)"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Template extraction options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Temporary directory for extracted templates"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Archive is too short"
+msgid "Archive options:"
+msgstr "アーカイブが不足しています"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate MD5 checksums"
@@ -2091,6 +2181,14 @@ msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Generate SHA512 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-256 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-512 checksums"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2124,10 +2222,20 @@ msgid "Only accept files for the given architecture"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Package sorting options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 #, fuzzy
 #| msgid "show package details"
 msgid "Sort source package files"
 msgstr "パッケージの詳細を表示"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Patch options:"
+msgstr "任意"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -2136,12 +2244,34 @@ msgid "Set compression algorithm"
 msgstr "'%s' は未知の圧縮アルゴリズムです"
 
 #: apt-private/private-cmndline.cc
+msgid "File output options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Package files:"
+msgid "Package state options:"
+msgstr "パッケージファイル:"
+
+#: apt-private/private-cmndline.cc
 msgid "Read/write states from the given file"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Output options:"
+msgstr "任意"
+
+#: apt-private/private-cmndline.cc
 msgid "Verbose output"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Protocol corruption"
+msgid "Prompt options:"
+msgstr "プロトコルが壊れています"
 
 #: apt-private/private-cmndline.cc
 msgid "Automatic yes to prompts"
@@ -2152,7 +2282,15 @@ msgid "Automatic no to prompts"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Simulation options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "No action; perform a simulation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2219,9 +2357,21 @@ msgstr "パッケージリストを読み込んでいます"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "remove packages"
+msgid "Upgrade options:"
+msgstr "パッケージを削除"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "The following packages have unmet dependencies:"
 msgid "Allow installing new packages for upgraded dependencies"
 msgstr "以下のパッケージには満たせない依存関係があります:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Update options:"
+msgstr "任意"
 
 #: apt-private/private-cmndline.cc
 msgid "Clean up old list files"
@@ -2301,6 +2451,18 @@ msgstr "ダウンロード失敗"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency resolution options:"
+msgstr "依存関係の生成"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Building dependency tree"
+msgid "Build dependency options:"
+msgstr "依存関係ツリーを作成しています"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Failed to process build dependencies"
 msgid "Only process architecture-dependent build dependencies"
 msgstr "ビルド依存関係の処理に失敗しました"
@@ -2312,11 +2474,19 @@ msgid "Only process architecture-independent build dependencies"
 msgstr "ビルド依存関係の処理に失敗しました"
 
 #: apt-private/private-cmndline.cc
+msgid "Index target options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Output format"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Show release info"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Common package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2423,16 +2593,6 @@ msgstr "依存関係総数: "
 
 #: apt-private/private-cmndline.cc
 msgid "<value>"
-msgstr ""
-
-#: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "optional"
-msgid "Options:"
-msgstr "任意"
-
-#: apt-private/private-cmndline.cc
-msgid "Common options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -4176,6 +4336,35 @@ msgid ""
 msgstr ""
 
 #: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] showsrc <package(s)>\n"
+"\n"
+"Show source package records matching the given package names.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] depends <package(s)>\n"
+"\n"
+"Show dependencies of the given packages and the packages that can\n"
+"satisfy them.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] rdepends <package(s)>\n"
+"\n"
+"Show reverse dependencies of the given packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] policy [<package(s)>]\n"
+"\n"
+"Show configured source priorities and package policy information.\n"
+msgstr ""
+
+#: cmdline/apt.cc
 #, c-format
 msgid ""
 "Usage: apt [options] %s <package(s)>\n"
@@ -4195,6 +4384,27 @@ msgid ""
 "\n"
 "Remove packages that were automatically installed to satisfy\n"
 "dependencies and are no longer needed.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] clean\n"
+"\n"
+"Remove retrieved package files from the local cache.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] distclean\n"
+"\n"
+"Remove downloaded package-list files, keeping release metadata.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] autoclean\n"
+"\n"
+"Remove cached package files that can no longer be downloaded.\n"
 msgstr ""
 
 #: cmdline/apt.cc
@@ -4236,6 +4446,41 @@ msgid ""
 msgstr ""
 
 #: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download the binary package into the current directory"
+msgid ""
+"Usage: apt [options] source <package(s)>\n"
+"\n"
+"Download source packages into the current directory.\n"
+msgstr "バイナリパッケージをカレントディレクトリにダウンロードする"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] build-dep <source-package(s)>\n"
+"\n"
+"Install or remove packages to satisfy build dependencies for\n"
+"source packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download the binary package into the current directory"
+msgid ""
+"Usage: apt [options] download <package(s)>\n"
+"\n"
+"Download binary packages into the current directory.\n"
+msgstr "バイナリパッケージをカレントディレクトリにダウンロードする"
+
+#: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download and display the changelog for the given package"
+msgid ""
+"Usage: apt [options] changelog <package(s)>\n"
+"\n"
+"Download and display changelogs for the given packages.\n"
+msgstr "指定のパッケージの変更履歴をダウンロードして表示する"
+
+#: cmdline/apt.cc
 msgid ""
 "Usage: apt [options] why <package>\n"
 "       apt [options] why-not <package>\n"
@@ -4259,6 +4504,41 @@ msgid ""
 "\n"
 "Convert .list files to the .sources format, adding Signed-By\n"
 "values where possible. Old files are saved as .list.bak.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-list\n"
+"\n"
+"List recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-info <transaction-id(s)>\n"
+"\n"
+"Show detailed information about recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-redo <transaction-id>\n"
+"\n"
+"Reapply the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-undo <transaction-id>\n"
+"\n"
+"Undo the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-rollback <transaction-id>\n"
+"\n"
+"Roll back package state to a recorded transaction.\n"
 msgstr ""
 
 #. query
@@ -4992,9 +5272,6 @@ msgstr "空のファイルは有効なアーカイブと認められません"
 
 #~ msgid "A response overflowed the buffer."
 #~ msgstr "レスポンスがバッファをオーバフローさせました。"
-
-#~ msgid "Protocol corruption"
-#~ msgstr "プロトコルが壊れています"
 
 #~ msgid "Could not create a socket"
 #~ msgstr "ソケットを作成できません"

@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.2.X\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-08-14 14:52+0000\n"
+"POT-Creation-Date: 2026-10-19 18:41+0000\n"
 "PO-Revision-Date: 2009-01-28 10:41+0800\n"
 "Last-Translator: Tetralet <tetralet@gmail.com>\n"
 "Language-Team: Debian-user in Chinese [Big5] <debian-chinese-"
@@ -823,6 +823,12 @@ msgstr "無法取得 %s 的狀態"
 #, c-format
 msgid "Unable to write to %s"
 msgstr "無法寫入 %s"
+
+#: apt-pkg/contrib/hashes.cc
+#, fuzzy, c-format
+#| msgid "Could not open file %s"
+msgid "Computing the %s hash failed: %s"
+msgstr "無法開啟檔案 %s"
 
 #: apt-pkg/contrib/mmap.cc
 msgid "Can't mmap an empty file"
@@ -1749,6 +1755,12 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "注意，選擇了以 %s 替代 %s\n"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Global options:"
+msgstr "次要"
+
+#: apt-private/private-cmndline.cc
 msgid "Show this help message"
 msgstr ""
 
@@ -1775,6 +1787,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set CLI version"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "List options:"
+msgstr "次要"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1808,14 +1826,30 @@ msgid "Snapshot to use"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Package information options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 #, fuzzy
 #| msgid "Show source records"
 msgid "Show the full record"
 msgstr "顯示原始碼報告"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Opening configuration file %s"
+msgid "Source configuration options:"
+msgstr "開啟設定檔 %s"
+
+#: apt-private/private-cmndline.cc
 msgid "Configure an ephemeral source file"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency options:"
+msgstr "建立相依關係"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1888,8 +1922,20 @@ msgid "Print implicit dependencies"
 msgstr "相依關係合計："
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Search options:"
+msgstr "次要"
+
+#: apt-private/private-cmndline.cc
 msgid "Only search names"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "  Package pin: "
+msgid "Package name options:"
+msgstr "  套件鎖定："
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1899,9 +1945,27 @@ msgstr "下列的套件有未滿足的相依關係："
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "Building dependency tree"
+msgid "Unmet dependency options:"
+msgstr "正在重建相依關係"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Source package options:"
+msgstr "無法取得來源套件列表 %s 的狀態"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Internal error getting a package name"
 msgid "Only query source package names"
 msgstr "內部錯誤，無法取得套件名稱"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Cache options:"
+msgstr "次要"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate the cache"
@@ -1914,6 +1978,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set the location of the srcpkgcache.bin"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "CD-ROM options:"
+msgstr "次要"
 
 #: apt-private/private-cmndline.cc
 msgid "Auto detect the CD"
@@ -1946,7 +2016,17 @@ msgid "Be thorough"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Solver options:"
+msgstr "次要"
+
+#: apt-private/private-cmndline.cc
 msgid "Run solver as the specified user"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Configuration output options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -1958,8 +2038,18 @@ msgid "Output format (shell, ...)"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Template extraction options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Temporary directory for extracted templates"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Archive is too short"
+msgid "Archive options:"
+msgstr "套件檔過短"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate MD5 checksums"
@@ -1975,6 +2065,14 @@ msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Generate SHA512 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-256 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-512 checksums"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2008,9 +2106,21 @@ msgstr ""
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "  Package pin: "
+msgid "Package sorting options:"
+msgstr "  套件鎖定："
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Couldn't stat source package list %s"
 msgid "Sort source package files"
 msgstr "無法取得來源套件列表 %s 的狀態"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Patch options:"
+msgstr "次要"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -2019,12 +2129,34 @@ msgid "Set compression algorithm"
 msgstr "未知的壓縮演算法 '%s'"
 
 #: apt-private/private-cmndline.cc
+msgid "File output options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "  Package pin: "
+msgid "Package state options:"
+msgstr "  套件鎖定："
+
+#: apt-private/private-cmndline.cc
 msgid "Read/write states from the given file"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Output options:"
+msgstr "次要"
+
+#: apt-private/private-cmndline.cc
 msgid "Verbose output"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Protocol corruption"
+msgid "Prompt options:"
+msgstr "協定失敗"
 
 #: apt-private/private-cmndline.cc
 msgid "Automatic yes to prompts"
@@ -2035,7 +2167,15 @@ msgid "Automatic no to prompts"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Simulation options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "No action; perform a simulation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2099,9 +2239,20 @@ msgstr "正在讀取套件清單"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+msgid "Upgrade options:"
+msgstr "損毀的套件"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "The following packages have unmet dependencies:"
 msgid "Allow installing new packages for upgraded dependencies"
 msgstr "下列的套件有未滿足的相依關係："
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Update options:"
+msgstr "次要"
 
 #: apt-private/private-cmndline.cc
 msgid "Clean up old list files"
@@ -2179,6 +2330,18 @@ msgstr "下載套件原始碼"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency resolution options:"
+msgstr "建立相依關係"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Building dependency tree"
+msgid "Build dependency options:"
+msgstr "正在重建相依關係"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Failed to process build dependencies"
 msgid "Only process architecture-dependent build dependencies"
 msgstr "無法處理編譯相依關係"
@@ -2190,11 +2353,19 @@ msgid "Only process architecture-independent build dependencies"
 msgstr "無法處理編譯相依關係"
 
 #: apt-private/private-cmndline.cc
+msgid "Index target options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Output format"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Show release info"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Common package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2297,16 +2468,6 @@ msgstr "相依關係合計："
 
 #: apt-private/private-cmndline.cc
 msgid "<value>"
-msgstr ""
-
-#: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "optional"
-msgid "Options:"
-msgstr "次要"
-
-#: apt-private/private-cmndline.cc
-msgid "Common options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -3976,6 +4137,35 @@ msgid ""
 msgstr ""
 
 #: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] showsrc <package(s)>\n"
+"\n"
+"Show source package records matching the given package names.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] depends <package(s)>\n"
+"\n"
+"Show dependencies of the given packages and the packages that can\n"
+"satisfy them.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] rdepends <package(s)>\n"
+"\n"
+"Show reverse dependencies of the given packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] policy [<package(s)>]\n"
+"\n"
+"Show configured source priorities and package policy information.\n"
+msgstr ""
+
+#: cmdline/apt.cc
 #, c-format
 msgid ""
 "Usage: apt [options] %s <package(s)>\n"
@@ -3995,6 +4185,27 @@ msgid ""
 "\n"
 "Remove packages that were automatically installed to satisfy\n"
 "dependencies and are no longer needed.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] clean\n"
+"\n"
+"Remove retrieved package files from the local cache.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] distclean\n"
+"\n"
+"Remove downloaded package-list files, keeping release metadata.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] autoclean\n"
+"\n"
+"Remove cached package files that can no longer be downloaded.\n"
 msgstr ""
 
 #: cmdline/apt.cc
@@ -4037,6 +4248,35 @@ msgstr ""
 
 #: cmdline/apt.cc
 msgid ""
+"Usage: apt [options] source <package(s)>\n"
+"\n"
+"Download source packages into the current directory.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] build-dep <source-package(s)>\n"
+"\n"
+"Install or remove packages to satisfy build dependencies for\n"
+"source packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] download <package(s)>\n"
+"\n"
+"Download binary packages into the current directory.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] changelog <package(s)>\n"
+"\n"
+"Download and display changelogs for the given packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
 "Usage: apt [options] why <package>\n"
 "       apt [options] why-not <package>\n"
 "\n"
@@ -4059,6 +4299,41 @@ msgid ""
 "\n"
 "Convert .list files to the .sources format, adding Signed-By\n"
 "values where possible. Old files are saved as .list.bak.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-list\n"
+"\n"
+"List recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-info <transaction-id(s)>\n"
+"\n"
+"Show detailed information about recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-redo <transaction-id>\n"
+"\n"
+"Reapply the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-undo <transaction-id>\n"
+"\n"
+"Undo the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-rollback <transaction-id>\n"
+"\n"
+"Roll back package state to a recorded transaction.\n"
 msgstr ""
 
 #. query
@@ -4784,9 +5059,6 @@ msgstr ""
 #~ msgid "A response overflowed the buffer."
 #~ msgstr "回應超過緩衝區長度。"
 
-#~ msgid "Protocol corruption"
-#~ msgstr "協定失敗"
-
 #~ msgid "Could not create a socket"
 #~ msgstr "無法建立 Socket"
 
@@ -4942,9 +5214,6 @@ msgstr ""
 #~ msgid "No entry found in mirror file '%s'"
 #~ msgstr "無法開啟檔案 %s"
 
-#~ msgid "Opening configuration file %s"
-#~ msgstr "開啟設定檔 %s"
-
 #~ msgid "Opening %s"
 #~ msgstr "正在開啟 %s"
 
@@ -4956,9 +5225,6 @@ msgstr ""
 
 #~ msgid "(not found)"
 #~ msgstr "(未找到)"
-
-#~ msgid "  Package pin: "
-#~ msgstr "  套件鎖定："
 
 #~ msgid "There is no public key available for the following key IDs:\n"
 #~ msgstr "無法取得以下的密鑰 ID 的公鑰：\n"

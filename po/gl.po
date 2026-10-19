@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-08-14 14:52+0000\n"
+"POT-Creation-Date: 2026-10-19 18:41+0000\n"
 "PO-Revision-Date: 2011-05-12 15:28+0100\n"
 "Last-Translator: Miguel Anxo Bouzada <mbouzada@gmail.com>\n"
 "Language-Team: galician <proxecto@trasno.net>\n"
@@ -856,6 +856,12 @@ msgstr "Non é posíbel determinar o estado %s"
 #, c-format
 msgid "Unable to write to %s"
 msgstr "Non é posíbel escribir en %s"
+
+#: apt-pkg/contrib/hashes.cc
+#, fuzzy, c-format
+#| msgid "Could not open file %s"
+msgid "Computing the %s hash failed: %s"
+msgstr "Non foi posíbel abrir o ficheiro %s"
 
 #: apt-pkg/contrib/mmap.cc
 msgid "Can't mmap an empty file"
@@ -1823,6 +1829,12 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "Nota, seleccione «%s» no canto de «%s»\n"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Global options:"
+msgstr "opcional"
+
+#: apt-private/private-cmndline.cc
 msgid "Show this help message"
 msgstr ""
 
@@ -1849,6 +1861,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set CLI version"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "List options:"
+msgstr "opcional"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1882,14 +1900,30 @@ msgid "Snapshot to use"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Package information options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 #, fuzzy
 #| msgid "Show source records"
 msgid "Show the full record"
 msgstr "Mostra rexistros da fonte"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Opening configuration file %s"
+msgid "Source configuration options:"
+msgstr "Abrindo o ficheiro de configuración %s"
+
+#: apt-private/private-cmndline.cc
 msgid "Configure an ephemeral source file"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency options:"
+msgstr "Xeración de dependencias"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1964,8 +1998,20 @@ msgid "Print implicit dependencies"
 msgstr "Número total de dependencias: "
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Search options:"
+msgstr "opcional"
+
+#: apt-private/private-cmndline.cc
 msgid "Only search names"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "  Package pin: "
+msgid "Package name options:"
+msgstr "  Inmobilizado: "
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -1975,9 +2021,27 @@ msgstr "Os seguintes paquetes teñen dependencias sen cumprir:"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "Building dependency tree"
+msgid "Unmet dependency options:"
+msgstr "Construindo a árbore de dependencias"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Couldn't stat source package list %s"
+msgid "Source package options:"
+msgstr "Non foi posíbel atopar a lista de paquetes fonte %s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Internal error getting a package name"
 msgid "Only query source package names"
 msgstr "Produciuse un erro interno ao obter un nome de paquete"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Cache options:"
+msgstr "opcional"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate the cache"
@@ -1990,6 +2054,12 @@ msgstr ""
 #: apt-private/private-cmndline.cc
 msgid "Set the location of the srcpkgcache.bin"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "CD-ROM options:"
+msgstr "opcional"
 
 #: apt-private/private-cmndline.cc
 msgid "Auto detect the CD"
@@ -2022,7 +2092,17 @@ msgid "Be thorough"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Solver options:"
+msgstr "opcional"
+
+#: apt-private/private-cmndline.cc
 msgid "Run solver as the specified user"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Configuration output options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2034,8 +2114,18 @@ msgid "Output format (shell, ...)"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Template extraction options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Temporary directory for extracted templates"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Archive is too short"
+msgid "Archive options:"
+msgstr "O arquivo é curto de máis"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate MD5 checksums"
@@ -2051,6 +2141,14 @@ msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Generate SHA512 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-256 checksums"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Generate SHA3-512 checksums"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2085,9 +2183,21 @@ msgstr ""
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "  Package pin: "
+msgid "Package sorting options:"
+msgstr "  Inmobilizado: "
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Couldn't stat source package list %s"
 msgid "Sort source package files"
 msgstr "Non foi posíbel atopar a lista de paquetes fonte %s"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Patch options:"
+msgstr "opcional"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
@@ -2096,12 +2206,34 @@ msgid "Set compression algorithm"
 msgstr "Algoritmo de compresión «%s» descoñecido"
 
 #: apt-private/private-cmndline.cc
+msgid "File output options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "  Package pin: "
+msgid "Package state options:"
+msgstr "  Inmobilizado: "
+
+#: apt-private/private-cmndline.cc
 msgid "Read/write states from the given file"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Output options:"
+msgstr "opcional"
+
+#: apt-private/private-cmndline.cc
 msgid "Verbose output"
 msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Protocol corruption"
+msgid "Prompt options:"
+msgstr "Dano no protocolo"
 
 #: apt-private/private-cmndline.cc
 msgid "Automatic yes to prompts"
@@ -2112,7 +2244,15 @@ msgid "Automatic no to prompts"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
+msgid "Simulation options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "No action; perform a simulation"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2176,9 +2316,20 @@ msgstr "Lendo as listas de paquetes"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+msgid "Upgrade options:"
+msgstr "Paquetes estragados"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "The following packages have unmet dependencies:"
 msgid "Allow installing new packages for upgraded dependencies"
 msgstr "Os seguintes paquetes teñen dependencias sen cumprir:"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "optional"
+msgid "Update options:"
+msgstr "opcional"
 
 #: apt-private/private-cmndline.cc
 msgid "Clean up old list files"
@@ -2256,6 +2407,18 @@ msgstr "Descarga os arquivos de fontes"
 
 #: apt-private/private-cmndline.cc
 #, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency resolution options:"
+msgstr "Xeración de dependencias"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Building dependency tree"
+msgid "Build dependency options:"
+msgstr "Construindo a árbore de dependencias"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
 #| msgid "Failed to process build dependencies"
 msgid "Only process architecture-dependent build dependencies"
 msgstr "Non se puideron procesar as dependencias de construción"
@@ -2267,11 +2430,19 @@ msgid "Only process architecture-independent build dependencies"
 msgstr "Non se puideron procesar as dependencias de construción"
 
 #: apt-private/private-cmndline.cc
+msgid "Index target options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Output format"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Show release info"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+msgid "Common package management options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -2374,16 +2545,6 @@ msgstr "Número total de dependencias: "
 
 #: apt-private/private-cmndline.cc
 msgid "<value>"
-msgstr ""
-
-#: apt-private/private-cmndline.cc
-#, fuzzy
-#| msgid "optional"
-msgid "Options:"
-msgstr "opcional"
-
-#: apt-private/private-cmndline.cc
-msgid "Common options:"
 msgstr ""
 
 #: apt-private/private-cmndline.cc
@@ -4087,6 +4248,35 @@ msgid ""
 msgstr ""
 
 #: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] showsrc <package(s)>\n"
+"\n"
+"Show source package records matching the given package names.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] depends <package(s)>\n"
+"\n"
+"Show dependencies of the given packages and the packages that can\n"
+"satisfy them.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] rdepends <package(s)>\n"
+"\n"
+"Show reverse dependencies of the given packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] policy [<package(s)>]\n"
+"\n"
+"Show configured source priorities and package policy information.\n"
+msgstr ""
+
+#: cmdline/apt.cc
 #, c-format
 msgid ""
 "Usage: apt [options] %s <package(s)>\n"
@@ -4106,6 +4296,27 @@ msgid ""
 "\n"
 "Remove packages that were automatically installed to satisfy\n"
 "dependencies and are no longer needed.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] clean\n"
+"\n"
+"Remove retrieved package files from the local cache.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] distclean\n"
+"\n"
+"Remove downloaded package-list files, keeping release metadata.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] autoclean\n"
+"\n"
+"Remove cached package files that can no longer be downloaded.\n"
 msgstr ""
 
 #: cmdline/apt.cc
@@ -4147,6 +4358,41 @@ msgid ""
 msgstr ""
 
 #: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download the binary package into the current directory"
+msgid ""
+"Usage: apt [options] source <package(s)>\n"
+"\n"
+"Download source packages into the current directory.\n"
+msgstr "Descarga o paquete binario no directorio actual"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] build-dep <source-package(s)>\n"
+"\n"
+"Install or remove packages to satisfy build dependencies for\n"
+"source packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download the binary package into the current directory"
+msgid ""
+"Usage: apt [options] download <package(s)>\n"
+"\n"
+"Download binary packages into the current directory.\n"
+msgstr "Descarga o paquete binario no directorio actual"
+
+#: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download and display the changelog for the given package"
+msgid ""
+"Usage: apt [options] changelog <package(s)>\n"
+"\n"
+"Download and display changelogs for the given packages.\n"
+msgstr "Descarga e mostra o rexistro de cambios para o paquete proposto"
+
+#: cmdline/apt.cc
 msgid ""
 "Usage: apt [options] why <package>\n"
 "       apt [options] why-not <package>\n"
@@ -4170,6 +4416,41 @@ msgid ""
 "\n"
 "Convert .list files to the .sources format, adding Signed-By\n"
 "values where possible. Old files are saved as .list.bak.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-list\n"
+"\n"
+"List recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-info <transaction-id(s)>\n"
+"\n"
+"Show detailed information about recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-redo <transaction-id>\n"
+"\n"
+"Reapply the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-undo <transaction-id>\n"
+"\n"
+"Undo the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-rollback <transaction-id>\n"
+"\n"
+"Roll back package state to a recorded transaction.\n"
 msgstr ""
 
 #. query
@@ -4917,9 +5198,6 @@ msgstr "Os ficheiros baleiros non poden ser arquivadores válidos"
 #~ msgid "A response overflowed the buffer."
 #~ msgstr "Unha resposta desbordou o búfer."
 
-#~ msgid "Protocol corruption"
-#~ msgstr "Dano no protocolo"
-
 #~ msgid "Could not create a socket"
 #~ msgstr "Non é posíbel crear un socket"
 
@@ -5094,9 +5372,6 @@ msgstr "Os ficheiros baleiros non poden ser arquivadores válidos"
 #~ msgid "[Mirror: %s]"
 #~ msgstr "[Replica: %s]"
 
-#~ msgid "Opening configuration file %s"
-#~ msgstr "Abrindo o ficheiro de configuración %s"
-
 #~ msgid "Opening %s"
 #~ msgstr "Abrindo %s"
 
@@ -5115,9 +5390,6 @@ msgstr "Os ficheiros baleiros non poden ser arquivadores válidos"
 
 #~ msgid "(not found)"
 #~ msgstr "(non se atopou)"
-
-#~ msgid "  Package pin: "
-#~ msgstr "  Inmobilizado: "
 
 #~ msgid "There is no public key available for the following key IDs:\n"
 #~ msgstr ""

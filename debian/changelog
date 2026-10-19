@@ -1,3 +1,35 @@
+apt (3.3.4) unstable; urgency=medium
+
+  [ Américo Monteiro ]
+  * Portuguese manpages translation update (Closes: #1144491)
+
+  [ Zara Grigoryan ]
+  * cmdline: add help for remaining apt commands
+  * apt: Generate bash completions from declarative parser
+  * cmdline: name option groups in help output
+
+  [ Julian Andres Klode ]
+  * Add a SECURITY.md
+
+  [ Aindriú Mac Giolla Eoin ]
+  * Updated Irish translation based on Release 3.3.3
+
+  [ Gianpiero Carpinelli ]
+  * Fix Sources checksums when MD5 is disabled
+  * Hand out only the requested hashes from the cache
+  * Add SHA3-256 and SHA3-512 to the hash library
+  * Hash hardening:
+    - Reject downloads whose hash cannot be computed
+    - Report OpenSSL failures while hashing
+   * Hash refactoring
+    - Replace GetHashForFile's if-chain with a loop
+    - Define the supported hash algorithms once
+
+  [ Daniel Danner ]
+  * Remove mention of GitHub mirror from README.md
+
+ -- Julian Andres Klode <jak@debian.org>  Mon, 19 Oct 2026 20:36:08 +0200
+
 apt (3.3.3) unstable; urgency=medium
 
   This release introduces initial interactive help output for apt(8)

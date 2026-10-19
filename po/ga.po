@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.4\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-08-14 14:52+0000\n"
+"POT-Creation-Date: 2026-10-19 18:41+0000\n"
 "PO-Revision-Date: 2026-08-23 13:47+0100\n"
 "Last-Translator: Aindriú Mac Giolla Eoin <aindriu80@yahoo.com>\n"
 "Language-Team: Irish\n"
@@ -59,11 +59,11 @@ msgstr "Níl comhad Release ag an stórlann '%s' a thuilleadh."
 
 #: apt-pkg/acquire-item.cc
 msgid ""
-"This is normally not allowed, but the option Acquire::"
-"AllowDowngradeToInsecureRepositories was given to override it."
+"This is normally not allowed, but the option "
+"Acquire::AllowDowngradeToInsecureRepositories was given to override it."
 msgstr ""
-"De ghnáth ní cheadaítear é seo, ach tugadh an rogha Acquire::"
-"AllowDowngradeToInsecureRepositories chun é a shárú."
+"De ghnáth ní cheadaítear é seo, ach tugadh an rogha "
+"Acquire::AllowDowngradeToInsecureRepositories chun é a shárú."
 
 #: apt-pkg/acquire-item.cc
 #, c-format
@@ -127,10 +127,6 @@ msgstr ""
 
 #: apt-pkg/acquire-item.cc
 #, c-format
-#| msgid ""
-#| "An error occurred during the signature verification. The repository is "
-#| "not updated and the previous index files will be used. OpenPGP signature "
-#| "verification failed: %s: %s"
 msgid ""
 "An error occurred during the signature verification. The repository is not "
 "updated and the previous index files will be used. Signature verification "
@@ -143,7 +139,6 @@ msgstr ""
 #. Invalid signature file, reject (LP: #346386) (Closes: #627642)
 #: apt-pkg/acquire-item.cc
 #, c-format
-#| msgid "OpenPGP signature verification failed: %s: %s"
 msgid "Signature verification failed: %s: %s"
 msgstr "Theip ar fhíorú sínithe: %s: %s"
 
@@ -898,6 +893,12 @@ msgstr "Ní féidir %s a mkstemp"
 msgid "Unable to write to %s"
 msgstr "Ní féidir scríobh chuig %s"
 
+#: apt-pkg/contrib/hashes.cc
+#, fuzzy, c-format
+#| msgid "Could not parse file: %s"
+msgid "Computing the %s hash failed: %s"
+msgstr "Níorbh fhéidir an comhad a pharsáil: %s"
+
 #: apt-pkg/contrib/mmap.cc
 msgid "Can't mmap an empty file"
 msgstr "Ní féidir comhad folamh a mmap"
@@ -1465,8 +1466,8 @@ msgid ""
 "Could not perform immediate configuration on '%s'. Please see man 5 apt.conf "
 "under APT::Immediate-Configure for details. (%d)"
 msgstr ""
-"Níorbh fhéidir cumraíocht láithreach a dhéanamh ar '%s'. Féach ar man 5 apt."
-"conf faoi APT::Immediate-Configure le haghaidh tuilleadh sonraí. (%d)"
+"Níorbh fhéidir cumraíocht láithreach a dhéanamh ar '%s'. Féach ar man 5 "
+"apt.conf faoi APT::Immediate-Configure le haghaidh tuilleadh sonraí. (%d)"
 
 #: apt-pkg/packagemanager.cc
 #, c-format
@@ -1482,8 +1483,8 @@ msgid ""
 msgstr ""
 "Beidh ort an pacáiste riachtanach %s a bhaint go sealadach leis an suiteáil "
 "seo mar gheall ar lúb Coimhlintí/Réamh-spleáchais. Is minic a bhíonn sé seo "
-"dona, ach más mian leat é a dhéanamh i ndáiríre, gníomhaigh an rogha APT::"
-"Force-LoopBreak."
+"dona, ach más mian leat é a dhéanamh i ndáiríre, gníomhaigh an rogha "
+"APT::Force-LoopBreak."
 
 #: apt-pkg/pkgcache.cc
 msgid "Empty package cache"
@@ -1866,6 +1867,12 @@ msgid "Note, selecting '%s' instead of '%s'\n"
 msgstr "Tabhair faoi deara, roghnú '%s' in ionad '%s'\n"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Common options:"
+msgid "Global options:"
+msgstr "Roghanna coitianta:"
+
+#: apt-private/private-cmndline.cc
 msgid "Show this help message"
 msgstr "Taispeáin an teachtaireacht chabhrach seo"
 
@@ -1890,7 +1897,12 @@ msgid "Set CLI version"
 msgstr "Socraigh leagan CLI"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Print the list of manually installed packages"
+#, fuzzy
+#| msgid "Options:"
+msgid "List options:"
+msgstr "Roghanna:"
+
+#: apt-private/private-cmndline.cc
 msgid "Print only installed packages"
 msgstr "Priontáil pacáistí suiteáilte amháin"
 
@@ -1899,7 +1911,6 @@ msgid "Print only upgradeable packages"
 msgstr "Priontáil pacáistí in-uasghrádaithe amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Print the list of manually installed packages"
 msgid "Print only manually installed packages"
 msgstr "Priontáil pacáistí atá suiteáilte de láimh amháin"
 
@@ -1920,13 +1931,30 @@ msgid "Snapshot to use"
 msgstr "Roghbhlúire le húsáid"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Show source records"
+#, fuzzy
+#| msgid "Common options:"
+msgid "Package information options:"
+msgstr "Roghanna coitianta:"
+
+#: apt-private/private-cmndline.cc
 msgid "Show the full record"
 msgstr "Taispeáin an taifead iomlán"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "show the active configuration setting"
+msgid "Source configuration options:"
+msgstr "taispeáin an suíomh cumraíochta gníomhach"
+
+#: apt-private/private-cmndline.cc
 msgid "Configure an ephemeral source file"
 msgstr "Cumraigh comhad foinse neamhbhuan"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency options:"
+msgstr "Gineadh spleáchais"
 
 #: apt-private/private-cmndline.cc
 msgid "Print only important dependencies"
@@ -1937,22 +1965,18 @@ msgid "Print only installed dependencies"
 msgstr "Priontáil spleáchais suiteáilte amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "PreDepends"
 msgid "Print Pre-Depends"
 msgstr "Réamh-spleáchais Priontála"
 
 #: apt-private/private-cmndline.cc
-#| msgid "PreDepends"
 msgid "Print Depends"
 msgstr "Braitheann Priontáil"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Recommends"
 msgid "Print Recommends"
 msgstr "Moltaí Priontála"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Suggests"
 msgid "Print Suggests"
 msgstr "Molann Priontála"
 
@@ -1981,17 +2005,46 @@ msgid "Print implicit dependencies"
 msgstr "Priontáil spleáchais intuigthe"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Options:"
+msgid "Search options:"
+msgstr "Roghanna:"
+
+#: apt-private/private-cmndline.cc
 msgid "Only search names"
 msgstr "Cuardaigh ainmneacha amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "The following packages have unmet dependencies:"
+#, fuzzy
+#| msgid "Package files:"
+msgid "Package name options:"
+msgstr "Comhaid Pacáiste:"
+
+#: apt-private/private-cmndline.cc
 msgid "Show virtual packages and missing dependencies"
 msgstr "Taispeáin pacáistí fíorúla agus spleáchais atá ar iarraidh"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Satisfy dependency strings"
+msgid "Unmet dependency options:"
+msgstr "Sásaigh teaghráin spleáchais"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Sort source package files"
+msgid "Source package options:"
+msgstr "Sórtáil comhaid phacáiste foinse"
+
+#: apt-private/private-cmndline.cc
 msgid "Only query source package names"
 msgstr "Iarratas a dhéanamh ar ainmneacha na bpacáistí foinse amháin"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Common options:"
+msgid "Cache options:"
+msgstr "Roghanna coitianta:"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate the cache"
@@ -2004,6 +2057,12 @@ msgstr "Socraigh suíomh an pkgcache.bin"
 #: apt-private/private-cmndline.cc
 msgid "Set the location of the srcpkgcache.bin"
 msgstr "Socraigh suíomh an srcpkgcache.bin"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Options:"
+msgid "CD-ROM options:"
+msgstr "Roghanna:"
 
 #: apt-private/private-cmndline.cc
 msgid "Auto detect the CD"
@@ -2034,8 +2093,18 @@ msgid "Be thorough"
 msgstr "Bí críochnúil"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Common options:"
+msgid "Solver options:"
+msgstr "Roghanna coitianta:"
+
+#: apt-private/private-cmndline.cc
 msgid "Run solver as the specified user"
 msgstr "Rith an réiteoir mar an t-úsáideoir sonraithe"
+
+#: apt-private/private-cmndline.cc
+msgid "Configuration output options:"
+msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Include empty values in output"
@@ -2046,8 +2115,18 @@ msgid "Output format (shell, ...)"
 msgstr "Formáid aschuir (blaosc, ...)"
 
 #: apt-private/private-cmndline.cc
+msgid "Template extraction options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Temporary directory for extracted templates"
 msgstr "Eolaire sealadach le haghaidh teimpléid eastósctha"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Archive is too short"
+msgid "Archive options:"
+msgstr "Tá an chartlann ró-ghearr"
 
 #: apt-private/private-cmndline.cc
 msgid "Generate MD5 checksums"
@@ -2066,11 +2145,22 @@ msgid "Generate SHA512 checksums"
 msgstr "Gin suimeanna seiceála SHA512"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Generate SHA256 checksums"
+msgid "Generate SHA3-256 checksums"
+msgstr "Gin suimeanna seiceála SHA256"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Generate SHA512 checksums"
+msgid "Generate SHA3-512 checksums"
+msgstr "Gin suimeanna seiceála SHA512"
+
+#: apt-private/private-cmndline.cc
 msgid "Cache database"
 msgstr "Bunachar sonraí taisce"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Failed to read the override file %s"
 msgid "Source override file"
 msgstr "Comhad sáraithe foinse"
 
@@ -2091,21 +2181,52 @@ msgid "Only accept files for the given architecture"
 msgstr "Glac le comhaid don ailtireacht shonraithe amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "show package details"
+msgid "Package sorting options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
 msgid "Sort source package files"
 msgstr "Sórtáil comhaid phacáiste foinse"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Options:"
+msgid "Patch options:"
+msgstr "Roghanna:"
 
 #: apt-private/private-cmndline.cc
 msgid "Set compression algorithm"
 msgstr "Socraigh algartam comhbhrúite"
 
 #: apt-private/private-cmndline.cc
+msgid "File output options:"
+msgstr ""
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Package files:"
+msgid "Package state options:"
+msgstr "Comhaid Pacáiste:"
+
+#: apt-private/private-cmndline.cc
 msgid "Read/write states from the given file"
 msgstr "Léigh/scríobh stáit ón gcomhad tugtha"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Options:"
+msgid "Output options:"
+msgstr "Roghanna:"
+
+#: apt-private/private-cmndline.cc
 msgid "Verbose output"
 msgstr "Aschur focal"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Common options:"
+msgid "Prompt options:"
+msgstr "Roghanna coitianta:"
 
 #: apt-private/private-cmndline.cc
 msgid "Automatic yes to prompts"
@@ -2116,8 +2237,18 @@ msgid "Automatic no to prompts"
 msgstr "Níl uathoibríoch le haghaidh leideanna"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Common options:"
+msgid "Simulation options:"
+msgstr "Roghanna coitianta:"
+
+#: apt-private/private-cmndline.cc
 msgid "No action; perform a simulation"
 msgstr "Gan aon ghníomh; déan insamhalta"
+
+#: apt-private/private-cmndline.cc
+msgid "Package management options:"
+msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Show user-friendly progress information"
@@ -2132,7 +2263,6 @@ msgid "Use purge instead of remove"
 msgstr "Bain úsáid as purgáil in ionad bainte"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Show reverse dependency information for a package"
 msgid "Show verbose version information"
 msgstr "Taispeáin faisnéis leaganacha scríofa"
 
@@ -2150,7 +2280,6 @@ msgid "Reinstall packages"
 msgstr "Athshuiteáil pacáistí"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Satisfy dependency strings"
 msgid "Set the dependency solver"
 msgstr "Socraigh an réiteoir spleáchais"
 
@@ -2159,7 +2288,6 @@ msgid "Apply strict pinning"
 msgstr "Cuir dianphionáil i bhfeidhm"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Execute external planner"
 msgid "Set the dependency planner"
 msgstr "Socraigh an pleanálaí spleáchais"
 
@@ -2168,14 +2296,24 @@ msgid "Add a comment to history"
 msgstr "Cuir trácht leis an stair"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Reading package lists"
 msgid "Update package lists"
 msgstr "Nuashonraigh liostaí pacáistí"
 
 #: apt-private/private-cmndline.cc
-#| msgid "The following packages have unmet dependencies:"
+#, fuzzy
+#| msgid "Upgrading:"
+msgid "Upgrade options:"
+msgstr "Ag uasghrádú:"
+
+#: apt-private/private-cmndline.cc
 msgid "Allow installing new packages for upgraded dependencies"
 msgstr "Ceadaigh pacáistí nua a shuiteáil le haghaidh spleáchais uasghrádaithe"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Options:"
+msgid "Update options:"
+msgstr "Roghanna:"
 
 #: apt-private/private-cmndline.cc
 msgid "Clean up old list files"
@@ -2234,29 +2372,40 @@ msgid "Set build profiles"
 msgstr "Socraigh próifílí tógála"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Download Failed"
 msgid "Download only the diff"
 msgstr "Íoslódáil an difríocht amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Download source archives"
 msgid "Download only the tar"
 msgstr "Íoslódáil an tar ach amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Download Failed"
 msgid "Download only the dsc"
 msgstr "Íoslódáil an dsc amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Failed to process build dependencies"
+#, fuzzy
+#| msgid "Dependency generation"
+msgid "Dependency resolution options:"
+msgstr "Gineadh spleáchais"
+
+#: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Building dependency tree"
+msgid "Build dependency options:"
+msgstr "Crann spleáchais a thógáil"
+
+#: apt-private/private-cmndline.cc
 msgid "Only process architecture-dependent build dependencies"
 msgstr "Spleáchais thógála atá ag brath ar ailtireacht phróisis amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Failed to process build dependencies"
 msgid "Only process architecture-independent build dependencies"
 msgstr "Spleáchais thógála neamhspleácha ar ailtireacht phróisis amháin"
+
+#: apt-private/private-cmndline.cc
+msgid "Index target options:"
+msgstr ""
 
 #: apt-private/private-cmndline.cc
 msgid "Output format"
@@ -2267,21 +2416,24 @@ msgid "Show release info"
 msgstr "Taispeáin eolas scaoilte"
 
 #: apt-private/private-cmndline.cc
+#, fuzzy
+#| msgid "Common options:"
+msgid "Common package management options:"
+msgstr "Roghanna coitianta:"
+
+#: apt-private/private-cmndline.cc
 msgid "Download only; do not install or unpack"
 msgstr "Íoslódáil amháin; ná suiteáil ná díphacáil"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Suggested packages:"
 msgid "Show upgraded packages"
 msgstr "Taispeáin pacáistí uasghrádaithe"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Broken packages"
 msgid "Download packages"
 msgstr "Íoslódáil pacáistí"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Some packages could not be authenticated"
 msgid "Ignore packages that cannot be retrieved"
 msgstr "Déan neamhaird de phacáistí nach féidir a aisghabháil"
 
@@ -2318,12 +2470,10 @@ msgid "Print URIs"
 msgstr "URIanna Priontála"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Trivial Only specified but this is not a trivial operation."
 msgid "Only perform trivial operations"
 msgstr "Déan oibríochtaí beaga amháin"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Mark the given packages as automatically installed"
 msgid "Mark packages as automatically installed"
 msgstr "Marcáil pacáistí mar atá suiteáilte go huathoibríoch"
 
@@ -2336,12 +2486,10 @@ msgid "Allow unauthenticated packages"
 msgstr "Ceadaigh pacáistí neamhfhíordheimhnithe"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Recommended packages:"
 msgid "Install recommended packages"
 msgstr "Suiteáil na pacáistí molta"
 
 #: apt-private/private-cmndline.cc
-#| msgid "Suggested packages:"
 msgid "Install suggested packages"
 msgstr "Suiteáil na pacáistí molta"
 
@@ -2352,15 +2500,6 @@ msgstr "Deisigh spleáchais pholasaí briste"
 #: apt-private/private-cmndline.cc
 msgid "<value>"
 msgstr "<luach>"
-
-#: apt-private/private-cmndline.cc
-#| msgid "optional"
-msgid "Options:"
-msgstr "Roghanna:"
-
-#: apt-private/private-cmndline.cc
-msgid "Common options:"
-msgstr "Roghanna coitianta:"
 
 #: apt-private/private-cmndline.cc
 msgid "Most used commands:"
@@ -2445,7 +2584,6 @@ msgstr "Níorbh fhéidir spás saor in %s a chinneadh"
 
 #: apt-private/private-download.cc
 #, c-format
-#| msgid "Couldn't determine free space in %s"
 msgid "Couldn't determine filesystem statistics of %s."
 msgstr "Níorbh fhéidir staitisticí córas comhad %s a chinneadh."
 
@@ -3400,11 +3538,11 @@ msgstr "Níl aon spleáchais tógála ag %s.\n"
 #: apt-private/private-source.cc
 #, c-format
 msgid ""
-"No architecture information available for %s. See apt.conf(5) APT::"
-"Architectures for setup"
+"No architecture information available for %s. See apt.conf(5) "
+"APT::Architectures for setup"
 msgstr ""
-"Níl aon fhaisnéis ailtireachta ar fáil do %s. Féach ar apt.conf(5) APT::"
-"Architectures le haghaidh thusála"
+"Níl aon fhaisnéis ailtireachta ar fáil do %s. Féach ar apt.conf(5) "
+"APT::Architectures le haghaidh thusála"
 
 #: apt-private/private-source.cc
 msgid "Must specify at least one package to check builddeps for"
@@ -3484,8 +3622,8 @@ msgstr "Signed-By ar iarraidh san iontráil %s do '%s'"
 msgid ""
 "Consider migrating all sources.list(5) entries to the deb822 .sources format"
 msgstr ""
-"Smaoinigh ar gach iontráil sources.list(5) a aistriú go dtí an fhormáid ."
-"sources deb822"
+"Smaoinigh ar gach iontráil sources.list(5) a aistriú go dtí an "
+"fhormáid .sources deb822"
 
 #: apt-private/private-update.cc
 msgid ""
@@ -4168,6 +4306,45 @@ msgstr ""
 "cur síos ar an bpacáiste.\n"
 
 #: cmdline/apt.cc
+#, fuzzy
+#| msgid ""
+#| "Usage: apt [options] search <regex>\n"
+#| "\n"
+#| "Search package names and descriptions for the given regex terms\n"
+#| "and display matches.\n"
+msgid ""
+"Usage: apt [options] showsrc <package(s)>\n"
+"\n"
+"Show source package records matching the given package names.\n"
+msgstr ""
+"Úsáid: apt [options] search <regex>\n"
+"\n"
+"Cuardaigh ainmneacha agus tuairiscí pacáiste do na téarmaí regex tugtha\n"
+"agus taispeáin na comhoiriúnachtaí.\n"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] depends <package(s)>\n"
+"\n"
+"Show dependencies of the given packages and the packages that can\n"
+"satisfy them.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] rdepends <package(s)>\n"
+"\n"
+"Show reverse dependencies of the given packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] policy [<package(s)>]\n"
+"\n"
+"Show configured source priorities and package policy information.\n"
+msgstr ""
+
+#: cmdline/apt.cc
 #, c-format
 msgid ""
 "Usage: apt [options] %s <package(s)>\n"
@@ -4192,6 +4369,37 @@ msgid ""
 "\n"
 "Remove packages that were automatically installed to satisfy\n"
 "dependencies and are no longer needed.\n"
+msgstr ""
+"Úsáid: apt [options] autoremove\n"
+"\n"
+"Bain pacáistí a suiteáladh go huathoibríoch chun freastal ar\n"
+"spleáchais agus nach bhfuil gá leo a thuilleadh.\n"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] clean\n"
+"\n"
+"Remove retrieved package files from the local cache.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] distclean\n"
+"\n"
+"Remove downloaded package-list files, keeping release metadata.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+#, fuzzy
+#| msgid ""
+#| "Usage: apt [options] autoremove\n"
+#| "\n"
+#| "Remove packages that were automatically installed to satisfy\n"
+#| "dependencies and are no longer needed.\n"
+msgid ""
+"Usage: apt [options] autoclean\n"
+"\n"
+"Remove cached package files that can no longer be downloaded.\n"
 msgstr ""
 "Úsáid: apt [options] autoremove\n"
 "\n"
@@ -4260,6 +4468,41 @@ msgstr ""
 "Sampla: apt satisfy \"foo, bar (>= 1.0)\" \"Conflicts: baz\"\n"
 
 #: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download the binary package into the current directory"
+msgid ""
+"Usage: apt [options] source <package(s)>\n"
+"\n"
+"Download source packages into the current directory.\n"
+msgstr "Íoslódáil an pacáiste dénártha isteach san eolaire reatha"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] build-dep <source-package(s)>\n"
+"\n"
+"Install or remove packages to satisfy build dependencies for\n"
+"source packages.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download the binary package into the current directory"
+msgid ""
+"Usage: apt [options] download <package(s)>\n"
+"\n"
+"Download binary packages into the current directory.\n"
+msgstr "Íoslódáil an pacáiste dénártha isteach san eolaire reatha"
+
+#: cmdline/apt.cc
+#, fuzzy
+#| msgid "Download and display the changelog for the given package"
+msgid ""
+"Usage: apt [options] changelog <package(s)>\n"
+"\n"
+"Download and display changelogs for the given packages.\n"
+msgstr "Íoslódáil agus taispeáin an changelog don phacáiste tugtha"
+
+#: cmdline/apt.cc
 msgid ""
 "Usage: apt [options] why <package>\n"
 "       apt [options] why-not <package>\n"
@@ -4300,6 +4543,41 @@ msgstr ""
 "\n"
 "Tiontaigh comhaid .list go formáid .sources, ag cur luachanna Sínithe-Ag\n"
 "leis más féidir. Sábháiltear seanchomhaid mar .list.bak.\n"
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-list\n"
+"\n"
+"List recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-info <transaction-id(s)>\n"
+"\n"
+"Show detailed information about recorded package transactions.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-redo <transaction-id>\n"
+"\n"
+"Reapply the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-undo <transaction-id>\n"
+"\n"
+"Undo the changes from a recorded package transaction.\n"
+msgstr ""
+
+#: cmdline/apt.cc
+msgid ""
+"Usage: apt [options] history-rollback <transaction-id>\n"
+"\n"
+"Roll back package state to a recorded transaction.\n"
+msgstr ""
 
 #. query
 #: cmdline/apt.cc
@@ -4502,8 +4780,8 @@ msgstr ""
 "athsháraithe\n"
 "tacaítear le luach Tosaíochta agus Rannóg a chur i bhfeidhm.\n"
 "\n"
-"Ar an gcaoi chéanna gineann apt-ftparchive comhaid Foinsí ó chrann de ."
-"dscs.\n"
+"Ar an gcaoi chéanna gineann apt-ftparchive comhaid Foinsí ó chrann "
+"de .dscs.\n"
 "Is féidir an rogha --source-override a úsáid chun comhad athshlánaithe src a "
 "shonrú\n"
 "\n"
