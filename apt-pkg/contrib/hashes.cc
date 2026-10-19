@@ -13,6 +13,7 @@
 #include <config.h>
 
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/macros.h>
@@ -33,23 +34,9 @@
 
 #include <openssl/err.h>
 #include <openssl/evp.h>
-									/*}}}*/
 
-const char * HashString::_SupportedHashes[] =
-{
-   "SHA3-512", "SHA3-256", "SHA512", "SHA256", "SHA1", "MD5Sum", "Checksum-FileSize", NULL
-};
-std::vector<HashString::HashSupportInfo> HashString::SupportedHashesInfo()
-{
-   return {{
-      { "SHA3-512", pkgTagSection::Key::SHA3_512, "Checksums-Sha3-512", pkgTagSection::Key::Checksums_Sha3_512},
-      { "SHA3-256", pkgTagSection::Key::SHA3_256, "Checksums-Sha3-256", pkgTagSection::Key::Checksums_Sha3_256},
-      { "SHA512",  pkgTagSection::Key::SHA512,"Checksums-Sha512", pkgTagSection::Key::Checksums_Sha512},
-      { "SHA256", pkgTagSection::Key::SHA256, "Checksums-Sha256", pkgTagSection::Key::Checksums_Sha256},
-      { "SHA1", pkgTagSection::Key::SHA1, "Checksums-Sha1", pkgTagSection::Key::Checksums_Sha1 },
-      { "MD5Sum", pkgTagSection::Key::MD5sum, "Files", pkgTagSection::Key::Files },
-   }};
-}
+#include <apti18n.h>
+									/*}}}*/
 
 HashString::HashString()
 {
@@ -99,54 +86,6 @@ bool HashString::FromFile(std::string filename)          		/*{{{*/
 
    Hash = GetHashForFile(filename);
    return true;
-}
-									/*}}}*/
-std::string HashString::GetHashForFile(std::string filename) const      /*{{{*/
-{
-   std::string fileHash;
-
-   FileFd Fd(filename, FileFd::ReadOnly);
-   if(strcasecmp(Type.c_str(), "MD5Sum") == 0)
-   {
-      Hashes MD5(Hashes::MD5SUM);
-      MD5.AddFD(Fd);
-      fileHash = MD5.GetHashString(Hashes::MD5SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA1") == 0)
-   {
-      Hashes SHA1(Hashes::SHA1SUM);
-      SHA1.AddFD(Fd);
-      fileHash = SHA1.GetHashString(Hashes::SHA1SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA256") == 0)
-   {
-      Hashes SHA256(Hashes::SHA256SUM);
-      SHA256.AddFD(Fd);
-      fileHash = SHA256.GetHashString(Hashes::SHA256SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA512") == 0)
-   {
-      Hashes SHA512(Hashes::SHA512SUM);
-      SHA512.AddFD(Fd);
-      fileHash = SHA512.GetHashString(Hashes::SHA512SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA3-256") == 0)
-   {
-      Hashes SHA3(Hashes::SHA3_256SUM);
-      SHA3.AddFD(Fd);
-      fileHash = SHA3.GetHashString(Hashes::SHA3_256SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "SHA3-512") == 0)
-   {
-      Hashes SHA3(Hashes::SHA3_512SUM);
-      SHA3.AddFD(Fd);
-      fileHash = SHA3.GetHashString(Hashes::SHA3_512SUM).Hash;
-   }
-   else if (strcasecmp(Type.c_str(), "Checksum-FileSize") == 0)
-      strprintf(fileHash, "%llu", Fd.FileSize());
-   Fd.Close();
-
-   return fileHash;
 }
 									/*}}}*/
 const char** HashString::SupportedHashes()				/*{{{*/
@@ -279,6 +218,10 @@ bool HashStringList::VerifyFile(std::string filename) const		/*{{{*/
    }
    hashes.AddFD(file);
    HashStringList const hsl = hashes.GetHashStringList();
+   // operator== skips types only one side has, so a list without any usable
+   // hash (OpenSSL could not provide it) would match on the file size alone
+   if (hsl.usable() == false)
+      return false;
    return hsl == *this;
 }
 									/*}}}*/
@@ -330,6 +273,16 @@ static APT_PURE std::string HexDigest(std::span<unsigned char> const &Sum)
    return Result;
 };
 
+// Report an OpenSSL failure through _error with the reason of the newest
+// record on the thread's error queue. The caller removes only the records
+// the failed call raised so nothing older on the queue is lost.
+static void ReportOpenSSLError(char const *const algo)
+{
+   auto const err = ERR_peek_last_error();
+   char const *const reason = err == 0 ? nullptr : ERR_reason_error_string(err);
+   _error->Error(_("Computing the %s hash failed: %s"), algo, reason == nullptr ? "unknown error" : reason);
+}
+
 // PrivateHashes							/*{{{*/
 class PrivateHashes
 {
@@ -346,23 +299,34 @@ class PrivateHashes
       const char *name;
       const EVP_MD *(*evpLink)(void);
       Hashes::SupportedHashes ourAlgo;
+      pkgTagSection::Key namekey;
+      const char *chksumsname;
+      pkgTagSection::Key chksumskey;
    };
 
+   // Ordered strongest first: _SupportedHashes and SupportedHashesInfo()
+   // are built from this order and their readers rely on it.
    static constexpr std::array<HashAlgo, 6> Algorithms{
-      HashAlgo{0, "MD5Sum", EVP_md5, Hashes::MD5SUM},
-      HashAlgo{1, "SHA1", EVP_sha1, Hashes::SHA1SUM},
-      HashAlgo{2, "SHA256", EVP_sha256, Hashes::SHA256SUM},
-      HashAlgo{3, "SHA512", EVP_sha512, Hashes::SHA512SUM},
-      HashAlgo{4, "SHA3-256", EVP_sha3_256, Hashes::SHA3_256SUM},
-      HashAlgo{5, "SHA3-512", EVP_sha3_512, Hashes::SHA3_512SUM},
+      HashAlgo{0, "SHA3-512", EVP_sha3_512, Hashes::SHA3_512SUM, pkgTagSection::Key::SHA3_512, "Checksums-Sha3-512", pkgTagSection::Key::Checksums_Sha3_512},
+      HashAlgo{1, "SHA3-256", EVP_sha3_256, Hashes::SHA3_256SUM, pkgTagSection::Key::SHA3_256, "Checksums-Sha3-256", pkgTagSection::Key::Checksums_Sha3_256},
+      HashAlgo{2, "SHA512", EVP_sha512, Hashes::SHA512SUM, pkgTagSection::Key::SHA512, "Checksums-Sha512", pkgTagSection::Key::Checksums_Sha512},
+      HashAlgo{3, "SHA256", EVP_sha256, Hashes::SHA256SUM, pkgTagSection::Key::SHA256, "Checksums-Sha256", pkgTagSection::Key::Checksums_Sha256},
+      HashAlgo{4, "SHA1", EVP_sha1, Hashes::SHA1SUM, pkgTagSection::Key::SHA1, "Checksums-Sha1", pkgTagSection::Key::Checksums_Sha1},
+      HashAlgo{5, "MD5Sum", EVP_md5, Hashes::MD5SUM, pkgTagSection::Key::MD5sum, "Files", pkgTagSection::Key::Files},
    };
 
    bool Write(unsigned char const *Data, size_t Size)
    {
-      for (auto &context : contexts)
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
+      for (auto const &algo : Algorithms)
       {
-	 if (context)
-	    EVP_DigestUpdate(context, Data, Size);
+	 auto const context = contexts[algo.index];
+	 if (context != nullptr && EVP_DigestUpdate(context, Data, Size) != 1)
+	 {
+	    ReportOpenSSLError(algo.name);
+	    return false;
+	 }
       }
       return true;
    }
@@ -375,14 +339,26 @@ class PrivateHashes
       if (contexts[algo.index] == nullptr)
 	 return std::string();
 
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
       auto Size = EVP_MD_size(algo.evpLink());
       unsigned char Sum[Size];
 
       // We need to work on a copy, as we update the hash after creating a digest...
       auto tmpContext = EVP_MD_CTX_create();
-      EVP_MD_CTX_copy(tmpContext, contexts[algo.index]);
-      EVP_DigestFinal_ex(tmpContext, Sum, nullptr);
+      if (tmpContext == nullptr)
+      {
+	 ReportOpenSSLError(algo.name);
+	 return std::string();
+      }
+      bool const finished = EVP_MD_CTX_copy(tmpContext, contexts[algo.index]) == 1 &&
+			    EVP_DigestFinal_ex(tmpContext, Sum, nullptr) == 1;
       EVP_MD_CTX_destroy(tmpContext);
+      if (not finished)
+      {
+	 ReportOpenSSLError(algo.name);
+	 return std::string();
+      }
 
       return ::HexDigest(std::span<unsigned char>(Sum, Size));
    }
@@ -435,6 +411,47 @@ class PrivateHashes
       }
    }
 };
+									/*}}}*/
+static_assert(PrivateHashes::Algorithms.size() == 6,
+	      "add the new algorithm to _SupportedHashes below");
+const char * HashString::_SupportedHashes[] =
+{
+   PrivateHashes::Algorithms[0].name,
+   PrivateHashes::Algorithms[1].name,
+   PrivateHashes::Algorithms[2].name,
+   PrivateHashes::Algorithms[3].name,
+   PrivateHashes::Algorithms[4].name,
+   PrivateHashes::Algorithms[5].name,
+   "Checksum-FileSize", NULL
+};
+std::vector<HashString::HashSupportInfo> HashString::SupportedHashesInfo()
+{
+   std::vector<HashSupportInfo> result;
+   result.reserve(PrivateHashes::Algorithms.size());
+   for (auto const &algo : PrivateHashes::Algorithms)
+      result.push_back({algo.name, algo.namekey, algo.chksumsname, algo.chksumskey});
+   return result;
+}
+std::string HashString::GetHashForFile(std::string filename) const      /*{{{*/
+{
+   std::string fileHash;
+
+   FileFd Fd(filename, FileFd::ReadOnly);
+   if (strcasecmp(Type.c_str(), "Checksum-FileSize") == 0)
+      strprintf(fileHash, "%llu", Fd.FileSize());
+   else
+      for (auto const &Algo : PrivateHashes::Algorithms)
+	 if (strcasecmp(Type.c_str(), Algo.name) == 0)
+	 {
+	    Hashes hashes(Algo.ourAlgo);
+	    if (hashes.AddFD(Fd))
+	       fileHash = hashes.GetHashString(Algo.ourAlgo).Hash;
+	    break;
+	 }
+   Fd.Close();
+
+   return fileHash;
+}
 									/*}}}*/
 // Hashes::Add* - Add the contents of data or FD			/*{{{*/
 bool Hashes::Add(const unsigned char * const Data, unsigned long long const Size)
