@@ -108,7 +108,7 @@
      <literal>Version</literal>, <literal>Codename</literal>, <literal>Date</literal>,
      <literal>NotAutomatic</literal>, <literal>ButAutomaticUpgrades</literal>,
      <literal>Acquire-By-Hash</literal>, <literal>Valid-Until</literal>,
-     <literal>Signed-By</literal>, <literal>Architectures</literal>,
+     <literal>Architectures</literal>,
      <literal>Components</literal> and <literal>Description</literal>.</para></listitem>
 
      </varlistentry>

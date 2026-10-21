@@ -55,12 +55,12 @@ static std::string transformFingergrpintsWithFilenames(std::string const &finger
    return transformFingergrpints(finger);
 }
 									/*}}}*/
-// Introducer is set if additional keys may be introduced, for example	/*{{{*/
+// Normalize a Signed-By value which may introduce keys, for example	/*{{{*/
 // by setting it to a filename or a complete key
-static std::string NormalizeSignedBy(std::string SignedBy, bool const Introducer)
+static std::string NormalizeSignedBy(std::string SignedBy)
 {
    // This is an embedded public pgp key, normalize spaces inside it and empty "." lines
-   if (Introducer && SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos) {
+   if (SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos) {
       std::istringstream is(SignedBy);
       std::ostringstream os;
       std::string line;
@@ -86,10 +86,7 @@ static std::string NormalizeSignedBy(std::string SignedBy, bool const Introducer
    fingers.erase(std::remove_if(fingers.begin(), fingers.end(), isAnEmptyString), fingers.end());
    if (unlikely(fingers.empty()))
       return "";
-   if (Introducer)
-      std::transform(fingers.begin(), fingers.end(), fingers.begin(), transformFingergrpintsWithFilenames);
-   else
-      std::transform(fingers.begin(), fingers.end(), fingers.begin(), transformFingergrpints);
+   std::transform(fingers.begin(), fingers.end(), fingers.begin(), transformFingergrpintsWithFilenames);
    if (std::any_of(fingers.begin(), fingers.end(), isAnEmptyString))
       return "";
    std::stringstream os;
@@ -659,15 +656,8 @@ bool debReleaseIndex::Load(std::string const &Filename, std::string * const Erro
       }
    }
 
-   /* as the Release file is parsed only after it was verified, the Signed-By field
-      does not effect the current, but the "next" Release file */
-   auto Sign = Section.FindS("Signed-By");
-   if (Sign.empty() == false)
-   {
-      SignedBy = NormalizeSignedBy(Sign, false);
-      if (SignedBy.empty() && ErrorText != NULL)
-	 strprintf(*ErrorText, _("Invalid '%s' entry in Release file %s"), "Signed-By", Filename.c_str());
-   }
+   if (Section.Exists("Signed-By"))
+      _error->Warning(_("Ignoring '%s' entry in Release file %s (no longer supported)"), "Signed-By", Filename.c_str());
 
    if (AuthPossible)
       LoadedSuccessfully = TRI_YES;
@@ -830,13 +820,13 @@ bool debReleaseIndex::SetSignedBy(std::string const &pSignedBy)
 {
    if (SignedBy.empty() == true && pSignedBy.empty() == false)
    {
-      SignedBy = NormalizeSignedBy(pSignedBy, true);
+      SignedBy = NormalizeSignedBy(pSignedBy);
       if (SignedBy.empty())
 	 _error->Error(_("Invalid value set for option %s regarding source %s %s (%s)"), "Signed-By", URI.c_str(), Dist.c_str(), "not a fingerprint");
    }
    else
    {
-      auto const normalSignedBy = NormalizeSignedBy(pSignedBy, true);
+      auto const normalSignedBy = NormalizeSignedBy(pSignedBy);
       if (normalSignedBy.empty() == true)
          return true;
       if (normalSignedBy != SignedBy)
@@ -1454,39 +1444,8 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
 	 Deb->SetFlag(metaIndex::Flag::DEB822);
 
       std::map<std::string, std::string>::const_iterator const signedby = Options.find("signed-by");
-      if (signedby == Options.end())
-      {
-	 bool alreadySet = false;
-	 std::string filename;
-	 if (ReleaseFileName(Deb, filename))
-	 {
-	    auto OldDeb = Deb->UnloadedClone();
-	    _error->PushToStack();
-	    OldDeb->Load(filename, nullptr);
-	    bool const goodLoad = _error->PendingError() == false;
-	    _error->RevertToStack();
-	    if (goodLoad)
-	    {
-	       if (OldDeb->GetValidUntil() > 0)
-	       {
-		  time_t const invalid_since = time(NULL) - OldDeb->GetValidUntil();
-		  if (invalid_since <= 0)
-		  {
-		     Deb->SetSignedBy(OldDeb->GetSignedBy());
-		     alreadySet = true;
-		  }
-	       }
-	    }
-	    delete OldDeb;
-	 }
-	 if (alreadySet == false && Deb->SetSignedBy("") == false)
-	    return false;
-      }
-      else
-      {
-	 if (Deb->SetSignedBy(signedby->second) == false)
-	    return false;
-      }
+      if (Deb->SetSignedBy(signedby == Options.end() ? "" : signedby->second) == false)
+	 return false;
 
       return true;
    }

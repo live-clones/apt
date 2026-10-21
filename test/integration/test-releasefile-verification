@@ -311,105 +311,26 @@ runtest() {
 	rm -f rootdir/etc/apt/trusted.gpg.d/marvinparanoid.gpg
 	sed -i "s#^\(deb\(-src\)\?\) \[signed-by=${MARVIN},${SIXPACK}\] #\1 #" rootdir/etc/apt/sources.list.d/*
 
-	rm -rf rootdir/var/lib/apt/lists-bak
-	cp -a rootdir/var/lib/apt/lists rootdir/var/lib/apt/lists-bak
-	prepare "${PKGFILE}-new"
+	msgmsg 'Cold archive with Signed-By field in Release file signed by' 'Joe Sixpack'
+	prepare "${PKGFILE}"
+	sed -i "/^Valid-Until: / a\
+Signed-By: ${MARVIN}" aptarchive/Release
 	signreleasefiles 'Joe Sixpack'
-
-	msgmsg 'Warm archive with signed-by' 'Joe Sixpack'
-	sed -i "/^Valid-Until: / a\
-Signed-By: ${SIXPACK}" rootdir/var/lib/apt/lists/*Release
-	touch -d 'now - 1 year' rootdir/var/lib/apt/lists/*Release
-	successfulaptgetupdate
-	testsuccessequal "$(cat "${PKGFILE}-new")
-" aptcache show apt
-	installaptnew
-
-	msgmsg 'Warm archive with signed-by' 'Marvin Paranoid'
 	rm -rf rootdir/var/lib/apt/lists
-	cp -a rootdir/var/lib/apt/lists-bak rootdir/var/lib/apt/lists
-	sed -i "/^Valid-Until: / a\
-Signed-By: ${MARVIN}" rootdir/var/lib/apt/lists/*Release
-	touch -d 'now - 1 year' rootdir/var/lib/apt/lists/*Release
-	updatewithwarnings 'W: .* (public key is not available: GOODSIG|No good signature from required signer:)'
+	updatewithwarnings "^W: Ignoring 'Signed-By' entry in Release file"
 	testsuccessequal "$(cat "${PKGFILE}")
 " aptcache show apt
 	installaptold
 
-	msgmsg 'Warm archive with outdated signed-by' 'Marvin Paranoid'
-	rm -rf rootdir/var/lib/apt/lists
-	cp -a rootdir/var/lib/apt/lists-bak rootdir/var/lib/apt/lists
+	msgmsg 'Warm archive with Signed-By field in Release file signed by' 'Joe Sixpack'
+	prepare "${PKGFILE}-new"
 	sed -i "/^Valid-Until: / a\
-Valid-Until: $(date -u -d "now - 2min" '+%a, %d %b %Y %H:%M:%S %Z') \\
-Signed-By: ${MARVIN}" rootdir/var/lib/apt/lists/*Release
-	touch -d 'now - 1 year' rootdir/var/lib/apt/lists/*Release
-	successfulaptgetupdate
+Signed-By: ${MARVIN}" aptarchive/Release
+	signreleasefiles 'Joe Sixpack'
+	updatewithwarnings "^W: Ignoring 'Signed-By' entry in Release file"
 	testsuccessequal "$(cat "${PKGFILE}-new")
 " aptcache show apt
 	installaptnew
-
-	msgmsg 'Warm archive with two signed-bys' 'Joe Sixpack'
-	rm -rf rootdir/var/lib/apt/lists
-	cp -a rootdir/var/lib/apt/lists-bak rootdir/var/lib/apt/lists
-	sed -i "/^Valid-Until: / a\
-Signed-By: ${MARVIN} ${MARVIN}, \\
- ${SIXPACK}" rootdir/var/lib/apt/lists/*Release
-	touch -d 'now - 1 year' rootdir/var/lib/apt/lists/*Release
-	successfulaptgetupdate
-	testsuccessequal "$(cat "${PKGFILE}-new")
-" aptcache show apt
-	installaptnew
-
-	cp -a keys/sebastiansubkey.pub rootdir/etc/apt/trusted.gpg.d/sebastiansubkey.gpg
-	local SEBASTIAN="648E6A33FDE5CB5BA2D896A3CA3E1DFF1E6BE149"
-	msgmsg 'Warm archive with subkey signing' 'Sebastian Subkey'
-	rm -rf rootdir/var/lib/apt/lists
-	cp -a rootdir/var/lib/apt/lists-bak rootdir/var/lib/apt/lists
-	signreleasefiles 'Sebastian Subkey'
-	sed -i "/^Valid-Until: / a\
-Signed-By: ${SEBASTIAN}" rootdir/var/lib/apt/lists/*Release
-	touch -d 'now - 1 year' rootdir/var/lib/apt/lists/*Release
-	successfulaptgetupdate
-	testsuccessequal "$(cat "${PKGFILE}-new")
-" aptcache show apt
-	installaptnew
-
-	if [ -z "$GPGV" ] && test -e "${METHODSDIR}/sqv"; then
-	msgmsg 'Warm archive with ahead-policy-rejected subkey signing' 'Sebastian Subkey'
-    cat > test-sequoia.config << EOF
-[asymmetric_algorithms]
-rsa3072 = $(date +%Y-%m-%d --date="now + 6 months")
-EOF
-	APT_SEQUOIA_CRYPTO_POLICY=$PWD/test-sequoia.config updatewithwarnings "W: http://localhost:${APTHTTPPORT}/.*Release.*: Policy will reject signature within a year, see --audit for details"
-    fi
-
-	msgmsg 'Warm archive with wrong exact subkey signing' 'Sebastian Subkey'
-	rm -rf rootdir/var/lib/apt/lists
-	cp -a rootdir/var/lib/apt/lists-bak rootdir/var/lib/apt/lists
-	sed -i "/^Valid-Until: / a\
-Signed-By: ${SEBASTIAN}!" rootdir/var/lib/apt/lists/*Release
-	touch -d 'now - 1 year' rootdir/var/lib/apt/lists/*Release
-	updatewithwarnings 'W: .* (public key is not available: GOODSIG|No good signature from required signer:)'
-	testsuccessequal "$(cat "${PKGFILE}")
-" aptcache show apt
-	installaptold
-
-	local SUBKEY="4281DEDBD466EAE8C1F4157E5B6896415D44C43E"
-	# This is only supported for gpgv, so require an explicit gpgv command,
-	# otherwise the default verification backend may be sqv.
-	if [ "$GPGV" ]; then
-	msgmsg 'Warm archive with correct exact subkey signing' 'Sebastian Subkey'
-	rm -rf rootdir/var/lib/apt/lists
-	cp -a rootdir/var/lib/apt/lists-bak rootdir/var/lib/apt/lists
-		sed -i "/^Valid-Until: / a\
-Signed-By: ${SUBKEY}!" rootdir/var/lib/apt/lists/*Release
-		touch -d 'now - 1 year' rootdir/var/lib/apt/lists/*Release
-		successfulaptgetupdate
-		testsuccessequal "$(cat "${PKGFILE}-new")
-" aptcache show apt
-		installaptnew
-	fi
-	rm -f rootdir/etc/apt/trusted.gpg.d/sebastiansubkey.gpg
 }
 
 runtest2() {

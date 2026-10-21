@@ -341,10 +341,7 @@ deb-src [ option1=value1 option2=value2 ] uri suite [component1] [component2] [.
 		If no keyring files are specified
 		the default is the <filename>trusted.gpg</filename> keyring and
 		all keyrings in the <filename>trusted.gpg.d/</filename> directory.
-		The option defaults to the value of the option with the same name
-		if set in the previously acquired <filename>Release</filename> file
-		of this repository (only fingerprints can be specified there through).
-		Otherwise all keys in the trusted keyrings are considered valid
+		All keys in the trusted keyrings are considered valid
 		signers for this repository.
 
 		The option may also be set directly to an embedded GPG public key block. Special
