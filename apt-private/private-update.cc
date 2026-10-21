@@ -25,6 +25,17 @@
 #include <apti18n.h>
 									/*}}}*/
 
+// SignedByContainsFingerprint - is the value a fingerprint rather than a key	/*{{{*/
+static bool SignedByContainsFingerprint(std::string const &SignedBy)
+{
+   if (SignedBy.find("-----BEGIN PGP PUBLIC KEY BLOCK-----") != std::string::npos)
+      return false;
+   for (auto const &value : VectorizeString(SignedBy, ','))
+      if (value.empty() == false && value[0] != '/')
+	 return true;
+   return false;
+}
+									/*}}}*/
 // DoUpdate - Update the package lists					/*{{{*/
 bool DoUpdate(CommandLine &CmdL)
 {
@@ -132,6 +143,12 @@ bool DoUpdate()
 			     "sources.list(5)", URI::ArchiveOnly(uri).c_str());
 	       modernize = true;
 	    }
+	 }
+	 else if (SignedByContainsFingerprint(S->GetSignedBy()))
+	 {
+	    // TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+	    _error->Warning(_("Deprecated Signed-By fingerprint in the %s entry for '%s'"),
+			    "sources.list(5)", URI::ArchiveOnly(uri).c_str());
 	 }
       }
       if (modernize)

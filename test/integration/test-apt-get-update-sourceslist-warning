@@ -42,6 +42,24 @@ testsuccessequal "$BOILERPLATE
 N: Missing Signed-By in the sources.list(5) entry for 'http://example.org/debian'" apt update --no-download
 rm rootdir/etc/apt/sources.list.d/example.sources
 
+msgmsg 'Warn about fingerprints in Signed-By'
+echo 'deb [signed-by=34A8E9D18DB320F367E8EAA05A90D141DBAC8DAE] http://example.org/debian bookworm main' > rootdir/etc/apt/sources.list.d/example.list
+testwarning --nomsg apt update --no-download
+testsuccessequal "$BOILERPLATE
+W: Deprecated Signed-By fingerprint in the sources.list(5) entry for 'http://example.org/debian'" cat rootdir/tmp/testwarning.output
+testsuccessequal "$BOILERPLATE" apt update --no-download -o APT::Get::Update::SourceListWarnings::SignedBy=false
+rm rootdir/etc/apt/sources.list.d/example.list
+echo 'Types: deb
+URIs: http://example.org/debian
+Suites: bookworm
+Components: main
+Signed-By: 34A8E9D18DB320F367E8EAA05A90D141DBAC8DAE
+' > rootdir/etc/apt/sources.list.d/example.sources
+testwarning --nomsg apt update --no-download
+testsuccessequal "$BOILERPLATE
+W: Deprecated Signed-By fingerprint in the sources.list(5) entry for 'http://example.org/debian'" cat rootdir/tmp/testwarning.output
+rm rootdir/etc/apt/sources.list.d/example.sources
+
 msgmsg 'Detect login info embedded in sources.list'
 echo 'deb http://apt:debian@example.org/debian bookworm main' > rootdir/etc/apt/sources.list.d/example.list
 testsuccessequal "$BOILERPLATE
