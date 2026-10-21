@@ -5,6 +5,7 @@
 #include <apt-pkg/pkgcache.h>
 
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include "common.h"
@@ -362,4 +363,53 @@ TEST(ParseDependsTest, ArchLimitBadSyntax)
       SCOPED_TRACE(Depends);
       EXPECT_EQ(nullptr, debListParser::ParseDepends(Depends, Depends + strlen(Depends), Package, Version, Op, true, false, true, "amd64"));
    }
+}
+
+TEST(ParseDependsTest, BuildProfileTerms)
+{
+   _config->Set("APT::Build-Profiles", "stage1");
+   for (auto const *const Depends : {"foo <stage1 !nocheck>",
+				   "foo <stage1  \t!nocheck>",
+				   "foo < stage1 !nocheck >",
+				   "foo <missing> <stage1>",
+				   "foo <stage1> <missing>"})
+   {
+      SCOPED_TRACE(Depends);
+      std::string Package, Version;
+      unsigned int Op = 0;
+      auto const *const End = Depends + strlen(Depends);
+      EXPECT_EQ(End, debListParser::ParseDepends(Depends, End, Package, Version, Op, true, false, true, "amd64"));
+      EXPECT_EQ("foo", Package);
+   }
+   _config->Clear("APT::Build-Profiles");
+}
+
+TEST(ParseDependsTest, BuildProfileBounds)
+{
+   _config->Set("APT::Build-Profiles", "stage1");
+   for (auto const *const Depends : {"foo", "foo <stage1>",
+				   "foo <stage1> <missing", // Skip a group after a match.
+				   "foo <missing rest",    // Skip terms after a failed condition.
+				   "foo <!stage1 rest",    // Likewise for a negated condition.
+				   "foo <", "foo <>", "foo < >", "foo <!>",
+				   "foo [amd64 "})
+   {
+      SCOPED_TRACE(Depends);
+      auto const size = strlen(Depends);
+      // No terminating NUL: sanitizers must catch reads at Stop as well.
+      auto buffer = std::make_unique<char[]>(size);
+      memcpy(buffer.get(), Depends, size);
+      auto const *const End = buffer.get() + size;
+      std::string_view Package, Version;
+      unsigned int Op = 0;
+      auto const *const result = debListParser::ParseDepends(buffer.get(), End, Package, Version, Op, true, false, true, "amd64");
+      if (std::string_view(Depends) == "foo" || std::string_view(Depends) == "foo <stage1>")
+      {
+	 EXPECT_EQ(End, result);
+	 EXPECT_EQ("foo", Package);
+      }
+      else
+	 EXPECT_EQ(nullptr, result);
+   }
+   _config->Clear("APT::Build-Profiles");
 }

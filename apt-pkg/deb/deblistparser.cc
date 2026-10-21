@@ -682,6 +682,9 @@ const char *debListParser::ParseDepends(const char *Start, const char *Stop,
 	 I = End;
       }
 
+      if (unlikely(I == Stop))
+	 return 0;
+
       if (NegArch == true)
 	 Found = not Found;
 
@@ -699,86 +702,47 @@ const char *debListParser::ParseDepends(const char *Start, const char *Stop,
 
       std::vector<string> const profiles = APT::Configuration::getBuildProfiles();
 
-      // if the next character is a restriction list, then by default the
-      // dependency does not apply and the conditions have to be checked
-      // if the next character is not a restriction list, then by default the
-      // dependency applies
-      bool applies1 = (*I != '<');
-      while (I != Stop)
+      string_view restrictions(I, Stop - I);
+      bool restrictionApplies = restrictions.empty() || restrictions.front() != '<';
+      while (!restrictions.empty() && restrictions.front() == '<')
       {
-	 if (*I != '<')
-	     break;
-
-	 ++I;
-	 // malformed
-	 if (unlikely(I == Stop))
+	 // Bound the group before evaluating it, including groups whose result
+	 // cannot affect the formula. Every opening '<' must have a closing '>'.
+	 auto const close = restrictions.find('>');
+	 if (unlikely(close == string_view::npos))
 	    return 0;
 
-	 const char *End = I;
+	 auto group = restrictions.substr(1, close - 1);
+	 restrictions.remove_prefix(close + 1);
+	 while (!group.empty() && isspace_ascii(group.front()))
+	    group.remove_prefix(1);
+	 if (unlikely(group.empty()))
+	    return 0;
 
-	 // if of the prior restriction list is already fulfilled, then
-	 // we can just skip to the end of the current list
-	 if (applies1) {
-	    for (;End != Stop && *End != '>'; ++End);
-	    I = ++End;
-	    // skip whitespace
-	    for (;I != Stop && isspace_ascii(*I) != 0; I++);
-	 } else {
-	    bool applies2 = true;
-	    // all the conditions inside a restriction list have to be
-	    // met so once we find one that is not met, we can skip to
-	    // the end of this list
-	    while (I != Stop)
-	    {
-	       // look for whitespace or ending '>'
-	       // End now points to the character after the current term
-	       for (;End != Stop && !isspace_ascii(*End) && *End != '>'; ++End);
+	 bool groupApplies = true;
+	 while (!group.empty())
+	 {
+	    auto term = group.substr(0, group.find_first_of(" \t\n\r\f\v"));
+	    group.remove_prefix(term.size());
+	    bool const negated = term.front() == '!';
+	    if (negated)
+	       term.remove_prefix(1);
+	    if (unlikely(term.empty()))
+	       return 0;
 
-	       if (unlikely(End == Stop))
-		  return 0;
-
-	       bool NegRestriction = false;
-	       if (*I == '!')
-	       {
-		  NegRestriction = true;
-		  ++I;
-	       }
-
-	       std::string const restriction(I, End);
-	       if (restriction.empty() == false && profiles.empty() == false &&
-		  std::find(profiles.begin(), profiles.end(), restriction) != profiles.end())
-	       {
-		  if (NegRestriction) {
-		     applies2 = false;
-		     // since one of the terms does not apply we don't have to check the others
-		     for (; End != Stop && *End != '>'; ++End);
-		  }
-	       } else {
-		  if (!NegRestriction) {
-		     applies2 = false;
-		     // since one of the terms does not apply we don't have to check the others
-		     for (; End != Stop && *End != '>'; ++End);
-		  }
-	       }
-
-	       if (*End++ == '>') {
-		  I = End;
-		  // skip whitespace
-		  for (;I != Stop && isspace_ascii(*I) != 0; I++);
-		  break;
-	       }
-
-	       I = End;
-	       // skip whitespace
-	       for (;I != Stop && isspace_ascii(*I) != 0; I++);
-	    }
-	    if (applies2) {
-	       applies1 = true;
-	    }
+	    bool const active = std::find(profiles.begin(), profiles.end(), term) != profiles.end();
+	    groupApplies = groupApplies && (active != negated);
+	    while (!group.empty() && isspace_ascii(group.front()))
+	       group.remove_prefix(1);
 	 }
+	 restrictionApplies = restrictionApplies || groupApplies;
+	 while (!restrictions.empty() && isspace_ascii(restrictions.front()))
+	    restrictions.remove_prefix(1);
       }
 
-      if (applies1 == false) {
+      I = restrictions.data();
+
+      if (restrictionApplies == false) {
 	 Package = ""; //not for this restriction
       }
    }
