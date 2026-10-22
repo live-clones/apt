@@ -292,10 +292,6 @@ class Solver
    // indexed by variables in sync.
    virtual Var newVar();
 
-   // \brief Helper function for safe access to a variable's state.
-   constexpr State &operator[](Var r) noexcept { return states[r]; }
-   constexpr const State &operator[](Var r) const noexcept { return states[r]; }
-
    constexpr std::vector<const Clause *> &watches(Lit lit) noexcept;
 
    // \brief Heap of the remaining work.
@@ -485,12 +481,12 @@ struct Solver::Trail
 
 constexpr std::vector<const Clause *> &Solver::watches(Lit lit) noexcept
 {
-   return (*this)[lit.var()].watches[lit.sign()];
+   return states[lit.var()].watches[lit.sign()];
 }
 
 constexpr LiftedBool Solver::value(Lit lit) const noexcept
 {
-   return lit.sign() ? ~(*this)[lit.var()].assignment : (*this)[lit.var()].assignment;
+   return lit.sign() ? ~states[lit.var()].assignment : states[lit.var()].assignment;
 }
 
 }; // namespace APT::Solver

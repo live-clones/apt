@@ -342,7 +342,7 @@ constexpr bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b) noe
 
 const Clause *DependencySolver::RegisterClause(Clause &&clause)
 {
-   auto &clauses = (*this)[clause.reason].clauses;
+   auto &clauses = states[clause.reason].clauses;
    pkgCache::DepIterator dep(cache, static_cast<pkgCache::Dependency *>(clause.dep));
 
    // Merge dependencies on the same name into a single one, and restrict their solution space.
@@ -437,7 +437,7 @@ bool DependencySolver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand)
 
 bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
 {
-   if (auto var = FindVar(pkg); not var.empty() && (*this)[var].flags.manual && not AllowManual)
+   if (auto var = FindVar(pkg); not var.empty() && states[var].flags.manual && not AllowManual)
       return false;
    if (pkgObsolete[pkg] != LiftedBool::Undefined)
       return pkgObsolete[pkg] == LiftedBool::True;
@@ -483,15 +483,15 @@ void DependencySolver::Discover(Var var)
       discoverQ.pop();
 
       // Package needs to be discovered before the version to be able to dedup shared dependencies
-      if (auto Ver = GetVer(var); not Ver.end() && not(*this)[Ver.ParentPkg()].flags.discovered)
+      if (auto Ver = GetVer(var); not Ver.end() && not states[GetVar(Ver.ParentPkg())].flags.discovered)
 	 var = GetVar(Ver.ParentPkg());
 
       // NB: Do not hold a reference to the variable's state here; discovering
       // the dependencies below registers new variables, which may reallocate.
-      if ((*this)[var].flags.discovered)
+      if (states[var].flags.discovered)
 	 continue;
 
-      (*this)[var].flags.discovered = true;
+      states[var].flags.discovered = true;
 
       if (auto Pkg = GetPkg(var); not Pkg.end())
       {
@@ -547,7 +547,7 @@ void DependencySolver::Discover(Var var)
 	    dep.GlobOr(start, end); // advances dep
 
 	    // This dependency is shared across all versions, skip it.
-	    if (auto &pkgClauses = (*this)[Ver.ParentPkg()].clauses;
+	    if (auto &pkgClauses = states[GetVar(Ver.ParentPkg())].clauses;
 		std::any_of(pkgClauses.begin(), pkgClauses.end(), [this, start](auto &c)
 			    { return c->dep && SameOrGroup(start, pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(c->dep))); }))
 	       continue;
@@ -558,9 +558,9 @@ void DependencySolver::Discover(Var var)
       }
 
       // Recursively discover everything else that is not already FALSE by fact (False at level 0)
-      for (auto const &clause : (*this)[var].clauses)
+      for (auto const &clause : states[var].clauses)
 	 for (auto const &var : clause->solutions)
-	    if (value(var) != LiftedBool::False || (*this)[var].level > 0)
+	    if (value(var) != LiftedBool::False || states[var].level > 0)
 	       discoverQ.push(var);
    }
 }
@@ -753,7 +753,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
    // Clause discovery depends on the manual flag, so we need to set the manual flag first before we discover any packages
    for (auto P = cache.PkgBegin(); not P.end(); P++)
       if (P->CurrentVer && not(depcache[P].Flags & pkgCache::Flag::Auto) && (depcache[P].Keep() || depcache[P].Install()))
-	 (*this)[P].flags.manual = true;
+	 states[GetVar(P)].flags.manual = true;
 
    for (auto P = cache.PkgBegin(); not P.end(); P++)
    {
@@ -890,10 +890,10 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 	    if (auto verVar = FindVar(V); not verVar.empty() && value(verVar) == LiftedBool::True)
 	       cand = V, candVar = verVar;
 
-	 auto reasonClause = cand.end() ? nullptr : (*this)[candVar].reason;
+	 auto reasonClause = cand.end() ? nullptr : states[candVar].reason;
 	 auto reason = reasonClause ? reasonClause->reason : Var();
 	 if (auto RP = GetPkg(reason); not RP.end() && RP == P)
-	    reason = (*this)[var].reason ? (*this)[var].reason->reason : Var();
+	    reason = states[var].reason ? states[var].reason->reason : Var();
 
 	 if (cand != P.CurrentVer())
 	 {
@@ -907,7 +907,7 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 	    else if (not(depcache[P].Flags & pkgCache::Flag::Auto) && P.CurrentVer()->Section && cand->Section && not _config->SectionInSubTree("APT::Move-Autobit-Sections", P.CurrentVer().Section()) && _config->SectionInSubTree("APT::Move-Autobit-Sections", cand.Section()))
 	    {
 	       bool moved = false;
-	       for (auto const &clause : (*this)[candVar].clauses)
+	       for (auto const &clause : states[candVar].clauses)
 		  for (auto sol : clause->solutions)
 		  {
 		     // New installs move the auto-bit. TODO: Should we look at whether clause is the reason for installing it?
@@ -930,7 +930,7 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
       }
       else if (P->CurrentVer || depcache[P].Install())
       {
-	 bool automatic = var.empty() || ((not(*this)[var].reason) && (not(*this)[var].reasonStr));
+	 bool automatic = var.empty() || ((not states[var].reason) && (not states[var].reasonStr));
 	 depcache.MarkDelete(P, false, 0, automatic);
 	 depcache[P].Marked = 0;
 	 depcache[P].Garbage = 1;
@@ -951,13 +951,13 @@ std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIt
       if (not solver.FromDepCache(cache) || not solver.Solve())
 	 return "";
       std::unordered_set<Var> seen;
-      if (solver[var].assignment == LiftedBool::Undefined)
+      if (solver.states[var].assignment == LiftedBool::Undefined)
 	 return strprintf(buf, "%s is undecided\n", solver.toString(var).c_str()), buf;
-      if (assignment && solver[var].assignment != LiftedBool::True)
+      if (assignment && solver.states[var].assignment != LiftedBool::True)
 	 return strprintf(buf, "%s is not actually marked for install\n", solver.toString(var).c_str()), buf;
-      if (not assignment && solver[var].assignment == LiftedBool::True)
+      if (not assignment && solver.states[var].assignment == LiftedBool::True)
 	 return strprintf(buf, "%s is actually marked for install\n", solver.toString(var).c_str()), buf;
-      return solver.LongWhyStr(var, assignment, solver[var].reason, "", seen);
+      return solver.LongWhyStr(var, assignment, solver.states[var].reason, "", seen);
    };
 
    if (pkg.VersionList().end())

@@ -150,7 +150,7 @@ std::string Solver::WhyStr(Var reason) const
 	 out.push_back(std::string("not ") + toString(reason));
       else
 	 out.push_back(toString(reason));
-      reason = bestReason((*this)[reason].reason, reason);
+      reason = bestReason(states[reason].reason, reason);
    }
 
    std::string outstr;
@@ -184,7 +184,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
 	 if (value(choice) == LiftedBool::Undefined)
 	    out << prefix << "- " << toString(choice) << " is undecided\n";
 	 else
-	    out << prefix << "- " << LongWhyStr(choice, value(choice) == LiftedBool::True, (*this)[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
+	    out << prefix << "- " << LongWhyStr(choice, value(choice) == LiftedBool::True, states[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
       }
    };
 
@@ -193,7 +193,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    if (IsPackage(var) && assignment && rclause && rclause->group == Group::SelectVersion)
    {
       var = rclause->reason;
-      rclause = (*this)[var].reason;
+      rclause = states[var].reason;
    }
 
    // No reason given, probably a user request or manually installed or essential or whatnot.
@@ -205,7 +205,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
 
    // We could be called with a assignment we tried to make but failed due to a conflict;
    // this checks if it is the real assignment.
-   if (value(var) != LiftedBool::Undefined && assignment == (value(var) == LiftedBool::True) && (*this)[var].reason == rclause)
+   if (value(var) != LiftedBool::Undefined && assignment == (value(var) == LiftedBool::True) && states[var].reason == rclause)
    {
       // If we have seen the real assignment before; we dont't need to print it again.
       if (seen.find(var) != seen.end())
@@ -227,7 +227,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
 
    // Build the strongest path from a root to our assignment leaf
    std::vector<Var> path;
-   for (auto reason = bestReason(rclause, var); not reason.empty(); reason = bestReason((*this)[reason].reason, reason))
+   for (auto reason = bestReason(rclause, var); not reason.empty(); reason = bestReason(states[reason].reason, reason))
       path.push_back(reason);
 
    // Render the strong reasoning path
@@ -236,7 +236,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    size_t i = 1;
    for (auto it = path.rbegin(); it != path.rend(); ++it, ++i)
    {
-      auto const &state = (*this)[*it];
+      auto const &state = states[*it];
       // Don't print version selection clauses
       if (IsPackage(*it) && state.reason && state.reason->group == Group::SelectVersion)
       {
@@ -274,7 +274,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    // for it; we show above Y -> X as the path, but here we go show why Z was not considered in "Y depends X|Z".
    for (auto it = path.rbegin(); it != path.rend(); ++it)
    {
-      auto const &state = (*this)[*it];
+      auto const &state = states[*it];
       if (not state.reason) // If we have no reason, we don't have alternatives
 	 continue;
       if (state.reason->solutions.size() <= 1) // Nothing to print if we no alternatives
@@ -319,7 +319,7 @@ bool Solver::Enqueue(Lit lit, const Clause *reason)
 {
    assert(not lit.empty());
 
-   auto &state = (*this)[lit.var()];
+   auto &state = states[lit.var()];
    auto assignment = lit.sign() ? LiftedBool::False : LiftedBool::True;
 
    if (state.assignment != LiftedBool::Undefined)
@@ -433,7 +433,7 @@ void Solver::UndoOne()
    {
       if (unlikely(debug >= 4))
 	 std::cerr << "Unassign " << toString(trailItem.assigned) << "\n";
-      auto &state = (*this)[trailItem.assigned];
+      auto &state = states[trailItem.assigned];
       state.assignment = LiftedBool::Undefined;
       state.reason = nullptr;
       state.reasonStr = nullptr;
@@ -498,7 +498,7 @@ bool Solver::Pop()
    if (not choice.empty() && not Enqueue(~choice, {}))
       return false;
 
-   (*this)[choice].reasonStr = "backtracked";
+   states[choice].reasonStr = "backtracked";
 
    if (unlikely(debug >= 2))
       std::cerr << "Backtracked to choice " << toString(choice) << "\n";

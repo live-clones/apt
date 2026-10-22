@@ -165,11 +165,6 @@ class DependencySolver final : public Solver
       return GetPkg(var);
    }
 
-   // \brief Helper function for safe access to package state, registering a variable if necessary.
-   using Solver::operator[];
-   constexpr State &operator[](pkgCache::PkgIterator const &P) { return states[GetVar(P)]; }
-   constexpr State &operator[](pkgCache::VerIterator const &V) { return states[GetVar(V)]; }
-
    // \brief Render a variable as a package or version name
    std::string toString(Var var) const override;
    // \brief Render a literal as a (negated) package or version name
