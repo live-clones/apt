@@ -134,6 +134,140 @@ TEST(SolverTest, Conflict)
    _error->Discard();
 }
 
+TEST(SolverTest, NegativeLiteralSolution)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   // A positive clause may have negative literals as solutions:
+   // a -> (not b) | c
+   Clause clause{a, Group::Satisfy};
+   clause.solutions = {~b, c};
+   s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.Enqueue(a));
+   EXPECT_TRUE(s.Enqueue(b));
+
+   // With b set, (not b) is false, so the unit propagation selects c
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(a), LiftedBool::True);
+   EXPECT_EQ(s.value(c), LiftedBool::True);
+}
+
+TEST(SolverTest, NegativeLiteralSatisfiesClause)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   // a -> (not b) | c
+   Clause clause{a, Group::Satisfy};
+   clause.solutions = {~b, c};
+   s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.Enqueue(a));
+   EXPECT_TRUE(s.Enqueue(~b));
+
+   // (not b) holds, so the clause is satisfied without selecting c
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(c), LiftedBool::Undefined);
+}
+
+TEST(SolverTest, NegativeLiteralConflict)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar();
+
+   // a -> (not b), but both are set as facts, which is unsatisfiable
+   Clause clause{a, Group::Satisfy};
+   clause.solutions = {~b};
+   s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.Enqueue(b));
+   EXPECT_TRUE(s.Enqueue(a));
+   EXPECT_FALSE(s.Propagate());
+   _error->Discard();
+}
+
+TEST(SolverTest, NegativeLiteralRejectsGuard)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar();
+
+   // a -> (not b), and b is set, so the undecided guard is rejected
+   Clause clause{a, Group::Satisfy};
+   clause.solutions = {~b};
+   s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.Enqueue(b));
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(a), LiftedBool::False);
+}
+
+TEST(SolverTest, SolveChoosesNegativeLiteral)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar();
+
+   Clause clause{Var{}, Group::Satisfy};
+   clause.solutions = {~a, b};
+   auto inserted = s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.AddWork(TestSolver::Work{inserted, 0}));
+   EXPECT_TRUE(s.Solve());
+   // The first candidate is the negative literal, so a is rejected and b left alone
+   EXPECT_EQ(s.value(a), LiftedBool::False);
+   EXPECT_EQ(s.value(b), LiftedBool::Undefined);
+}
+
+TEST(SolverTest, NegativeClauseWithNegativeLiteral)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   // a -> !((not b) | c), that is, a implies b and (not c)
+   Clause clause{a, Group::Satisfy, false, true};
+   clause.solutions = {~b, c};
+   s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.Enqueue(a));
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(b), LiftedBool::True);
+   EXPECT_EQ(s.value(c), LiftedBool::False);
+}
+
+TEST(SolverTest, NegativeClauseGuardRejectedByNegativeLiteral)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar();
+
+   // a -> !((not b)), that is, a implies b
+   Clause clause{a, Group::Satisfy, false, true};
+   clause.solutions = {~b};
+   s.AddClause(std::move(clause));
+
+   // (not b) holds, violating the clause, so the guard is rejected
+   EXPECT_TRUE(s.Enqueue(~b));
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(a), LiftedBool::False);
+}
+
+TEST(SolverTest, BestReasonNegativeLiteral)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   // a -> (not b) | c
+   Clause clause{a, Group::Satisfy};
+   clause.solutions = {~b, c};
+   auto inserted = s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.Enqueue(b));
+   EXPECT_TRUE(s.Enqueue(~c));
+
+   // The first false solution is the counter-example, reported with its sign
+   EXPECT_EQ(s.bestReason(inserted, a), ~b);
+}
+
 TEST(SolverTest, NegativeClause)
 {
    TestSolver s;
@@ -880,8 +1014,34 @@ TEST(SolverTest, RenderSelection)
    TestSolver s;
    auto a = s.newVar();
 
-   EXPECT_EQ(s.DescribeSelection(a, true), "x1 is selected for install");
-   EXPECT_EQ(s.DescribeSelection(a, false), "x1 is not selected for install");
+   EXPECT_EQ(s.DescribeSelection(a), "x1 is selected for install");
+   EXPECT_EQ(s.DescribeSelection(~a), "x1 is not selected for install");
+}
+
+TEST(SolverTest, WhyStrKeepsSigns)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar(), g = s.newVar();
+
+   Clause ab{a, Group::Satisfy};
+   ab.solutions = {b};
+   s.AddClause(std::move(ab));
+
+   // g -> (not b) | c
+   Clause gc{g, Group::Satisfy};
+   gc.solutions = {~b, c};
+   s.AddClause(std::move(gc));
+
+   EXPECT_TRUE(s.Enqueue(a));
+   EXPECT_TRUE(s.Enqueue(~c));
+   EXPECT_TRUE(s.Propagate());
+   // b is set via a, contradicting (not b); c is rejected, so g is rejected
+   EXPECT_EQ(s.value(b), LiftedBool::True);
+   EXPECT_EQ(s.value(g), LiftedBool::False);
+
+   // Each link of the chain is printed with the sign that holds in reality:
+   // b is set, contradicting the (not b) needed for g, so g is rejected
+   EXPECT_EQ(s.WhyStr(~g), "x1 -> x2 -> ~x4");
 }
 
 TEST(SolverTest, RenderReasons)
@@ -900,9 +1060,35 @@ TEST(SolverTest, RenderReasons)
    EXPECT_EQ(s.WhyStr(b), "x1 -> x2");
 
    std::unordered_set<Var> seen;
-   auto longWhy = s.LongWhyStr(b, true, s.states[b].reason, "", seen);
+   auto longWhy = s.LongWhyStr(b, s.states[b].reason, "", seen);
    EXPECT_NE(longWhy.find("x2 is selected for install because"), std::string::npos);
    EXPECT_NE(longWhy.find("~x1 | x2"), std::string::npos);
+}
+
+TEST(SolverTest, LongWhyStrNegativeLiteral)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar(), d = s.newVar();
+
+   Clause db{d, Group::Satisfy};
+   db.solutions = {b};
+   s.AddClause(std::move(db));
+
+   // a -> (not b) | c
+   Clause clause{a, Group::Satisfy};
+   clause.solutions = {~b, c};
+   auto rclause = s.AddClause(std::move(clause));
+
+   EXPECT_TRUE(s.Enqueue(d));
+   EXPECT_TRUE(s.Enqueue(a));
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(c), LiftedBool::True);
+
+   std::unordered_set<Var> seen;
+   auto why = s.LongWhyStr(c, rclause, "", seen);
+   // The rejected choice (not b) is explained as b being selected, via d
+   EXPECT_NE(why.find("x2 is selected for install"), std::string::npos);
+   EXPECT_EQ(why.find("x2 is not selected for install"), std::string::npos);
 }
 
 TEST(SolverTest, WorkLessStrictWeakOrdering)

@@ -125,7 +125,7 @@ std::string Solver::toString(Lit lit) const
    return (lit.sign() ? "~" : "") + toString(lit.var());
 }
 
-std::string Solver::toString(const ClauseHeader &clause, std::span<const Var> solutions, [[maybe_unused]] bool pretty, bool showMerged) const
+std::string Solver::toString(const ClauseHeader &clause, std::span<const Lit> solutions, [[maybe_unused]] bool pretty, bool showMerged) const
 {
    // Render the implication in a DIMACS-like form, e.g. A -> B | C becomes ~xA | xB | xC
    std::string out;
@@ -135,7 +135,7 @@ std::string Solver::toString(const ClauseHeader &clause, std::span<const Var> so
    {
       if (not out.empty())
 	 out.append(" | ");
-      out.append(toString(clause.negative ? ~sol : Lit(sol)));
+      out.append(toString(clause.negative ? ~sol : sol));
    }
    if (showMerged && clause.merged)
    {
@@ -148,13 +148,13 @@ std::string Solver::toString(const ClauseHeader &clause, std::span<const Var> so
    return out;
 }
 
-std::string Solver::DescribeSelection(Var var, bool assignment) const
+std::string Solver::DescribeSelection(Lit lit) const
 {
    std::string s;
-   if (not assignment)
-      strprintf(s, "%s is not selected for install", toString(var).c_str());
+   if (lit.sign())
+      strprintf(s, "%s is not selected for install", toString(lit.var()).c_str());
    else
-      strprintf(s, "%s is selected for install", toString(var).c_str());
+      strprintf(s, "%s is selected for install", toString(lit.var()).c_str());
    return s;
 }
 
@@ -169,12 +169,12 @@ std::string Solver::toString(const Work &work) const
    return out.str();
 }
 
-Var Solver::bestReason(CRef cref, Var var) const noexcept
+Lit Solver::bestReason(CRef cref, Lit lit) const noexcept
 {
    if (not cref)
-      return Var{};
+      return Lit{};
    auto const &clause = clauses[cref];
-   if (clause.guard == var)
+   if (clause.guard == lit.var())
       for (auto choice : clause.solutions())
       {
 	 if (clause.negative && value(choice) == LiftedBool::True)
@@ -205,8 +205,8 @@ void Solver::calcReason(CRef reason, Lit p, std::vector<Lit> &out_reason) const
 	 // installed solution (in trail order) is the antecedent.
 	 Var best{};
 	 for (auto sol : rclause.solutions())
-	    if (value(sol) == LiftedBool::True && (best.empty() || states[sol].trailPos < states[best].trailPos))
-	       best = sol;
+	    if (value(sol) == LiftedBool::True && (best.empty() || states[sol.var()].trailPos < states[best].trailPos))
+	       best = sol.var();
 	 assert(not best.empty());
 	 out_reason.push_back(Lit(best));
       }
@@ -224,7 +224,7 @@ void Solver::calcReason(CRef reason, Lit p, std::vector<Lit> &out_reason) const
    if (not rclause.guard.empty() && p.var() != rclause.guard)
       out_reason.push_back(Lit(rclause.guard));
    for (auto sol : rclause.solutions())
-      if (sol != p.var())
+      if (sol != p)
 	 out_reason.push_back(~sol);
 }
 
@@ -314,16 +314,16 @@ void Solver::analyze(std::vector<Lit> confl, std::vector<Lit> &out_learnt, level
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
-std::string Solver::WhyStr(Var reason) const
+std::string Solver::WhyStr(Lit lit) const
 {
    std::vector<std::string> out;
-   while (not reason.empty())
+   while (not lit.empty())
    {
-      if (value(reason) == LiftedBool::False)
-	 out.push_back(std::string("not ") + toString(reason));
-      else
-	 out.push_back(toString(reason));
-      reason = bestReason(states[reason].reason, reason);
+      // Print the literal that holds in reality: bestReason() may return a
+      // solution that is false, which we print negated to keep its meaning.
+      out.push_back(toString(value(lit) == LiftedBool::False ? ~lit : lit));
+      // States are per-variable; the literal itself keeps its sign.
+      lit = bestReason(states[lit.var()].reason, lit);
    }
 
    std::string outstr;
@@ -334,15 +334,9 @@ std::string Solver::WhyStr(Var reason) const
    return outstr;
 }
 
-std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::string prefix, std::unordered_set<Var> &seen) const
+std::string Solver::LongWhyStr(Lit lit, CRef rclause, std::string prefix, std::unordered_set<Var> &seen) const
 {
    std::ostringstream out;
-
-   // Helper function to nicely print more details than just "install/do not install", such as "removal", "upgrade", "downgrade", "install"
-   auto printSelection = [this](Var var, bool assignment)
-   {
-      return DescribeSelection(var, assignment);
-   };
 
    // Helper: Recurse into all of the children of the clause and print the assignment for them.
    auto recurseChildren = [&](CRef cref, Var skip = Var())
@@ -352,46 +346,47 @@ std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::stri
 	 out << prefix << "[no choices]\n";
       for (auto choice : clause.solutions())
       {
-	 if (choice == skip)
+	 if (choice.var() == skip)
 	    continue;
 
 	 if (value(choice) == LiftedBool::Undefined)
 	    out << prefix << "- " << toString(choice) << " is undecided\n";
 	 else
-	    out << prefix << "- " << LongWhyStr(choice, value(choice) == LiftedBool::True, states[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
+	    // Explain the literal that holds in reality, not the one stated in the clause.
+	    out << prefix << "- " << LongWhyStr(value(choice) == LiftedBool::True ? choice : ~choice, states[choice.var()].reason, prefix + "  ", seen).substr(prefix.size() + 2);
       }
    };
 
    // Inverse version selection clauses that select the package if the version is selected,
    // such as pkg=ver -> pkg, are irrelevant for the user, skip them
-   if (IsPackage(var) && assignment && rclause && clauses[rclause].group == Group::SelectVersion)
+   if (IsPackage(lit.var()) && not lit.sign() && rclause && clauses[rclause].group == Group::SelectVersion)
    {
-      var = clauses[rclause].guard;
-      rclause = states[var].reason;
+      lit = clauses[rclause].guard;
+      rclause = states[lit.var()].reason;
    }
 
    // No reason given, probably a user request or manually installed or essential or whatnot.
    if (not rclause)
    {
-      out << prefix << printSelection(var, assignment) << "\n";
+      out << prefix << DescribeSelection(lit) << "\n";
       return out.str();
    }
 
    // We could be called with a assignment we tried to make but failed due to a conflict;
    // this checks if it is the real assignment.
-   if (value(var) != LiftedBool::Undefined && assignment == (value(var) == LiftedBool::True) && states[var].reason == rclause)
+   if (value(lit.var()) != LiftedBool::Undefined && (not lit.sign()) == (value(lit.var()) == LiftedBool::True) && states[lit.var()].reason == rclause)
    {
       // If we have seen the real assignment before; we dont't need to print it again.
-      if (seen.find(var) != seen.end())
+      if (seen.find(lit.var()) != seen.end())
       {
-	 out << prefix << printSelection(var, assignment) << " as above\n";
+	 out << prefix << DescribeSelection(lit) << " as above\n";
 	 return out.str();
       }
-      seen.insert(var);
+      seen.insert(lit.var());
    }
 
    // A package was decided "not install" due to a positive clause, so the clause is unsat.
-   if (not assignment && rclause && not clauses[rclause].negative)
+   if (lit.sign() && rclause && not clauses[rclause].negative)
    {
       out << prefix << toString(clauses[rclause], true) << "\n";
       out << prefix << "but none of the choices are installable:\n";
@@ -400,12 +395,13 @@ std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::stri
    }
 
    // Build the strongest path from a root to our assignment leaf
+   // The path holds variables; signs are re-derived from the stored assignment when printing.
    std::vector<Var> path;
-   for (auto reason = bestReason(rclause, var); not reason.empty(); reason = bestReason(states[reason].reason, reason))
-      path.push_back(reason);
+   for (auto reason = bestReason(rclause, lit); not reason.empty(); reason = bestReason(states[reason.var()].reason, reason))
+      path.push_back(reason.var());
 
    // Render the strong reasoning path
-   out << prefix << printSelection(var, assignment) << " because:\n";
+   out << prefix << DescribeSelection(lit) << " because:\n";
    auto w = std::to_string(path.size() + 1).size();
    size_t i = 1;
    for (auto it = path.rbegin(); it != path.rend(); ++it, ++i)
@@ -421,7 +417,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::stri
       {
 	 if ((it + 1) == path.rend() || seen.find(*(it + 1)) == seen.end())
 	 {
-	    out << prefix << (i == 1 ? "" : "1-") << i << ". " << printSelection(*it, state.assignment == LiftedBool::True) << " as above\n";
+	    out << prefix << (i == 1 ? "" : "1-") << i << ". " << DescribeSelection(Lit(*it, state.assignment == LiftedBool::False)) << " as above\n";
 	 }
 	 continue;
       }
@@ -433,7 +429,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::stri
 	    out << prefix << std::setw(w) << " " << "  [selected " << toString(*it) << " for " << (state.assignment == LiftedBool::True ? "install" : "remove") << "]\n";
       }
       else
-	 out << prefix << std::setw(w) << i << ". " << printSelection(*it, state.assignment == LiftedBool::True) << "\n";
+	 out << prefix << std::setw(w) << i << ". " << DescribeSelection(Lit(*it, state.assignment == LiftedBool::False)) << "\n";
    }
 
    // Print the leaf. We can't have the leaf in the path because we might be called for an attempted assignment
@@ -441,7 +437,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::stri
    // and try to mark X and reach the conflict, we are called with "X" and the "Y depends X" clause).
    out << prefix << std::setw(w) << i << ". " << toString(clauses[rclause], true) << "\n";
    if (clauses[rclause].solutions().size() > 1)
-      out << prefix << std::setw(w) << " " << "  " << "[selected " << toString(bestReason(rclause, var)) << "]\n";
+      out << prefix << std::setw(w) << " " << "  " << "[selected " << toString(bestReason(rclause, lit)) << "]\n";
 
    bool firstContext = true;
    // Show alternative paths not taken. Consider you have Y depends X|Z; and you mark X
@@ -476,7 +472,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::stri
       firstContext = false;
       out << prefix << "* In " << toString(clauses[rclause], true) << ":\n";
       prefix += "  ";
-      recurseChildren(rclause, var);
+      recurseChildren(rclause, lit.var());
       prefix.resize(prefix.size() - 2);
    }
 
@@ -508,8 +504,8 @@ bool Solver::Enqueue(Lit lit, CRef reason)
 	 std::ostringstream err;
 	 err << "Unable to satisfy dependencies. Reached two conflicting assignments:" << "\n";
 	 std::unordered_set<Var> seen;
-	 err << "1. " << LongWhyStr(lit.var(), state.assignment == LiftedBool::True, state.reason, "   ", seen).substr(3) << "\n";
-	 err << "2. " << LongWhyStr(lit.var(), not lit.sign(), reason, "   ", seen).substr(3);
+	 err << "1. " << LongWhyStr(Lit(lit.var(), state.assignment == LiftedBool::False), state.reason, "   ", seen).substr(3) << "\n";
+	 err << "2. " << LongWhyStr(lit, reason, "   ", seen).substr(3);
 	 return _error->Error("%s", err.str().c_str());
       }
       return true;
@@ -519,9 +515,8 @@ bool Solver::Enqueue(Lit lit, CRef reason)
    state.level = decisionLevel();
    state.reason = reason;
 
-   // FIXME: Adjust call to bestReason to use lit
    if (unlikely(debug >= 1))
-      std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << toString(lit.var()) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
+      std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << toString(lit.var()) << " (" << WhyStr(bestReason(reason, lit)) << ")\n";
 
    trail.push_back(Trail{lit.var()});
    state.trailPos = static_cast<uint32_t>(trail.size() - 1);

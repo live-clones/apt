@@ -77,6 +77,10 @@ struct CompareProviders3 /*{{{*/
       return _system->VS->CmpVersion(AV.VerStr(), BV.VerStr()) > 0;
    }
 
+   bool operator()(Lit a, Lit b)
+   {
+      return (*this)(a.var(), b.var());
+   }
    bool operator()(Var a, Var b)
    {
       pkgCache::VerIterator va = Solver.GetVer(a);
@@ -255,7 +259,7 @@ std::string DependencySolver::toString(Lit lit) const
    return (lit.sign() ? "not " : "") + toString(lit.var());
 }
 
-std::string DependencySolver::toString(const ClauseHeader &clause, std::span<const Var> solutions, bool pretty, bool showMerged) const
+std::string DependencySolver::toString(const ClauseHeader &clause, std::span<const Lit> solutions, bool pretty, bool showMerged) const
 {
    std::string out;
    if (showMerged)
@@ -280,7 +284,7 @@ std::string DependencySolver::toString(const ClauseHeader &clause, std::span<con
       out.append(solutions.size() > 1 ? " is available in versions " : " is available in version ");
       for (auto var : solutions)
       {
-	 auto ver = GetVer(var);
+	 auto ver = GetVer(var.var());
 	 assert(not ver.end());
 	 if (var != solutions.front())
 	    out.append(", ");
@@ -304,22 +308,22 @@ std::string DependencySolver::toString(const ClauseHeader &clause, std::span<con
    return out;
 }
 
-std::string DependencySolver::DescribeSelection(Var var, bool assignment) const
+std::string DependencySolver::DescribeSelection(Lit lit) const
 {
    std::string s;
-   if (auto pkg = GetPkg(var); not assignment && not pkg.end() && pkg->CurrentVer)
-      strprintf(s, "%s is selected for removal", toString(var).c_str());
-   else if (auto ver = GetVer(var); assignment && not ver.end() && ver.ParentPkg().CurrentVer() && ver.ParentPkg().CurrentVer() != ver)
+   if (auto pkg = GetPkg(lit.var()); lit.sign() && not pkg.end() && pkg->CurrentVer)
+      strprintf(s, "%s is selected for removal", toString(lit.var()).c_str());
+   else if (auto ver = GetVer(lit.var()); not lit.sign() && not ver.end() && ver.ParentPkg().CurrentVer() && ver.ParentPkg().CurrentVer() != ver)
    {
       if (cache.VS->CmpVersion(ver.ParentPkg().CurrentVer().VerStr(), ver.VerStr()) < 0)
-	 strprintf(s, "%s is selected as an upgrade", toString(var).c_str());
+	 strprintf(s, "%s is selected as an upgrade", toString(lit.var()).c_str());
       else
-	 strprintf(s, "%s is selected as a downgrade", toString(var).c_str());
+	 strprintf(s, "%s is selected as a downgrade", toString(lit.var()).c_str());
    }
-   else if (not assignment)
-      strprintf(s, "%s is not selected for install", toString(var).c_str());
+   else if (lit.sign())
+      strprintf(s, "%s is not selected for install", toString(lit.var()).c_str());
    else
-      strprintf(s, "%s is selected for install", toString(var).c_str());
+      strprintf(s, "%s is selected for install", toString(lit.var()).c_str());
    return s;
 }
 
@@ -563,8 +567,8 @@ void DependencySolver::Discover(Var var)
       // Recursively discover everything else that is not already FALSE by fact (False at level 0)
       for (auto cref : clausesOf(var))
 	 for (auto const &var : clauses[cref].solutions())
-	    if (value(var) != LiftedBool::False || states[var].level > 0)
-	       discoverQ.push(var);
+	    if (not var.sign() && (value(var) != LiftedBool::False || states[var.var()].level > 0))
+	       discoverQ.push(var.var());
    }
 }
 
@@ -646,20 +650,20 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 
    // Move obsolete packages to the end, and (non-obsolete) installed packages to the front
    if (not FixPolicyBroken)
-      std::stable_sort(clause.solutions.begin(), clause.solutions.end(), [this](Var a, Var b)
+      std::stable_sort(clause.solutions.begin(), clause.solutions.end(), [this](Lit a, Lit b)
 		       {
 	    if (IsUpgrade)
-	       if (auto obsoleteA = Obsolete(AsPkg(a)), obsoleteB = Obsolete(AsPkg(b)); obsoleteA != obsoleteB)
+	       if (auto obsoleteA = Obsolete(AsPkg(a.var())), obsoleteB = Obsolete(AsPkg(b.var())); obsoleteA != obsoleteB)
 		  return obsoleteB;
-	    if ((AsPkg(a)->CurrentVer == 0 || AsPkg(b)->CurrentVer == 0) && AsPkg(a)->CurrentVer != AsPkg(b)->CurrentVer)
-	       return AsPkg(a)->CurrentVer != 0;
+	    if ((AsPkg(a.var())->CurrentVer == 0 || AsPkg(b.var())->CurrentVer == 0) && AsPkg(a.var())->CurrentVer != AsPkg(b.var())->CurrentVer)
+	       return AsPkg(a.var())->CurrentVer != 0;
 	    return false; });
 
    if (std::all_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var) -> auto
-		   { return AsPkg(var)->CurrentVer == 0; }))
+		   { return AsPkg(var.var())->CurrentVer == 0; }))
       clause.group = Group::SatisfyNew;
    if (std::any_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var) -> auto
-		   { return Obsolete(AsPkg(var), true); }))
+		   { return Obsolete(AsPkg(var.var()), true); }))
       clause.group = Group::SatisfyObsolete;
    // Try to perserve satisfied Recommends. FIXME: We should check if the Recommends was there in the installed version?
    if (clause.optional && start.ParentPkg()->CurrentVer)
@@ -670,7 +674,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 return policy.IsImportantDep(d) || (KeepRecommends && d->Type == pkgCache::Dep::Recommends) || (KeepSuggests && d->Type == pkgCache::Dep::Suggests);
       };
       bool satisfied = std::any_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
-				   { return GetPkg(var) ? GetPkg(var)->CurrentVer != nullptr : GetVer(var) == AsPkg(var).CurrentVer(); });
+				   { return GetPkg(var.var()) ? GetPkg(var.var())->CurrentVer != nullptr : GetVer(var.var()) == AsPkg(var.var()).CurrentVer(); });
 
       // Find the existing dependency
       pkgCache::DepIterator existing;
@@ -689,7 +693,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 // Erase the non-installed solutions. We will process this last and try to keep the previously installed
 	 // "best" solution installed.
 	 clause.solutions.erase(std::remove_if(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
-					       { return AsPkg(var)->CurrentVer == nullptr; }),
+					       { return AsPkg(var.var())->CurrentVer == nullptr; }),
 				clause.solutions.end());
       }
       else if (not important)
@@ -729,7 +733,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 // Erase the non-installed solutions. We will process this last and try to keep the previously installed
 	 // "best" solution installed.
 	 clause.solutions.erase(std::remove_if(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
-					       { return AsPkg(var)->CurrentVer == nullptr; }),
+					       { return AsPkg(var.var())->CurrentVer == nullptr; }),
 				clause.solutions.end());
 	 clause.eager = true;
       }
@@ -920,11 +924,11 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 		  for (auto sol : clauses[cref].solutions())
 		  {
 		     // New installs move the auto-bit. TODO: Should we look at whether clause is the reason for installing it?
-		     if (AsPkg(sol) == P || AsPkg(sol)->CurrentVer)
+		     if (AsPkg(sol.var()) == P || AsPkg(sol.var())->CurrentVer)
 			continue;
-		     std::cerr << "Move  manual bit from " << P.FullName() << " to " << AsPkg(sol).Name() << std::endl;
-		     movedManual[AsPkg(sol)] = true;
-		     depcache.MarkAuto(AsPkg(sol), false);
+		     std::cerr << "Move  manual bit from " << P.FullName() << " to " << AsPkg(sol.var()).Name() << std::endl;
+		     movedManual[AsPkg(sol.var())] = true;
+		     depcache.MarkAuto(AsPkg(sol.var()), false);
 		     moved = true;
 		  }
 	       if (moved)
@@ -966,7 +970,7 @@ std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIt
 	 return strprintf(buf, "%s is not actually marked for install\n", solver.toString(var).c_str()), buf;
       if (not assignment && solver.states[var].assignment == LiftedBool::True)
 	 return strprintf(buf, "%s is actually marked for install\n", solver.toString(var).c_str()), buf;
-      return solver.LongWhyStr(var, assignment, solver.states[var].reason, "", seen);
+      return solver.LongWhyStr(Lit(var, not assignment), solver.states[var].reason, "", seen);
    };
 
    if (pkg.VersionList().end())

@@ -220,7 +220,7 @@ struct ClauseHeader
 struct Clause : public ClauseHeader
 {
    // \brief Possible solutions to this task, ordered in order of preference.
-   std::vector<Var> solutions{};
+   std::vector<Lit> solutions{};
    inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : ClauseHeader(guard, group, optional, negative) {}
 };
 
@@ -230,14 +230,14 @@ struct [[gnu::may_alias]] StoredClause : public ClauseHeader
    // \brief size of the array data
    uint32_t size;
    // \brief the array of solutions
-   Var data[];
+   Lit data[];
 
    explicit StoredClause(Clause const &clause) : ClauseHeader(clause), size(clause.solutions.size())
    {
       std::copy(clause.solutions.begin(), clause.solutions.end(), data);
    }
-   std::span<Var> solutions() { return {data, size}; }
-   std::span<const Var> solutions() const { return {data, size}; }
+   std::span<Lit> solutions() { return {data, size}; }
+   std::span<const Lit> solutions() const { return {data, size}; }
 };
 
 constexpr Lit Var::operator~() const noexcept
@@ -393,7 +393,7 @@ class Solver
    {
       return static_cast<level_type>(trailLim.size());
    }
-   Var bestReason(CRef clause, Var var) const noexcept;
+   Lit bestReason(CRef clause, Lit lit) const noexcept;
    constexpr LiftedBool value(Lit lit) const noexcept;
 
    // \brief Compute the reason for p as the set of (true) assignment
@@ -441,7 +441,7 @@ class Solver
    // \brief Render a literal, e.g. for debugging output
    virtual std::string toString(Lit lit) const;
    // \brief Render a clause, e.g. for debugging output
-   virtual std::string toString(const ClauseHeader &clause, std::span<const Var> solutions, bool pretty = false, bool showMerged = true) const;
+   virtual std::string toString(const ClauseHeader &clause, std::span<const Lit> solutions, bool pretty = false, bool showMerged = true) const;
    std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const
    {
       return toString(static_cast<const ClauseHeader &>(clause), clause.solutions, pretty, showMerged);
@@ -456,23 +456,22 @@ class Solver
    // \brief Whether the variable is a package, used to elide version selection clauses in reasons.
    virtual constexpr bool IsPackage(Var) const noexcept { return false; }
    // \brief Describe the selection state of a variable, e.g. "x1 is selected for install"
-   virtual std::string DescribeSelection(Var var, bool assignment) const;
+   virtual std::string DescribeSelection(Lit lit) const;
 
    // Print dependency chain
-   virtual std::string WhyStr(Var reason) const;
+   virtual std::string WhyStr(Lit lit) const;
 
    /**
     * \brief Print a long reason string
     *
-    * Print a reason as to why `rclause` implies `assignment` for the variable `var`.
+    * Print a reason as to why `rclause` implies the literal `lit`.
     *
-    * \param var The variable to print the reason for
-    * \param assignment The assumed assignment to print the reason for (may be different from actual assignment if rclause is specified)
-    * \param rclause The clause that caused this variable to be marked (or would be marked)
+    * \param lit The literal to print the reason for
+    * \param rclause The clause that caused this literal to be marked (or would have marked it)
     * \param prefix A prefix, for indentation purposes, as this is recursive
     * \param seen A set of seen objects such that the output does not repeat itself (not for safety, it is acyclic)
     */
-   virtual std::string LongWhyStr(Var var, bool assignment, CRef rclause, std::string prefix, std::unordered_set<Var> &seen) const;
+   virtual std::string LongWhyStr(Lit lit, CRef rclause, std::string prefix, std::unordered_set<Var> &seen) const;
 };
 
 /**
