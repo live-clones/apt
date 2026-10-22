@@ -11,6 +11,7 @@
 #include <apt-pkg/aptconfiguration.h>
 #include <apt-pkg/cacheset.h>
 #include <apt-pkg/depcache.h>
+#include <apt-pkg/depsolver.h>
 #include <apt-pkg/edsp.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
@@ -20,7 +21,6 @@
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/prettyprinters.h>
 #include <apt-pkg/progress.h>
-#include <apt-pkg/solver3.h>
 #include <apt-pkg/strutl.h>
 #include <apt-pkg/tagfile.h>
 
