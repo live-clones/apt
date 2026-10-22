@@ -238,6 +238,41 @@ TEST(SolverTest, BestReason)
    EXPECT_EQ(s.bestReason(neg2C, b), b);
 }
 
+TEST(SolverTest, LiteralBitMagic)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar();
+
+   // A literal stores the variable shifted left by one, with the sign in the lowest bit
+   EXPECT_EQ(Lit(a).var(), a);
+   EXPECT_FALSE(Lit(a).sign());
+   EXPECT_EQ(Lit(a, true).var(), a);
+   EXPECT_TRUE(Lit(a, true).sign());
+
+   // Negation flips exactly the sign bit and is an involution
+   EXPECT_EQ(~a, Lit(a, true));
+   EXPECT_EQ(~~a, Lit(a));
+   EXPECT_EQ((~a).var(), a);
+   EXPECT_TRUE((~a).sign());
+   EXPECT_NE(~a, Lit(a));
+   EXPECT_NE(~a, ~b);
+   EXPECT_EQ(~~b, Lit(b));
+
+   // Even the root variable has distinct positive and negative literals
+   EXPECT_NE(~Var{}, Lit(Var{}));
+   EXPECT_TRUE((~Var{}).sign());
+}
+
+TEST(SolverTest, LiftedBoolBitMagic)
+{
+   // Negation swaps the two bits: Undefined stays, True and False are exchanged
+   EXPECT_EQ(~LiftedBool::Undefined, LiftedBool::Undefined);
+   EXPECT_EQ(~LiftedBool::True, LiftedBool::False);
+   EXPECT_EQ(~LiftedBool::False, LiftedBool::True);
+   EXPECT_EQ(~~LiftedBool::True, LiftedBool::True);
+   EXPECT_EQ(~~LiftedBool::False, LiftedBool::False);
+}
+
 TEST(SolverTest, RenderSelection)
 {
    TestSolver s;

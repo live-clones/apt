@@ -126,19 +126,21 @@ struct Lit
 {
    private:
    friend struct std::hash<Lit>;
-   // Private constructor from a number, to be used with operator~
-   explicit constexpr Lit(int32_t value) noexcept : value{value} {}
-   int32_t value;
+   // Private constructor from a raw number, to be used with operator~
+   explicit constexpr Lit(uint32_t raw) noexcept : value{raw} {}
+   // \brief The variable shifted left by one bit, with the sign in the lowest bit.
+   uint32_t value;
 
    public:
    constexpr Lit() noexcept : value{0} {}
-   // SAFETY: value must be 31 bit, one bit is needed for the sign.
-   constexpr Lit(Var var) noexcept : value{static_cast<int32_t>(var.value)} {}
+   // SAFETY: var.value must be 31 bit, one bit is needed for the sign.
+   constexpr Lit(Var var) noexcept : value{var.value << 1} {}
+   constexpr Lit(Var var, bool sign) noexcept : value{(var.value << 1) | uint32_t(sign)} {}
 
    // Accessors
-   constexpr Var var() const noexcept { return Var(std::abs(value)); }
-   constexpr bool sign() const noexcept { return value < 0; }
-   constexpr Lit operator~() const noexcept { return Lit(-value); }
+   constexpr Var var() const noexcept { return Var{value >> 1}; }
+   constexpr bool sign() const noexcept { return value & 1; }
+   constexpr Lit operator~() const noexcept { return Lit{value ^ 1}; }
 
    // Properties
    constexpr bool empty() const noexcept { return value == 0; }
