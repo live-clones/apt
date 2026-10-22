@@ -634,11 +634,11 @@ struct CompareProviders3 /*{{{*/
    }
    bool operator()(Var a, Var b)
    {
-      pkgCache::VerIterator va = a.Ver(Cache);
-      pkgCache::VerIterator vb = b.Ver(Cache);
-      if (auto pa = a.Pkg(Cache))
+      pkgCache::VerIterator va = Solver.GetVer(a);
+      pkgCache::VerIterator vb = Solver.GetVer(b);
+      if (auto pa = Solver.GetPkg(a); not pa.end())
 	 va = bestVersion(pa);
-      if (auto pb = b.Pkg(Cache))
+      if (auto pb = Solver.GetPkg(b); not pb.end())
 	 vb = bestVersion(pb);
 
       assert(not va.end() && not vb.end());
@@ -951,8 +951,8 @@ void DependencySolver::Discover(Var var)
       discoverQ.pop();
 
       // Package needs to be discovered before the version to be able to dedup shared dependencies
-      if (auto Ver = var.Ver(cache); not Ver.end() && not(*this)[Ver.ParentPkg()].flags.discovered)
-	 var = Var(Ver.ParentPkg());
+      if (auto Ver = GetVer(var); not Ver.end() && not(*this)[Ver.ParentPkg()].flags.discovered)
+	 var = GetVar(Ver.ParentPkg());
 
       auto &state = (*this)[var];
 
@@ -961,21 +961,21 @@ void DependencySolver::Discover(Var var)
 
       state.flags.discovered = true;
 
-      if (auto Pkg = var.Pkg(cache); not Pkg.end())
+      if (auto Pkg = GetPkg(var); not Pkg.end())
       {
-	 Clause clause{Var(Pkg), Group::SelectVersion};
+	 Clause clause{GetVar(Pkg), Group::SelectVersion};
 	 for (auto ver = Pkg.VersionList(); not ver.end(); ver++)
-	    clause.solutions.emplace_back(ver);
+	    clause.solutions.push_back(GetVar(ver));
 
 	 std::stable_sort(clause.solutions.begin(), clause.solutions.end(), CompareProviders3{cache, policy, Pkg, *this});
 	 RegisterClause(std::move(clause));
 
 	 RegisterCommonDependencies(Pkg);
       }
-      else if (auto Ver = var.Ver(cache); not Ver.end())
+      else if (auto Ver = GetVer(var); not Ver.end())
       {
-	 Clause clause{Var(Ver), Group::SelectVersion};
-	 clause.solutions = {Var(Ver.ParentPkg())};
+	 Clause clause{GetVar(Ver), Group::SelectVersion};
+	 clause.solutions = {GetVar(Ver.ParentPkg())};
 	 RegisterClause(std::move(clause));
 
 	 for (auto OV = Ver.ParentPkg().VersionList(); not OV.end(); ++OV)
@@ -983,8 +983,8 @@ void DependencySolver::Discover(Var var)
 	    if (OV == Ver)
 	       continue;
 
-	    Clause clause{Var(Ver), Group::SelectVersion, false, true /* negative */};
-	    clause.solutions = {Var(OV)};
+	    Clause clause{GetVar(Ver), Group::SelectVersion, false, true /* negative */};
+	    clause.solutions = {GetVar(OV)};
 	    RegisterClause(std::move(clause));
 	 }
 
@@ -1000,9 +1000,9 @@ void DependencySolver::Discover(Var var)
 	       // Package has a different source version than us, so it's not relevant
 	       if (strcmp(sibling.SourceVersion().VerStr(), Ver.SourceVersion().VerStr()) != 0)
 		  continue;
-	       Clause clause{Var(Ver), Group::SelectVersion, true /* optional */};
+	       Clause clause{GetVar(Ver), Group::SelectVersion, true /* optional */};
 	       clause.eager = true;
-	       clause.solutions = {Var(sibling)};
+	       clause.solutions = {GetVar(sibling)};
 	       RegisterClause(std::move(clause));
 	    }
 	 }
@@ -1020,7 +1020,7 @@ void DependencySolver::Discover(Var var)
 			    { return c->dep && SameOrGroup(start, pkgCache::DepIterator(cache, c->dep)); }))
 	       continue;
 
-	    if (auto clause = TranslateOrGroup(start, end, Var(Ver)))
+	    if (auto clause = TranslateOrGroup(start, end, GetVar(Ver)))
 	       RegisterClause(std::move(*clause));
 	 }
       }
@@ -1055,7 +1055,7 @@ void DependencySolver::RegisterCommonDependencies(pkgCache::PkgIterator Pkg)
       }
       if (not allHaveDep)
 	 continue;
-      if (auto clause = TranslateOrGroup(start, end, Var(Pkg)))
+      if (auto clause = TranslateOrGroup(start, end, GetVar(Pkg)))
 	 RegisterClause(std::move(*clause));
    }
 }
@@ -1082,7 +1082,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 
       if (DeferVersionSelection && not start.IsNegative() && start.TargetPkg().ProvidesList().end() && start.IsSatisfied(start.TargetPkg()))
       {
-	 clause.solutions.emplace_back(start.TargetPkg());
+	 clause.solutions.push_back(GetVar(start.TargetPkg()));
       }
       else
       {
@@ -1094,7 +1094,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 
 	    if (unlikely(debug >= 3))
 	       std::cerr << "Adding work to  item " << toString(reason) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
-	    clause.solutions.emplace_back(pkgCache::VerIterator(cache, *tgt));
+	    clause.solutions.push_back(GetVar(tgti));
 	 }
 	 std::stable_sort(clause.solutions.begin() + begin, clause.solutions.end(), CompareProviders3{cache, policy, start.TargetPkg(), *this});
       }
@@ -1108,17 +1108,17 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
       std::stable_sort(clause.solutions.begin(), clause.solutions.end(), [this](Var a, Var b)
 		       {
 	    if (IsUpgrade)
-	       if (auto obsoleteA = Obsolete(a.CastPkg(cache)), obsoleteB = Obsolete(b.CastPkg(cache)); obsoleteA != obsoleteB)
+	       if (auto obsoleteA = Obsolete(AsPkg(a)), obsoleteB = Obsolete(AsPkg(b)); obsoleteA != obsoleteB)
 		  return obsoleteB;
-	    if ((a.CastPkg(cache)->CurrentVer == 0 || b.CastPkg(cache)->CurrentVer == 0) && a.CastPkg(cache)->CurrentVer != b.CastPkg(cache)->CurrentVer)
-	       return a.CastPkg(cache)->CurrentVer != 0;
+	    if ((AsPkg(a)->CurrentVer == 0 || AsPkg(b)->CurrentVer == 0) && AsPkg(a)->CurrentVer != AsPkg(b)->CurrentVer)
+	       return AsPkg(a)->CurrentVer != 0;
 	    return false; });
 
    if (std::all_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var) -> auto
-		   { return var.CastPkg(cache)->CurrentVer == 0; }))
+		   { return AsPkg(var)->CurrentVer == 0; }))
       clause.group = Group::SatisfyNew;
    if (std::any_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var) -> auto
-		   { return Obsolete(var.CastPkg(cache), true); }))
+		   { return Obsolete(AsPkg(var), true); }))
       clause.group = Group::SatisfyObsolete;
    // Try to perserve satisfied Recommends. FIXME: We should check if the Recommends was there in the installed version?
    if (clause.optional && start.ParentPkg()->CurrentVer)
@@ -1129,7 +1129,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 return policy.IsImportantDep(d) || (KeepRecommends && d->Type == pkgCache::Dep::Recommends) || (KeepSuggests && d->Type == pkgCache::Dep::Suggests);
       };
       bool satisfied = std::any_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
-				   { return var.Pkg(cache) ? var.Pkg(cache)->CurrentVer != nullptr : Var(var.CastPkg(cache).CurrentVer()) == var; });
+				   { return GetPkg(var) ? GetPkg(var)->CurrentVer != nullptr : GetVar(AsPkg(var).CurrentVer()) == var; });
 
       // Find the existing dependency
       pkgCache::DepIterator existing;
@@ -1148,7 +1148,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 // Erase the non-installed solutions. We will process this last and try to keep the previously installed
 	 // "best" solution installed.
 	 clause.solutions.erase(std::remove_if(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
-					       { return var.CastPkg(cache)->CurrentVer == nullptr; }),
+					       { return AsPkg(var)->CurrentVer == nullptr; }),
 				clause.solutions.end());
       }
       else if (not important)
@@ -1171,9 +1171,9 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 clause.eager = true;
       }
       else if (
-	 IsUpgrade && not(AllowRemove && AllowInstall)				    // promote Recommends to Depends in upgrade, not in dist-upgrade.
-	 && reason.Ver() && reason.Ver(cache) != reason.CastPkg(cache).CurrentVer() // and if this an upgrade to an installed package
-	 && (existing.end() || not policy.IsImportantDep(existing))		    // new Recommends, or upgraded from Suggests
+	 IsUpgrade && not(AllowRemove && AllowInstall)			   // promote Recommends to Depends in upgrade, not in dist-upgrade.
+	 && GetVer(reason) && GetVer(reason) != AsPkg(reason).CurrentVer() // and if this an upgrade to an installed package
+	 && (existing.end() || not policy.IsImportantDep(existing))	   // new Recommends, or upgraded from Suggests
       )
       {
 	 if (unlikely(debug >= 3))
@@ -1188,7 +1188,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 // Erase the non-installed solutions. We will process this last and try to keep the previously installed
 	 // "best" solution installed.
 	 clause.solutions.erase(std::remove_if(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
-					       { return var.CastPkg(cache)->CurrentVer == nullptr; }),
+					       { return AsPkg(var)->CurrentVer == nullptr; }),
 				clause.solutions.end());
 	 clause.eager = true;
       }
@@ -1213,7 +1213,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	 bool isPhasing = IsUpgrade && depcache.PhasingApplied(P) && not isForced;
 	 for (auto V = P.VersionList(); not V.end(); ++V)
 	    if (P.CurrentVer() != V && (depcache.GetCandidateVersion(P) != V || isPhasing))
-	       if (not Enqueue(~Var(V), {}))
+	       if (not Enqueue(~GetVar(V), {}))
 		  return false;
       }
    }
@@ -1233,7 +1233,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
       {
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Hold " << P.FullName() << "\n";
-	 if (P->CurrentVer ? not Enqueue(Var(P.CurrentVer())) : not Enqueue(~Var(P)))
+	 if (P->CurrentVer ? not Enqueue(GetVar(P.CurrentVer())) : not Enqueue(~GetVar(P)))
 	    return false;
       }
       else if (state.Delete()						  // Normal delete request.
@@ -1246,11 +1246,11 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	    std::cerr << "Delete " << P.FullName() << "\n";
 	 if (Protected)
 	 {
-	    if (not Enqueue(~Var(P)))
+	    if (not Enqueue(~GetVar(P)))
 	       return false;
 	 }
 	 else
-	    removals.push_back(Var(P));
+	    removals.push_back(GetVar(P));
       }
       else if (state.Install() || (state.Keep() && P->CurrentVer))
       {
@@ -1275,19 +1275,19 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	 if (not isOptional)
 	 {
 	    // Pre-empt the non-optional requests, as we don't want to queue them, we can just "unit propagate" here.
-	    if (depcache[P].Keep() ? not Enqueue(Var(P)) : not Enqueue(Var(depcache.GetCandidateVersion(P))))
+	    if (depcache[P].Keep() ? not Enqueue(GetVar(P)) : not Enqueue(GetVar(depcache.GetCandidateVersion(P))))
 	       return false;
 	 }
 	 else
 	 {
 	    Clause w{Var(), Group, isOptional};
-	    w.solutions.emplace_back(P);
+	    w.solutions.push_back(GetVar(P));
 	    auto insertedW = RegisterClause(std::move(w));
 	    if (insertedW && not AddWork(Work{insertedW, decisionLevel()}))
 	       return false;
 
 	    if (not isAuto)
-	       manualPackages.emplace_back(P);
+	       manualPackages.push_back(GetVar(P));
 
 	    // Given A->A2|A1, B->B1|B2; Bn->An, if we select `not A1`, we
 	    // should try to install A2 before trying B so we end up with
@@ -1296,7 +1296,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	    // Compare test-bug-712116-dpkg-pre-install-pkgs-hook-multiarch
 	    Clause shortcircuit{Var(), Group, isOptional};
 	    for (auto V = P.VersionList(); not V.end(); ++V)
-	       shortcircuit.solutions.emplace_back(V);
+	       shortcircuit.solutions.push_back(GetVar(V));
 	    std::stable_sort(shortcircuit.solutions.begin(), shortcircuit.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	    auto insertedShort = RegisterClause(std::move(shortcircuit));
 	    if (insertedShort && not AddWork(Work{insertedShort, decisionLevel()}))
@@ -1304,7 +1304,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 
 	    // Discovery here is needed so the shortcircuit clause can actually become unit.
 	    if (P.VersionList() && P.VersionList()->NextVer)
-	       Discover(Var(P));
+	       Discover(GetVar(P));
 	 }
       }
       else if (IsUpgrade && AllowRemove && AllowInstall && (P->Flags & pkgCache::Flag::Essential))
@@ -1313,7 +1313,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	 auto G = P.Group();
 	 for (auto P = G.PackageList(); not P.end(); P = G.NextPkg(P))
 	    if (P->Flags & pkgCache::Flag::Essential)
-	       w.solutions.emplace_back(P);
+	       w.solutions.push_back(GetVar(P));
 	 std::stable_sort(w.solutions.begin(), w.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Install essential package " << P << std::endl;
@@ -1349,16 +1349,16 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
    {
       depcache[P].Marked = 0;
       depcache[P].Garbage = 0;
-      if (value(Var(P)) == LiftedBool::True)
+      if (value(GetVar(P)) == LiftedBool::True)
       {
 	 pkgCache::VerIterator cand;
 	 for (auto V = P.VersionList(); cand.end() && not V.end(); V++)
-	    if (value(Var(V)) == LiftedBool::True)
+	    if (value(GetVar(V)) == LiftedBool::True)
 	       cand = V;
 
 	 auto reasonClause = (*this)[cand].reason;
 	 auto reason = reasonClause ? reasonClause->reason : Var();
-	 if (auto RP = reason.Pkg(); RP == P.MapPointer())
+	 if (auto RP = GetPkg(reason); not RP.end() && RP == P)
 	    reason = (*this)[P].reason ? (*this)[P].reason->reason : Var();
 
 	 if (cand != P.CurrentVer())
@@ -1377,11 +1377,11 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 		  for (auto sol : clause->solutions)
 		  {
 		     // New installs move the auto-bit. TODO: Should we look at whether clause is the reason for installing it?
-		     if (sol.CastPkg(cache) == P || sol.CastPkg(cache)->CurrentVer)
+		     if (AsPkg(sol) == P || AsPkg(sol)->CurrentVer)
 			continue;
-		     std::cerr << "Move  manual bit from " << P.FullName() << " to " << sol.CastPkg(cache).Name() << std::endl;
-		     movedManual[sol.CastPkg(cache)] = true;
-		     depcache.MarkAuto(sol.CastPkg(cache), false);
+		     std::cerr << "Move  manual bit from " << P.FullName() << " to " << AsPkg(sol).Name() << std::endl;
+		     movedManual[AsPkg(sol)] = true;
+		     depcache.MarkAuto(AsPkg(sol), false);
 		     moved = true;
 		  }
 	       if (moved)
@@ -1435,9 +1435,9 @@ std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIt
       std::ostringstream out;
       ioprintf(out, "%s is a virtual package, printing all providers\n", pkg.FullName().c_str());
       for (auto prv = pkg.ProvidesList(); not prv.end(); ++prv)
-	 out << doOne(Var(prv.OwnerVer()));
+	 out << doOne(solver.GetVar(prv.OwnerVer()));
       return out.str();
    }
-   return doOne(Var(pkg));
+   return doOne(solver.GetVar(pkg));
 }
 } // namespace APT::Solver

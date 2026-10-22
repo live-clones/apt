@@ -293,25 +293,6 @@ class Solver
    // States for versions
    ContiguousCacheMap<pkgCache::Version, State> verStates;
 
-   // \brief Helper function for safe access to package state.
-   constexpr State &operator[](const pkgCache::Package *P) noexcept
-   {
-      return pkgStates[P];
-   }
-   constexpr const State &operator[](const pkgCache::Package *P) const noexcept
-   {
-      return pkgStates[P];
-   }
-
-   // \brief Helper function for safe access to version state.
-   constexpr State &operator[](const pkgCache::Version *V) noexcept
-   {
-      return verStates[V];
-   }
-   constexpr const State &operator[](const pkgCache::Version *V) const noexcept
-   {
-      return verStates[V];
-   }
    // \brief Helper function for safe access to either state.
    constexpr State &operator[](Var r) noexcept;
    constexpr const State &operator[](Var r) const noexcept;
@@ -468,6 +449,38 @@ class DependencySolver final : public Solver
 
    // \brief Discover variables
    std::queue<Var> discoverQ;
+
+   /// \brief Return the variable for a package, registering it if necessary
+   Var GetVar(pkgCache::PkgIterator const &Pkg) const noexcept { return Var(Pkg); }
+   /// \brief Return the variable for a version, registering it if necessary
+   Var GetVar(pkgCache::VerIterator const &Ver) const noexcept { return Var(Ver); }
+   /// \brief Return the package the variable refers to, or an empty iterator
+   pkgCache::PkgIterator GetPkg(Var var) const noexcept { return var.Pkg(cache); }
+   /// \brief Return the version the variable refers to, or an empty iterator
+   pkgCache::VerIterator GetVer(Var var) const noexcept { return var.Ver(cache); }
+   /// \brief Return the package of the variable, cast from version if needed
+   pkgCache::PkgIterator AsPkg(Var var) const noexcept { return var.CastPkg(cache); }
+
+   // \brief Helper function for safe access to package state.
+   using Solver::operator[];
+   constexpr State &operator[](const pkgCache::Package *P) noexcept
+   {
+      return pkgStates[P];
+   }
+   constexpr const State &operator[](const pkgCache::Package *P) const noexcept
+   {
+      return pkgStates[P];
+   }
+   // \brief Helper function for safe access to version state.
+   constexpr State &operator[](const pkgCache::Version *V) noexcept
+   {
+      return verStates[V];
+   }
+   constexpr const State &operator[](const pkgCache::Version *V) const noexcept
+   {
+      return verStates[V];
+   }
+
    /// \brief Discover the dependencies of the variable
    void Discover(Var var) override;
    /// \brief Link a clause into the watchers
@@ -581,9 +594,9 @@ struct APT::Solver::Solver::Trail
 constexpr APT::Solver::Solver::State &APT::Solver::Solver::operator[](APT::Solver::Var r) noexcept
 {
    if (auto P = r.Pkg())
-      return (*this)[cache.PkgP + P];
+      return pkgStates[cache.PkgP + P];
    if (auto V = r.Ver())
-      return (*this)[cache.VerP + V];
+      return verStates[cache.VerP + V];
    return *rootState.get();
 }
 
