@@ -42,6 +42,7 @@ namespace APT::Solver
 {
 
 struct Lit;
+class Solver;
 
 // \brief Groups of works, these are ordered.
 //
@@ -106,7 +107,8 @@ struct Var
 {
    uint32_t value;
 
-   explicit constexpr Var(uint32_t value = 0) noexcept : value{value} {}
+   // \brief The root variable.
+   constexpr Var() noexcept : value{0} {}
 
    // \brief Check if there is no reason.
    constexpr bool empty() const noexcept { return value == 0; }
@@ -115,6 +117,15 @@ struct Var
 
    /// \brief Negate
    constexpr Lit operator~() const noexcept;
+
+   private:
+   friend class Solver;
+   friend struct Lit;
+   // \brief Construct a variable from its numeric identifier.
+   //
+   // Only the solver hands out variables (via Solver::newVar()), such that
+   // using a variable as an index cannot refer to unregistered state.
+   explicit constexpr Var(uint32_t value) noexcept : value{value} {}
 };
 
 /**
@@ -179,7 +190,7 @@ struct Clause
    inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
 };
 
-constexpr Lit Solver::Var::operator~() const noexcept
+constexpr Lit Var::operator~() const noexcept
 {
    return ~Lit(*this);
 }
