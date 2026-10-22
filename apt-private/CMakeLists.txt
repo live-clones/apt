@@ -8,14 +8,20 @@ set(MINOR 0)
 file(GLOB_RECURSE library "*.cc")
 file(GLOB_RECURSE headers "*.h")
 
-# Create a library using the C++ files
-add_library(apt-private SHARED ${library})
+# Create an object library using the C++ files, so they can be reused
+# directly, e.g. by the unit tests. Note that this deliberately has no
+# dependency on apt-pkg-object: the shared library resolves apt-pkg
+# symbols from libapt-pkg, not from a second, built-in copy.
+add_library(apt-private-object OBJECT ${library})
+set_target_properties(apt-private-object PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(apt-private-object PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
-# Link the library and set the SONAME
+# Create the shared library from the object library and set the SONAME
+add_library(apt-private SHARED)
+target_link_libraries(apt-private PRIVATE apt-private-object)
 target_link_libraries(apt-private PUBLIC apt-pkg)
 set_target_properties(apt-private PROPERTIES VERSION ${MAJOR}.${MINOR})
 set_target_properties(apt-private PROPERTIES SOVERSION ${MAJOR})
-set_target_properties(apt-private PROPERTIES CXX_VISIBILITY_PRESET hidden)
 add_version_script(apt-private)
 
 # Install the library and the headers

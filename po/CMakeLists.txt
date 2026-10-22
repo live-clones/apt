@@ -16,7 +16,7 @@ if (TARGET apt-private)
 apt_add_translation_domain(
     DOMAIN apt
     TARGETS apt apt-cache apt-get apt-config apt-cdrom apt-helper apt-mark
-            apt-private
+            apt-private-object
             # Methods
             connectlib file copy store gpgv cdrom http rred mirror
     SCRIPTS ../dselect/install ../dselect/update
