@@ -7,7 +7,7 @@ set(languages_excluded
 if (TARGET apt-pkg)
 apt_add_translation_domain(
     DOMAIN libapt-pkg${APT_PKG_MAJOR}
-    TARGETS apt-pkg
+    TARGETS apt-pkg-object
     EXCLUDE_LANGUAGES ${languages_excluded}
 )
 endif()
