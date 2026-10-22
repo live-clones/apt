@@ -150,14 +150,14 @@ struct Lit
  * \brief A single clause
  *
  * A clause is a normalized, expanded dependency, translated into an implication
- * in terms of Var objects, that is, `reason -> solutions[0] | ... | solutions[n]`
+ * in terms of Var objects, that is, `guard -> solutions[0] | ... | solutions[n]`
  */
 struct Clause
 {
    // \brief Underlying dependency, opaque to the solver (a pkgCache::Dependency in practice)
    void *dep = nullptr;
-   // \brief Var for the work
-   Var reason;
+   // \brief Var guarding the implication
+   Var guard;
    // \brief The group we are in
    Group group;
    // \brief Possible solutions to this task, ordered in order of preference.
@@ -174,7 +174,7 @@ struct Clause
    // Clauses merged with this clause
    std::forward_list<Clause> merged;
 
-   inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative), eager(not optional) {}
+   inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
 };
 
 constexpr Lit Solver::Var::operator~() const noexcept

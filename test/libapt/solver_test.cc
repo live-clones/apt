@@ -33,11 +33,11 @@ class TestSolver : public Solver
    // \brief Register a clause into the watchers, like DependencySolver::RegisterClause does.
    const Clause *AddClause(Clause &&clause)
    {
-      auto &clauses = states[clause.reason].clauses;
+      auto &clauses = states[clause.guard].clauses;
       clauses.push_back(std::make_unique<Clause>(std::move(clause)));
       auto const &inserted = clauses.back();
-      if (not inserted->reason.empty())
-	 watches(inserted->reason).push_back(inserted.get());
+      if (not inserted->guard.empty())
+	 watches(inserted->guard).push_back(inserted.get());
       for (auto sol : inserted->solutions)
 	 watches(inserted->negative ? sol : ~sol).push_back(inserted.get());
       return inserted.get();

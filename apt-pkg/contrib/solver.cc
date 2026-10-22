@@ -86,8 +86,8 @@ std::string Solver::toString(const Clause &clause, [[maybe_unused]] bool pretty,
 {
    // Render the implication in a DIMACS-like form, e.g. A -> B | C becomes ~xA | xB | xC
    std::string out;
-   if (showMerged && not clause.reason.empty())
-      out.append(toString(~clause.reason));
+   if (showMerged && not clause.guard.empty())
+      out.append(toString(~clause.guard));
    for (auto sol : clause.solutions)
    {
       if (not out.empty())
@@ -129,7 +129,7 @@ Var Solver::bestReason(Clause const *clause, Var var) const noexcept
 {
    if (not clause)
       return Var{};
-   if (clause->reason == var)
+   if (clause->guard == var)
       for (auto choice : clause->solutions)
       {
 	 if (clause->negative && value(choice) == LiftedBool::True)
@@ -137,7 +137,7 @@ Var Solver::bestReason(Clause const *clause, Var var) const noexcept
 	 if (not clause->negative && value(choice) == LiftedBool::False)
 	    return choice;
       }
-   return clause->reason;
+   return clause->guard;
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
@@ -192,7 +192,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    // such as pkg=ver -> pkg, are irrelevant for the user, skip them
    if (IsPackage(var) && assignment && rclause && rclause->group == Group::SelectVersion)
    {
-      var = rclause->reason;
+      var = rclause->guard;
       rclause = states[var].reason;
    }
 
@@ -381,8 +381,8 @@ bool Solver::Propagate(const Clause *clause, Lit p)
    if (clause->negative)
    {
       // One of the solutions was set, so reject the reason
-      if (p != clause->reason)
-	 return Enqueue(~clause->reason, clause);
+      if (p != clause->guard)
+	 return Enqueue(~clause->guard, clause);
 
       // Here we need to reject all conflicting solutions (reason -> none of solutions)
       for (auto sol : clause->solutions)
@@ -402,9 +402,9 @@ bool Solver::Propagate(const Clause *clause, Lit p)
    {
       // Conflict clause. If this clause is non-optional; reject its "reason".
       if (not clause->optional)
-	 return Enqueue(~clause->reason, clause);
+	 return Enqueue(~clause->guard, clause);
    }
-   else if (value(clause->reason) != LiftedBool::True)
+   else if (value(clause->guard) != LiftedBool::True)
    {
       // Inactive clause, nothing to do
    }
@@ -416,7 +416,7 @@ bool Solver::Propagate(const Clause *clause, Lit p)
    else
    {
       // Undecided clause. If this is an activation, queue it for solving
-      if (p == clause->reason)
+      if (p == clause->guard)
 	 return AddWork(Work{clause, decisionLevel()});
    }
    return true;

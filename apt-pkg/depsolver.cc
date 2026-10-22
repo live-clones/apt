@@ -253,7 +253,7 @@ std::string DependencySolver::toString(const Clause &clause, bool pretty, bool s
 {
    std::string out;
    if (showMerged)
-      out.append(toString(clause.reason));
+      out.append(toString(clause.guard));
    if (clause.dep && pretty)
    {
       out.append(" ").append(pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(clause.dep)).DepType()).append(" ");
@@ -269,7 +269,7 @@ std::string DependencySolver::toString(const Clause &clause, bool pretty, bool s
    }
    else if (pretty && clause.group == Group::SelectVersion && clause.negative)
       out.append(" conflicts with other versions of itself");
-   else if (pretty && clause.group == Group::SelectVersion && not GetPkg(clause.reason).end())
+   else if (pretty && clause.group == Group::SelectVersion && not GetPkg(clause.guard).end())
    {
       out.append(clause.solutions.size() > 1 ? " is available in versions " : " is available in version ");
       for (auto var : clause.solutions)
@@ -342,7 +342,7 @@ constexpr bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b) noe
 
 const Clause *DependencySolver::RegisterClause(Clause &&clause)
 {
-   auto &clauses = states[clause.reason].clauses;
+   auto &clauses = states[clause.guard].clauses;
    pkgCache::DepIterator dep(cache, static_cast<pkgCache::Dependency *>(clause.dep));
 
    // Merge dependencies on the same name into a single one, and restrict their solution space.
@@ -398,8 +398,8 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
    clauses.push_back(std::make_unique<Clause>(std::move(clause)));
    auto const &inserted = clauses.back();
    // Insert all our watches
-   if (not inserted->reason.empty())
-      watches(inserted->reason).push_back(inserted.get());
+   if (not inserted->guard.empty())
+      watches(inserted->guard).push_back(inserted.get());
    for (auto sol : inserted->solutions)
       watches(inserted->negative ? sol : ~sol).push_back(inserted.get());
    return inserted.get();
@@ -891,9 +891,9 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 	       cand = V, candVar = verVar;
 
 	 auto reasonClause = cand.end() ? nullptr : states[candVar].reason;
-	 auto reason = reasonClause ? reasonClause->reason : Var();
+	 auto reason = reasonClause ? reasonClause->guard : Var();
 	 if (auto RP = GetPkg(reason); not RP.end() && RP == P)
-	    reason = states[var].reason ? states[var].reason->reason : Var();
+	    reason = states[var].reason ? states[var].reason->guard : Var();
 
 	 if (cand != P.CurrentVer())
 	 {
