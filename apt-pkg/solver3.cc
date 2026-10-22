@@ -39,22 +39,23 @@
 namespace APT::Solver
 {
 
-Solver::Solver(pkgCache &cache)
-    : cache(cache),
-      rootState(new State),
-      pkgStates(cache),
-      verStates(cache)
+Solver::Solver()
 {
    // Ensure trivially
    static_assert(std::is_trivially_destructible_v<Work>);
    static_assert(std::is_trivially_destructible_v<Trail>);
-   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Package>));
-   static_assert(sizeof(Var) == sizeof(map_pointer<pkgCache::Version>));
-   // Root state is "true".
-   rootState->assignment = LiftedBool::True;
+   // The root state is "true".
+   states.emplace_back();
+   states[Var{}].assignment = LiftedBool::True;
 }
 
 Solver::~Solver() = default;
+
+Var Solver::newVar()
+{
+   states.emplace_back();
+   return Var{static_cast<uint32_t>(states.size() - 1)};
+}
 
 // This function determines if a work item is less important than another.
 constexpr bool Solver::Work::operator<(Solver::Work const &b) const noexcept
@@ -74,64 +75,44 @@ constexpr bool Solver::Work::operator<(Solver::Work const &b) const noexcept
 
 std::string Solver::toString(Var var) const
 {
-   if (auto P = var.Pkg(cache); not P.end())
-      return P.FullName();
-   if (auto V = var.Ver(cache); not V.end())
-      return V.ParentPkg().FullName() + "=" + V.VerStr();
-   return "(root)";
+   return "x" + std::to_string(var.value);
 }
 
 std::string Solver::toString(Lit lit) const
 {
-   return (lit.sign() ? "not " : "") + toString(lit.var());
+   return (lit.sign() ? "~" : "") + toString(lit.var());
 }
 
-std::string Solver::toString(const Clause &clause, bool pretty, bool showMerged) const
+std::string Solver::toString(const Clause &clause, [[maybe_unused]] bool pretty, bool showMerged) const
 {
+   // Render the implication in a DIMACS-like form, e.g. A -> B | C becomes ~xA | xB | xC
    std::string out;
    if (showMerged)
-      out.append(toString(clause.reason));
-   if (clause.dep && pretty)
+      out.append(toString(~clause.reason));
+   for (auto sol : clause.solutions)
    {
-      out.append(" ").append(pkgCache::DepIterator(cache, clause.dep).DepType()).append(" ");
-      for (auto dep = pkgCache::DepIterator(cache, clause.dep); not dep.end(); ++dep)
-      {
-	 out.append(dep.TargetPkg().FullName(true));
-	 if (dep.TargetVer())
-	    out.append(" (").append(dep.CompType()).append(" ").append(dep.TargetVer()).append(")");
-	 if (not(dep->CompareOp & pkgCache::Dep::Or))
-	    break;
-	 out.append(" | ");
-      }
-   }
-   else if (pretty && clause.group == Group::SelectVersion && clause.negative)
-      out.append(" conflicts with other versions of itself");
-   else if (pretty && clause.group == Group::SelectVersion && clause.reason.Pkg())
-   {
-      out.append(clause.solutions.size() > 1 ? " is available in versions " : " is available in version ");
-      for (auto var : clause.solutions)
-      {
-	 assert(var.Ver());
-	 if (var != clause.solutions.front())
-	    out.append(", ");
-	 out.append(var.Ver(cache).VerStr());
-      }
-   }
-   else
-   {
-      out.append(" -> ");
-      for (auto var : clause.solutions)
-	 out.append(" | ").append(toString(var));
+      out.append(" | ");
+      out.append(toString(clause.negative ? ~sol : Lit(sol)));
    }
    if (showMerged && not clause.merged.empty())
    {
       for (auto &merged : clause.merged)
       {
-	 out.append(" and");
+	 out.append(" and ");
 	 out.append(toString(merged, pretty, false));
       }
    }
    return out;
+}
+
+std::string Solver::DescribeSelection(Var var, bool assignment) const
+{
+   std::string s;
+   if (not assignment)
+      strprintf(s, "%s is not selected for install", toString(var).c_str());
+   else
+      strprintf(s, "%s is selected for install", toString(var).c_str());
+   return s;
 }
 
 std::string Solver::toString(const Work &work) const
@@ -192,21 +173,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    // Helper function to nicely print more details than just "install/do not install", such as "removal", "upgrade", "downgrade", "install"
    auto printSelection = [this](Var var, bool assignment)
    {
-      std::string s;
-      if (auto pkg = var.Pkg(cache); not assignment && pkg && pkg->CurrentVer)
-	 strprintf(s, "%s is selected for removal", toString(var).c_str());
-      else if (auto ver = var.Ver(cache); assignment && ver && ver.ParentPkg().CurrentVer() && ver.ParentPkg().CurrentVer() != ver)
-      {
-	 if (cache.VS->CmpVersion(ver.ParentPkg().CurrentVer().VerStr(), ver.VerStr()) < 0)
-	    strprintf(s, "%s is selected as an upgrade", toString(var).c_str());
-	 else
-	    strprintf(s, "%s is selected as a downgrade", toString(var).c_str());
-      }
-      else if (not assignment)
-	 strprintf(s, "%s is not selected for install", toString(var).c_str());
-      else
-	 strprintf(s, "%s is selected for install", toString(var).c_str());
-      return s;
+      return DescribeSelection(var, assignment);
    };
 
    // Helper: Recurse into all of the children of the clause and print the assignment for them.
@@ -228,7 +195,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
 
    // Inverse version selection clauses that select the package if the version is selected,
    // such as pkg=ver -> pkg, are irrelevant for the user, skip them
-   if (var.Pkg() && assignment && rclause && rclause->group == Group::SelectVersion)
+   if (IsPackage(var) && assignment && rclause && rclause->group == Group::SelectVersion)
    {
       var = rclause->reason;
       rclause = (*this)[var].reason;
@@ -276,7 +243,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    {
       auto const &state = (*this)[*it];
       // Don't print version selection clauses
-      if (it->Pkg() && state.reason && state.reason->group == Group::SelectVersion)
+      if (IsPackage(*it) && state.reason && state.reason->group == Group::SelectVersion)
       {
 	 --i;
 	 continue;
@@ -775,14 +742,129 @@ class DefaultRootSetFunc2 : public pkgDepCache::DefaultRootSetFunc
 }; // FIXME: DEDUP with pkgDepCache.
 /*}}}*/
 
+Var DependencySolver::newVar()
+{
+   auto var = Solver::newVar();
+   varPkg.push_back(nullptr);
+   varVer.push_back(nullptr);
+   return var;
+}
+
+Var DependencySolver::GetVar(pkgCache::PkgIterator const &Pkg)
+{
+   if (pkgVars[Pkg].empty())
+   {
+      auto var = pkgVars[Pkg] = newVar();
+      varPkg[var] = Pkg.MapPointer();
+   }
+   return pkgVars[Pkg];
+}
+
+Var DependencySolver::GetVar(pkgCache::VerIterator const &Ver)
+{
+   if (verVars[Ver].empty())
+   {
+      auto var = verVars[Ver] = newVar();
+      varVer[var] = Ver.MapPointer();
+   }
+   return verVars[Ver];
+}
+
 DependencySolver::DependencySolver(pkgCache &cache, pkgDepCache::Policy &policy, EDSP::Request::Flags requestFlags)
-    : Solver(cache),
+    : cache(cache),
       policy(policy),
       requestFlags(requestFlags),
       pkgObsolete(cache),
       priorities(cache),
-      candidates(cache)
+      candidates(cache),
+      pkgVars(cache),
+      verVars(cache)
 {
+   // The root variable does not refer to a package or version.
+   varPkg.push_back(nullptr);
+   varVer.push_back(nullptr);
+}
+
+std::string DependencySolver::toString(Var var) const
+{
+   if (auto P = GetPkg(var); not P.end())
+      return P.FullName();
+   if (auto V = GetVer(var); not V.end())
+      return V.ParentPkg().FullName() + "=" + V.VerStr();
+   return "(root)";
+}
+
+std::string DependencySolver::toString(Lit lit) const
+{
+   return (lit.sign() ? "not " : "") + toString(lit.var());
+}
+
+std::string DependencySolver::toString(const Clause &clause, bool pretty, bool showMerged) const
+{
+   std::string out;
+   if (showMerged)
+      out.append(toString(clause.reason));
+   if (clause.dep && pretty)
+   {
+      out.append(" ").append(pkgCache::DepIterator(cache, clause.dep).DepType()).append(" ");
+      for (auto dep = pkgCache::DepIterator(cache, clause.dep); not dep.end(); ++dep)
+      {
+	 out.append(dep.TargetPkg().FullName(true));
+	 if (dep.TargetVer())
+	    out.append(" (").append(dep.CompType()).append(" ").append(dep.TargetVer()).append(")");
+	 if (not(dep->CompareOp & pkgCache::Dep::Or))
+	    break;
+	 out.append(" | ");
+      }
+   }
+   else if (pretty && clause.group == Group::SelectVersion && clause.negative)
+      out.append(" conflicts with other versions of itself");
+   else if (pretty && clause.group == Group::SelectVersion && not GetPkg(clause.reason).end())
+   {
+      out.append(clause.solutions.size() > 1 ? " is available in versions " : " is available in version ");
+      for (auto var : clause.solutions)
+      {
+	 auto ver = GetVer(var);
+	 assert(not ver.end());
+	 if (var != clause.solutions.front())
+	    out.append(", ");
+	 out.append(ver.VerStr());
+      }
+   }
+   else
+   {
+      out.append(" -> ");
+      for (auto var : clause.solutions)
+	 out.append(" | ").append(toString(var));
+   }
+   if (showMerged && not clause.merged.empty())
+   {
+      for (auto &merged : clause.merged)
+      {
+	 out.append(" and");
+	 out.append(toString(merged, pretty, false));
+      }
+   }
+   return out;
+}
+
+std::string DependencySolver::DescribeSelection(Var var, bool assignment) const
+{
+   std::string s;
+   if (auto pkg = GetPkg(var); not assignment && not pkg.end() && pkg->CurrentVer)
+      strprintf(s, "%s is selected for removal", toString(var).c_str());
+   else if (auto ver = GetVer(var); assignment && not ver.end() && ver.ParentPkg().CurrentVer() && ver.ParentPkg().CurrentVer() != ver)
+   {
+      if (cache.VS->CmpVersion(ver.ParentPkg().CurrentVer().VerStr(), ver.VerStr()) < 0)
+	 strprintf(s, "%s is selected as an upgrade", toString(var).c_str());
+      else
+	 strprintf(s, "%s is selected as a downgrade", toString(var).c_str());
+   }
+   else if (not assignment)
+      strprintf(s, "%s is not selected for install", toString(var).c_str());
+   else
+      strprintf(s, "%s is selected for install", toString(var).c_str());
+   return s;
 }
 
 DependencySolver::~DependencySolver() = default;
@@ -905,7 +987,7 @@ bool DependencySolver::ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand)
 
 bool DependencySolver::Obsolete(pkgCache::PkgIterator pkg, bool AllowManual) const
 {
-   if ((*this)[pkg].flags.manual && not AllowManual)
+   if (auto var = FindVar(pkg); not var.empty() && (*this)[var].flags.manual && not AllowManual)
       return false;
    if (pkgObsolete[pkg] != LiftedBool::Undefined)
       return pkgObsolete[pkg] == LiftedBool::True;
@@ -954,12 +1036,12 @@ void DependencySolver::Discover(Var var)
       if (auto Ver = GetVer(var); not Ver.end() && not(*this)[Ver.ParentPkg()].flags.discovered)
 	 var = GetVar(Ver.ParentPkg());
 
-      auto &state = (*this)[var];
-
-      if (state.flags.discovered)
+      // NB: Do not hold a reference to the variable's state here; discovering
+      // the dependencies below registers new variables, which may reallocate.
+      if ((*this)[var].flags.discovered)
 	 continue;
 
-      state.flags.discovered = true;
+      (*this)[var].flags.discovered = true;
 
       if (auto Pkg = GetPkg(var); not Pkg.end())
       {
@@ -1026,7 +1108,7 @@ void DependencySolver::Discover(Var var)
       }
 
       // Recursively discover everything else that is not already FALSE by fact (False at level 0)
-      for (auto const &clause : state.clauses)
+      for (auto const &clause : (*this)[var].clauses)
 	 for (auto const &var : clause->solutions)
 	    if (value(var) != LiftedBool::False || (*this)[var].level > 0)
 	       discoverQ.push(var);
@@ -1129,7 +1211,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	 return policy.IsImportantDep(d) || (KeepRecommends && d->Type == pkgCache::Dep::Recommends) || (KeepSuggests && d->Type == pkgCache::Dep::Suggests);
       };
       bool satisfied = std::any_of(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
-				   { return GetPkg(var) ? GetPkg(var)->CurrentVer != nullptr : GetVar(AsPkg(var).CurrentVer()) == var; });
+				   { return GetPkg(var) ? GetPkg(var)->CurrentVer != nullptr : GetVer(var) == AsPkg(var).CurrentVer(); });
 
       // Find the existing dependency
       pkgCache::DepIterator existing;
@@ -1349,17 +1431,19 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
    {
       depcache[P].Marked = 0;
       depcache[P].Garbage = 0;
-      if (value(GetVar(P)) == LiftedBool::True)
+      auto var = FindVar(P);
+      if (not var.empty() && value(var) == LiftedBool::True)
       {
+	 Var candVar;
 	 pkgCache::VerIterator cand;
 	 for (auto V = P.VersionList(); cand.end() && not V.end(); V++)
-	    if (value(GetVar(V)) == LiftedBool::True)
-	       cand = V;
+	    if (auto verVar = FindVar(V); not verVar.empty() && value(verVar) == LiftedBool::True)
+	       cand = V, candVar = verVar;
 
-	 auto reasonClause = (*this)[cand].reason;
+	 auto reasonClause = cand.end() ? nullptr : (*this)[candVar].reason;
 	 auto reason = reasonClause ? reasonClause->reason : Var();
 	 if (auto RP = GetPkg(reason); not RP.end() && RP == P)
-	    reason = (*this)[P].reason ? (*this)[P].reason->reason : Var();
+	    reason = (*this)[var].reason ? (*this)[var].reason->reason : Var();
 
 	 if (cand != P.CurrentVer())
 	 {
@@ -1373,7 +1457,7 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 	    else if (not(depcache[P].Flags & pkgCache::Flag::Auto) && P.CurrentVer()->Section && cand->Section && not _config->SectionInSubTree("APT::Move-Autobit-Sections", P.CurrentVer().Section()) && _config->SectionInSubTree("APT::Move-Autobit-Sections", cand.Section()))
 	    {
 	       bool moved = false;
-	       for (auto const &clause : (*this)[cand].clauses)
+	       for (auto const &clause : (*this)[candVar].clauses)
 		  for (auto sol : clause->solutions)
 		  {
 		     // New installs move the auto-bit. TODO: Should we look at whether clause is the reason for installing it?
@@ -1397,7 +1481,7 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
       }
       else if (P->CurrentVer || depcache[P].Install())
       {
-	 bool automatic = (not (*this)[P].reason) && (not (*this)[P].reasonStr);
+	 bool automatic = var.empty() || ((not(*this)[var].reason) && (not(*this)[var].reasonStr));
 	 depcache.MarkDelete(P, false, 0, automatic);
 	 depcache[P].Marked = 0;
 	 depcache[P].Garbage = 1;
