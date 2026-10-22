@@ -175,15 +175,6 @@ struct Var
 
    /// \brief Negate
    constexpr Lit operator~() const noexcept;
-
-   std::string toString(pkgCache &cache) const
-   {
-      if (auto P = Pkg(cache); not P.end())
-	 return P.FullName();
-      if (auto V = Ver(cache); not V.end())
-	 return V.ParentPkg().FullName() + "=" + V.VerStr();
-      return "(root)";
-   }
 };
 
 /**
@@ -213,8 +204,6 @@ struct Lit
    constexpr bool empty() const noexcept { return value == 0; }
    constexpr bool operator!=(Lit const other) const noexcept { return value != other.value; }
    constexpr bool operator==(Lit const other) const noexcept { return value == other.value; }
-
-   std::string toString(pkgCache &cache) const { return (sign() ? "not " : "") + var().toString(cache); }
 };
 
 /**
@@ -246,8 +235,6 @@ struct Clause
    std::forward_list<Clause> merged;
 
    inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative), eager(not optional) {}
-
-   std::string toString(pkgCache &cache, bool pretty = false, bool showMerged = true) const;
 };
 
 constexpr Lit Solver::Var::operator~() const noexcept
@@ -398,6 +385,15 @@ class Solver
    // \brief Solve the dependencies
    [[nodiscard]] bool Solve();
 
+   // \brief Render a variable, e.g. for debugging output
+   virtual std::string toString(Var var) const;
+   // \brief Render a literal, e.g. for debugging output
+   virtual std::string toString(Lit lit) const;
+   // \brief Render a clause, e.g. for debugging output
+   virtual std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const;
+   // \brief Render a work item, e.g. for debugging output
+   std::string toString(const Work &work) const;
+
    // Print dependency chain
    virtual std::string WhyStr(Var reason) const;
 
@@ -516,7 +512,6 @@ struct APT::Solver::Solver::Work
    size_t size{0};
 
    constexpr bool operator<(APT::Solver::Solver::Work const &b) const noexcept;
-   std::string toString(pkgCache &cache) const;
    constexpr Work(const Clause *clause, level_type level) noexcept : clause(clause), level(level) {}
 };
 

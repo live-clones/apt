@@ -72,15 +72,29 @@ constexpr bool Solver::Work::operator<(Solver::Work const &b) const noexcept
    return false;
 }
 
-std::string APT::Solver::Clause::toString(pkgCache &cache, bool pretty, bool showMerged) const
+std::string Solver::toString(Var var) const
+{
+   if (auto P = var.Pkg(cache); not P.end())
+      return P.FullName();
+   if (auto V = var.Ver(cache); not V.end())
+      return V.ParentPkg().FullName() + "=" + V.VerStr();
+   return "(root)";
+}
+
+std::string Solver::toString(Lit lit) const
+{
+   return (lit.sign() ? "not " : "") + toString(lit.var());
+}
+
+std::string Solver::toString(const Clause &clause, bool pretty, bool showMerged) const
 {
    std::string out;
    if (showMerged)
-      out.append(reason.toString(cache));
-   if (dep && pretty)
+      out.append(toString(clause.reason));
+   if (clause.dep && pretty)
    {
-      out.append(" ").append(pkgCache::DepIterator(cache, dep).DepType()).append(" ");
-      for (auto dep = pkgCache::DepIterator(cache, this->dep); not dep.end(); ++dep)
+      out.append(" ").append(pkgCache::DepIterator(cache, clause.dep).DepType()).append(" ");
+      for (auto dep = pkgCache::DepIterator(cache, clause.dep); not dep.end(); ++dep)
       {
 	 out.append(dep.TargetPkg().FullName(true));
 	 if (dep.TargetVer())
@@ -90,13 +104,15 @@ std::string APT::Solver::Clause::toString(pkgCache &cache, bool pretty, bool sho
 	 out.append(" | ");
       }
    }
-   else if (pretty && group == Group::SelectVersion && negative)
+   else if (pretty && clause.group == Group::SelectVersion && clause.negative)
       out.append(" conflicts with other versions of itself");
-   else if (pretty && group == Group::SelectVersion && reason.Pkg()) {
-      out.append(solutions.size() > 1 ? " is available in versions " : " is available in version ");
-      for (auto var : solutions) {
+   else if (pretty && clause.group == Group::SelectVersion && clause.reason.Pkg())
+   {
+      out.append(clause.solutions.size() > 1 ? " is available in versions " : " is available in version ");
+      for (auto var : clause.solutions)
+      {
 	 assert(var.Ver());
-	 if (var != solutions.front())
+	 if (var != clause.solutions.front())
 	    out.append(", ");
 	 out.append(var.Ver(cache).VerStr());
       }
@@ -104,27 +120,27 @@ std::string APT::Solver::Clause::toString(pkgCache &cache, bool pretty, bool sho
    else
    {
       out.append(" -> ");
-      for (auto var : solutions)
-	 out.append(" | ").append(var.toString(cache));
+      for (auto var : clause.solutions)
+	 out.append(" | ").append(toString(var));
    }
-   if (showMerged && not merged.empty())
+   if (showMerged && not clause.merged.empty())
    {
-      for (auto &clause : merged)
+      for (auto &merged : clause.merged)
       {
 	 out.append(" and");
-	 out.append(clause.toString(cache, pretty, false));
+	 out.append(toString(merged, pretty, false));
       }
    }
    return out;
 }
 
-std::string Solver::Work::toString(pkgCache &cache) const
+std::string Solver::toString(const Work &work) const
 {
    std::ostringstream out;
-   if (clause->optional)
+   if (work.clause->optional)
       out << "Optional ";
-   out << "Item (" << ssize_t(size <= clause->solutions.size() ? size : -1) << "@" << level << ") ";
-   out << clause->toString(cache);
+   out << "Item (" << ssize_t(work.size <= work.clause->solutions.size() ? work.size : -1) << "@" << work.level << ") ";
+   out << toString(*work.clause);
    return out.str();
 }
 
@@ -155,9 +171,9 @@ std::string Solver::WhyStr(Var reason) const
    while (not reason.empty())
    {
       if (value(reason) == LiftedBool::False)
-	 out.push_back(std::string("not ") + reason.toString(cache));
+	 out.push_back(std::string("not ") + toString(reason));
       else
-	 out.push_back(reason.toString(cache));
+	 out.push_back(toString(reason));
       reason = bestReason((*this)[reason].reason, reason);
    }
 
@@ -178,18 +194,18 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    {
       std::string s;
       if (auto pkg = var.Pkg(cache); not assignment && pkg && pkg->CurrentVer)
-	 strprintf(s, "%s is selected for removal", var.toString(cache).c_str());
+	 strprintf(s, "%s is selected for removal", toString(var).c_str());
       else if (auto ver = var.Ver(cache); assignment && ver && ver.ParentPkg().CurrentVer() && ver.ParentPkg().CurrentVer() != ver)
       {
 	 if (cache.VS->CmpVersion(ver.ParentPkg().CurrentVer().VerStr(), ver.VerStr()) < 0)
-	    strprintf(s, "%s is selected as an upgrade", var.toString(cache).c_str());
+	    strprintf(s, "%s is selected as an upgrade", toString(var).c_str());
 	 else
-	    strprintf(s, "%s is selected as a downgrade", var.toString(cache).c_str());
+	    strprintf(s, "%s is selected as a downgrade", toString(var).c_str());
       }
       else if (not assignment)
-	 strprintf(s, "%s is not selected for install", var.toString(cache).c_str());
+	 strprintf(s, "%s is not selected for install", toString(var).c_str());
       else
-	 strprintf(s, "%s is selected for install", var.toString(cache).c_str());
+	 strprintf(s, "%s is selected for install", toString(var).c_str());
       return s;
    };
 
@@ -204,7 +220,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
 	    continue;
 
 	 if (value(choice) == LiftedBool::Undefined)
-	    out << prefix << "- " << choice.toString(cache) << " is undecided\n";
+	    out << prefix << "- " << toString(choice) << " is undecided\n";
 	 else
 	    out << prefix << "- " << LongWhyStr(choice, value(choice) == LiftedBool::True, (*this)[choice].reason, prefix + "  ", seen).substr(prefix.size() + 2);
       }
@@ -241,7 +257,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    // A package was decided "not install" due to a positive clause, so the clause is unsat.
    if (not assignment && rclause && not rclause->negative)
    {
-      out << prefix << rclause->toString(cache, true) << "\n";
+      out << prefix << toString(*rclause, true) << "\n";
       out << prefix << "but none of the choices are installable:\n";
       recurseChildren(rclause);
       return out.str();
@@ -276,9 +292,9 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
       seen.insert(*it);
       if (state.reason)
       {
-	 out << prefix << std::setw(w) << i << ". " << state.reason->toString(cache, true) << "\n";
+	 out << prefix << std::setw(w) << i << ". " << toString(*state.reason, true) << "\n";
 	 if (state.reason->solutions.size() > 1)
-	    out << prefix << std::setw(w) << " " << "  [selected " << it->toString(cache) << " for " << (state.assignment == LiftedBool::True ? "install" : "remove") << "]\n";
+	    out << prefix << std::setw(w) << " " << "  [selected " << toString(*it) << " for " << (state.assignment == LiftedBool::True ? "install" : "remove") << "]\n";
       }
       else
 	 out << prefix << std::setw(w) << i << ". " << printSelection(*it, state.assignment == LiftedBool::True) << "\n";
@@ -287,9 +303,9 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    // Print the leaf. We can't have the leaf in the path because we might be called for an attempted assignment
    // that conflicts with the actual assignment (to simplify: we marked X for not install, then we process Y depends X
    // and try to mark X and reach the conflict, we are called with "X" and the "Y depends X" clause).
-   out << prefix << std::setw(w) << i << ". " << rclause->toString(cache, true) << "\n";
+   out << prefix << std::setw(w) << i << ". " << toString(*rclause, true) << "\n";
    if (rclause->solutions.size() > 1)
-      out << prefix << std::setw(w) << " " << "  " << "[selected " << bestReason(rclause, var).toString(cache) << "]\n";
+      out << prefix << std::setw(w) << " " << "  " << "[selected " << toString(bestReason(rclause, var)) << "]\n";
 
    bool firstContext = true;
    // Show alternative paths not taken. Consider you have Y depends X|Z; and you mark X
@@ -310,7 +326,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
       }
 
       firstContext = false;
-      out << prefix << "* In " << state.reason->toString(cache, true) << ":\n";
+      out << prefix << "* In " << toString(*state.reason, true) << ":\n";
       prefix += "  ";
       recurseChildren(state.reason, *it);
       prefix.resize(prefix.size() - 2);
@@ -322,7 +338,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
 	 out << prefix << "For context, additional choices that could not be installed:" << "\n";
       }
       firstContext = false;
-      out << prefix << "* In " << rclause->toString(cache, true) << ":\n";
+      out << prefix << "* In " << toString(*rclause, true) << ":\n";
       prefix += "  ";
       recurseChildren(rclause, var);
       prefix.resize(prefix.size() - 2);
@@ -364,7 +380,7 @@ bool Solver::Enqueue(Lit lit, const Clause *reason)
 
    // FIXME: Adjust call to bestReason to use lit
    if (unlikely(debug >= 1))
-      std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << lit.var().toString(cache) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
+      std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << toString(lit.var()) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
 
    trail.push_back(Trail{lit.var(), std::nullopt});
    propQ.push(lit.var());
@@ -398,7 +414,7 @@ bool Solver::Propagate()
 bool Solver::Propagate(const Clause *clause, Lit p)
 {
    if (debug >= 3)
-      std::cerr << "Propagate " << p.toString(cache) << " to " << clause->toString(cache) << std::endl;
+      std::cerr << "Propagate " << toString(p) << " to " << toString(*clause) << std::endl;
    // Negative clauses are trivial
    if (clause->negative)
    {
@@ -452,7 +468,7 @@ void Solver::UndoOne()
    if (not trailItem.assigned.empty())
    {
       if (unlikely(debug >= 4))
-	 std::cerr << "Unassign " << trailItem.assigned.toString(cache) << "\n";
+	 std::cerr << "Unassign " << toString(trailItem.assigned) << "\n";
       auto &state = (*this)[trailItem.assigned];
       state.assignment = LiftedBool::Undefined;
       state.reason = nullptr;
@@ -463,7 +479,7 @@ void Solver::UndoOne()
    if (auto work = trailItem.work)
    {
       if (unlikely(debug >= 4))
-	 std::cerr << "Adding work item " << work->toString(cache) << std::endl;
+	 std::cerr << "Adding work item " << toString(*work) << std::endl;
 
       must_succeed(AddWork(std::move(*work)));
    }
@@ -512,7 +528,7 @@ bool Solver::Pop()
    std::make_heap(work.begin(), work.end());
 
    if (unlikely(debug >= 2))
-      std::cerr << "Backtracking to choice " << choice.toString(cache) << "\n";
+      std::cerr << "Backtracking to choice " << toString(choice) << "\n";
 
    // FIXME: There should be a reason!
    if (not choice.empty() && not Enqueue(~choice, {}))
@@ -521,7 +537,7 @@ bool Solver::Pop()
    (*this)[choice].reasonStr = "backtracked";
 
    if (unlikely(debug >= 2))
-      std::cerr << "Backtracked to choice " << choice.toString(cache) << "\n";
+      std::cerr << "Backtracked to choice " << toString(choice) << "\n";
 
    return true;
 }
@@ -537,7 +553,7 @@ bool Solver::AddWork(Work &&w)
    else
    {
       if (unlikely(debug >= 3 && w.clause->optional))
-	 std::cerr << "Enqueuing Recommends " << w.clause->toString(cache) << std::endl;
+	 std::cerr << "Enqueuing Recommends " << toString(*w.clause) << std::endl;
       if (w.clause->solutions.size() == 1 && not w.clause->optional)
 	 return Enqueue(w.clause->solutions[0], w.clause);
 
@@ -574,22 +590,22 @@ bool Solver::Solve()
 		      { return value(ver) == LiftedBool::True; }))
       {
 	 if (unlikely(debug >= 2))
-	    std::cerr << "ELIDED " << item.toString(cache) << std::endl;
+	    std::cerr << "ELIDED " << toString(item) << std::endl;
       }
       else if (auto candidate = std::find_if(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
 					     { return value(ver) == LiftedBool::Undefined; });
 	       candidate != item.clause->solutions.end())
       {
 	 if (unlikely(debug >= 3))
-	    std::cerr << item.toString(cache) << "\n"
-		      << "(try it: " << candidate->toString(cache) << ")\n";
+	    std::cerr << toString(item) << "\n"
+		      << "(try it: " << toString(*candidate) << ")\n";
 	 must_succeed(Assume(*candidate, item.clause));
       }
       else
       {
 	 assert(item.clause->optional);
 	 if (unlikely(debug >= 1))
-	    std::cerr << item.toString(cache) << "\n";
+	    std::cerr << toString(item) << "\n";
       }
       // Must push to trail after any Assume() above.
       trail.push_back(Trail{Var(), item});
@@ -1054,7 +1070,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
    if (start->Type == pkgCache::Dep::Replaces || start->Type == pkgCache::Dep::Enhances)
       return std::nullopt;
    if (unlikely(debug >= 3))
-      std::cerr << "Found dependency critical " << reason.toString(cache) << " -> " << start.TargetPkg().FullName() << "\n";
+      std::cerr << "Found dependency critical " << toString(reason) << " -> " << start.TargetPkg().FullName() << "\n";
 
    Clause clause{reason, Group::Satisfy, not start.IsCritical() /* optional */, start.IsNegative()};
 
@@ -1077,7 +1093,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 	    pkgCache::VerIterator tgti(cache, *tgt);
 
 	    if (unlikely(debug >= 3))
-	       std::cerr << "Adding work to  item " << reason.toString(cache) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
+	       std::cerr << "Adding work to  item " << toString(reason) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
 	    clause.solutions.emplace_back(pkgCache::VerIterator(cache, *tgt));
 	 }
 	 std::stable_sort(clause.solutions.begin() + begin, clause.solutions.end(), CompareProviders3{cache, policy, start.TargetPkg(), *this});
@@ -1127,7 +1143,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
       if (not existing.end() && not important && importantToKeep(start) && satisfied)
       {
 	 if (unlikely(debug >= 3))
-	    std::cerr << "Try to keep satisfied: " << clause.toString(cache, true) << std::endl;
+	    std::cerr << "Try to keep satisfied: " << toString(clause, true) << std::endl;
 	 clause.group = Group::SatisfySuggests;
 	 // Erase the non-installed solutions. We will process this last and try to keep the previously installed
 	 // "best" solution installed.
@@ -1138,19 +1154,19 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
       else if (not important)
       {
 	 if (unlikely(debug >= 3))
-	    std::cerr << "Ignore unimportant clause: " << clause.toString(cache, true) << std::endl;
+	    std::cerr << "Ignore unimportant clause: " << toString(clause, true) << std::endl;
 	 return std::nullopt;
       }
       else if (not existing.end() && policy.IsImportantDep(existing) && not satisfied)
       {
 	 if (unlikely(debug >= 3))
-	    std::cerr << "Ignoring unsatisfied clause: " << clause.toString(cache, true) << std::endl;
+	    std::cerr << "Ignoring unsatisfied clause: " << toString(clause, true) << std::endl;
 	 return std::nullopt;
       }
       else if (IsUpgrade && not existing.end() && satisfied)
       {
 	 if (unlikely(debug >= 3))
-	    std::cerr << "Promoting previously satisfied clause to hard dependency: " << clause.toString(cache, true) << std::endl;
+	    std::cerr << "Promoting previously satisfied clause to hard dependency: " << toString(clause, true) << std::endl;
 	 clause.optional = false;
 	 clause.eager = true;
       }
@@ -1161,14 +1177,14 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
       )
       {
 	 if (unlikely(debug >= 3))
-	    std::cerr << "Promoting new clause to hard dependency: " << clause.toString(cache) << std::endl;
+	    std::cerr << "Promoting new clause to hard dependency: " << toString(clause) << std::endl;
 	 clause.optional = false;
 	 clause.eager = true;
       }
       else if (not existing.end() && importantToKeep(start) && satisfied)
       {
 	 if (unlikely(debug >= 3))
-	    std::cerr << "Restricting existing Recommends to installed packages: " << clause.toString(cache, true) << std::endl;
+	    std::cerr << "Restricting existing Recommends to installed packages: " << toString(clause, true) << std::endl;
 	 // Erase the non-installed solutions. We will process this last and try to keep the previously installed
 	 // "best" solution installed.
 	 clause.solutions.erase(std::remove_if(clause.solutions.begin(), clause.solutions.end(), [this](auto var)
@@ -1403,11 +1419,11 @@ std::string DependencySolver::InternalCliWhy(pkgDepCache &cache, pkgCache::PkgIt
 	 return "";
       std::unordered_set<Var> seen;
       if (solver[var].assignment == LiftedBool::Undefined)
-	 return strprintf(buf, "%s is undecided\n", var.toString(cache).c_str()), buf;
+	 return strprintf(buf, "%s is undecided\n", solver.toString(var).c_str()), buf;
       if (assignment && solver[var].assignment != LiftedBool::True)
-	 return strprintf(buf, "%s is not actually marked for install\n", var.toString(cache).c_str()), buf;
+	 return strprintf(buf, "%s is not actually marked for install\n", solver.toString(var).c_str()), buf;
       if (not assignment && solver[var].assignment == LiftedBool::True)
-	 return strprintf(buf, "%s is actually marked for install\n", var.toString(cache).c_str()), buf;
+	 return strprintf(buf, "%s is actually marked for install\n", solver.toString(var).c_str()), buf;
       return solver.LongWhyStr(var, assignment, solver[var].reason, "", seen);
    };
 
