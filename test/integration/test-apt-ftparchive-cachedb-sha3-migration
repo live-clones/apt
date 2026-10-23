@@ -15,6 +15,14 @@ if [ "$(getconf LONG_BIT)" != '64' ]; then
     msgskip 'checked-in cache holds 64-bit record sizes'
     exit 0
 fi
+# The checked-in cache was written on a little-endian host. The FileSize
+# field of a cache record is stored in the byte order of the host that
+# wrote it, so a big-endian host reads it as 0. Caches are not moved
+# between hosts of different byte order in practice, so skipping is safe.
+if [ "$(dpkg-architecture -qDEB_HOST_ARCH_ENDIAN)" = 'big' ]; then
+    msgskip 'checked-in cache was written on a little-endian host, its FileSize is misread on big-endian'
+    exit 0
+fi
 
 confighashes 'MD5' 'SHA1' 'SHA256' 'SHA512' 'SHA3-256' 'SHA3-512'
 db_dump=db_dump
