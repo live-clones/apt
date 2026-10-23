@@ -2,7 +2,7 @@
 # Licensed under the same terms as APT; i.e. GPL 2 or later.
 
 # set minimum version
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 4.2)
 project(apt)
 # Generic header locations
 include_directories(${PROJECT_BINARY_DIR}/include)

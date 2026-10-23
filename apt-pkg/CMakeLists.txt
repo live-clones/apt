@@ -5,17 +5,25 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/apt-pkg/)
 execute_process(COMMAND grep -v "^#" "${CMAKE_CURRENT_SOURCE_DIR}/tagfile-keys.list"
 		OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.clean.list"
 		COMMAND_ERROR_IS_FATAL ANY)
+# Generate into a scratch directory and copy only if changed to avoid
+# rebuilding everything whenever cmake runs.
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tagfile-keys.gen)
 execute_process(COMMAND ${TRIEHASH_EXECUTABLE}
                         --ignore-case
-                         --header ${PROJECT_BINARY_DIR}/include/apt-pkg/tagfile-keys.h
-                         --code ${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc
+                         --header tagfile-keys.h
+                         --code tagfile-keys.cc
                          --enum-class
                          --enum-name pkgTagSection::Key
                          --function-name pkgTagHash
                          --include "<apt-pkg/tagfile.h>"
                          --include "<apt-pkg/header-is-private.h>"
                          "${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.clean.list"
+                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/tagfile-keys.gen
                 COMMAND_ERROR_IS_FATAL ANY)
+configure_file(${PROJECT_BINARY_DIR}/tagfile-keys.gen/tagfile-keys.h
+               ${PROJECT_BINARY_DIR}/include/apt-pkg/tagfile-keys.h COPYONLY)
+configure_file(${PROJECT_BINARY_DIR}/tagfile-keys.gen/tagfile-keys.cc
+               ${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc COPYONLY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "tagfile-keys.list")
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc" PROPERTIES COMPILE_DEFINITIONS APT_COMPILING_APT)
 
@@ -44,10 +52,10 @@ configure_file(versionscript.in ${CMAKE_CURRENT_BINARY_DIR}/versionscript @ONLY)
 file(GLOB_RECURSE library "*.cc"  "${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc")
 file(GLOB_RECURSE headers "*.h")
 
-# Create a library using the C++ files
-add_library(apt-pkg SHARED ${library})
-# Link the library and set the SONAME
-target_include_directories(apt-pkg
+# Create an object library using the C++ files, so they can be reused
+# directly, e.g. by the unit tests
+add_library(apt-pkg-object OBJECT ${library})
+target_include_directories(apt-pkg-object
                            PRIVATE ${ZLIB_INCLUDE_DIRS}
                                    ${BZIP2_INCLUDE_DIR}
                                    ${LZMA_INCLUDE_DIRS}
@@ -60,7 +68,7 @@ target_include_directories(apt-pkg
                                    $<$<BOOL:${XXHASH_FOUND}>:${XXHASH_INCLUDE_DIRS}>
 )
 
-target_link_libraries(apt-pkg
+target_link_libraries(apt-pkg-object
                       PRIVATE -lutil ${CMAKE_DL_LIBS} ${RESOLV_LIBRARIES}
                              ${CMAKE_THREAD_LIBS_INIT}
                              ${ZLIB_LIBRARIES}
@@ -74,9 +82,14 @@ target_link_libraries(apt-pkg
                              OpenSSL::Crypto
                              $<$<BOOL:${XXHASH_FOUND}>:${XXHASH_LIBRARIES}>
 )
+set_target_properties(apt-pkg-object PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(apt-pkg-object PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+# Create the shared library from the object library and set the SONAME
+add_library(apt-pkg SHARED)
+target_link_libraries(apt-pkg PRIVATE apt-pkg-object)
 set_target_properties(apt-pkg PROPERTIES VERSION ${MAJOR}.${MINOR})
 set_target_properties(apt-pkg PROPERTIES SOVERSION ${MAJOR})
-set_target_properties(apt-pkg PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_link_libraries(apt-pkg PRIVATE -Wl,-version-script="${CMAKE_CURRENT_BINARY_DIR}/versionscript")
 
 # Install the library and the header files

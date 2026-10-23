@@ -1,5 +1,5 @@
 if (WITH_TESTS)
-   set(PROJECT_TEST_LIBRARIES apt-private)
+   set(PROJECT_TEST_LIBRARIES apt-pkg-object apt-private-object)
    find_path(GTEST_SRCPATH src/gtest.cc
       /usr/src/googletest/googletest
       /usr/src/googletest
