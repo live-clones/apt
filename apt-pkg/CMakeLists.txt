@@ -5,17 +5,25 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/apt-pkg/)
 execute_process(COMMAND grep -v "^#" "${CMAKE_CURRENT_SOURCE_DIR}/tagfile-keys.list"
 		OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.clean.list"
 		COMMAND_ERROR_IS_FATAL ANY)
+# Generate into a scratch directory and copy only if changed to avoid
+# rebuilding everything whenever cmake runs.
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/tagfile-keys.gen)
 execute_process(COMMAND ${TRIEHASH_EXECUTABLE}
                         --ignore-case
-                         --header ${PROJECT_BINARY_DIR}/include/apt-pkg/tagfile-keys.h
-                         --code ${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc
+                         --header tagfile-keys.h
+                         --code tagfile-keys.cc
                          --enum-class
                          --enum-name pkgTagSection::Key
                          --function-name pkgTagHash
                          --include "<apt-pkg/tagfile.h>"
                          --include "<apt-pkg/header-is-private.h>"
                          "${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.clean.list"
+                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/tagfile-keys.gen
                 COMMAND_ERROR_IS_FATAL ANY)
+configure_file(${PROJECT_BINARY_DIR}/tagfile-keys.gen/tagfile-keys.h
+               ${PROJECT_BINARY_DIR}/include/apt-pkg/tagfile-keys.h COPYONLY)
+configure_file(${PROJECT_BINARY_DIR}/tagfile-keys.gen/tagfile-keys.cc
+               ${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc COPYONLY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "tagfile-keys.list")
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/tagfile-keys.cc" PROPERTIES COMPILE_DEFINITIONS APT_COMPILING_APT)
 
