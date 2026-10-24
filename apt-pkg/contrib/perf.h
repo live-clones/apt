@@ -43,17 +43,22 @@ class PerformanceContext
       const char *name;
    };
 
-   static constexpr std::array<measurement, 10> measurements{
+   static constexpr std::array<measurement, 15> measurements{
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS, "instructions"},
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES, "cpu_cycles"},
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES, "ref_cpu_cycles"},
+      measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND, "stalled_cycles_frontend"},
+      measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND, "stalled_cycles_backend"},
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES, "cache_references"},
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES, "cache_misses"},
+      measurement{PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_DTLB | (PERF_COUNT_HW_CACHE_OP_READ << 8) | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16), "dtlb_load_misses"},
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS, "branch_instructions"},
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES, "branch_misses"},
       measurement{PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK, "cpu_clock"},
       measurement{PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS, "page_faults"},
+      measurement{PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ, "major_faults"},
       measurement{PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS, "cpu_migrations"},
+      measurement{PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES, "context_switches"},
    };
 
    /// Output filename
