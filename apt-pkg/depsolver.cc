@@ -618,16 +618,22 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
       }
       else
       {
-	 std::unique_ptr<pkgCache::Version *[]> all(start.AllTargets());
-
-	 for (auto tgt = all.get(); *tgt; ++tgt)
+	 // Walk the target versions and provides directly (same filtering as
+	 // AllTargets) instead of materializing the targets array.
+	 auto addTarget = [&](pkgCache::VerIterator const &tgt)
 	 {
-	    pkgCache::VerIterator tgti(cache, *tgt);
-
 	    if (unlikely(debug >= 3))
-	       std::cerr << "Adding work to  item " << toString(reason) << " -> " << tgti.ParentPkg().FullName() << "=" << tgti.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
-	    clause.solutions.push_back(GetVar(tgti));
-	 }
+	       std::cerr << "Adding work to  item " << toString(reason) << " -> " << tgt.ParentPkg().FullName() << "=" << tgt.VerStr() << (clause.negative ? " (negative)" : "") << "\n";
+	    clause.solutions.push_back(GetVar(tgt));
+	 };
+	 pkgCache::PkgIterator const targetPkg = start.TargetPkg();
+	 for (auto ver = targetPkg.VersionList(); not ver.end(); ++ver)
+	    if (not start.IsIgnorable(ver.ParentPkg()) && start.IsSatisfied(ver))
+	       addTarget(ver);
+	 for (auto prv = targetPkg.ProvidesList(); not prv.end(); ++prv)
+	    if (not start.IsIgnorable(prv) && start.IsSatisfied(prv))
+	       addTarget(prv.OwnerVer());
+
 	 std::stable_sort(clause.solutions.begin() + begin, clause.solutions.end(), CompareProviders3{cache, policy, start.TargetPkg(), *this});
       }
       if (start == end)
