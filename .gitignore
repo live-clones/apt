@@ -121,11 +121,11 @@ Makefile
 # Copyright file copied from COPYING
 /debian/copyright
 
-# generated for and by abicheck
-/abicheck/apt_build.xml
-/abicheck/apt_installed.xml
-/abicheck/compat_reports/
-/abicheck/logs/
+# generated for and by the ABI check
+/tools/abicheck/apt_build.xml
+/tools/abicheck/apt_installed.xml
+/tools/abicheck/compat_reports/
+/tools/abicheck/logs/
 
 /build
 /obj-*
