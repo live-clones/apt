@@ -84,14 +84,14 @@ enum class Group : uint8_t
 };
 
 // \brief This essentially describes the install state in RFC2119 terms.
-enum class LiftedBool : uint8_t
+enum class LiftedBool : int8_t
 {
-   // \brief We have not made a choice about the package yet
-   Undefined,
-   // \brief We need to install this package
-   True,
    // \brief We cannot install this package (need conflicts with it)
-   False,
+   False = -1,
+   // \brief We have not made a choice about the package yet
+   Undefined = 0,
+   // \brief We need to install this package
+   True = 1,
 };
 
 /**
@@ -186,16 +186,8 @@ constexpr Lit Solver::Var::operator~() const noexcept
 
 constexpr LiftedBool operator~(LiftedBool value) noexcept
 {
-   switch (value)
-   {
-   case LiftedBool::Undefined:
-      return LiftedBool::Undefined;
-   case LiftedBool::True:
-      return LiftedBool::False;
-   case LiftedBool::False:
-      return LiftedBool::True;
-   }
-   abort();
+   // Negation: Undefined stays Undefined, True and False are exchanged.
+   return static_cast<LiftedBool>(-static_cast<int8_t>(value));
 }
 
 /**
