@@ -36,10 +36,10 @@ else
    cd "$AUTOPKGTEST_TMP"
 fi
 
-find "${INCDIR}/apt-pkg" -name '*.h' -type f \
-   ! -name 'debsrcrecords.h' \
-   ! -name 'header-is-private.h' ! -name 'cachefilter-patterns.h' ! -name 'tagfile-keys.h' \
-   -printf '#include <apt-pkg/%f>\n' > pkgconfigtest.cc
+find "${INCDIR}/apt-pkg" -name '*.h' -type f ! -name 'header-is-private.h' -print0 \
+    | xargs -0 grep -L 'header-is-private\.h' \
+    | sed 's|^.*/\([^/]*\)$|#include <apt-pkg/\1>|' > pkgconfigtest.cc
+
 cat >>pkgconfigtest.cc <<EOF
 #include <cstdio>
 

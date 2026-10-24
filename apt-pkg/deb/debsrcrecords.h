@@ -11,6 +11,7 @@
 #define PKGLIB_DEBSRCRECORDS_H
 
 #include <apt-pkg/fileutl.h>
+#include <apt-pkg/header-is-private.h>
 #include <apt-pkg/srcrecords.h>
 #include <apt-pkg/tagfile-keys.h>
 #include <apt-pkg/tagfile.h>
