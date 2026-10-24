@@ -942,7 +942,7 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
       }
       else if (P->CurrentVer || depcache[P].Install())
       {
-	 bool automatic = var.empty() || ((not states[var].reason) && (not states[var].reasonStr));
+	 bool automatic = var.empty() || ((not states[var].reason) && (not states[var].flags.backtracked));
 	 depcache.MarkDelete(P, false, 0, automatic);
 	 depcache[P].Marked = 0;
 	 depcache[P].Garbage = 1;

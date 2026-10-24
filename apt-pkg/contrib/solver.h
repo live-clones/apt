@@ -442,8 +442,6 @@ struct Solver::State
    // Vars < 0 are package ID, reasons > 0 are version IDs.
    const Clause *reason{};
 
-   const char *reasonStr{};
-
    // \brief The level at which the value has been assigned
    level_type level{0};
 
@@ -454,6 +452,7 @@ struct Solver::State
    {
       bool discovered{};
       bool manual{};
+      bool backtracked{};
    } flags;
 
    static_assert(sizeof(flags) <= sizeof(int));

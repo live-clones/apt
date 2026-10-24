@@ -436,7 +436,7 @@ void Solver::UndoOne()
       auto &state = states[trailItem.assigned];
       state.assignment = LiftedBool::Undefined;
       state.reason = nullptr;
-      state.reasonStr = nullptr;
+      state.flags.backtracked = false;
       state.level = 0;
    }
 
@@ -498,7 +498,7 @@ bool Solver::Pop()
    if (not choice.empty() && not Enqueue(~choice, {}))
       return false;
 
-   states[choice].reasonStr = "backtracked";
+   states[choice].flags.backtracked = true;
 
    if (unlikely(debug >= 2))
       std::cerr << "Backtracked to choice " << toString(choice) << "\n";
