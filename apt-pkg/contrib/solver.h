@@ -1,75 +1,45 @@
 /*
- * solver3.h - The APT 3.0 solver
+ * solver.h - APT General purpose SAT solver
  *
  * Copyright (c) 2023 Julian Andres Klode
  * Copyright (c) 2023 Canonical Ltd
  *
  * SPDX-License-Identifier: GPL-2.0+
+ *
+ * This solver started from scratch but turns slowly into a variant of
+ * MiniSat as documented in the paper
+ *    "An extensible SAT-solver [extended version 1.2]."
+ * by Niklas Eén, and Niklas Sörensson.
+ *
+ * It extends MiniSAT with support for optional clauses, and differs
+ * in that it removes non-deterministic aspects like the activity based
+ * ordering. Instead it uses a more nuanced static ordering that, to
+ * some extend, preserves some greediness and sub-optimality of the
+ * classic APT solver.
  */
 
+#ifndef APT_SOLVER_H
+#define APT_SOLVER_H
+#include <apt-pkg/configuration.h>
+#include <apt-pkg/header-is-private.h>
+
 #include <cassert>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
+#include <forward_list>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <queue>
+#include <string>
 #include <type_traits>
+#include <unordered_set>
+#include <utility>
 #include <vector>
-
-#include <apt-pkg/configuration.h>
-#include <apt-pkg/depcache.h>
-#include <apt-pkg/edsp.h>
-#include <apt-pkg/pkgcache.h>
-#include <apt-pkg/policy.h>
-
-template <typename T> struct always_false : std::false_type {};
 
 namespace APT::Solver
 {
-
-/**
- * \brief A simple mapping from objects in the cache to user-defined types.
- *
- * This default initializes an array with the specified value type for each
- * object in the cache of that type.
- */
-template <typename K, typename V, bool fast = false>
-class ContiguousCacheMap
-{
-   V *data_; // Avoid std::unique_ptr() as it may check that it's non-null.
-
-   public:
-   ContiguousCacheMap(pkgCache &cache)
-   {
-      static_assert(std::is_constructible_v<V>);
-      if constexpr (fast)
-      {
-	 static_assert(std::is_trivially_constructible_v<V>);
-	 static_assert(std::is_trivially_destructible_v<V>);
-      }
-
-      size_t size;
-      if constexpr (std::is_same_v<K, pkgCache::Version>)
-	 size = cache.Head().VersionCount;
-      else if constexpr (std::is_same_v<K, pkgCache::Package>)
-	 size = cache.Head().PackageCount;
-      else
-	 static_assert(always_false<K>::value, "Cannot construct map for key type");
-
-      data_ = new V[size]{};
-   }
-   constexpr V &operator[](const K *key) noexcept { return data_[key->ID]; }
-   constexpr const V &operator[](const K *key) const noexcept { return data_[key->ID]; }
-   ~ContiguousCacheMap() { delete[] data_; }
-
-   // Delete copy constructors for memory safety (rule of 3)
-   ContiguousCacheMap(const ContiguousCacheMap &) = delete;
-   ContiguousCacheMap &operator=(const ContiguousCacheMap &) = delete;
-};
-
-/**
- * \brief A version of ContiguousCacheMap that ensures allocation and deallocation is trivial.
- */
-template <typename K, typename V>
-using FastContiguousCacheMap = ContiguousCacheMap<K, V, true>;
 
 struct Lit;
 
@@ -125,49 +95,19 @@ enum class LiftedBool : uint8_t
 };
 
 /**
- * \brief Tagged union holding either a package, version, or nothing; representing the reason for installing something.
+ * \brief A variable in the solver, identified by a small integer.
  *
- * We want to keep track of the reason why things are being installed such that
- * we can have sensible debugging abilities; and we want to generically refer to
- * both packages and versions as variables, hence this class was added.
- *
+ * Variables are registered explicitly with the solver via Solver::newVar();
+ * the variable 0 is reserved for the root. Any mapping from variables to objects
+ * of interest, such as packages and versions, is maintained by the concrete
+ * solver implementation.
  */
 struct Var
 {
    uint32_t value;
 
    explicit constexpr Var(uint32_t value = 0) noexcept : value{value} {}
-   explicit Var(pkgCache::PkgIterator const &Pkg) noexcept : value(uint32_t(Pkg.MapPointer()) << 1) {}
-   explicit Var(pkgCache::VerIterator const &Ver) noexcept : value(uint32_t(Ver.MapPointer()) << 1 | 1) {}
 
-   constexpr bool isVersion() const noexcept { return value & 1; }
-   constexpr uint32_t mapPtr() const noexcept { return value >> 1; }
-
-   // \brief Return the package, if any, otherwise 0.
-   constexpr map_pointer<pkgCache::Package> Pkg() const noexcept
-   {
-      return isVersion() ? 0 : map_pointer<pkgCache::Package>{mapPtr()};
-   }
-   // \brief Return the version, if any, otherwise 0.
-   constexpr map_pointer<pkgCache::Version> Ver() const noexcept
-   {
-      return isVersion() ? map_pointer<pkgCache::Version>{mapPtr()} : 0;
-   }
-   // \brief Return the package iterator if storing a package, or an empty one
-   constexpr pkgCache::PkgIterator Pkg(pkgCache &cache) const noexcept
-   {
-      return isVersion() ? pkgCache::PkgIterator() : pkgCache::PkgIterator(cache, cache.PkgP + Pkg());
-   }
-   // \brief Return the version iterator if storing a package, or an empty end.
-   constexpr pkgCache::VerIterator Ver(pkgCache &cache) const noexcept
-   {
-      return isVersion() ? pkgCache::VerIterator(cache, cache.VerP + Ver()) : pkgCache::VerIterator();
-   }
-   // \brief Return a package, cast from version if needed
-   constexpr pkgCache::PkgIterator CastPkg(pkgCache &cache) const noexcept
-   {
-      return isVersion() ? Ver(cache).ParentPkg() : Pkg(cache);
-   }
    // \brief Check if there is no reason.
    constexpr bool empty() const noexcept { return value == 0; }
    constexpr bool operator!=(Var const other) const noexcept { return value != other.value; }
@@ -175,15 +115,6 @@ struct Var
 
    /// \brief Negate
    constexpr Lit operator~() const noexcept;
-
-   std::string toString(pkgCache &cache) const
-   {
-      if (auto P = Pkg(cache); not P.end())
-	 return P.FullName();
-      if (auto V = Ver(cache); not V.end())
-	 return V.ParentPkg().FullName() + "=" + V.VerStr();
-      return "(root)";
-   }
 };
 
 /**
@@ -213,22 +144,20 @@ struct Lit
    constexpr bool empty() const noexcept { return value == 0; }
    constexpr bool operator!=(Lit const other) const noexcept { return value != other.value; }
    constexpr bool operator==(Lit const other) const noexcept { return value == other.value; }
-
-   std::string toString(pkgCache &cache) const { return (sign() ? "not " : "") + var().toString(cache); }
 };
 
 /**
  * \brief A single clause
  *
  * A clause is a normalized, expanded dependency, translated into an implication
- * in terms of Var objects, that is, `reason -> solutions[0] | ... | solutions[n]`
+ * in terms of Var objects, that is, `guard -> solutions[0] | ... | solutions[n]`
  */
 struct Clause
 {
-   // \brief Underyling dependency
-   pkgCache::Dependency *dep = nullptr;
-   // \brief Var for the work
-   Var reason;
+   // \brief Underlying dependency, opaque to the solver (a pkgCache::Dependency in practice)
+   void *dep = nullptr;
+   // \brief Var guarding the implication
+   Var guard;
    // \brief The group we are in
    Group group;
    // \brief Possible solutions to this task, ordered in order of preference.
@@ -245,9 +174,7 @@ struct Clause
    // Clauses merged with this clause
    std::forward_list<Clause> merged;
 
-   inline Clause(Var reason, Group group, bool optional = false, bool negative = false) : reason(reason), group(group), optional(optional), negative(negative), eager(not optional) {}
-
-   std::string toString(pkgCache &cache, bool pretty = false, bool showMerged = true) const;
+   inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
 };
 
 constexpr Lit Solver::Var::operator~() const noexcept
@@ -268,6 +195,67 @@ constexpr LiftedBool operator~(LiftedBool value) noexcept
    }
    abort();
 }
+
+/**
+ * \brief A minimal, grow-only vector indexed by Var objects.
+ *
+ * std::vector and std::unique_ptr<T[]> perform bounds checking in operator[]
+ * because we build with _GLIBCXX_ASSERTIONS, which is too costly in the hot
+ * paths of the solver. Taking Var objects as indices reduces the risk of
+ * out-of-bounds accesses, as variables are only handed out by
+ * Solver::newVar().
+ */
+template <typename T>
+class VarVector
+{
+   T *data_ = nullptr; // Avoid std::unique_ptr() as it may check that it's non-null.
+   size_t size_ = 0;
+   size_t capacity_ = 0;
+
+   public:
+   constexpr T &operator[](Var var) noexcept { return data_[var.value]; }
+   constexpr const T &operator[](Var var) const noexcept { return data_[var.value]; }
+
+   constexpr void grow()
+   {
+      size_t const oldCapacity = capacity_;
+      capacity_ = capacity_ == 0 ? 64 * 1024 : 2 * capacity_;
+      std::allocator<T> alloc;
+      T *data = alloc.allocate(capacity_);
+      if (data_)
+      {
+	 std::uninitialized_move(data_, data_ + size_, data);
+	 std::destroy_n(data_, size_);
+	 alloc.deallocate(data_, oldCapacity);
+      }
+      data_ = data;
+   }
+   constexpr void push_back(T value)
+   {
+      emplace_back(std::move(value));
+   }
+   template <typename... Args>
+   constexpr void emplace_back(Args &&...args)
+   {
+      if (size_ == capacity_)
+	 grow();
+      std::construct_at(data_ + size_++, std::forward<Args>(args)...);
+   }
+   constexpr size_t size() const noexcept { return size_; }
+   ~VarVector()
+   {
+      if (data_)
+      {
+	 std::destroy_n(data_, size_);
+	 std::allocator<T>{}.deallocate(data_, capacity_);
+      }
+   }
+
+   // Delete copy constructors for memory safety (rule of 3)
+   VarVector() = default;
+   VarVector(const VarVector &) = delete;
+   VarVector &operator=(const VarVector &) = delete;
+};
 
 /*
  * \brief APT 3.0 solver
@@ -295,39 +283,14 @@ class Solver
    template <typename T>
    using heap = std::vector<T>;
 
-   static_assert(sizeof(level_type) >= sizeof(map_id_t));
+   // \brief State for each registered variable; the root is at index 0.
+   VarVector<State> states;
 
-   // Cache is needed to construct Iterators from Version objects we see
-   pkgCache &cache;
-   // Root state
-   std::unique_ptr<State> rootState;
-   // States for packages
-   ContiguousCacheMap<pkgCache::Package, State> pkgStates;
-   // States for versions
-   ContiguousCacheMap<pkgCache::Version, State> verStates;
-
-   // \brief Helper function for safe access to package state.
-   constexpr State &operator[](const pkgCache::Package *P) noexcept
-   {
-      return pkgStates[P];
-   }
-   constexpr const State &operator[](const pkgCache::Package *P) const noexcept
-   {
-      return pkgStates[P];
-   }
-
-   // \brief Helper function for safe access to version state.
-   constexpr State &operator[](const pkgCache::Version *V) noexcept
-   {
-      return verStates[V];
-   }
-   constexpr const State &operator[](const pkgCache::Version *V) const noexcept
-   {
-      return verStates[V];
-   }
-   // \brief Helper function for safe access to either state.
-   constexpr State &operator[](Var r) noexcept;
-   constexpr const State &operator[](Var r) const noexcept;
+   // \brief Register a new variable, returning its identifier.
+   //
+   // Concrete solvers may override this to keep auxiliary data structures
+   // indexed by variables in sync.
+   virtual Var newVar();
 
    constexpr std::vector<const Clause *> &watches(Lit lit) noexcept;
 
@@ -357,7 +320,7 @@ class Solver
    std::string version{_config->Find("APT::Solver", "3.0")};
    // \brief Debug level
    int debug{_config->FindI("Debug::APT::Solver")};
-   // \brief If set, we use strict pinning.
+   // \brief Solver timeout in seconds.
    int Timeout{_config->FindI("APT::Solver::Timeout", 10)};
 
    // \brief Discover a variable, translating the underlying dependencies to the SAT presentation
@@ -375,7 +338,7 @@ class Solver
    {
       return static_cast<level_type>(trailLim.size());
    }
-   constexpr Var bestReason(Clause const *clause, Var var) const noexcept;
+   Var bestReason(Clause const *clause, Var var) const noexcept;
    constexpr LiftedBool value(Lit lit) const noexcept;
 
    public:
@@ -387,7 +350,7 @@ class Solver
    [[nodiscard]] bool AddWork(Work &&work);
 
    // \brief Basic solver initializer. This cannot fail.
-   Solver(pkgCache &Cache);
+   Solver();
    virtual ~Solver();
 
    // Assume a literal
@@ -397,6 +360,20 @@ class Solver
 
    // \brief Solve the dependencies
    [[nodiscard]] bool Solve();
+
+   // \brief Render a variable, e.g. for debugging output
+   virtual std::string toString(Var var) const;
+   // \brief Render a literal, e.g. for debugging output
+   virtual std::string toString(Lit lit) const;
+   // \brief Render a clause, e.g. for debugging output
+   virtual std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const;
+   // \brief Render a work item, e.g. for debugging output
+   std::string toString(const Work &work) const;
+
+   // \brief Whether the variable is a package, used to elide version selection clauses in reasons.
+   virtual constexpr bool IsPackage(Var) const noexcept { return false; }
+   // \brief Describe the selection state of a variable, e.g. "x1 is selected for install"
+   virtual std::string DescribeSelection(Var var, bool assignment) const;
 
    // Print dependency chain
    virtual std::string WhyStr(Var reason) const;
@@ -415,86 +392,6 @@ class Solver
    virtual std::string LongWhyStr(Var var, bool assignment, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const;
 };
 
-/*
- * \brief APT 3.0 solver
- *
- * This is a simple solver focused on understandability and sensible results, it
- * will not generally find all solutions to the problem but will try to find the best
- * ones.
- *
- * It is a brute force solver with heuristics, conflicts learning, and 2**32 levels
- * of backtracking.
- */
-class DependencySolver final : public Solver
-{
-   friend class CompareProviders3;
-
-   // Policy is needed for determining candidate version.
-   pkgDepCache::Policy &policy;
-   // Request flags determine the behavior of the options below, make sure it comes first.
-   EDSP::Request::Flags requestFlags;
-
-   // Configuration options for the dependency solver
-   bool KeepAuto{version == "3.0" || not _config->FindB("APT::Get::AutomaticRemove")};
-   bool IsUpgrade{_config->FindB("APT::Solver::Upgrade", requestFlags &EDSP::Request::UPGRADE_ALL)};
-   bool AllowRemove{_config->FindB("APT::Solver::Remove", not(requestFlags & EDSP::Request::FORBID_REMOVE))};
-   bool AllowRemoveManual{AllowRemove && _config->FindB("APT::Solver::RemoveManual", true)};
-   bool AllowInstall{_config->FindB("APT::Solver::Install", not(requestFlags & EDSP::Request::FORBID_NEW_INSTALL))};
-   bool StrictPinning{_config->FindB("APT::Solver::Strict-Pinning", true)};
-   bool FixPolicyBroken{_config->FindB("APT::Get::Fix-Policy-Broken")};
-   bool DeferVersionSelection{_config->FindB("APT::Solver::Defer-Version-Selection", true)};
-   bool KeepRecommends{_config->FindB("APT::AutoRemove::RecommendsImportant", true)};
-   bool KeepSuggests{_config->FindB("APT::AutoRemove::SuggestsImportant", true)};
-   bool UpgradeBySourcePackage{_config->FindB("APT::Get::Upgrade-By-Source-Package", true)};
-
-   // Helper functions for detecting obsolete packages
-   mutable FastContiguousCacheMap<pkgCache::Package, LiftedBool> pkgObsolete;
-   bool Obsolete(pkgCache::PkgIterator pkg, bool AllowManual = false) const;
-   bool ObsoletedByNewerSourceVersion(pkgCache::VerIterator cand) const;
-
-   // GetPriority() with caching
-   mutable FastContiguousCacheMap<pkgCache::Version, short> priorities;
-   short GetPriority(pkgCache::VerIterator ver) const
-   {
-      if (priorities[ver] == 0)
-	 priorities[ver] = policy.GetPriority(ver);
-      return priorities[ver];
-   }
-
-   // GetCandidateVer() with caching
-   mutable FastContiguousCacheMap<pkgCache::Package, pkgCache::Version *> candidates;
-   pkgCache::VerIterator GetCandidateVer(pkgCache::PkgIterator pkg) const
-   {
-      if (candidates[pkg] == 0)
-	 candidates[pkg] = policy.GetCandidateVer(pkg);
-      return pkgCache::VerIterator(cache, candidates[pkg]);
-   }
-
-   // \brief Discover variables
-   std::queue<Var> discoverQ;
-   /// \brief Discover the dependencies of the variable
-   void Discover(Var var) override;
-   /// \brief Link a clause into the watchers
-   const Clause *RegisterClause(Clause &&clause);
-   /// \brief Enqueue dependencies shared by all versions of the package.
-   void RegisterCommonDependencies(pkgCache::PkgIterator Pkg);
-
-   /// \brief Translate an or group into a clause object
-   [[nodiscard]] Clause TranslateOrGroup(pkgCache::DepIterator start, pkgCache::DepIterator end, Var reason);
-
-   public:
-   // \brief Basic solver initializer. This cannot fail.
-   DependencySolver(pkgCache &Cache, pkgDepCache::Policy &Policy, EDSP::Request::Flags requestFlags);
-   ~DependencySolver() override;
-
-   /// \brief Apply the selections from the dep cache to the solver
-   [[nodiscard]] bool FromDepCache(pkgDepCache &depcache);
-   /// \brief Apply the solver result to the depCache
-   [[nodiscard]] bool ToDepCache(pkgDepCache &depcache) const;
-   /// \brief Temporary internal API with external linkage for the `apt why` and `apt why-not` commands.
-   APT_PUBLIC static std::string InternalCliWhy(pkgDepCache &depcache, pkgCache::PkgIterator Pkg, bool assignment);
-};
-}; // namespace APT::Solver
 /**
  * \brief A single work item
  *
@@ -505,7 +402,7 @@ class DependencySolver final : public Solver
  * of all packages in there, finding solutions to them, and then adding all dependencies
  * not yet resolved to the work queue.
  */
-struct APT::Solver::Solver::Work
+struct Solver::Work
 {
    const Clause *clause;
 
@@ -515,8 +412,7 @@ struct APT::Solver::Solver::Work
    /// Number of valid choices at insertion time
    size_t size{0};
 
-   constexpr bool operator<(APT::Solver::Solver::Work const &b) const noexcept;
-   std::string toString(pkgCache &cache) const;
+   constexpr bool operator<(Solver::Work const &b) const noexcept;
    constexpr Work(const Clause *clause, level_type level) noexcept : clause(clause), level(level) {}
 };
 
@@ -526,7 +422,7 @@ struct APT::Solver::Solver::Work
  * For each version, the solver records a assignment at a certain level. It
  * maintains an array mapping from version ID to state.
  */
-struct APT::Solver::Solver::State
+struct Solver::State
 {
    // \brief The reason for causing this state (invalid for Undefined).
    //
@@ -575,7 +471,7 @@ struct APT::Solver::Solver::State
  * clauses that were being solved, as when undoing the trail, we need to mark those clauses
  * active again by putting them back on the work heap.
  */
-struct APT::Solver::Solver::Trail
+struct Solver::Trail
 {
    /// \brief A variable that got assigned True or False. May be reset to Undefined on backtracking.
    Var assigned;
@@ -583,19 +479,17 @@ struct APT::Solver::Solver::Trail
    std::optional<Work> work;
 };
 
-constexpr APT::Solver::Solver::State &APT::Solver::Solver::operator[](APT::Solver::Var r) noexcept
+constexpr std::vector<const Clause *> &Solver::watches(Lit lit) noexcept
 {
-   if (auto P = r.Pkg())
-      return (*this)[cache.PkgP + P];
-   if (auto V = r.Ver())
-      return (*this)[cache.VerP + V];
-   return *rootState.get();
+   return states[lit.var()].watches[lit.sign()];
 }
 
-constexpr const APT::Solver::Solver::State &APT::Solver::Solver::operator[](APT::Solver::Var r) const noexcept
+constexpr LiftedBool Solver::value(Lit lit) const noexcept
 {
-   return const_cast<Solver &>(*this)[r];
+   return lit.sign() ? ~states[lit.var()].assignment : states[lit.var()].assignment;
 }
+
+}; // namespace APT::Solver
 
 // Custom specialization of std::hash can be injected in namespace std.
 template <>
@@ -613,7 +507,4 @@ struct std::hash<APT::Solver::Lit>
    std::size_t operator()(const APT::Solver::Lit &v) const noexcept { return hash_value(v.value); }
 };
 
-constexpr std::vector<const APT::Solver::Clause *> &APT::Solver::Solver::watches(Lit lit) noexcept
-{
-   return (*this)[lit.var()].watches[lit.sign()];
-}
+#endif /* APT_SOLVER_H */

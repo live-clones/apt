@@ -13,26 +13,44 @@ insertpackage 'installed,unstable' 'foo' 'amd64' '2.0' 'Depends: obsolete-depend
 setupaptarchive
 
 echo 'Debug::pkgProblemResolver "1";' > rootdir/etc/apt/apt.conf.d/debug-problemresolver
+echo 'Debug::APT::Solver "2";' >> rootdir/etc/apt/apt.conf.d/debug-problemresolver
 
-# We mark obsolete dependency for removal in B, then in C it is restored.
-testsuccessequal "A: foo:amd64 < 2.0 @ii mK >
-A: obsolete-dependency:amd64 < 1.0 @ii mK >
-B: foo:amd64 < 2.0 @ii mK Ib >
-B: obsolete-dependency:amd64 < 1.0 @ii mR >
+if [ "$APT_SOLVER" = "internal" ]; then
+TEXT="
 Entering ResolveByKeep
   Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >
 Keeping package foo:amd64
   Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >
 Package foo:amd64 foo:amd64 Depends on obsolete-dependency:amd64 < 1.0 @ii mR >
-  Keeping Package obsolete-dependency:amd64 due to Depends
+  Keeping Package obsolete-dependency:amd64 due to Depends"
+else
+TEXT="
+Install foo:amd64 ()
+[0] Install:foo:amd64 ()
+Delete obsolete-dependency:amd64
+[0] Install:foo:amd64=2.0 (foo:amd64)
+[0] Install:obsolete-dependency:amd64 (foo:amd64)
+[0] Install:obsolete-dependency:amd64=1.0 (foo:amd64 -> obsolete-dependency:amd64)
+Branch failed: Unable to satisfy dependencies. Reached two conflicting assignments:
+1. obsolete-dependency:amd64 is selected for install because:
+   1. foo:amd64 is selected for install
+   2. foo:amd64 Depends obsolete-dependency
+
+2. obsolete-dependency:amd64 is selected for removal
+"
+fi
+
+# We mark obsolete dependency for removal in B, then in C it is restored.
+testsuccessequal "A: foo:amd64 < 2.0 @ii mK >
+A: obsolete-dependency:amd64 < 1.0 @ii mK >
+B: foo:amd64 < 2.0 @ii mK Ib >
+B: obsolete-dependency:amd64 < 1.0 @ii mR >$TEXT
 C: foo:amd64 < 2.0 @ii mK >
 C: obsolete-dependency:amd64 < 1.0 @ii mK >" runapt ${APTTESTHELPERSBINDIR}/testkeep obsolete-dependency
 
 # We have protected our decision to remove the obsolete dependency, so we fail to resolve it.
-testfailureequal "A: foo:amd64 < 2.0 @ii mK >
-A: obsolete-dependency:amd64 < 1.0 @ii mK >
-B: foo:amd64 < 2.0 @ii mK Ib >
-B: obsolete-dependency:amd64 < 1.0 @ii pmR >
+if [ "$APT_SOLVER" = "internal" ]; then
+TEXT="
 Entering ResolveByKeep
   Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >
 Keeping package foo:amd64
@@ -41,7 +59,26 @@ Package foo:amd64 foo:amd64 Depends on obsolete-dependency:amd64 < 1.0 @ii pmR >
   Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >
   Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >
   Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >
-  Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >
+  Dependencies are not satisfied for foo:amd64 < 2.0 @ii mK Ib >"
+TEXT2="E: Unable to correct problems, you have held broken packages."
+else
+TEXT="
+Install foo:amd64 ()
+[0] Install:foo:amd64 ()
+Delete obsolete-dependency:amd64
+[0] Reject:obsolete-dependency:amd64 ()
+[0] Install:foo:amd64=2.0 (foo:amd64)"
+TEXT2="E: Unable to satisfy dependencies. Reached two conflicting assignments:
+   1. foo:amd64 is selected for install
+   2. foo:amd64 Depends obsolete-dependency
+      but none of the choices are installable:
+      - obsolete-dependency:amd64 is selected for removal"
+fi
+
+testfailureequal "A: foo:amd64 < 2.0 @ii mK >
+A: obsolete-dependency:amd64 < 1.0 @ii mK >
+B: foo:amd64 < 2.0 @ii mK Ib >
+B: obsolete-dependency:amd64 < 1.0 @ii pmR >$TEXT
 C: foo:amd64 < 2.0 @ii mK Ib >
 C: obsolete-dependency:amd64 < 1.0 @ii pmR >
-E: Unable to correct problems, you have held broken packages." runapt ${APTTESTHELPERSBINDIR}/testkeep obsolete-dependency  --hold
+$TEXT2" runapt ${APTTESTHELPERSBINDIR}/testkeep obsolete-dependency  --hold
