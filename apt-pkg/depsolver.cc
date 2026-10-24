@@ -46,9 +46,37 @@ struct CompareProviders3 /*{{{*/
    {
       pkgCache::VerIterator res = pkg.VersionList();
       for (auto v = res; not v.end(); ++v)
-	 res = std::max(res, v, *this);
+	 if (compareSamePackage(pkg, res, v))
+	    res = v;
       return res;
    }
+
+   // \brief Compare two versions of the same package by preference.
+   bool compareSamePackage(pkgCache::PkgIterator const &A, pkgCache::VerIterator const &AV, pkgCache::VerIterator const &BV)
+   {
+      if (AV == BV)
+	 return false;
+
+      // Candidate wins in upgrade scenario
+      if (Solver.IsUpgrade)
+      {
+	 auto Cand = Solver.GetCandidateVer(A);
+	 if (AV == Cand || BV == Cand)
+	    return (AV == Cand);
+      }
+
+      // Installed version wins otherwise
+      if (A.CurrentVer() == AV || A.CurrentVer() == BV)
+	 return (A.CurrentVer() == AV);
+
+      // Rest is ordered list, first by priority
+      if (auto pinA = Solver.GetPriority(AV), pinB = Solver.GetPriority(BV); pinA != pinB)
+	 return pinA > pinB;
+
+      // Then by version
+      return _system->VS->CmpVersion(AV.VerStr(), BV.VerStr()) > 0;
+   }
+
    bool operator()(Var a, Var b)
    {
       pkgCache::VerIterator va = Solver.GetVer(a);
@@ -68,29 +96,7 @@ struct CompareProviders3 /*{{{*/
       pkgCache::PkgIterator const B = BV.ParentPkg();
       // Compare versions for the same package. FIXME: Move this to the real implementation
       if (A == B)
-      {
-	 if (AV == BV)
-	    return false;
-
-	 // Candidate wins in upgrade scenario
-	 if (Solver.IsUpgrade)
-	 {
-	    auto Cand = Solver.GetCandidateVer(A);
-	    if (AV == Cand || BV == Cand)
-	       return (AV == Cand);
-	 }
-
-	 // Installed version wins otherwise
-	 if (A.CurrentVer() == AV || B.CurrentVer() == BV)
-	    return (A.CurrentVer() == AV);
-
-	 // Rest is ordered list, first by priority
-	 if (auto pinA = Solver.GetPriority(AV), pinB = Solver.GetPriority(BV); pinA != pinB)
-	    return pinA > pinB;
-
-	 // Then by version
-	 return _system->VS->CmpVersion(AV.VerStr(), BV.VerStr()) > 0;
-      }
+	 return compareSamePackage(A, AV, BV);
       // Try obsolete choices only after exhausting non-obsolete choices such that we install
       // packages replacing them and don't keep back upgrades depending on the replacement to
       // keep the obsolete package installed.
