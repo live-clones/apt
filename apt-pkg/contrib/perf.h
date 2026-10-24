@@ -109,7 +109,7 @@ class PerformanceContext
       for (auto fd : fds)
 	 must_succeed(fd == -1 || ioctl(fd, PERF_EVENT_IOC_DISABLE, 0) != -1);
 
-      std::array<long long, measurements.size()> values;
+      std::array<long long, measurements.size()> values{};
       for (size_t i = 0; i < measurements.size(); ++i)
 	 must_succeed(fds[i] == -1 || read(fds[i], &values[i], sizeof(values[i])) == sizeof(values[i]));
       for (auto fd : fds)
