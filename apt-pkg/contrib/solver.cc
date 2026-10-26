@@ -108,12 +108,39 @@ CRef Solver::newClause(Clause const &clause)
    // activating the guard queues the clause, solutions are watched
    // negatively unless the clause itself is negative.
    states[inserted.guard].watches.add(cref, false);
-   for (auto sol : inserted.solutions())
+   if (inserted.negative)
    {
-      auto lit = inserted.negative ? sol : ~sol;
-      states[lit.var()].watches.add(cref, lit.sign());
+      for (auto sol : inserted.solutions())
+	 states[sol.var()].watches.add(cref, sol.sign());
+   }
+   else
+   {
+      auto const n = std::min(inserted.solutions().size(), size_t(2));
+      if (n > 0)
+      {
+	 for (size_t i = 0; i < 2; ++i)
+	 {
+	    inserted.watches[i] = inserted.solutions()[i < n ? i : 0];
+	    auto lit = ~inserted.watches[i];
+	    states[lit.var()].watches.add(cref, lit.sign());
+	 }
+      }
    }
    return cref;
+}
+
+void Solver::rewatch(CRef cref)
+{
+   auto &c = clauses[cref];
+   auto const n = std::min(c.solutions().size(), size_t(2));
+   if (n == 0)
+      return;
+   for (size_t i = 0; i < 2; ++i)
+   {
+      c.watches[i] = c.solutions()[i < n ? i : 0];
+      auto lit = ~c.watches[i];
+      states[lit.var()].watches.add(cref, lit.sign());
+   }
 }
 
 // This function determines if a work item is less important than another.
@@ -623,42 +650,83 @@ bool Solver::Propagate(CRef cref, Lit p)
       return true;
    }
 
-   // Check if the clause is unit, conflict, or undecided
-   auto not_false = [&](auto lit) noexcept
-   { return value(lit) != LiftedBool::False; };
-   auto head = std::ranges::find_if(clause.solutions(), not_false);
-   auto find_tail = [&]() noexcept
-   { return std::ranges::find_last_if(clause.solutions(), not_false); };
-   if (head == clause.solutions().end())
+   // Guard activation: the guard just became true, queue this clause for solving
+   if (p == clause.guard)
    {
-      // Conflict clause. If this clause is non-optional; reject its "reason".
-      if (not clause.optional)
+      auto not_false = [&](auto lit) noexcept
+      { return value(lit) != LiftedBool::False; };
+      auto head = std::ranges::find_if(clause.solutions(), not_false);
+      if (head == clause.solutions().end())
       {
-	 // The guard holds, so rejecting it fails: a conflict
-	 if (value(clause.guard) == LiftedBool::True)
+	 // Guard became true but all solutions are already false: conflict
+	 if (not clause.optional)
 	 {
 	    conflict = cref;
 	    confl.assign(1, ~clause.guard);
 	    confl.insert(confl.end(), clause.solutions().begin(), clause.solutions().end());
 	    return false;
 	 }
-	 return Enqueue(~clause.guard, cref);
+	 return true;
+      }
+      auto find_tail = [&]() noexcept
+      { return std::ranges::find_last_if(clause.solutions(), not_false); };
+
+      if (not clause.optional && head == find_tail().begin())
+	 return Enqueue(*head, cref);
+      return AddWork(Work{cref, clause.generation});
+   }
+
+   // 2WL solution watch: one of the watched solutions just became false
+   Lit const falseSol = ~p;
+   int falseIdx = -1;
+   if (clause.watches[0] == falseSol)
+      falseIdx = 0;
+   else if (clause.watches[1] == falseSol)
+      falseIdx = 1;
+   else
+      return true; // stale entry or activation
+
+   int otherIdx = 1 - falseIdx;
+   Lit other = clause.watches[otherIdx];
+
+   // The other watch is true: the clause is satisfied, nothing to do
+   if (value(other) == LiftedBool::True)
+      return true;
+
+   // Try to replace the false watch with another non-false solution
+   for (auto cand : clause.solutions())
+   {
+      if (cand != other && value(cand) != LiftedBool::False)
+      {
+	 clause.watches[falseIdx] = cand;
+	 auto lit = ~cand;
+	 states[lit.var()].watches.add(cref, lit.sign());
+	 return true;
       }
    }
-   else if (value(clause.guard) != LiftedBool::True)
+
+   // No replacement found; if the other watch is undefined, the clause is unit
+   if (value(other) == LiftedBool::Undefined)
    {
-      // Inactive clause, nothing to do
+      // If the guard does not yet hold, we cannot propagate the solution
+      if (value(clause.guard) != LiftedBool::True)
+	 return true;
+      if (not clause.optional)
+	 return Enqueue(other, cref);
+      return AddWork(Work{cref, clause.generation});
    }
-   else if (not clause.optional && head == find_tail().begin())
+
+   // All solutions are false: the clause is falsified; if the guard is not
+   // yet true, the clause itself is not yet active, but driving its guard
+   // false vacuously satisfies it.
+   if (value(clause.guard) != LiftedBool::True)
+      return Enqueue(~clause.guard, cref);
+   if (not clause.optional)
    {
-      // Unit clause. Enqueue the only possible solution
-      return Enqueue(*head, cref);
-   }
-   else
-   {
-      // Undecided clause. If this is an activation, queue it for solving
-      if (p == clause.guard)
-	 return AddWork(Work{cref, clause.generation});
+      conflict = cref;
+      confl.assign(1, ~clause.guard);
+      confl.insert(confl.end(), clause.solutions().begin(), clause.solutions().end());
+      return false;
    }
    return true;
 }

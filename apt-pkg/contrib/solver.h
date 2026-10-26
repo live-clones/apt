@@ -220,8 +220,17 @@ struct ClauseHeader
    // item is stale and forgotten, removing the need to clean the heap eagerly.
    unsigned generation{};
 
+   // The two currently watched solution literals for two-watched-literal
+   // propagation; a stale clause entry in a watchlist is ignored when its
+   // watches no longer point to that literal, so they never need removal.
+   mutable Lit watches[2]{};
+
    inline ClauseHeader(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
-   bool operator==(ClauseHeader const &) const = default;
+   bool operator==(ClauseHeader const &other) const noexcept
+   {
+      return merged == other.merged && guard == other.guard && group == other.group &&
+	     optional == other.optional && negative == other.negative && eager == other.eager;
+   }
 };
 
 // \brief Helper for building clauses (will be stored as StoredClause)
@@ -440,6 +449,8 @@ class APT_PUBLIC Solver
    // The clause is owned by the always-true root variable, making it a plain
    // disjunction of its literals.
    CRef record(std::vector<Lit> learnt);
+   // \brief Set up the 2WL watches of a (positive) clause from its current solutions.
+   void rewatch(CRef cref);
 
    public:
    // \brief Revert to the previous decision level.

@@ -389,6 +389,7 @@ CRef DependencySolver::RegisterClause(Clause &clause)
 	    // We make a copy here that we merge into the earlier clause as we may merge
 	    // into multiple ones.
 	    duplicateClause(earlierRef, clause);
+	    rewatch(earlierRef);
 	    merged = true;
 	 }
 	 else if (clause.optional)
