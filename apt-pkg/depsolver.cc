@@ -869,18 +869,27 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
    }
 
    if (not Propagate())
+   {
+      // Cannot fail at the root level: rejecting the guard renders the explanation
+      (void)Enqueue(confl.front(), conflict);
       return false;
+   }
 
    std::stable_sort(manualPackages.begin(), manualPackages.end(), CompareProviders3{cache, policy, {}, *this});
    for (auto assumption : manualPackages)
    {
+      // Record the assumptions that hold, to re-establish them after backjumps
       if (not Assume(assumption, {}) || not Propagate())
 	 must_succeed(Pop());
+      else
+	 initialAssumptions.push_back(assumption);
    }
    for (auto removal : removals)
    {
       if (not Assume(~removal, {}) || not Propagate())
 	 must_succeed(Pop());
+      else
+	 initialAssumptions.push_back(~removal);
    }
 
    return true;

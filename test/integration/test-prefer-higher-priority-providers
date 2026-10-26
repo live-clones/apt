@@ -98,8 +98,12 @@ testfailuremsg "E: Unable to satisfy dependencies. Reached two conflicting assig
          [selected awesome:$native]
       For context, additional choices that could not be installed:
       * In awesome:$native Depends stuff:
-        - foo:$native=1 is not selected for install
-        - bar:$native=1 is not selected for install
+        - (root) ->  | not foo:$native=1
+          but none of the choices are installable:
+          - foo:$native=1 is not selected for install as above
+        - (root) ->  | not bar:$native=1
+          but none of the choices are installable:
+          - bar:$native=1 is not selected for install as above
    2. baz:$native=1 ->  | baz:$native
       but none of the choices are installable:
       - baz:$native is not selected for install" aptget install awesome foo- bar- baz- -s --solver 3.0

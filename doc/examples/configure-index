@@ -723,6 +723,7 @@ apt::solver::remove "<BOOL>";
 apt::solver::removemanual "<BOOL>";
 apt::solver::install "<BOOL>";
 apt::solver::timeout "<INT>";
+apt::solver::proof "<STRING>";
 apt::keep-downloaded-packages "<BOOL>";
 apt::solver "<STRING>";
 apt::planner "<STRING>";

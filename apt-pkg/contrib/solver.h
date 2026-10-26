@@ -385,6 +385,20 @@ class APT_PUBLIC Solver
    int debug{_config->FindI("Debug::APT::Solver")};
    // \brief Solver timeout in seconds.
    int Timeout{_config->FindI("APT::Solver::Timeout", 10)};
+   // \brief Write learnt clauses to this file in DIMACS (DRAT) format, empty to disable.
+   std::string proofTrace{_config->Find("APT::Solver::Proof")};
+
+   // \brief The conflicting clause and its falsified literals, set by Propagate().
+   CRef conflict{};
+   std::vector<Lit> confl;
+
+   // \brief Initial assumptions made before solving, e.g. keeping manually
+   // installed packages installed; re-established when a backjump undoes them.
+   std::vector<Lit> initialAssumptions;
+
+   FILE *proofFd = nullptr;
+   // \brief Append a clause to the proof trace; a null clause is the empty clause.
+   void WriteProof(Lit const *lits, size_t n);
 
    // \brief Discover a variable, translating the underlying dependencies to the SAT presentation
    //
@@ -421,9 +435,19 @@ class APT_PUBLIC Solver
    // maximum level among the other literals (0 if there are none).
    void analyze(std::vector<Lit> confl, std::vector<Lit> &out_learnt, level_type &out_btlevel);
 
+   // \brief Record a learnt clause, registering it and its watches.
+   //
+   // The clause is owned by the always-true root variable, making it a plain
+   // disjunction of its literals.
+   CRef record(std::vector<Lit> learnt);
+
    public:
    // \brief Revert to the previous decision level.
    [[nodiscard]] bool Pop();
+   // \brief Revert to the previous decision level, without flipping its decision.
+   [[nodiscard]] bool cancel();
+   // \brief Revert to the given decision level, without flipping decisions.
+   [[nodiscard]] bool cancelUntil(level_type level);
    // \brief Undo a single assignment / trail work item
    void UndoOne();
    // \brief This function determines if a work item is less important than another.

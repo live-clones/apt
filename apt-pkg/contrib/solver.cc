@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
+#include <cstdio>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -50,7 +51,25 @@ Solver::Solver()
    states[Var{}].assignment = LiftedBool::True;
 }
 
-Solver::~Solver() = default;
+Solver::~Solver()
+{
+   if (proofFd != nullptr)
+      fclose(proofFd);
+}
+
+void Solver::WriteProof(Lit const *lits, size_t n)
+{
+   if (proofTrace.empty())
+      return;
+   if (proofFd == nullptr)
+      proofFd = fopen(proofTrace.c_str(), "w");
+   if (proofFd == nullptr)
+      return;
+   for (size_t i = 0; i < n; ++i)
+      fprintf(proofFd, i == 0 ? "%d" : " %d", (lits[i].sign() ? -1 : 1) * static_cast<int>(lits[i].var().value));
+   fprintf(proofFd, "%s", n == 0 ? "0\n" : " 0\n");
+   fflush(proofFd);
+}
 
 Var Solver::newVar()
 {
@@ -313,6 +332,13 @@ void Solver::analyze(std::vector<Lit> confl, std::vector<Lit> &out_learnt, level
    out_learnt[0] = ~p;
 }
 
+CRef Solver::record(std::vector<Lit> learnt)
+{
+   Clause clause{Var{}, Group::Satisfy};
+   clause.solutions = std::move(learnt);
+   return newClause(clause);
+}
+
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
 std::string Solver::WhyStr(Lit lit) const
 {
@@ -545,9 +571,17 @@ bool Solver::Propagate()
       if (not lit.sign())
 	 Discover(lit.var());
 
-      for (auto clause : watches(lit))
+      // Iterate by index and fetch the watch list afresh every time:
+      // Propagate() may append to it, e.g. when recording a learnt clause.
+      for (size_t i = 0;;)
+      {
+	 auto ws = watches(lit);
+	 if (i >= ws.size())
+	    break;
+	 auto clause = ws[i++];
 	 if (not Propagate(clause, lit))
 	    return false;
+      }
    }
    return true;
 }
@@ -562,12 +596,29 @@ bool Solver::Propagate(CRef cref, Lit p)
    {
       // One of the solutions was set, so reject the reason
       if (p != clause.guard)
+      {
+	 // The guard and one of the solutions hold: a conflict
+	 if (value(clause.guard) == LiftedBool::True)
+	 {
+	    conflict = cref;
+	    confl = {~clause.guard, ~p};
+	    return false;
+	 }
 	 return Enqueue(~clause.guard, cref);
+      }
 
       // Here we need to reject all conflicting solutions (reason -> none of solutions)
       for (auto sol : clause.solutions())
-	 if (not Enqueue(~sol, cref))
+      {
+	 // The guard and one of the solutions hold: a conflict
+	 if (value(sol) == LiftedBool::True)
+	 {
+	    conflict = cref;
+	    confl = {~sol, ~clause.guard};
 	    return false;
+	 }
+	 must_succeed(Enqueue(~sol, cref));
+      }
 
       return true;
    }
@@ -582,7 +633,17 @@ bool Solver::Propagate(CRef cref, Lit p)
    {
       // Conflict clause. If this clause is non-optional; reject its "reason".
       if (not clause.optional)
+      {
+	 // The guard holds, so rejecting it fails: a conflict
+	 if (value(clause.guard) == LiftedBool::True)
+	 {
+	    conflict = cref;
+	    confl.assign(1, ~clause.guard);
+	    confl.insert(confl.end(), clause.solutions().begin(), clause.solutions().end());
+	    return false;
+	 }
 	 return Enqueue(~clause.guard, cref);
+      }
    }
    else if (value(clause.guard) != LiftedBool::True)
    {
@@ -639,6 +700,34 @@ void Solver::UndoOne()
    // FIXME: Add the undo handling here once we have watchers.
 }
 
+bool Solver::cancel()
+{
+   if (decisionLevel() == 0)
+      return false;
+
+   time_t now = time(nullptr);
+   if (startTime == 0)
+      startTime = now;
+   if (now - startTime >= Timeout)
+      return _error->Error("Solver timed out.");
+
+   assert(trailLim.back() <= trail.size());
+   int itemsToUndo = trail.size() - trailLim.back();
+   for (; itemsToUndo; --itemsToUndo)
+      UndoOne();
+
+   trailLim.pop_back();
+   return true;
+}
+
+bool Solver::cancelUntil(level_type level)
+{
+   while (decisionLevel() > level)
+      if (not cancel())
+	 return false;
+   return true;
+}
+
 bool Solver::Pop()
 {
    if (decisionLevel() == 0)
@@ -664,14 +753,11 @@ bool Solver::Pop()
    }
 
    assert(trailLim.back() < trail.size());
-   int itemsToUndo = trail.size() - trailLim.back();
    auto choicePtr = std::get_if<Var>(&trail[trailLim.back()]);
    auto choice = choicePtr ? *choicePtr : Var{};
 
-   for (; itemsToUndo; --itemsToUndo)
-      UndoOne();
-
-   trailLim.pop_back();
+   if (not cancel())
+      return false;
 
    if (unlikely(debug >= 2))
       std::cerr << "Backtracking to choice " << toString(choice) << "\n";
@@ -721,10 +807,42 @@ bool Solver::Solve()
    startTime = time(nullptr);
    while (true)
    {
-      while (_error->PendingError() || not Propagate())
+      if (not Propagate())
       {
-	 if (not Pop())
+	 // A conflict at the root level is final; render the explanation by
+	 // rejecting the guard, which cannot succeed.
+	 if (decisionLevel() == 0)
+	 {
+	    WriteProof(nullptr, 0);
+	    (void)Enqueue(confl.front(), conflict);
 	    return false;
+	 }
+
+	 std::vector<Lit> learnt;
+	 level_type btlevel = 0;
+	 analyze(std::move(confl), learnt, btlevel);
+	 auto const asserting = learnt.front();
+	 auto const learntClause = record(std::move(learnt));
+	 if (unlikely(debug >= 1))
+	    std::cerr << "[" << decisionLevel() << "] conflict, learnt " << toString(clauses[learntClause]) << ", back to " << btlevel << "\n";
+	 WriteProof(clauses[learntClause].solutions().data(), clauses[learntClause].solutions().size());
+	 if (not cancelUntil(btlevel))
+	    return false;
+	 must_succeed(Enqueue(asserting, learntClause));
+	 conflict = CRef{};
+	 confl.clear();
+	 // Re-establish the initial assumptions the backjump undid; a new
+	 // conflict takes precedence and is handled in the next iteration.
+	 for (auto assumption : initialAssumptions)
+	 {
+	    if (conflict != CRef{})
+	       break;
+	    if (value(assumption) != LiftedBool::Undefined)
+	       continue;
+	    if (not Assume(assumption, {}) || not Propagate())
+	       must_succeed(Pop());
+	 }
+	 continue;
       }
 
       if (work.empty())
