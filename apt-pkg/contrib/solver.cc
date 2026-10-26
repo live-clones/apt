@@ -501,6 +501,10 @@ bool Solver::Enqueue(Lit lit, CRef reason)
    {
       if (state.assignment != assignment)
       {
+	 // Rendering the why chains is expensive and the error is discarded
+	 // when backtracking, so only bother once backtracking is impossible.
+	 if (decisionLevel() != 0)
+	    return _error->Error("Unable to satisfy dependencies. Reached two conflicting assignments");
 	 std::ostringstream err;
 	 err << "Unable to satisfy dependencies. Reached two conflicting assignments:" << "\n";
 	 std::unordered_set<Var> seen;
