@@ -212,6 +212,13 @@ struct ClauseHeader
    // \brief An optional clause may be eager
    bool eager;
 
+   // \brief Generation of the clause, bumped when its guard is unassigned.
+   //
+   // Work items remember the generation of their clause when they are queued;
+   // if it no longer matches when they are popped from the work heap, the work
+   // item is stale and forgotten, removing the need to clean the heap eagerly.
+   unsigned generation{};
+
    inline ClauseHeader(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
    bool operator==(ClauseHeader const &) const = default;
 };
@@ -518,13 +525,13 @@ struct Solver::Work
 {
    CRef clause;
 
-   // \brief The level at which the item has been added
-   level_type level;
+   // \brief The generation of the clause when the item was queued
+   unsigned generation;
 
    /// Number of valid choices at insertion time
    uint32_t size{0};
 
-   constexpr Work(CRef clause, level_type level) noexcept : clause(clause), level(level) {}
+   constexpr Work(CRef clause, unsigned generation) noexcept : clause(clause), generation(generation) {}
 };
 
 /**

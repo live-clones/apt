@@ -164,7 +164,7 @@ std::string Solver::toString(const Work &work) const
    std::ostringstream out;
    if (clause.optional)
       out << "Optional ";
-   out << "Item (" << ssize_t(work.size <= clause.solutions().size() ? work.size : -1) << "@" << work.level << ") ";
+   out << "Item (" << ssize_t(work.size <= clause.solutions().size() ? work.size : -1) << "@" << work.generation << ") ";
    out << toString(clause);
    return out.str();
 }
@@ -597,7 +597,7 @@ bool Solver::Propagate(CRef cref, Lit p)
    {
       // Undecided clause. If this is an activation, queue it for solving
       if (p == clause.guard)
-	 return AddWork(Work{cref, decisionLevel()});
+	 return AddWork(Work{cref, clause.generation});
    }
    return true;
 }
@@ -621,6 +621,10 @@ void Solver::UndoOne()
 	 state.flags.soft_reason = false;
 	 state.level = 0;
 	 state.trailPos = UINT32_MAX;
+	 // Work queued for the clauses this variable guards is now stale; bump
+	 // their generation so the heap forgets them lazily once they are popped.
+	 for (auto cref : clausesOf(item))
+	    ++clauses[cref].generation;
       }
       else
       {
@@ -667,13 +671,7 @@ bool Solver::Pop()
    for (; itemsToUndo; --itemsToUndo)
       UndoOne();
 
-   // We need to remove any work that is at a higher level.
    trailLim.pop_back();
-   work.erase(std::remove_if(work.begin(), work.end(), [this](Work &w) -> bool
-			     { return w.level > decisionLevel(); }),
-	      work.end());
-   std::make_heap(work.begin(), work.end(), [this](Work const &a, Work const &b)
-		  { return workLess(a, b); });
 
    if (unlikely(debug >= 2))
       std::cerr << "Backtracking to choice " << toString(choice) << "\n";
@@ -736,6 +734,14 @@ bool Solver::Solve()
       std::pop_heap(work.begin(), work.end(), [this](Work const &a, Work const &b)
 		    { return workLess(a, b); });
       work.pop_back();
+
+      // The clause was requeued since this work item was queued; the item is stale
+      if (item.generation != clauses[item.clause].generation)
+      {
+	 if (unlikely(debug >= 3))
+	    std::cerr << "STALE " << toString(item) << std::endl;
+	 continue;
+      }
 
       auto const &clause = clauses[item.clause];
       if (std::any_of(clause.solutions().begin(), clause.solutions().end(), [this](auto ver)

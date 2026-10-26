@@ -828,7 +828,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	    Clause w{Var(), Group, isOptional};
 	    w.solutions.push_back(GetVar(P));
 	    auto insertedW = RegisterClause(w);
-	    if (insertedW && not AddWork(Work{insertedW, decisionLevel()}))
+	    if (insertedW && not AddWork(Work{insertedW, clauses[insertedW].generation}))
 	       return false;
 
 	    if (not isAuto)
@@ -844,7 +844,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	       shortcircuit.solutions.push_back(GetVar(V));
 	    std::stable_sort(shortcircuit.solutions.begin(), shortcircuit.solutions.end(), CompareProviders3{cache, policy, P, *this});
 	    auto insertedShort = RegisterClause(shortcircuit);
-	    if (insertedShort && not AddWork(Work{insertedShort, decisionLevel()}))
+	    if (insertedShort && not AddWork(Work{insertedShort, clauses[insertedShort].generation}))
 	       return false;
 
 	    // Discovery here is needed so the shortcircuit clause can actually become unit.
@@ -863,7 +863,7 @@ bool DependencySolver::FromDepCache(pkgDepCache &depcache)
 	 if (unlikely(debug >= 1))
 	    std::cerr << "Install essential package " << P << std::endl;
 	 auto inserted = RegisterClause(w);
-	 if (inserted && not AddWork(Work{inserted, decisionLevel()}))
+	 if (inserted && not AddWork(Work{inserted, clauses[inserted].generation}))
 	    return false;
       }
    }
