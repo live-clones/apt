@@ -230,3 +230,20 @@ TEST(TagSectionTest,WriteOrderRewrite)
    EXPECT_EQ(1, section.FindI("Override-Backup"));
    EXPECT_EQ(4u, section.Count());
 }
+TEST(TagSectionTest, WriteRemoveAll)
+{
+   FileFd fd;
+   pkgTagSection section;
+   std::string content;
+   setupTestcaseStart(fd, section, content);
+   std::vector<pkgTagSection::Tag> rewrite;
+   rewrite.push_back(pkgTagSection::Tag::Remove("Package"));
+   rewrite.push_back(pkgTagSection::Tag::Remove("TypoA"));
+   rewrite.push_back(pkgTagSection::Tag::Remove("Override"));
+   rewrite.push_back(pkgTagSection::Tag::Remove("Override-Backup"));
+   EXPECT_TRUE(section.Write(fd, NULL, rewrite));
+   EXPECT_TRUE(fd.Seek(0));
+   pkgTagFile tfile(&fd);
+   // Removing every tag writes no stanza at all
+   EXPECT_FALSE(tfile.Step(section));
+}
