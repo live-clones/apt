@@ -12,7 +12,7 @@ cache:
 before_script:
     - rm -f /etc/dpkg/dpkg.cfg.d/excludes
     - apt-get update
-    - apt-get install --no-install-recommends -qq build-essential expect sudo ccache moreutils adduser
+    - apt-get install --no-install-recommends -qq build-essential expect sudo ccache moreutils adduser git ca-certificates
     - adduser --home /home/travis travis --quiet --disabled-login --gecos "" --shell /bin/sh
     - chmod 755 /root
     - chmod -R o+rwX $PWD
@@ -47,6 +47,9 @@ test as user:
     docker:
       platform: linux/i386
   stage: test
+  variables:
+    # No prebuilt libhegel is published for i386.
+    APT_CMAKE_BUILD_OPTIONS: '-DWITH_HEGEL_TESTS=OFF'
   script:
     - apt-get install --no-install-recommends -qq libxml2-utils
     - ./prepare-release post-build --report-failure

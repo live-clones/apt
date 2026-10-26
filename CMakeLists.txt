@@ -18,6 +18,7 @@ cmake_dependent_option(WITH_DOC_GUIDES "Force building guides." OFF "NOT WITH_DO
 cmake_dependent_option(WITH_DOC_DOXYGEN "Force building doxygen documentation." OFF "NOT WITH_DOC" OFF)
 cmake_dependent_option(WITH_DOC_EXAMPLES "Force building example configurations." OFF "NOT WITH_DOC" OFF)
 option(WITH_TESTS "Build tests" ON)
+option(WITH_HEGEL_TESTS "Build Hegel property-based tests (downloads Hegel and libhegel at configure time)" ON)
 option(USE_NLS "Localisation support." ON)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMake")

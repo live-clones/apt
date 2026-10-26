@@ -29,6 +29,20 @@ if (WITH_TESTS)
       message(FATAL_ERROR "Could not find GTest")
    endif()
 
+   # Hegel (https://hegel.dev) downloads a prebuilt libhegel at configure
+   # time; disable with -DWITH_HEGEL_TESTS=OFF (as done in debian/rules).
+   if (WITH_HEGEL_TESTS)
+      include(FetchContent)
+      # We do not use the reflect-cpp powered default_generator; disabling
+      # it avoids fetching reflect-cpp.
+      set(HEGEL_REFLECTION OFF CACHE BOOL "" FORCE)
+      FetchContent_Declare(
+         hegel
+         GIT_REPOSITORY https://github.com/hegeldev/hegel-cpp.git
+         GIT_TAG v0.13.1
+      )
+      FetchContent_MakeAvailable(hegel)
+   endif()
 
    # gtest produces some warnings with the set of warnings we activate,
    # so disable the offending warnings while compiling tests for now
@@ -41,9 +55,17 @@ if (WITH_TESTS)
    # is expanded at CMake time, so you have to rerun cmake if you add or remove
    # a file (you can just run cmake . in the build directory)
    file(GLOB files gtest_runner.cc *-helpers.cc *_test.cc)
+   # Hegel tests are compiled only when enabled
+   if (WITH_HEGEL_TESTS)
+      file(GLOB hegel_files *_test_hegel.cc)
+      list(APPEND files ${hegel_files})
+   endif()
    add_executable(lib${PROJECT_NAME}_test ${files})
    target_include_directories(lib${PROJECT_NAME}_test PRIVATE ${GTEST_INCLUDE_DIRS})
    target_link_libraries(lib${PROJECT_NAME}_test ${GTEST_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_TEST_LIBRARIES} OpenSSL::Crypto ${CMAKE_DL_LIBS})
+   if (WITH_HEGEL_TESTS)
+      target_link_libraries(lib${PROJECT_NAME}_test hegel)
+   endif()
    if (GTEST_DEPENDENCIES)
       add_dependencies(lib${PROJECT_NAME}_test ${GTEST_DEPENDENCIES})
    endif()
