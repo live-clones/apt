@@ -161,3 +161,52 @@ testsuccess apthelper -- drop-privs true
 testsuccess apthelper drop-privs -- true
 DATE="$(date -u +'%Y-%m-%d')"
 testsuccessequal "$DATE" apthelper drop-privs -- date -u -d "$DATE" +'%Y-%m-%d'
+
+msgmsg 'apt-helper' 'solve-sat'
+# the unit clauses force a unique model: 1 and 3 true, 2 false
+cat > sat.cnf <<EOF
+c a comment
+c spanning multiple lines
+p cnf 3 4
+1 2
+ 3 0
+-2 0
+-1 -2 0
+-1 -3 0
+EOF
+testsuccessequal 's SATISFIABLE
+v 1 -2 -3 0' apthelper solve-sat sat.cnf
+gzip sat.cnf
+testsuccessequal 's SATISFIABLE
+v 1 -2 -3 0' apthelper solve-sat sat.cnf.gz
+
+# unsatisfiable is not an error: exit 1 with the result on stdout
+testsolveunsat() {
+	msgtest 'apt-helper solve-sat reports unsatisfiable for' "$1"
+	if apthelper solve-sat "$1" >"${TMPWORKINGDIRECTORY}/solve-sat.output" 2>&1; then
+		msgfail 'ran successfully'
+	elif [ $? -ne 1 ]; then
+		msgfail "expected exitcode 1, got $?"
+	elif [ "$(cat "${TMPWORKINGDIRECTORY}/solve-sat.output")" != 's UNSATISFIABLE' ]; then
+		cat "${TMPWORKINGDIRECTORY}/solve-sat.output"
+		msgfail 'unexpected output'
+	else
+		msgpass
+	fi
+}
+cat > unsat.cnf <<EOF
+p cnf 1 2
+1 0
+-1 0
+EOF
+testsolveunsat unsat.cnf
+echo 'p cnf 1 1
+0' > empty.cnf
+testsolveunsat empty.cnf
+
+testfailureequal 'E: Expect one argument, a DIMACS CNF file' apthelper solve-sat sat.cnf.gz unsat.cnf
+testfailureequal 'E: Could not open file nonexistent.cnf - open (2: No such file or directory)' apthelper solve-sat nonexistent.cnf
+echo 'p cnf x y' > bad.cnf
+testfailureequal 'E: Malformed problem line: p cnf x y' apthelper solve-sat bad.cnf
+printf 'p cnf 2 1\n1 2\n' > unterminated.cnf
+testfailureequal 'E: Last clause is not terminated by 0' apthelper solve-sat unterminated.cnf

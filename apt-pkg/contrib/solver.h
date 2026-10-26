@@ -22,6 +22,7 @@
 #define APT_SOLVER_H
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/header-is-private.h>
+#include <apt-pkg/macros.h>
 
 #include <cassert>
 #include <cstddef> // required for nullptr_t
@@ -293,7 +294,7 @@ class VarVector : private std::vector<Store>
  * It is a brute force solver with heuristics, conflicts learning, and 2**32 levels
  * of backtracking.
  */
-class Solver
+class APT_PUBLIC Solver
 {
    protected:
    class Watches;

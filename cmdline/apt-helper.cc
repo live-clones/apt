@@ -9,14 +9,15 @@
 
 #include <apt-pkg/acquire-item.h>
 #include <apt-pkg/acquire.h>
-#include <apt-pkg/cmndline.h>
 #include <apt-pkg/cachefilter-patterns.h>
+#include <apt-pkg/cmndline.h>
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/init.h>
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/proxy.h>
+#include <apt-pkg/solver.h>
 #include <apt-pkg/strutl.h>
 
 #include <apt-pkg/srvrec.h>
@@ -26,7 +27,10 @@
 #include <apt-private/private-main.h>
 #include <apt-private/private-output.h>
 
+#include <cctype>
+#include <cstdio>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -325,6 +329,139 @@ static bool DoQuoteString(CommandLine &CmdL)				/*{{{*/
    return true;
 }
 									/*}}}*/
+static bool DoSolveSat(CommandLine &CmdL) /*{{{*/
+{
+   if (CmdL.FileSize() > 2)
+      return _error->Error(_("Expect one argument, a DIMACS CNF file"));
+
+   // A minimal driver for the generic APT::Solver core, allowing to test
+   // and benchmark it against standard SAT instances. Clauses are guarded
+   // by the root variable, which is always true, making them plain
+   // disjunctions as DIMACS expects.
+   class CnfSolver : public APT::Solver::Solver
+   {
+      public:
+      using Solver::newVar;
+      using Solver::states;
+      using Solver::value;
+      using Solver::Work;
+
+      void Discover(APT::Solver::Var) override {}
+
+      // \brief Register a clause and its watches, like DependencySolver::RegisterClause does.
+      APT::Solver::CRef AddClause(APT::Solver::Clause &&clause)
+      {
+	 return newClause(clause);
+      }
+   };
+
+   FileFd fd;
+   if (CmdL.FileSize() == 2 && std::string(CmdL.FileList[1]) != "-")
+   {
+      if (fd.Open(CmdL.FileList[1], FileFd::ReadOnly, FileFd::Extension) == false)
+	 return false;
+   }
+   else if (fd.OpenDescriptor(STDIN_FILENO, FileFd::ReadOnly) == false)
+      return false;
+
+   CnfSolver solver;
+   std::vector<APT::Solver::Var> vars; // DIMACS variable n is vars[n - 1]
+   std::vector<APT::Solver::CRef> clauses;
+   std::vector<APT::Solver::Lit> lits;
+   bool emptyClause = false;
+
+   auto finishClause = [&]()
+   {
+      // The empty clause is trivially unsatisfiable, but the solver core
+      // only deals in non-empty ones, so remember it instead.
+      if (lits.empty())
+      {
+	 emptyClause = true;
+	 return;
+      }
+      APT::Solver::Clause clause{APT::Solver::Var{}, APT::Solver::Group::Satisfy};
+      clause.solutions = std::move(lits);
+      lits.clear();
+      clauses.push_back(solver.AddClause(std::move(clause)));
+   };
+
+   std::string line;
+   while (fd.ReadLine(line))
+   {
+      const char *p = line.c_str();
+      while (std::isspace(static_cast<unsigned char>(*p)))
+	 ++p;
+      if (*p == '\0' || *p == 'c') // comment
+	 continue;
+      if (*p == '%') // end of clauses in the original DIMACS format
+	 break;
+      if (*p == 'p') // p cnf <variables> <clauses>
+      {
+	 unsigned long nvars, nclauses;
+	 if (sscanf(p, "p cnf %lu %lu", &nvars, &nclauses) != 2)
+	    return _error->Error("Malformed problem line: %s", p);
+	 while (vars.size() < nvars)
+	    vars.push_back(solver.newVar());
+	 continue;
+      }
+
+      char *end;
+      for (long lit = strtol(p, &end, 10); p != end; lit = strtol(p, &end, 10))
+      {
+	 p = end;
+	 if (lit == 0)
+	    finishClause();
+	 else
+	 {
+	    auto const var = std::abs(lit);
+	    // Be lenient and register variables beyond the declared count
+	    while (vars.size() < static_cast<size_t>(var))
+	       vars.push_back(solver.newVar());
+	    lits.emplace_back(vars[var - 1], lit < 0);
+	 }
+      }
+   }
+   if (fd.Failed())
+      return false;
+   if (not lits.empty())
+      return _error->Error("Last clause is not terminated by 0");
+
+   if (not emptyClause)
+      for (auto cref : clauses)
+	 if (not solver.AddWork(CnfSolver::Work{cref, 0}))
+	    break; // conflict at the root level; Solve() reports UNSAT below
+
+   if (emptyClause || not solver.Solve())
+   {
+      // A timeout is an error; anything else is a proof of unsatisfiability
+      std::string msg;
+      bool timedOut = false;
+      while (_error->PopMessage(msg))
+	 timedOut = timedOut || msg.find("timed out") != std::string::npos;
+      _error->Discard();
+      if (timedOut)
+	 return _error->Error("Solver timed out");
+      std::cout << "s UNSATISFIABLE" << std::endl;
+      exit(1);
+   }
+
+   std::cout << "s SATISFIABLE" << std::endl;
+   std::string model = "v";
+   for (size_t i = 0; i < vars.size(); ++i)
+   {
+      auto const val = solver.value(APT::Solver::Lit(vars[i]));
+      std::string const lit = std::to_string(val == APT::Solver::LiftedBool::False ? -static_cast<long>(i + 1) : static_cast<long>(i + 1));
+      if (model.size() + lit.size() + 1 > 78)
+      {
+	 std::cout << model << '\n';
+	 model = "v";
+      }
+      model.append(" ").append(lit);
+   }
+   std::cout << model << " 0" << std::endl;
+   return true;
+}
+									/*}}}*/
 static bool ShowHelp(CommandLine &)					/*{{{*/
 {
    std::cout <<
@@ -348,6 +485,7 @@ static std::vector<aptDispatchWithHelp> GetCommands()			/*{{{*/
       {"wait-online", &DoWaitOnline, _("wait for system to be online")},
       {"drop-privs", &DropPrivsAndRun, _("drop privileges before running given command")},
       {"analyze-pattern", &AnalyzePattern, _("analyse a pattern")},
+      {"solve-sat", &DoSolveSat, _("solve a DIMACS CNF file with the 3.0 solver")},
       {"analyse-pattern", &AnalyzePattern, nullptr},
       {"quote-string", &DoQuoteString, nullptr},
       {nullptr, nullptr, nullptr}};
