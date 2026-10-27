@@ -166,7 +166,7 @@ struct Lit
  * \brief A reference to a clause in the solver's clause store.
  *
  * All clauses live in a single VarVector (Solver::clauses); a CRef stores the
- * index of a clause there, so references remain valid as the store grows.
+ * offset of a clause there, so references remain valid as the store grows.
  * A null reference (constructed from nullptr) does not refer to a clause.
  */
 struct CRef
@@ -190,12 +190,11 @@ struct CRef
  * \brief A single clause
  *
  * A clause is a normalized, expanded dependency, translated into an implication
- * in terms of Var objects, that is, `guard -> solutions[0] | ... | solutions[n]`
+ * in terms of Var objects, that is, `guard -> solutions[0] | ... | solutions[n]`,
+ * they are stored either in a vector or appended, see Clause and StoredClause.
  */
-struct Clause
+struct ClauseHeader
 {
-   // \brief Possible solutions to this task, ordered in order of preference.
-   std::vector<Var> solutions{};
    // \brief Underlying dependency, opaque to the solver (a pkgCache::Dependency in practice)
    uint32_t dep{};
    // Clauses merged with this clause, next node in linked list
@@ -213,7 +212,32 @@ struct Clause
    // \brief An optional clause may be eager
    bool eager;
 
-   inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
+   inline ClauseHeader(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
+   bool operator==(ClauseHeader const &) const = default;
+};
+
+// \brief Helper for building clauses (will be stored as StoredClause)
+struct Clause : public ClauseHeader
+{
+   // \brief Possible solutions to this task, ordered in order of preference.
+   std::vector<Var> solutions{};
+   inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : ClauseHeader(guard, group, optional, negative) {}
+};
+
+/// \brief Storage version of Clause with appended data
+struct [[gnu::may_alias]] StoredClause : public ClauseHeader
+{
+   // \brief size of the array data
+   uint32_t size;
+   // \brief the array of solutions
+   Var data[];
+
+   explicit StoredClause(Clause const &clause) : ClauseHeader(clause), size(clause.solutions.size())
+   {
+      std::copy(clause.solutions.begin(), clause.solutions.end(), data);
+   }
+   std::span<Var> solutions() { return {data, size}; }
+   std::span<const Var> solutions() const { return {data, size}; }
 };
 
 constexpr Lit Var::operator~() const noexcept
@@ -233,20 +257,23 @@ constexpr LiftedBool operator~(LiftedBool value) noexcept
  * Bypass bounds-checking done by _GLIBCXX_ASSERTIONS in a typed manner.
  * Index objects such as Var or CRef are only handed out by the solver,
  * so accessing them is safe.
+ *
+ * Underlying storage type may be different as long as they may alias.
  */
-template <typename T, typename K = Var>
-class VarVector : private std::vector<T>
+template <typename View, typename Index = Var, typename Store = View>
+class VarVector : private std::vector<Store>
 {
    public:
    // This is a fairly sensible lower bound for a Debian install
-   VarVector() { std::vector<T>::reserve(64 * 1024); }
+   VarVector() { std::vector<Store>::reserve(sizeof(View) / sizeof(Store) * 64 * 1024); }
    // Bypass bounds checking in libstdc++ using data() as explained above
-   constexpr T &operator[](K k) noexcept { return std::vector<T>::data()[k.value]; }
-   constexpr const T &operator[](K k) const noexcept { return std::vector<T>::data()[k.value]; }
+   View &operator[](Index k) noexcept { return *reinterpret_cast<View *>(&std::vector<Store>::data()[k.value]); }
+   const View &operator[](Index k) const noexcept { return *reinterpret_cast<const View *>(&std::vector<Store>::data()[k.value]); }
    // Safe functionality we can expose directly
-   using std::vector<T>::size;
-   using std::vector<T>::push_back;
-   using std::vector<T>::emplace_back;
+   using std::vector<Store>::size;
+   using std::vector<Store>::push_back;
+   using std::vector<Store>::emplace_back;
+   using std::vector<Store>::resize;
 };
 
 /*
@@ -293,14 +320,14 @@ class Solver
    VarVector<State> states;
 
    // \brief Store owning all clauses of the solver; clauses are referenced
-   // by CRef (their index here), which stays valid as the store grows.
-   VarVector<Clause, CRef> clauses;
+   // by CRef (their offset here), which stays valid as the store grows.
+   VarVector<StoredClause, CRef, uint32_t> clauses;
 
    // \brief Add a clause to the store, register it with its guard's state,
    // and set up its watchers, returning its reference.
-   CRef newClause(Clause &&clause);
+   CRef newClause(Clause const &clause);
    // \brief Register clause as a duplicate
-   CRef duplicateClause(CRef primaryCRef, Clause &&clause);
+   CRef duplicateClause(CRef primaryCRef, Clause &clause);
 
    // \brief Register a new variable, returning its identifier.
    //
@@ -385,7 +412,15 @@ class Solver
    // \brief Render a literal, e.g. for debugging output
    virtual std::string toString(Lit lit) const;
    // \brief Render a clause, e.g. for debugging output
-   virtual std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const;
+   virtual std::string toString(const ClauseHeader &clause, std::span<const Var> solutions, bool pretty = false, bool showMerged = true) const;
+   std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const
+   {
+      return toString(static_cast<const ClauseHeader &>(clause), clause.solutions, pretty, showMerged);
+   }
+   std::string toString(const StoredClause &clause, bool pretty = false, bool showMerged = true) const
+   {
+      return toString(static_cast<const ClauseHeader &>(clause), clause.solutions(), pretty, showMerged);
+   }
    // \brief Render a work item, e.g. for debugging output
    std::string toString(const Work &work) const;
 

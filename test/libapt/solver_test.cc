@@ -33,7 +33,13 @@ class TestSolver : public Solver
    // \brief Register a clause into the watchers, like DependencySolver::RegisterClause does.
    CRef AddClause(Clause &&clause)
    {
-      return newClause(std::move(clause));
+      Clause copy{clause};
+      CRef cref = newClause(std::move(clause));
+      StoredClause &inserted = clauses[cref];
+
+      EXPECT_EQ(ClauseHeader{copy}, ClauseHeader{inserted});
+      EXPECT_TRUE(std::ranges::equal(copy.solutions, inserted.solutions()));
+      return cref;
    }
 };
 
