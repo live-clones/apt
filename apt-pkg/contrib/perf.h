@@ -95,7 +95,7 @@ class PerformanceContext
       pe.exclude_kernel = 1;
       pe.exclude_hv = 1;
 
-      int fd = perf_event_open(&pe, 0, -1, -1, 0);
+      int fd = perf_event_open(&pe, 0, -1, -1, PERF_FLAG_FD_CLOEXEC);
       return fd;
    }
 
@@ -151,7 +151,7 @@ class PerformanceContext
       std::string entry = ss.str();
 
       // Atomically append a line to the JSONL file, allowing all users to read it
-      int fd = open(out.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+      int fd = open(out.c_str(), O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0666);
       must_succeed(fd != -1);
       must_succeed(flock(fd, LOCK_EX) == 0);
       must_succeed(write(fd, entry.c_str(), entry.size()) == static_cast<ssize_t>(entry.size()));
