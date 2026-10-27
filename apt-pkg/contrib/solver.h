@@ -39,6 +39,7 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace APT::Solver
@@ -265,7 +266,20 @@ class Solver
    class Watches;
    struct State;
    struct Work;
-   struct Trail;
+
+   /**
+    * \brief A trail item.
+    *
+    * In MiniSAT, a trail item is an assigned literal. However, we store an assigned variable instead,
+    * since the assignment is still recorded when we need to access the trail; there does not appear
+    * to be a substantial value in recording the sign here; but it produces a risk for a disagreement
+    * between the actual state and the sign recorded in the trail.
+    *
+    * In addition to MiniSAT's trail, we also need to keep a trail of solved Work items; that is
+    * clauses that were being solved, as when undoing the trail, we need to mark those clauses
+    * active again by putting them back on the work heap.
+    */
+   using Trail = std::variant<Var, Work>;
 
    // \brief Type to record decision level at. This may very well be a 16-bit
    // unsigned integer, then change Solver::State::LiftedBool to be a
@@ -444,7 +458,7 @@ struct Solver::Work
    level_type level;
 
    /// Number of valid choices at insertion time
-   size_t size{0};
+   uint32_t size{0};
 
    constexpr Work(CRef clause, level_type level) noexcept : clause(clause), level(level) {}
 };
@@ -486,26 +500,6 @@ struct Solver::State
    static_assert(sizeof(flags) <= sizeof(int));
    // \brief Watches watching a clause by sign
    Watches watches;
-};
-
-/**
- * \brief A trail item.
- *
- * In MiniSAT, a trail item is an assigned literal. However, we store an assigned variable instead,
- * since the assignment is still recorded when we need to access the trail; there does not appear
- * to be a substantial value in recording the sign here; but it produces a risk for a disagreement
- * between the actual state and the sign recorded in the trail.
- *
- * In addition to MiniSAT's trail, we also need to keep a trail of solved Work items; that is
- * clauses that were being solved, as when undoing the trail, we need to mark those clauses
- * active again by putting them back on the work heap.
- */
-struct Solver::Trail
-{
-   /// \brief A variable that got assigned True or False. May be reset to Undefined on backtracking.
-   Var assigned;
-   /// \brief A work item (a clause) that was solved. Needs to be put back on the work heap on backtracking.
-   std::optional<Work> work;
 };
 
 constexpr std::span<const CRef> Solver::watches(Lit lit) const noexcept

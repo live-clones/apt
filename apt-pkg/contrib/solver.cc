@@ -367,7 +367,7 @@ bool Solver::Enqueue(Lit lit, CRef reason)
    if (unlikely(debug >= 1))
       std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << toString(lit.var()) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
 
-   trail.push_back(Trail{lit.var(), std::nullopt});
+   trail.push_back(Trail{lit.var()});
    propQ.push(lit.var());
 
    return true;
@@ -453,24 +453,24 @@ void Solver::UndoOne()
    if (unlikely(debug >= 4))
       std::cerr << "Undoing a single assignment\n";
 
-   if (not trailItem.assigned.empty())
-   {
-      if (unlikely(debug >= 4))
-	 std::cerr << "Unassign " << toString(trailItem.assigned) << "\n";
-      auto &state = states[trailItem.assigned];
-      state.assignment = LiftedBool::Undefined;
-      state.reason = nullptr;
-      state.flags.backtracked = false;
-      state.level = 0;
-   }
+   std::visit([this](auto &&item)
+	      {
+      if constexpr (std::is_same_v<std::decay_t<decltype(item)>, Var>) {
+	 if (unlikely(debug >= 4))
+	    std::cerr << "Unassign " << toString(item) << "\n";
+	 auto &state = states[item];
+	 state.assignment = LiftedBool::Undefined;
+	 state.reason = nullptr;
+	 state.flags.backtracked = false;
+	 state.level = 0;
+      }
+      else
+      {
+	 if (unlikely(debug >= 4))
+	    std::cerr << "Adding work item " << toString(item) << std::endl;
 
-   if (auto work = trailItem.work)
-   {
-      if (unlikely(debug >= 4))
-	 std::cerr << "Adding work item " << toString(*work) << std::endl;
-
-      must_succeed(AddWork(std::move(*work)));
-   }
+         must_succeed(AddWork(std::move(item)));
+	 } }, trailItem);
 
    trail.pop_back();
 
@@ -503,7 +503,8 @@ bool Solver::Pop()
 
    assert(trailLim.back() < trail.size());
    int itemsToUndo = trail.size() - trailLim.back();
-   auto choice = trail[trailLim.back()].assigned;
+   auto choicePtr = std::get_if<Var>(&trail[trailLim.back()]);
+   auto choice = choicePtr ? *choicePtr : Var{};
 
    for (; itemsToUndo; --itemsToUndo)
       UndoOne();
@@ -601,7 +602,7 @@ bool Solver::Solve()
 	    std::cerr << toString(item) << "\n";
       }
       // Must push to trail after any Assume() above.
-      trail.push_back(Trail{Var(), item});
+      trail.push_back(Trail{item});
    }
 
    return true;
