@@ -196,12 +196,14 @@ struct Clause
 {
    // \brief Underlying dependency, opaque to the solver (a pkgCache::Dependency in practice)
    void *dep = nullptr;
+   // \brief Possible solutions to this task, ordered in order of preference.
+   std::vector<Var> solutions{};
+   // Clauses merged with this clause
+   std::forward_list<Clause> merged;
    // \brief Var guarding the implication
    Var guard;
    // \brief The group we are in
    Group group;
-   // \brief Possible solutions to this task, ordered in order of preference.
-   std::vector<Var> solutions{};
    // \brief An optional clause does not need to be satisfied
    bool optional;
 
@@ -210,9 +212,6 @@ struct Clause
 
    // \brief An optional clause may be eager
    bool eager;
-
-   // Clauses merged with this clause
-   std::forward_list<Clause> merged;
 
    inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
 };
