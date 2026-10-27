@@ -1896,8 +1896,7 @@ msgfailoutput() {
 		if [ -s "$COREDUMP" ]; then
 			true # found already as a file
 		elif dpkg-checkbuilddeps -d 'systemd-coredump' /dev/null >/dev/null 2>&1; then
-			COREEXE="$(coredumpctl -1 --no-legend list | sed -e 's#^.* \([^ ]\+\)$#\1#')"
-			coredumpctl -1 dump "$COREEXE" -o "$COREDUMP" 2>/dev/null >&2 || true
+			coredumpctl dump -1 -o "$COREDUMP" 2>&1 >/dev/null || true
 		else
 			echo '### core dump not found ###'
 			cat /proc/sys/kernel/core_pattern
