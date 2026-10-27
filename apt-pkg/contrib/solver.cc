@@ -33,6 +33,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <new>
 #include <sstream>
 
 namespace APT::Solver
@@ -56,19 +57,59 @@ Var Solver::newVar()
    return Var{static_cast<uint32_t>(states.size() - 1)};
 }
 
-// This function determines if a work item is less important than another.
-constexpr bool Solver::Work::operator<(Solver::Work const &b) const noexcept
+static CRef makeClause(VarVector<StoredClause, CRef, uint32_t> &clauses, Clause const &clause)
 {
-   if ((not clause->optional && size < 2) != (not b.clause->optional && b.size < 2))
-      return not b.clause->optional && b.size < 2;
-   if (clause->eager != b.clause->eager)
-      return not clause->eager;
-   if (clause->group != b.clause->group)
-      return clause->group > b.clause->group;
-   if ((size < 2) != (b.size < 2))
+   static_assert(sizeof(StoredClause) % sizeof(uint32_t) == 0);
+   static_assert(alignof(StoredClause) == sizeof(uint32_t));
+   size_t words = sizeof(StoredClause) / sizeof(uint32_t) + clause.solutions.size();
+   size_t offset = clauses.size();
+   auto cref = CRef{static_cast<uint32_t>(offset)};
+   clauses.resize(offset + words);
+
+   new (&clauses[cref]) StoredClause{clause};
+   return cref;
+}
+
+CRef Solver::duplicateClause(CRef primaryCRef, Clause &clause)
+{
+   clause.merged = clauses[primaryCRef].merged;
+   auto cref = makeClause(clauses, clause);
+   clauses[primaryCRef].merged = cref;
+   return cref;
+}
+
+CRef Solver::newClause(Clause const &clause)
+{
+   auto cref = makeClause(clauses, clause);
+   auto &inserted = clauses[cref];
+
+   // Insert all our watches: the guard is watched positively such that
+   // activating the guard queues the clause, solutions are watched
+   // negatively unless the clause itself is negative.
+   states[inserted.guard].watches.add(cref, false);
+   for (auto sol : inserted.solutions())
+   {
+      auto lit = inserted.negative ? sol : ~sol;
+      states[lit.var()].watches.add(cref, lit.sign());
+   }
+   return cref;
+}
+
+// This function determines if a work item is less important than another.
+bool Solver::workLess(Solver::Work const &a, Solver::Work const &b) const noexcept
+{
+   auto const &ca = clauses[a.clause];
+   auto const &cb = clauses[b.clause];
+   if ((not ca.optional && a.size < 2) != (not cb.optional && b.size < 2))
+      return not cb.optional && b.size < 2;
+   if (ca.eager != cb.eager)
+      return not ca.eager;
+   if (ca.group != cb.group)
+      return ca.group > cb.group;
+   if ((a.size < 2) != (b.size < 2))
       return b.size < 2;
-   if (size == 1 && b.size == 1) // Special case: 'shortcircuit' optional packages
-      return clause->solutions.size() < b.clause->solutions.size();
+   if (a.size == 1 && b.size == 1) // Special case: 'shortcircuit' optional packages
+      return ca.solutions().size() < cb.solutions().size();
    return false;
 }
 
@@ -82,24 +123,24 @@ std::string Solver::toString(Lit lit) const
    return (lit.sign() ? "~" : "") + toString(lit.var());
 }
 
-std::string Solver::toString(const Clause &clause, [[maybe_unused]] bool pretty, bool showMerged) const
+std::string Solver::toString(const ClauseHeader &clause, std::span<const Var> solutions, [[maybe_unused]] bool pretty, bool showMerged) const
 {
    // Render the implication in a DIMACS-like form, e.g. A -> B | C becomes ~xA | xB | xC
    std::string out;
    if (showMerged && not clause.guard.empty())
       out.append(toString(~clause.guard));
-   for (auto sol : clause.solutions)
+   for (auto sol : solutions)
    {
       if (not out.empty())
 	 out.append(" | ");
       out.append(toString(clause.negative ? ~sol : Lit(sol)));
    }
-   if (showMerged && not clause.merged.empty())
+   if (showMerged && clause.merged)
    {
-      for (auto &merged : clause.merged)
+      for (auto merged = clause.merged; merged; merged = clauses[merged].merged)
       {
 	 out.append(" and ");
-	 out.append(toString(merged, pretty, false));
+	 out.append(toString(clauses[merged], pretty, false));
       }
    }
    return out;
@@ -117,27 +158,29 @@ std::string Solver::DescribeSelection(Var var, bool assignment) const
 
 std::string Solver::toString(const Work &work) const
 {
+   auto const &clause = clauses[work.clause];
    std::ostringstream out;
-   if (work.clause->optional)
+   if (clause.optional)
       out << "Optional ";
-   out << "Item (" << ssize_t(work.size <= work.clause->solutions.size() ? work.size : -1) << "@" << work.level << ") ";
-   out << toString(*work.clause);
+   out << "Item (" << ssize_t(work.size <= clause.solutions().size() ? work.size : -1) << "@" << work.level << ") ";
+   out << toString(clause);
    return out.str();
 }
 
-Var Solver::bestReason(Clause const *clause, Var var) const noexcept
+Var Solver::bestReason(CRef cref, Var var) const noexcept
 {
-   if (not clause)
+   if (not cref)
       return Var{};
-   if (clause->guard == var)
-      for (auto choice : clause->solutions)
+   auto const &clause = clauses[cref];
+   if (clause.guard == var)
+      for (auto choice : clause.solutions())
       {
-	 if (clause->negative && value(choice) == LiftedBool::True)
+	 if (clause.negative && value(choice) == LiftedBool::True)
 	    return choice;
-	 if (not clause->negative && value(choice) == LiftedBool::False)
+	 if (not clause.negative && value(choice) == LiftedBool::False)
 	    return choice;
       }
-   return clause->guard;
+   return clause.guard;
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
@@ -161,7 +204,7 @@ std::string Solver::WhyStr(Var reason) const
    return outstr;
 }
 
-std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const
+std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::string prefix, std::unordered_set<Var> &seen) const
 {
    std::ostringstream out;
 
@@ -172,11 +215,12 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    };
 
    // Helper: Recurse into all of the children of the clause and print the assignment for them.
-   auto recurseChildren = [&](const Clause *clause, Var skip = Var())
+   auto recurseChildren = [&](CRef cref, Var skip = Var())
    {
-      if (clause->solutions.empty())
+      auto const &clause = clauses[cref];
+      if (clause.solutions().empty())
 	 out << prefix << "[no choices]\n";
-      for (auto choice : clause->solutions)
+      for (auto choice : clause.solutions())
       {
 	 if (choice == skip)
 	    continue;
@@ -190,9 +234,9 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
 
    // Inverse version selection clauses that select the package if the version is selected,
    // such as pkg=ver -> pkg, are irrelevant for the user, skip them
-   if (IsPackage(var) && assignment && rclause && rclause->group == Group::SelectVersion)
+   if (IsPackage(var) && assignment && rclause && clauses[rclause].group == Group::SelectVersion)
    {
-      var = rclause->guard;
+      var = clauses[rclause].guard;
       rclause = states[var].reason;
    }
 
@@ -217,9 +261,9 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    }
 
    // A package was decided "not install" due to a positive clause, so the clause is unsat.
-   if (not assignment && rclause && not rclause->negative)
+   if (not assignment && rclause && not clauses[rclause].negative)
    {
-      out << prefix << toString(*rclause, true) << "\n";
+      out << prefix << toString(clauses[rclause], true) << "\n";
       out << prefix << "but none of the choices are installable:\n";
       recurseChildren(rclause);
       return out.str();
@@ -238,7 +282,7 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    {
       auto const &state = states[*it];
       // Don't print version selection clauses
-      if (IsPackage(*it) && state.reason && state.reason->group == Group::SelectVersion)
+      if (IsPackage(*it) && state.reason && clauses[state.reason].group == Group::SelectVersion)
       {
 	 --i;
 	 continue;
@@ -254,8 +298,8 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
       seen.insert(*it);
       if (state.reason)
       {
-	 out << prefix << std::setw(w) << i << ". " << toString(*state.reason, true) << "\n";
-	 if (state.reason->solutions.size() > 1)
+	 out << prefix << std::setw(w) << i << ". " << toString(clauses[state.reason], true) << "\n";
+	 if (clauses[state.reason].solutions().size() > 1)
 	    out << prefix << std::setw(w) << " " << "  [selected " << toString(*it) << " for " << (state.assignment == LiftedBool::True ? "install" : "remove") << "]\n";
       }
       else
@@ -265,8 +309,8 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    // Print the leaf. We can't have the leaf in the path because we might be called for an attempted assignment
    // that conflicts with the actual assignment (to simplify: we marked X for not install, then we process Y depends X
    // and try to mark X and reach the conflict, we are called with "X" and the "Y depends X" clause).
-   out << prefix << std::setw(w) << i << ". " << toString(*rclause, true) << "\n";
-   if (rclause->solutions.size() > 1)
+   out << prefix << std::setw(w) << i << ". " << toString(clauses[rclause], true) << "\n";
+   if (clauses[rclause].solutions().size() > 1)
       out << prefix << std::setw(w) << " " << "  " << "[selected " << toString(bestReason(rclause, var)) << "]\n";
 
    bool firstContext = true;
@@ -277,9 +321,9 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
       auto const &state = states[*it];
       if (not state.reason) // If we have no reason, we don't have alternatives
 	 continue;
-      if (state.reason->solutions.size() <= 1) // Nothing to print if we no alternatives
+      if (clauses[state.reason].solutions().size() <= 1) // Nothing to print if we no alternatives
 	 continue;
-      if (state.reason->negative) // We only actually need one conflicting choice, ignore others
+      if (clauses[state.reason].negative) // We only actually need one conflicting choice, ignore others
 	 continue;
 
       if (firstContext)
@@ -288,19 +332,19 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
       }
 
       firstContext = false;
-      out << prefix << "* In " << toString(*state.reason, true) << ":\n";
+      out << prefix << "* In " << toString(clauses[state.reason], true) << ":\n";
       prefix += "  ";
       recurseChildren(state.reason, *it);
       prefix.resize(prefix.size() - 2);
    }
-   if (rclause->solutions.size() > 1 && not rclause->negative)
+   if (clauses[rclause].solutions().size() > 1 && not clauses[rclause].negative)
    {
       if (firstContext)
       {
 	 out << prefix << "For context, additional choices that could not be installed:" << "\n";
       }
       firstContext = false;
-      out << prefix << "* In " << toString(*rclause, true) << ":\n";
+      out << prefix << "* In " << toString(clauses[rclause], true) << ":\n";
       prefix += "  ";
       recurseChildren(rclause, var);
       prefix.resize(prefix.size() - 2);
@@ -309,13 +353,13 @@ std::string Solver::LongWhyStr(Var var, bool assignment, const Clause *rclause, 
    return out.str();
 }
 
-bool Solver::Assume(Lit lit, const Clause *reason)
+bool Solver::Assume(Lit lit, CRef reason)
 {
    trailLim.push_back(trail.size());
    return Enqueue(lit, std::move(reason));
 }
 
-bool Solver::Enqueue(Lit lit, const Clause *reason)
+bool Solver::Enqueue(Lit lit, CRef reason)
 {
    assert(not lit.empty());
 
@@ -344,7 +388,7 @@ bool Solver::Enqueue(Lit lit, const Clause *reason)
    if (unlikely(debug >= 1))
       std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << toString(lit.var()) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
 
-   trail.push_back(Trail{lit.var(), std::nullopt});
+   trail.push_back(Trail{lit.var()});
    propQ.push(lit.var());
 
    return true;
@@ -373,20 +417,21 @@ bool Solver::Propagate()
    return true;
 }
 
-bool Solver::Propagate(const Clause *clause, Lit p)
+bool Solver::Propagate(CRef cref, Lit p)
 {
+   auto const &clause = clauses[cref];
    if (debug >= 3)
-      std::cerr << "Propagate " << toString(p) << " to " << toString(*clause) << std::endl;
+      std::cerr << "Propagate " << toString(p) << " to " << toString(clause) << std::endl;
    // Negative clauses are trivial
-   if (clause->negative)
+   if (clause.negative)
    {
       // One of the solutions was set, so reject the reason
-      if (p != clause->guard)
-	 return Enqueue(~clause->guard, clause);
+      if (p != clause.guard)
+	 return Enqueue(~clause.guard, cref);
 
       // Here we need to reject all conflicting solutions (reason -> none of solutions)
-      for (auto sol : clause->solutions)
-	 if (not Enqueue(~sol, clause))
+      for (auto sol : clause.solutions())
+	 if (not Enqueue(~sol, cref))
 	    return false;
 
       return true;
@@ -395,29 +440,29 @@ bool Solver::Propagate(const Clause *clause, Lit p)
    // Check if the clause is unit, conflict, or undecided
    auto not_false = [&](auto lit) noexcept
    { return value(lit) != LiftedBool::False; };
-   auto head = std::ranges::find_if(clause->solutions, not_false);
+   auto head = std::ranges::find_if(clause.solutions(), not_false);
    auto find_tail = [&]() noexcept
-   { return std::ranges::find_last_if(clause->solutions, not_false); };
-   if (head == clause->solutions.end())
+   { return std::ranges::find_last_if(clause.solutions(), not_false); };
+   if (head == clause.solutions().end())
    {
       // Conflict clause. If this clause is non-optional; reject its "reason".
-      if (not clause->optional)
-	 return Enqueue(~clause->guard, clause);
+      if (not clause.optional)
+	 return Enqueue(~clause.guard, cref);
    }
-   else if (value(clause->guard) != LiftedBool::True)
+   else if (value(clause.guard) != LiftedBool::True)
    {
       // Inactive clause, nothing to do
    }
-   else if (not clause->optional && head == find_tail().begin())
+   else if (not clause.optional && head == find_tail().begin())
    {
       // Unit clause. Enqueue the only possible solution
-      return Enqueue(*head, clause);
+      return Enqueue(*head, cref);
    }
    else
    {
       // Undecided clause. If this is an activation, queue it for solving
-      if (p == clause->guard)
-	 return AddWork(Work{clause, decisionLevel()});
+      if (p == clause.guard)
+	 return AddWork(Work{cref, decisionLevel()});
    }
    return true;
 }
@@ -429,24 +474,24 @@ void Solver::UndoOne()
    if (unlikely(debug >= 4))
       std::cerr << "Undoing a single assignment\n";
 
-   if (not trailItem.assigned.empty())
-   {
-      if (unlikely(debug >= 4))
-	 std::cerr << "Unassign " << toString(trailItem.assigned) << "\n";
-      auto &state = states[trailItem.assigned];
-      state.assignment = LiftedBool::Undefined;
-      state.reason = nullptr;
-      state.reasonStr = nullptr;
-      state.level = 0;
-   }
+   std::visit([this](auto &&item)
+	      {
+      if constexpr (std::is_same_v<std::decay_t<decltype(item)>, Var>) {
+	 if (unlikely(debug >= 4))
+	    std::cerr << "Unassign " << toString(item) << "\n";
+	 auto &state = states[item];
+	 state.assignment = LiftedBool::Undefined;
+	 state.reason = nullptr;
+	 state.flags.backtracked = false;
+	 state.level = 0;
+      }
+      else
+      {
+	 if (unlikely(debug >= 4))
+	    std::cerr << "Adding work item " << toString(item) << std::endl;
 
-   if (auto work = trailItem.work)
-   {
-      if (unlikely(debug >= 4))
-	 std::cerr << "Adding work item " << toString(*work) << std::endl;
-
-      must_succeed(AddWork(std::move(*work)));
-   }
+         must_succeed(AddWork(std::move(item)));
+	 } }, trailItem);
 
    trail.pop_back();
 
@@ -479,7 +524,8 @@ bool Solver::Pop()
 
    assert(trailLim.back() < trail.size());
    int itemsToUndo = trail.size() - trailLim.back();
-   auto choice = trail[trailLim.back()].assigned;
+   auto choicePtr = std::get_if<Var>(&trail[trailLim.back()]);
+   auto choice = choicePtr ? *choicePtr : Var{};
 
    for (; itemsToUndo; --itemsToUndo)
       UndoOne();
@@ -489,7 +535,8 @@ bool Solver::Pop()
    work.erase(std::remove_if(work.begin(), work.end(), [this](Work &w) -> bool
 			     { return w.level > decisionLevel(); }),
 	      work.end());
-   std::make_heap(work.begin(), work.end());
+   std::make_heap(work.begin(), work.end(), [this](Work const &a, Work const &b)
+		  { return workLess(a, b); });
 
    if (unlikely(debug >= 2))
       std::cerr << "Backtracking to choice " << toString(choice) << "\n";
@@ -498,7 +545,7 @@ bool Solver::Pop()
    if (not choice.empty() && not Enqueue(~choice, {}))
       return false;
 
-   states[choice].reasonStr = "backtracked";
+   states[choice].flags.backtracked = true;
 
    if (unlikely(debug >= 2))
       std::cerr << "Backtracked to choice " << toString(choice) << "\n";
@@ -508,23 +555,25 @@ bool Solver::Pop()
 
 bool Solver::AddWork(Work &&w)
 {
-   if (w.clause->negative)
+   auto const &clause = clauses[w.clause];
+   if (clause.negative)
    {
-      for (auto var : w.clause->solutions)
+      for (auto var : clause.solutions())
 	 if (not Enqueue(~var, w.clause))
 	    return false;
    }
    else
    {
-      if (unlikely(debug >= 3 && w.clause->optional))
-	 std::cerr << "Enqueuing Recommends " << toString(*w.clause) << std::endl;
-      if (w.clause->solutions.size() == 1 && not w.clause->optional)
-	 return Enqueue(w.clause->solutions[0], w.clause);
+      if (unlikely(debug >= 3 && clause.optional))
+	 std::cerr << "Enqueuing Recommends " << toString(clause) << std::endl;
+      if (clause.solutions().size() == 1 && not clause.optional)
+	 return Enqueue(clause.solutions()[0], w.clause);
 
-      w.size = std::count_if(w.clause->solutions.begin(), w.clause->solutions.end(), [this](auto V)
-			     { return value(V) != LiftedBool::False; });
+      w.size = static_cast<uint32_t>(std::count_if(clause.solutions().begin(), clause.solutions().end(), [this](auto V)
+						   { return value(V) != LiftedBool::False; }));
       work.push_back(std::move(w));
-      std::push_heap(work.begin(), work.end());
+      std::push_heap(work.begin(), work.end(), [this](Work const &a, Work const &b)
+		     { return workLess(a, b); });
    }
    return true;
 }
@@ -547,18 +596,20 @@ bool Solver::Solve()
 	 break;
 
       auto item = work.front();
-      std::pop_heap(work.begin(), work.end());
+      std::pop_heap(work.begin(), work.end(), [this](Work const &a, Work const &b)
+		    { return workLess(a, b); });
       work.pop_back();
 
-      if (std::any_of(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
+      auto const &clause = clauses[item.clause];
+      if (std::any_of(clause.solutions().begin(), clause.solutions().end(), [this](auto ver)
 		      { return value(ver) == LiftedBool::True; }))
       {
 	 if (unlikely(debug >= 2))
 	    std::cerr << "ELIDED " << toString(item) << std::endl;
       }
-      else if (auto candidate = std::find_if(item.clause->solutions.begin(), item.clause->solutions.end(), [this](auto ver)
+      else if (auto candidate = std::find_if(clause.solutions().begin(), clause.solutions().end(), [this](auto ver)
 					     { return value(ver) == LiftedBool::Undefined; });
-	       candidate != item.clause->solutions.end())
+	       candidate != clause.solutions().end())
       {
 	 if (unlikely(debug >= 3))
 	    std::cerr << toString(item) << "\n"
@@ -567,12 +618,12 @@ bool Solver::Solve()
       }
       else
       {
-	 assert(item.clause->optional);
+	 assert(clause.optional);
 	 if (unlikely(debug >= 1))
 	    std::cerr << toString(item) << "\n";
       }
       // Must push to trail after any Assume() above.
-      trail.push_back(Trail{Var(), item});
+      trail.push_back(Trail{item});
    }
 
    return true;

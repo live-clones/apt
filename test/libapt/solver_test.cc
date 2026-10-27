@@ -31,16 +31,15 @@ class TestSolver : public Solver
    void Discover(Var) override {}
 
    // \brief Register a clause into the watchers, like DependencySolver::RegisterClause does.
-   const Clause *AddClause(Clause &&clause)
+   CRef AddClause(Clause &&clause)
    {
-      auto &clauses = states[clause.guard].clauses;
-      clauses.push_back(std::make_unique<Clause>(std::move(clause)));
-      auto const &inserted = clauses.back();
-      if (not inserted->guard.empty())
-	 watches(inserted->guard).push_back(inserted.get());
-      for (auto sol : inserted->solutions)
-	 watches(inserted->negative ? sol : ~sol).push_back(inserted.get());
-      return inserted.get();
+      Clause copy{clause};
+      CRef cref = newClause(std::move(clause));
+      StoredClause &inserted = clauses[cref];
+
+      EXPECT_EQ(ClauseHeader{copy}, ClauseHeader{inserted});
+      EXPECT_TRUE(std::ranges::equal(copy.solutions, inserted.solutions()));
+      return cref;
    }
 };
 
@@ -54,6 +53,51 @@ TEST(SolverTest, RootAndNewVars)
    EXPECT_FALSE(a.empty());
    EXPECT_EQ(s.value(a), LiftedBool::Undefined);
    EXPECT_EQ(s.value(b), LiftedBool::Undefined);
+}
+
+TEST(SolverTest, Watches)
+{
+   TestSolver s;
+   auto a = s.newVar();
+
+   auto &watches = s.states[a].watches;
+   watches.add(CRef{1}, false);
+   watches.add(CRef{2}, true);
+   watches.add(CRef{3}, false);
+   watches.add(CRef{4}, true);
+
+   {
+      // Positive watchers keep their insertion order.
+      auto const positive = watches.get(false);
+      ASSERT_EQ(positive.size(), 2);
+      EXPECT_EQ(positive[0], CRef{1});
+      EXPECT_EQ(positive[1], CRef{3});
+
+      // Negative watches are in the right order
+      auto const negative = watches.get(true);
+      ASSERT_EQ(negative.size(), 2);
+      EXPECT_EQ(negative[0], CRef{2});
+      EXPECT_EQ(negative[1], CRef{4});
+   }
+
+   {
+      // Inserting a positive watcher at the end rotates the negative group:
+      // the first negative watcher is swapped out to the end of the vector.
+      watches.add(CRef{5}, false);
+
+      // Positive watchers keep their insertion order.
+      auto const positive = watches.get(false);
+      ASSERT_EQ(positive.size(), 3);
+      EXPECT_EQ(positive[0], CRef{1});
+      EXPECT_EQ(positive[1], CRef{3});
+      EXPECT_EQ(positive[2], CRef{5});
+
+      // The negative group rotated [2, 4] -> [4, 2].
+      auto const negative = watches.get(true);
+      ASSERT_EQ(negative.size(), 2);
+      EXPECT_EQ(negative[0], CRef{4});
+      EXPECT_EQ(negative[1], CRef{2});
+   }
 }
 
 TEST(SolverTest, UnitPropagation)
@@ -236,6 +280,41 @@ TEST(SolverTest, BestReason)
    neg2.solutions = {c};
    auto neg2C = s.AddClause(std::move(neg2));
    EXPECT_EQ(s.bestReason(neg2C, b), b);
+}
+
+TEST(SolverTest, LiteralBitMagic)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar();
+
+   // A literal stores the variable shifted left by one, with the sign in the lowest bit
+   EXPECT_EQ(Lit(a).var(), a);
+   EXPECT_FALSE(Lit(a).sign());
+   EXPECT_EQ(Lit(a, true).var(), a);
+   EXPECT_TRUE(Lit(a, true).sign());
+
+   // Negation flips exactly the sign bit and is an involution
+   EXPECT_EQ(~a, Lit(a, true));
+   EXPECT_EQ(~~a, Lit(a));
+   EXPECT_EQ((~a).var(), a);
+   EXPECT_TRUE((~a).sign());
+   EXPECT_NE(~a, Lit(a));
+   EXPECT_NE(~a, ~b);
+   EXPECT_EQ(~~b, Lit(b));
+
+   // Even the root variable has distinct positive and negative literals
+   EXPECT_NE(~Var{}, Lit(Var{}));
+   EXPECT_TRUE((~Var{}).sign());
+}
+
+TEST(SolverTest, LiftedBoolBitMagic)
+{
+   // Negation swaps the two bits: Undefined stays, True and False are exchanged
+   EXPECT_EQ(~LiftedBool::Undefined, LiftedBool::Undefined);
+   EXPECT_EQ(~LiftedBool::True, LiftedBool::False);
+   EXPECT_EQ(~LiftedBool::False, LiftedBool::True);
+   EXPECT_EQ(~~LiftedBool::True, LiftedBool::True);
+   EXPECT_EQ(~~LiftedBool::False, LiftedBool::False);
 }
 
 TEST(SolverTest, RenderSelection)

@@ -170,14 +170,15 @@ class DependencySolver final : public Solver
    // \brief Render a literal as a (negated) package or version name
    std::string toString(Lit lit) const override;
    // \brief Render a clause, e.g. for debugging output
-   std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const override;
+   std::string toString(const ClauseHeader &clause, std::span<const Var> solutions, bool pretty = false, bool showMerged = true) const override;
    constexpr bool IsPackage(Var var) const noexcept override { return varPkg[var] != nullptr; }
+   using Solver::toString;
    std::string DescribeSelection(Var var, bool assignment) const override;
 
    /// \brief Discover the dependencies of the variable
    void Discover(Var var) override;
    /// \brief Link a clause into the watchers
-   const Clause *RegisterClause(Clause &&clause);
+   CRef RegisterClause(Clause &clause);
    /// \brief Enqueue dependencies shared by all versions of the package.
    void RegisterCommonDependencies(pkgCache::PkgIterator Pkg);
 

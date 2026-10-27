@@ -24,24 +24,28 @@
 #include <apt-pkg/header-is-private.h>
 
 #include <cassert>
+#include <cstddef> // required for nullptr_t
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
-#include <forward_list>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <queue>
+#include <ranges>
+#include <span>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace APT::Solver
 {
 
 struct Lit;
+class Solver;
 
 // \brief Groups of works, these are ordered.
 //
@@ -84,14 +88,14 @@ enum class Group : uint8_t
 };
 
 // \brief This essentially describes the install state in RFC2119 terms.
-enum class LiftedBool : uint8_t
+enum class LiftedBool : int8_t
 {
-   // \brief We have not made a choice about the package yet
-   Undefined,
-   // \brief We need to install this package
-   True,
    // \brief We cannot install this package (need conflicts with it)
-   False,
+   False = -1,
+   // \brief We have not made a choice about the package yet
+   Undefined = 0,
+   // \brief We need to install this package
+   True = 1,
 };
 
 /**
@@ -106,7 +110,8 @@ struct Var
 {
    uint32_t value;
 
-   explicit constexpr Var(uint32_t value = 0) noexcept : value{value} {}
+   // \brief The root variable.
+   constexpr Var() noexcept : value{0} {}
 
    // \brief Check if there is no reason.
    constexpr bool empty() const noexcept { return value == 0; }
@@ -115,6 +120,15 @@ struct Var
 
    /// \brief Negate
    constexpr Lit operator~() const noexcept;
+
+   private:
+   friend class Solver;
+   friend struct Lit;
+   // \brief Construct a variable from its numeric identifier.
+   //
+   // Only the solver hands out variables (via Solver::newVar()), such that
+   // using a variable as an index cannot refer to unregistered state.
+   explicit constexpr Var(uint32_t value) noexcept : value{value} {}
 };
 
 /**
@@ -126,19 +140,21 @@ struct Lit
 {
    private:
    friend struct std::hash<Lit>;
-   // Private constructor from a number, to be used with operator~
-   explicit constexpr Lit(int32_t value) noexcept : value{value} {}
-   int32_t value;
+   // Private constructor from a raw number, to be used with operator~
+   explicit constexpr Lit(uint32_t raw) noexcept : value{raw} {}
+   // \brief The variable shifted left by one bit, with the sign in the lowest bit.
+   uint32_t value;
 
    public:
    constexpr Lit() noexcept : value{0} {}
-   // SAFETY: value must be 31 bit, one bit is needed for the sign.
-   constexpr Lit(Var var) noexcept : value{static_cast<int32_t>(var.value)} {}
+   // SAFETY: var.value must be 31 bit, one bit is needed for the sign.
+   constexpr Lit(Var var) noexcept : value{var.value << 1} {}
+   constexpr Lit(Var var, bool sign) noexcept : value{(var.value << 1) | uint32_t(sign)} {}
 
    // Accessors
-   constexpr Var var() const noexcept { return Var(std::abs(value)); }
-   constexpr bool sign() const noexcept { return value < 0; }
-   constexpr Lit operator~() const noexcept { return Lit(-value); }
+   constexpr Var var() const noexcept { return Var{value >> 1}; }
+   constexpr bool sign() const noexcept { return value & 1; }
+   constexpr Lit operator~() const noexcept { return Lit{value ^ 1}; }
 
    // Properties
    constexpr bool empty() const noexcept { return value == 0; }
@@ -147,21 +163,46 @@ struct Lit
 };
 
 /**
+ * \brief A reference to a clause in the solver's clause store.
+ *
+ * All clauses live in a single VarVector (Solver::clauses); a CRef stores the
+ * offset of a clause there, so references remain valid as the store grows.
+ * A null reference (constructed from nullptr) does not refer to a clause.
+ */
+struct CRef
+{
+   uint32_t value = UINT32_MAX;
+
+   // \brief Construct a null reference.
+   constexpr CRef() noexcept = default;
+   // \brief Construct a null reference.
+   constexpr CRef(std::nullptr_t) noexcept {}
+   // \brief Construct a reference to the clause at the given index.
+   constexpr explicit CRef(uint32_t value) noexcept : value{value} {}
+
+   // \brief Check if there is a referenced clause.
+   constexpr explicit operator bool() const noexcept { return value != UINT32_MAX; }
+   constexpr bool operator!=(CRef const other) const noexcept { return value != other.value; }
+   constexpr bool operator==(CRef const other) const noexcept { return value == other.value; }
+};
+
+/**
  * \brief A single clause
  *
  * A clause is a normalized, expanded dependency, translated into an implication
- * in terms of Var objects, that is, `guard -> solutions[0] | ... | solutions[n]`
+ * in terms of Var objects, that is, `guard -> solutions[0] | ... | solutions[n]`,
+ * they are stored either in a vector or appended, see Clause and StoredClause.
  */
-struct Clause
+struct ClauseHeader
 {
    // \brief Underlying dependency, opaque to the solver (a pkgCache::Dependency in practice)
-   void *dep = nullptr;
+   uint32_t dep{};
+   // Clauses merged with this clause, next node in linked list
+   CRef merged;
    // \brief Var guarding the implication
    Var guard;
    // \brief The group we are in
    Group group;
-   // \brief Possible solutions to this task, ordered in order of preference.
-   std::vector<Var> solutions{};
    // \brief An optional clause does not need to be satisfied
    bool optional;
 
@@ -171,90 +212,68 @@ struct Clause
    // \brief An optional clause may be eager
    bool eager;
 
-   // Clauses merged with this clause
-   std::forward_list<Clause> merged;
-
-   inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
+   inline ClauseHeader(Var guard, Group group, bool optional = false, bool negative = false) : guard(guard), group(group), optional(optional), negative(negative), eager(not optional) {}
+   bool operator==(ClauseHeader const &) const = default;
 };
 
-constexpr Lit Solver::Var::operator~() const noexcept
+// \brief Helper for building clauses (will be stored as StoredClause)
+struct Clause : public ClauseHeader
+{
+   // \brief Possible solutions to this task, ordered in order of preference.
+   std::vector<Var> solutions{};
+   inline Clause(Var guard, Group group, bool optional = false, bool negative = false) : ClauseHeader(guard, group, optional, negative) {}
+};
+
+/// \brief Storage version of Clause with appended data
+struct [[gnu::may_alias]] StoredClause : public ClauseHeader
+{
+   // \brief size of the array data
+   uint32_t size;
+   // \brief the array of solutions
+   Var data[];
+
+   explicit StoredClause(Clause const &clause) : ClauseHeader(clause), size(clause.solutions.size())
+   {
+      std::copy(clause.solutions.begin(), clause.solutions.end(), data);
+   }
+   std::span<Var> solutions() { return {data, size}; }
+   std::span<const Var> solutions() const { return {data, size}; }
+};
+
+constexpr Lit Var::operator~() const noexcept
 {
    return ~Lit(*this);
 }
 
 constexpr LiftedBool operator~(LiftedBool value) noexcept
 {
-   switch (value)
-   {
-   case LiftedBool::Undefined:
-      return LiftedBool::Undefined;
-   case LiftedBool::True:
-      return LiftedBool::False;
-   case LiftedBool::False:
-      return LiftedBool::True;
-   }
-   abort();
+   // Negation: Undefined stays Undefined, True and False are exchanged.
+   return static_cast<LiftedBool>(-static_cast<int8_t>(value));
 }
 
 /**
- * \brief A minimal, grow-only vector indexed by Var objects.
+ * \brief A minimal, grow-only vector indexed by index objects.
  *
- * std::vector and std::unique_ptr<T[]> perform bounds checking in operator[]
- * because we build with _GLIBCXX_ASSERTIONS, which is too costly in the hot
- * paths of the solver. Taking Var objects as indices reduces the risk of
- * out-of-bounds accesses, as variables are only handed out by
- * Solver::newVar().
+ * Bypass bounds-checking done by _GLIBCXX_ASSERTIONS in a typed manner.
+ * Index objects such as Var or CRef are only handed out by the solver,
+ * so accessing them is safe.
+ *
+ * Underlying storage type may be different as long as they may alias.
  */
-template <typename T>
-class VarVector
+template <typename View, typename Index = Var, typename Store = View>
+class VarVector : private std::vector<Store>
 {
-   T *data_ = nullptr; // Avoid std::unique_ptr() as it may check that it's non-null.
-   size_t size_ = 0;
-   size_t capacity_ = 0;
-
    public:
-   constexpr T &operator[](Var var) noexcept { return data_[var.value]; }
-   constexpr const T &operator[](Var var) const noexcept { return data_[var.value]; }
-
-   constexpr void grow()
-   {
-      size_t const oldCapacity = capacity_;
-      capacity_ = capacity_ == 0 ? 64 * 1024 : 2 * capacity_;
-      std::allocator<T> alloc;
-      T *data = alloc.allocate(capacity_);
-      if (data_)
-      {
-	 std::uninitialized_move(data_, data_ + size_, data);
-	 std::destroy_n(data_, size_);
-	 alloc.deallocate(data_, oldCapacity);
-      }
-      data_ = data;
-   }
-   constexpr void push_back(T value)
-   {
-      emplace_back(std::move(value));
-   }
-   template <typename... Args>
-   constexpr void emplace_back(Args &&...args)
-   {
-      if (size_ == capacity_)
-	 grow();
-      std::construct_at(data_ + size_++, std::forward<Args>(args)...);
-   }
-   constexpr size_t size() const noexcept { return size_; }
-   ~VarVector()
-   {
-      if (data_)
-      {
-	 std::destroy_n(data_, size_);
-	 std::allocator<T>{}.deallocate(data_, capacity_);
-      }
-   }
-
-   // Delete copy constructors for memory safety (rule of 3)
-   VarVector() = default;
-   VarVector(const VarVector &) = delete;
-   VarVector &operator=(const VarVector &) = delete;
+   // This is a fairly sensible lower bound for a Debian install
+   VarVector() { std::vector<Store>::reserve(sizeof(View) / sizeof(Store) * 64 * 1024); }
+   // Bypass bounds checking in libstdc++ using data() as explained above
+   View &operator[](Index k) noexcept { return *reinterpret_cast<View *>(&std::vector<Store>::data()[k.value]); }
+   const View &operator[](Index k) const noexcept { return *reinterpret_cast<const View *>(&std::vector<Store>::data()[k.value]); }
+   // Safe functionality we can expose directly
+   using std::vector<Store>::size;
+   using std::vector<Store>::push_back;
+   using std::vector<Store>::emplace_back;
+   using std::vector<Store>::resize;
 };
 
 /*
@@ -270,9 +289,23 @@ class VarVector
 class Solver
 {
    protected:
+   class Watches;
    struct State;
    struct Work;
-   struct Trail;
+
+   /**
+    * \brief A trail item.
+    *
+    * In MiniSAT, a trail item is an assigned literal. However, we store an assigned variable instead,
+    * since the assignment is still recorded when we need to access the trail; there does not appear
+    * to be a substantial value in recording the sign here; but it produces a risk for a disagreement
+    * between the actual state and the sign recorded in the trail.
+    *
+    * In addition to MiniSAT's trail, we also need to keep a trail of solved Work items; that is
+    * clauses that were being solved, as when undoing the trail, we need to mark those clauses
+    * active again by putting them back on the work heap.
+    */
+   using Trail = std::variant<Var, Work>;
 
    // \brief Type to record decision level at. This may very well be a 16-bit
    // unsigned integer, then change Solver::State::LiftedBool to be a
@@ -286,13 +319,24 @@ class Solver
    // \brief State for each registered variable; the root is at index 0.
    VarVector<State> states;
 
+   // \brief Store owning all clauses of the solver; clauses are referenced
+   // by CRef (their offset here), which stays valid as the store grows.
+   VarVector<StoredClause, CRef, uint32_t> clauses;
+
+   // \brief Add a clause to the store, register it with its guard's state,
+   // and set up its watchers, returning its reference.
+   CRef newClause(Clause const &clause);
+   // \brief Register clause as a duplicate
+   CRef duplicateClause(CRef primaryCRef, Clause &clause);
+
    // \brief Register a new variable, returning its identifier.
    //
    // Concrete solvers may override this to keep auxiliary data structures
    // indexed by variables in sync.
    virtual Var newVar();
 
-   constexpr std::vector<const Clause *> &watches(Lit lit) noexcept;
+   constexpr std::span<const CRef> watches(Lit lit) const noexcept;
+   constexpr auto clausesOf(Var var) const noexcept;
 
    // \brief Heap of the remaining work.
    //
@@ -331,14 +375,14 @@ class Solver
    // \brief Propagate all pending propagations
    [[nodiscard]] bool Propagate();
    // \brief Propagate all pending propagations
-   [[nodiscard]] bool Propagate(const Clause *clause, Lit lit);
+   [[nodiscard]] bool Propagate(CRef clause, Lit lit);
 
    // \brief Return the current level (.size() with casting)
    level_type decisionLevel()
    {
       return static_cast<level_type>(trailLim.size());
    }
-   Var bestReason(Clause const *clause, Var var) const noexcept;
+   Var bestReason(CRef clause, Var var) const noexcept;
    constexpr LiftedBool value(Lit lit) const noexcept;
 
    public:
@@ -346,6 +390,8 @@ class Solver
    [[nodiscard]] bool Pop();
    // \brief Undo a single assignment / trail work item
    void UndoOne();
+   // \brief This function determines if a work item is less important than another.
+   bool workLess(Work const &a, Work const &b) const noexcept;
    // \brief Add work to our work queue.
    [[nodiscard]] bool AddWork(Work &&work);
 
@@ -354,9 +400,9 @@ class Solver
    virtual ~Solver();
 
    // Assume a literal
-   [[nodiscard]] bool Assume(Lit lit, const Clause *reason = nullptr);
+   [[nodiscard]] bool Assume(Lit lit, CRef reason = nullptr);
    // Enqueue a fact
-   [[nodiscard]] bool Enqueue(Lit lit, const Clause *reason = nullptr);
+   [[nodiscard]] bool Enqueue(Lit lit, CRef reason = nullptr);
 
    // \brief Solve the dependencies
    [[nodiscard]] bool Solve();
@@ -366,7 +412,15 @@ class Solver
    // \brief Render a literal, e.g. for debugging output
    virtual std::string toString(Lit lit) const;
    // \brief Render a clause, e.g. for debugging output
-   virtual std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const;
+   virtual std::string toString(const ClauseHeader &clause, std::span<const Var> solutions, bool pretty = false, bool showMerged = true) const;
+   std::string toString(const Clause &clause, bool pretty = false, bool showMerged = true) const
+   {
+      return toString(static_cast<const ClauseHeader &>(clause), clause.solutions, pretty, showMerged);
+   }
+   std::string toString(const StoredClause &clause, bool pretty = false, bool showMerged = true) const
+   {
+      return toString(static_cast<const ClauseHeader &>(clause), clause.solutions(), pretty, showMerged);
+   }
    // \brief Render a work item, e.g. for debugging output
    std::string toString(const Work &work) const;
 
@@ -389,7 +443,37 @@ class Solver
     * \param prefix A prefix, for indentation purposes, as this is recursive
     * \param seen A set of seen objects such that the output does not repeat itself (not for safety, it is acyclic)
     */
-   virtual std::string LongWhyStr(Var var, bool assignment, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const;
+   virtual std::string LongWhyStr(Var var, bool assignment, CRef rclause, std::string prefix, std::unordered_set<Var> &seen) const;
+};
+
+/**
+ * \brief Compact presentation of watchers
+ */
+class Solver::Watches
+{
+   std::vector<CRef> watches;
+   // [0, split) are positive, [split, end) are negative.
+   size_t split{0};
+
+   public:
+   void add(CRef clause, bool sign)
+   {
+      watches.push_back(clause);
+      if (not sign)
+      {
+	 // Bypass bounds-checking in vector.
+	 std::swap(watches.data()[split], watches.data()[watches.size() - 1]);
+	 ++split;
+      }
+   }
+
+   std::span<const CRef> get(bool sign) const
+   {
+      if (not sign)
+	 return {watches.begin(), watches.begin() + split};
+      else
+	 return {watches.begin() + split, watches.end()};
+   }
 };
 
 /**
@@ -404,16 +488,15 @@ class Solver
  */
 struct Solver::Work
 {
-   const Clause *clause;
+   CRef clause;
 
    // \brief The level at which the item has been added
    level_type level;
 
    /// Number of valid choices at insertion time
-   size_t size{0};
+   uint32_t size{0};
 
-   constexpr bool operator<(Solver::Work const &b) const noexcept;
-   constexpr Work(const Clause *clause, level_type level) noexcept : clause(clause), level(level) {}
+   constexpr Work(CRef clause, level_type level) noexcept : clause(clause), level(level) {}
 };
 
 /**
@@ -435,9 +518,7 @@ struct Solver::State
    // doesn't increase to unwind.
    //
    // Vars < 0 are package ID, reasons > 0 are version IDs.
-   const Clause *reason{};
-
-   const char *reasonStr{};
+   CRef reason{};
 
    // \brief The level at which the value has been assigned
    level_type level{0};
@@ -449,39 +530,23 @@ struct Solver::State
    {
       bool discovered{};
       bool manual{};
+      bool backtracked{};
    } flags;
 
    static_assert(sizeof(flags) <= sizeof(int));
-
-   // \brief Clauses owned by this package/version
-   std::vector<std::unique_ptr<Clause>> clauses;
    // \brief Watches watching a clause by sign
-   std::vector<const Clause *> watches[2];
+   Watches watches;
 };
 
-/**
- * \brief A trail item.
- *
- * In MiniSAT, a trail item is an assigned literal. However, we store an assigned variable instead,
- * since the assignment is still recorded when we need to access the trail; there does not appear
- * to be a substantial value in recording the sign here; but it produces a risk for a disagreement
- * between the actual state and the sign recorded in the trail.
- *
- * In addition to MiniSAT's trail, we also need to keep a trail of solved Work items; that is
- * clauses that were being solved, as when undoing the trail, we need to mark those clauses
- * active again by putting them back on the work heap.
- */
-struct Solver::Trail
+constexpr std::span<const CRef> Solver::watches(Lit lit) const noexcept
 {
-   /// \brief A variable that got assigned True or False. May be reset to Undefined on backtracking.
-   Var assigned;
-   /// \brief A work item (a clause) that was solved. Needs to be put back on the work heap on backtracking.
-   std::optional<Work> work;
-};
+   return states[lit.var()].watches.get(lit.sign());
+}
 
-constexpr std::vector<const Clause *> &Solver::watches(Lit lit) noexcept
+constexpr auto Solver::clausesOf(Var var) const noexcept
 {
-   return states[lit.var()].watches[lit.sign()];
+   return watches(Lit(var, false)) | std::ranges::views::filter([this, var](CRef ref) noexcept
+								{ return clauses[ref].guard == var; });
 }
 
 constexpr LiftedBool Solver::value(Lit lit) const noexcept
