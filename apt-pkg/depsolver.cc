@@ -293,12 +293,12 @@ std::string DependencySolver::toString(const Clause &clause, bool pretty, bool s
       for (auto var : clause.solutions)
 	 out.append(" | ").append(toString(var));
    }
-   if (showMerged && not clause.merged.empty())
+   if (showMerged && clause.merged)
    {
-      for (auto &merged : clause.merged)
+      for (auto merged = clause.merged; merged; merged = clauses[merged].merged)
       {
 	 out.append(" and");
-	 out.append(toString(merged, pretty, false));
+	 out.append(toString(clauses[merged], pretty, false));
       }
    }
    return out;
@@ -381,7 +381,9 @@ CRef DependencySolver::RegisterClause(Clause &&clause)
 			  { return not std::ranges::contains(clause.solutions,
 							     earlierSol); });
 
-	    earlierClause.merged.push_front(clause);
+	    // We make a copy here that we merge into the earlier clause as we may merge
+	    // into multiple ones.
+	    duplicateClause(earlierRef, Clause{clause});
 	    merged = true;
 	 }
 	 else if (clause.optional)
@@ -391,10 +393,8 @@ CRef DependencySolver::RegisterClause(Clause &&clause)
 			  { return not std::ranges::contains(earlierClause.solutions,
 							     sol); });
 
-	    // Remove recursion here, such that we display correctly (if we ever display anywhere...)
-	    auto earlierClauseCopy = earlierClause;
-	    clause.merged = std::move(earlierClauseCopy.merged);
-	    clause.merged.push_front(earlierClauseCopy);
+	    // Update the clause to say it was limited by the Depends
+	    clause.merged = earlierRef;
 	 }
       }
 

@@ -56,6 +56,15 @@ Var Solver::newVar()
    return Var{static_cast<uint32_t>(states.size() - 1)};
 }
 
+CRef Solver::duplicateClause(CRef primaryCRef, Clause &&clause)
+{
+   clause.merged = clauses[primaryCRef].merged;
+   clauses.push_back(std::move(clause));
+   auto cref = CRef{static_cast<uint32_t>(clauses.size() - 1)};
+   clauses[primaryCRef].merged = cref;
+   return cref;
+}
+
 CRef Solver::newClause(Clause &&clause)
 {
    clauses.push_back(std::move(clause));
@@ -114,12 +123,12 @@ std::string Solver::toString(const Clause &clause, [[maybe_unused]] bool pretty,
 	 out.append(" | ");
       out.append(toString(clause.negative ? ~sol : Lit(sol)));
    }
-   if (showMerged && not clause.merged.empty())
+   if (showMerged && clause.merged)
    {
-      for (auto &merged : clause.merged)
+      for (auto merged = clause.merged; merged; merged = clauses[merged].merged)
       {
 	 out.append(" and ");
-	 out.append(toString(merged, pretty, false));
+	 out.append(toString(clauses[merged], pretty, false));
       }
    }
    return out;
@@ -548,8 +557,8 @@ bool Solver::AddWork(Work &&w)
       if (clause.solutions.size() == 1 && not clause.optional)
 	 return Enqueue(clause.solutions[0], w.clause);
 
-      w.size = std::count_if(clause.solutions.begin(), clause.solutions.end(), [this](auto V)
-			     { return value(V) != LiftedBool::False; });
+      w.size = static_cast<uint32_t>(std::count_if(clause.solutions.begin(), clause.solutions.end(), [this](auto V)
+						   { return value(V) != LiftedBool::False; }));
       work.push_back(std::move(w));
       std::push_heap(work.begin(), work.end(), [this](Work const &a, Work const &b)
 		     { return workLess(a, b); });

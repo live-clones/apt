@@ -28,7 +28,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
-#include <forward_list>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -199,8 +198,8 @@ struct Clause
    void *dep = nullptr;
    // \brief Possible solutions to this task, ordered in order of preference.
    std::vector<Var> solutions{};
-   // Clauses merged with this clause
-   std::forward_list<Clause> merged;
+   // Clauses merged with this clause, next node in linked list
+   CRef merged;
    // \brief Var guarding the implication
    Var guard;
    // \brief The group we are in
@@ -300,6 +299,8 @@ class Solver
    // \brief Add a clause to the store, register it with its guard's state,
    // and set up its watchers, returning its reference.
    CRef newClause(Clause &&clause);
+   // \brief Register clause as a duplicate
+   CRef duplicateClause(CRef primaryCRef, Clause &&clause);
 
    // \brief Register a new variable, returning its identifier.
    //
