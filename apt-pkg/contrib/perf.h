@@ -43,6 +43,13 @@ class PerformanceContext
       const char *name;
    };
 
+   struct read_format
+   {
+      uint64_t value;
+      uint64_t time_enabled;
+      uint64_t time_running;
+   };
+
    static constexpr std::array<measurement, 15> measurements{
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS, "instructions"},
       measurement{PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES, "cpu_cycles"},
@@ -83,6 +90,7 @@ class PerformanceContext
       pe.type = type;
       pe.size = sizeof(struct perf_event_attr);
       pe.config = config;
+      pe.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING;
       pe.disabled = 1;
       pe.exclude_kernel = 1;
       pe.exclude_hv = 1;
@@ -114,9 +122,18 @@ class PerformanceContext
       for (auto fd : fds)
 	 must_succeed(fd == -1 || ioctl(fd, PERF_EVENT_IOC_DISABLE, 0) != -1);
 
-      std::array<long long, measurements.size()> values{};
+      std::array<uint64_t, measurements.size()> values{};
       for (size_t i = 0; i < measurements.size(); ++i)
-	 must_succeed(fds[i] == -1 || read(fds[i], &values[i], sizeof(values[i])) == sizeof(values[i]));
+      {
+	 if (fds[i] == -1)
+	    continue;
+	 read_format val{};
+	 must_succeed(read(fds[i], &val, sizeof(val)) == sizeof(val));
+	 if (val.time_running == val.time_enabled)
+	    values[i] = val.value;
+	 else if (val.time_running > 0)
+	    values[i] = static_cast<uint64_t>(static_cast<double>(val.value) * val.time_enabled / val.time_running);
+      }
       for (auto fd : fds)
 	 must_succeed(fd == -1 || close(fd) == 0);
 
