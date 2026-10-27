@@ -405,9 +405,12 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
    auto const &inserted = clauses.back();
    // Insert all our watches
    if (not inserted->guard.empty())
-      watches(inserted->guard).push_back(inserted.get());
+      states[inserted->guard].watches.add(inserted.get(), false);
    for (auto sol : inserted->solutions)
-      watches(inserted->negative ? sol : ~sol).push_back(inserted.get());
+   {
+      auto lit = inserted->negative ? sol : ~sol;
+      states[lit.var()].watches.add(inserted.get(), lit.sign());
+   }
    return inserted.get();
 }
 

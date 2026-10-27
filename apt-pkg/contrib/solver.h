@@ -32,6 +32,8 @@
 #include <memory>
 #include <optional>
 #include <queue>
+#include <ranges>
+#include <span>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
@@ -235,6 +237,7 @@ class VarVector : private std::vector<T>
 class Solver
 {
    protected:
+   class Watches;
    struct State;
    struct Work;
    struct Trail;
@@ -257,7 +260,7 @@ class Solver
    // indexed by variables in sync.
    virtual Var newVar();
 
-   constexpr std::vector<const Clause *> &watches(Lit lit) noexcept;
+   constexpr std::span<const Clause *const> watches(Lit lit) const noexcept;
 
    // \brief Heap of the remaining work.
    //
@@ -358,6 +361,36 @@ class Solver
 };
 
 /**
+ * \brief Compact presentation of watchers
+ */
+class Solver::Watches
+{
+   std::vector<const Clause *> watches;
+   // [0, split) are positive, [split, end) are negative.
+   size_t split{0};
+
+   public:
+   void add(const Clause *clause, bool sign)
+   {
+      watches.push_back(clause);
+      if (not sign)
+      {
+	 // Bypass bounds-checking in vector.
+	 std::swap(watches.data()[split], watches.data()[watches.size() - 1]);
+	 ++split;
+      }
+   }
+
+   std::span<const Clause *const> get(bool sign) const
+   {
+      if (not sign)
+	 return {watches.begin(), watches.begin() + split};
+      else
+	 return {watches.begin() + split, watches.end()};
+   }
+};
+
+/**
  * \brief A single work item
  *
  * A work item is a positive dependency that still needs to be resolved. Work
@@ -420,7 +453,7 @@ struct Solver::State
    // \brief Clauses owned by this package/version
    std::vector<std::unique_ptr<Clause>> clauses;
    // \brief Watches watching a clause by sign
-   std::vector<const Clause *> watches[2];
+   Watches watches;
 };
 
 /**
@@ -443,9 +476,9 @@ struct Solver::Trail
    std::optional<Work> work;
 };
 
-constexpr std::vector<const Clause *> &Solver::watches(Lit lit) noexcept
+constexpr std::span<const Clause *const> Solver::watches(Lit lit) const noexcept
 {
-   return states[lit.var()].watches[lit.sign()];
+   return states[lit.var()].watches.get(lit.sign());
 }
 
 constexpr LiftedBool Solver::value(Lit lit) const noexcept
