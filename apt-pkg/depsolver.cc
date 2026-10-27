@@ -348,7 +348,7 @@ constexpr bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b) noe
 
 CRef DependencySolver::RegisterClause(Clause &&clause)
 {
-   auto &stateClauses = states[clause.guard].clauses;
+   auto stateClauses = clausesOf(clause.guard);
    pkgCache::DepIterator dep(cache, static_cast<pkgCache::Dependency *>(clause.dep));
 
    // Merge dependencies on the same name into a single one, and restrict their solution space.
@@ -547,7 +547,7 @@ void DependencySolver::Discover(Var var)
 	    dep.GlobOr(start, end); // advances dep
 
 	    // This dependency is shared across all versions, skip it.
-	    if (auto &pkgClauses = states[GetVar(Ver.ParentPkg())].clauses;
+	    if (auto pkgClauses = clausesOf(GetVar(Ver.ParentPkg()));
 		std::any_of(pkgClauses.begin(), pkgClauses.end(), [this, start](CRef c)
 			    { auto &clause = clauses[c]; return clause.dep && SameOrGroup(start, pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(clause.dep))); }))
 	       continue;
@@ -558,7 +558,7 @@ void DependencySolver::Discover(Var var)
       }
 
       // Recursively discover everything else that is not already FALSE by fact (False at level 0)
-      for (auto cref : states[var].clauses)
+      for (auto cref : clausesOf(var))
 	 for (auto const &var : clauses[cref].solutions)
 	    if (value(var) != LiftedBool::False || states[var].level > 0)
 	       discoverQ.push(var);
@@ -913,7 +913,7 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 	    else if (not(depcache[P].Flags & pkgCache::Flag::Auto) && P.CurrentVer()->Section && cand->Section && not _config->SectionInSubTree("APT::Move-Autobit-Sections", P.CurrentVer().Section()) && _config->SectionInSubTree("APT::Move-Autobit-Sections", cand.Section()))
 	    {
 	       bool moved = false;
-	       for (auto cref : states[candVar].clauses)
+	       for (auto cref : clausesOf(candVar))
 		  for (auto sol : clauses[cref].solutions)
 		  {
 		     // New installs move the auto-bit. TODO: Should we look at whether clause is the reason for installing it?

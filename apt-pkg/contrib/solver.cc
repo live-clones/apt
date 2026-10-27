@@ -62,14 +62,10 @@ CRef Solver::newClause(Clause &&clause)
    auto cref = CRef{static_cast<uint32_t>(clauses.size() - 1)};
    auto const &inserted = clauses[cref];
 
-   // Register the clause with its guard's state.
-   states[inserted.guard].clauses.push_back(cref);
-
    // Insert all our watches: the guard is watched positively such that
    // activating the guard queues the clause, solutions are watched
    // negatively unless the clause itself is negative.
-   if (not inserted.guard.empty())
-      states[inserted.guard].watches.add(cref, false);
+   states[inserted.guard].watches.add(cref, false);
    for (auto sol : inserted.solutions)
    {
       auto lit = inserted.negative ? sol : ~sol;

@@ -295,6 +295,7 @@ class Solver
    virtual Var newVar();
 
    constexpr std::span<const CRef> watches(Lit lit) const noexcept;
+   constexpr auto clausesOf(Var var) const noexcept;
 
    // \brief Heap of the remaining work.
    //
@@ -484,9 +485,6 @@ struct Solver::State
    } flags;
 
    static_assert(sizeof(flags) <= sizeof(int));
-
-   // \brief Clauses guarded by this package/version
-   std::vector<CRef> clauses;
    // \brief Watches watching a clause by sign
    Watches watches;
 };
@@ -514,6 +512,12 @@ struct Solver::Trail
 constexpr std::span<const CRef> Solver::watches(Lit lit) const noexcept
 {
    return states[lit.var()].watches.get(lit.sign());
+}
+
+constexpr auto Solver::clausesOf(Var var) const noexcept
+{
+   return watches(Lit(var, false)) | std::ranges::views::filter([this, var](CRef ref) noexcept
+								{ return clauses[ref].guard == var; });
 }
 
 constexpr LiftedBool Solver::value(Lit lit) const noexcept
