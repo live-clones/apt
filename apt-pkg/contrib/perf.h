@@ -100,8 +100,11 @@ class PerformanceContext
    }
 
    public:
+   PerformanceContext(const PerformanceContext &) = delete;
+   PerformanceContext &operator=(const PerformanceContext &) = delete;
+
    /// Construct a new scoped performance context
-   PerformanceContext(std::string name) : name(name)
+   explicit PerformanceContext(std::string name) : name(name)
    {
       if (auto out = getenv("APT_PERFORMANCE_LOG"))
 	 this->out = out;
@@ -167,7 +170,9 @@ namespace APT
 {
 struct PerformanceContext
 {
-   PerformanceContext(const char *) {};
+   PerformanceContext(const PerformanceContext &) = delete;
+   PerformanceContext &operator=(const PerformanceContext &) = delete;
+   explicit PerformanceContext(const char *) {};
    ~PerformanceContext() {};
 };
 } // namespace APT
