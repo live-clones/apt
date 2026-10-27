@@ -204,62 +204,22 @@ constexpr LiftedBool operator~(LiftedBool value) noexcept
 /**
  * \brief A minimal, grow-only vector indexed by Var objects.
  *
- * std::vector and std::unique_ptr<T[]> perform bounds checking in operator[]
- * because we build with _GLIBCXX_ASSERTIONS, which is too costly in the hot
- * paths of the solver. Taking Var objects as indices reduces the risk of
- * out-of-bounds accesses, as variables are only handed out by
- * Solver::newVar().
+ * Bypass bounds-checking done by _GLIBCXX_ASSERTIONS in a typed manner.
+ * Variables are only handed out by Solver::newVar(), so accessing them is safe.
  */
 template <typename T>
-class VarVector
+class VarVector : private std::vector<T>
 {
-   T *data_ = nullptr; // Avoid std::unique_ptr() as it may check that it's non-null.
-   size_t size_ = 0;
-   size_t capacity_ = 0;
-
    public:
-   constexpr T &operator[](Var var) noexcept { return data_[var.value]; }
-   constexpr const T &operator[](Var var) const noexcept { return data_[var.value]; }
-
-   constexpr void grow()
-   {
-      size_t const oldCapacity = capacity_;
-      capacity_ = capacity_ == 0 ? 64 * 1024 : 2 * capacity_;
-      std::allocator<T> alloc;
-      T *data = alloc.allocate(capacity_);
-      if (data_)
-      {
-	 std::uninitialized_move(data_, data_ + size_, data);
-	 std::destroy_n(data_, size_);
-	 alloc.deallocate(data_, oldCapacity);
-      }
-      data_ = data;
-   }
-   constexpr void push_back(T value)
-   {
-      emplace_back(std::move(value));
-   }
-   template <typename... Args>
-   constexpr void emplace_back(Args &&...args)
-   {
-      if (size_ == capacity_)
-	 grow();
-      std::construct_at(data_ + size_++, std::forward<Args>(args)...);
-   }
-   constexpr size_t size() const noexcept { return size_; }
-   ~VarVector()
-   {
-      if (data_)
-      {
-	 std::destroy_n(data_, size_);
-	 std::allocator<T>{}.deallocate(data_, capacity_);
-      }
-   }
-
-   // Delete copy constructors for memory safety (rule of 3)
-   VarVector() = default;
-   VarVector(const VarVector &) = delete;
-   VarVector &operator=(const VarVector &) = delete;
+   // This is a fairly sensible lower bound for a Debian install
+   VarVector() { std::vector<T>::reserve(64 * 1024); }
+   // Bypass bounds checking in libstdc++ using data() as explained above
+   constexpr T &operator[](Var var) noexcept { return std::vector<T>::data()[var.value]; }
+   constexpr const T &operator[](Var var) const noexcept { return std::vector<T>::data()[var.value]; }
+   // Safe functionality we can expose directly
+   using std::vector<T>::size;
+   using std::vector<T>::push_back;
+   using std::vector<T>::emplace_back;
 };
 
 /*
