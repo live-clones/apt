@@ -8,6 +8,7 @@
 
 #ifndef APT_PERF_H
 #define APT_PERF_H
+#include <string>
 #if defined(APT_COMPILING_APT) && defined(__linux__)
 #include <apt-pkg/macros.h>
 
@@ -16,7 +17,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <locale>
 #include <sstream>
+#include <utility>
 
 #include <fcntl.h>
 #include <linux/perf_event.h>
@@ -73,7 +76,7 @@ class PerformanceContext
    /// Name of the context
    std::string name;
    /// FDs to communicate with the kernel
-   std::array<int, measurements.size()> fds;
+   std::array<int, measurements.size()> fds{};
 
    // Wrapper for the system call
    static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
@@ -104,7 +107,7 @@ class PerformanceContext
    PerformanceContext &operator=(const PerformanceContext &) = delete;
 
    /// Construct a new scoped performance context
-   explicit PerformanceContext(std::string name) : name(name)
+   explicit PerformanceContext(std::string name) : name(std::move(name))
    {
       if (auto out = getenv("APT_PERFORMANCE_LOG"))
 	 this->out = out;
@@ -172,7 +175,7 @@ struct PerformanceContext
 {
    PerformanceContext(const PerformanceContext &) = delete;
    PerformanceContext &operator=(const PerformanceContext &) = delete;
-   explicit PerformanceContext(const char *) {};
+   explicit PerformanceContext(std::string) {};
    ~PerformanceContext() {};
 };
 } // namespace APT
