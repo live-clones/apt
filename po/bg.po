@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.7.21\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-19 18:41+0000\n"
+"POT-Creation-Date: 2026-10-27 22:16+0000\n"
 "PO-Revision-Date: 2012-06-25 17:23+0300\n"
 "Last-Translator: Damyan Ivanov <dmn@debian.org>\n"
 "Language-Team: Bulgarian <dict@fsa-bg.org>\n"
@@ -1048,6 +1048,12 @@ msgstr ""
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Invalid '%s' entry in Release file %s"
+msgstr "Неправилна стойност за „%s“ във файла Release %s"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, fuzzy, c-format
+#| msgid "Invalid '%s' entry in Release file %s"
+msgid "Ignoring '%s' entry in Release file %s (no longer supported)"
 msgstr "Неправилна стойност за „%s“ във файла Release %s"
 
 #. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
@@ -3647,6 +3653,12 @@ msgstr ""
 #: apt-private/private-update.cc
 #, c-format
 msgid "Missing Signed-By in the %s entry for '%s'"
+msgstr ""
+
+#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, c-format
+msgid "Deprecated Signed-By fingerprint in the %s entry for '%s'"
 msgstr ""
 
 #: apt-private/private-update.cc

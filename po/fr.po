@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-19 18:41+0000\n"
+"POT-Creation-Date: 2026-10-27 22:16+0000\n"
 "PO-Revision-Date: 2025-03-07 12:02+0100\n"
 "Last-Translator: bubu <bubub@no-log.org>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -1110,6 +1110,12 @@ msgstr ""
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Invalid '%s' entry in Release file %s"
+msgstr "Entrée « %s » non valable dans le fichier Release %s"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, fuzzy, c-format
+#| msgid "Invalid '%s' entry in Release file %s"
+msgid "Ignoring '%s' entry in Release file %s (no longer supported)"
 msgstr "Entrée « %s » non valable dans le fichier Release %s"
 
 #. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
@@ -3766,6 +3772,13 @@ msgstr "L'entrée %s pour « %s » devrait être mise à jour en .sources deb8
 #: apt-private/private-update.cc
 #, c-format
 msgid "Missing Signed-By in the %s entry for '%s'"
+msgstr "Il manque « Signed-By » dans l'entrée %s pour « %s »"
+
+#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, fuzzy, c-format
+#| msgid "Missing Signed-By in the %s entry for '%s'"
+msgid "Deprecated Signed-By fingerprint in the %s entry for '%s'"
 msgstr "Il manque « Signed-By » dans l'entrée %s pour « %s »"
 
 #: apt-private/private-update.cc

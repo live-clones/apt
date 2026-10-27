@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.0.2\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-19 18:41+0000\n"
+"POT-Creation-Date: 2026-10-27 22:16+0000\n"
 "PO-Revision-Date: 2025-05-20 15:18+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
@@ -1058,6 +1058,12 @@ msgstr ""
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Invalid '%s' entry in Release file %s"
+msgstr "Neplatná položka „%s“ v Release souboru %s"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, fuzzy, c-format
+#| msgid "Invalid '%s' entry in Release file %s"
+msgid "Ignoring '%s' entry in Release file %s (no longer supported)"
 msgstr "Neplatná položka „%s“ v Release souboru %s"
 
 #. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
@@ -3635,6 +3641,13 @@ msgstr "%s záznam pro „%s“ by měl být aktualizován na deb822 .sources"
 #: apt-private/private-update.cc
 #, c-format
 msgid "Missing Signed-By in the %s entry for '%s'"
+msgstr "Chybí Signed-By v %s pro „%s“"
+
+#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, fuzzy, c-format
+#| msgid "Missing Signed-By in the %s entry for '%s'"
+msgid "Deprecated Signed-By fingerprint in the %s entry for '%s'"
 msgstr "Chybí Signed-By v %s pro „%s“"
 
 #: apt-private/private-update.cc

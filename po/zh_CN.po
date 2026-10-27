@@ -16,7 +16,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.9.26\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-19 18:41+0000\n"
+"POT-Creation-Date: 2026-10-27 22:16+0000\n"
 "PO-Revision-Date: 2025-07-31 18:13+0800\n"
 "Last-Translator: Tianyu Chen <sweetyfish@deepin.org>\n"
 "Language-Team: Chinese (simplified) <debian-l10n-chinese@lists.debian.org>\n"
@@ -1029,6 +1029,12 @@ msgstr "Release 文件 %s 中不含散列项，该文件用于保证足够的安
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Invalid '%s' entry in Release file %s"
+msgstr "软件包仓库 Release 文件 %2$s 内 %1$s 条目无效"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, fuzzy, c-format
+#| msgid "Invalid '%s' entry in Release file %s"
+msgid "Ignoring '%s' entry in Release file %s (no longer supported)"
 msgstr "软件包仓库 Release 文件 %2$s 内 %1$s 条目无效"
 
 #. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
@@ -3552,6 +3558,13 @@ msgstr "%s 用于“%s”的条目应当被升级为 deb822 .sources 格式"
 #: apt-private/private-update.cc
 #, c-format
 msgid "Missing Signed-By in the %s entry for '%s'"
+msgstr "对‘%2$s’在 %1$s 一项中缺失了 Signed-By"
+
+#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, fuzzy, c-format
+#| msgid "Missing Signed-By in the %s entry for '%s'"
+msgid "Deprecated Signed-By fingerprint in the %s entry for '%s'"
 msgstr "对‘%2$s’在 %1$s 一项中缺失了 Signed-By"
 
 #: apt-private/private-update.cc

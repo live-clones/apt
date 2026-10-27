@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-19 18:41+0000\n"
+"POT-Creation-Date: 2026-10-27 22:16+0000\n"
 "PO-Revision-Date: 2024-09-06 10:21+0100\n"
 "Last-Translator: Luca Vercelli <luca.vercelli.to@gmail.com>\n"
 "Language-Team: Italian <debian-l10n-italian@lists.debian.org>\n"
@@ -1101,6 +1101,12 @@ msgstr ""
 #: apt-pkg/deb/debmetaindex.cc
 #, c-format
 msgid "Invalid '%s' entry in Release file %s"
+msgstr "Voce \"%s\" non valida nel file Release %s"
+
+#: apt-pkg/deb/debmetaindex.cc
+#, fuzzy, c-format
+#| msgid "Invalid '%s' entry in Release file %s"
+msgid "Ignoring '%s' entry in Release file %s (no longer supported)"
 msgstr "Voce \"%s\" non valida nel file Release %s"
 
 #. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
@@ -3729,6 +3735,13 @@ msgstr ""
 #: apt-private/private-update.cc
 #, c-format
 msgid "Missing Signed-By in the %s entry for '%s'"
+msgstr "Clausola Signed-By mancante nella voce %s per \"%s\""
+
+#. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
+#: apt-private/private-update.cc
+#, fuzzy, c-format
+#| msgid "Missing Signed-By in the %s entry for '%s'"
+msgid "Deprecated Signed-By fingerprint in the %s entry for '%s'"
 msgstr "Clausola Signed-By mancante nella voce %s per \"%s\""
 
 #: apt-private/private-update.cc

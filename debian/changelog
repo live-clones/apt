@@ -1,3 +1,46 @@
+apt (3.3.5) unstable; urgency=medium
+
+  [ Johan Walles ]
+  * debian: Match AC adapters by type, not by name
+
+  [ Gianpiero Carpinelli ]
+  * test: Skip the cachedb SHA3 migration test on big-endian hosts
+
+  [ Julian Andres Klode ]
+  * Deprecate fingerprints in Signed-By (Closes: #1151505)
+  * Remove support for Signed-By specified inside a Release file
+  * Build system improvements
+    - Bump cmake_minimum_required to 4.2
+    - apt-private: Move JsonWriter into private-json-writer.h
+    - apt-pkg: Build sources in an apt-pkg-object OBJECT library
+    - apt-private: Build sources in an apt-private-object OBJECT library
+    - test/libapt: Link against the apt-pkg/apt-private object libraries
+    - apt-pkg: Only replace generated tagfile-keys files if changed
+    - pkg-config-test: Simplify private header exclusion
+    - test: fix systemd-coredump integration
+    - move abicheck tools to tools/
+  * Performance logging tooling
+    - Fix uninitialized values logged for failed counters
+    - Add stalled cycle, dTLB, fault and scheduling counters
+    - Add tools/perf-eval.py to evaluate performance logs
+  * Solver improvements
+    - Unprotected removals are no longer protected, removing hopefully
+      the last API disagreement.
+    - The SAT solver core has been extracted into its own
+    - Performance improvements: 10-20% faster, 65% fewer page faults
+  * Update symbols
+
+  [ Zara Grigoryan ]
+  * deblistparser: bound build-profile restriction parsing
+
+  [ Daniel Kahn Gillmor ]
+  * Clean up some confused vocabulary about GPG and OpenPGP
+
+  [ Andriy Pysyk ]
+  * Update Ukrainian translation for APT 3.3.4
+
+ -- Julian Andres Klode <jak@debian.org>  Tue, 27 Oct 2026 23:17:38 +0100
+
 apt (3.3.4) unstable; urgency=medium
 
   [ Américo Monteiro ]
