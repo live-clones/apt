@@ -194,10 +194,10 @@ struct CRef
  */
 struct Clause
 {
-   // \brief Underlying dependency, opaque to the solver (a pkgCache::Dependency in practice)
-   void *dep = nullptr;
    // \brief Possible solutions to this task, ordered in order of preference.
    std::vector<Var> solutions{};
+   // \brief Underlying dependency, opaque to the solver (a pkgCache::Dependency in practice)
+   uint32_t dep{};
    // Clauses merged with this clause, next node in linked list
    CRef merged;
    // \brief Var guarding the implication

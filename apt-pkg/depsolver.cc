@@ -262,8 +262,8 @@ std::string DependencySolver::toString(const Clause &clause, bool pretty, bool s
       out.append(toString(clause.guard));
    if (clause.dep && pretty)
    {
-      out.append(" ").append(pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(clause.dep)).DepType()).append(" ");
-      for (auto dep = pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(clause.dep)); not dep.end(); ++dep)
+      out.append(" ").append(pkgCache::DepIterator(cache, cache.DepP + clause.dep).DepType()).append(" ");
+      for (auto dep = pkgCache::DepIterator(cache, cache.DepP + clause.dep); not dep.end(); ++dep)
       {
 	 out.append(dep.TargetPkg().FullName(true));
 	 if (dep.TargetVer())
@@ -349,7 +349,7 @@ constexpr bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b) noe
 CRef DependencySolver::RegisterClause(Clause &&clause)
 {
    auto stateClauses = clausesOf(clause.guard);
-   pkgCache::DepIterator dep(cache, static_cast<pkgCache::Dependency *>(clause.dep));
+   pkgCache::DepIterator dep(cache, cache.DepP + clause.dep);
 
    // Merge dependencies on the same name into a single one, and restrict their solution space.
    // For example, given dependencies on
@@ -366,7 +366,7 @@ CRef DependencySolver::RegisterClause(Clause &&clause)
 	 if (earlierClause.negative)
 	    continue;
 	 // Skip dependencies with or groups or dependencies on different names
-	 if (pkgCache::DepIterator earlierDep(cache, static_cast<pkgCache::Dependency *>(earlierClause.dep));
+	 if (pkgCache::DepIterator earlierDep(cache, cache.DepP + earlierClause.dep);
 	     earlierDep.end() || (earlierDep->CompareOp & pkgCache::Dep::Or) ||
 	     earlierDep.TargetPkg() != dep.TargetPkg())
 	    continue;
@@ -549,7 +549,7 @@ void DependencySolver::Discover(Var var)
 	    // This dependency is shared across all versions, skip it.
 	    if (auto pkgClauses = clausesOf(GetVar(Ver.ParentPkg()));
 		std::any_of(pkgClauses.begin(), pkgClauses.end(), [this, start](CRef c)
-			    { auto &clause = clauses[c]; return clause.dep && SameOrGroup(start, pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(clause.dep))); }))
+			    { auto &clause = clauses[c]; return clause.dep && SameOrGroup(start, pkgCache::DepIterator(cache, cache.DepP + clause.dep)); }))
 	       continue;
 
 	    if (auto clause = TranslateOrGroup(start, end, GetVar(Ver)))
@@ -606,7 +606,7 @@ std::optional<Clause> DependencySolver::TranslateOrGroup(pkgCache::DepIterator s
 
    Clause clause{reason, Group::Satisfy, not start.IsCritical() /* optional */, start.IsNegative()};
 
-   clause.dep = start;
+   clause.dep = static_cast<uint32_t>(start.MapPointer());
 
    do
    {
