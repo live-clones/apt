@@ -31,19 +31,9 @@ class TestSolver : public Solver
    void Discover(Var) override {}
 
    // \brief Register a clause into the watchers, like DependencySolver::RegisterClause does.
-   const Clause *AddClause(Clause &&clause)
+   CRef AddClause(Clause &&clause)
    {
-      auto &clauses = states[clause.guard].clauses;
-      clauses.push_back(std::make_unique<Clause>(std::move(clause)));
-      auto const &inserted = clauses.back();
-      if (not inserted->guard.empty())
-	 states[inserted->guard].watches.add(inserted.get(), false);
-      for (auto sol : inserted->solutions)
-      {
-	 auto lit = inserted->negative ? sol : ~sol;
-	 states[lit.var()].watches.add(inserted.get(), lit.sign());
-      }
-      return inserted.get();
+      return newClause(std::move(clause));
    }
 };
 
@@ -64,45 +54,43 @@ TEST(SolverTest, Watches)
    TestSolver s;
    auto a = s.newVar();
 
-   Clause c1{a, Group::Satisfy}, c2{a, Group::Satisfy}, c3{a, Group::Satisfy}, c4{a, Group::Satisfy}, c5{a, Group::Satisfy};
-
    auto &watches = s.states[a].watches;
-   watches.add(&c1, false);
-   watches.add(&c2, true);
-   watches.add(&c3, false);
-   watches.add(&c4, true);
+   watches.add(CRef{1}, false);
+   watches.add(CRef{2}, true);
+   watches.add(CRef{3}, false);
+   watches.add(CRef{4}, true);
 
    {
       // Positive watchers keep their insertion order.
       auto const positive = watches.get(false);
       ASSERT_EQ(positive.size(), 2);
-      EXPECT_EQ(positive[0], &c1);
-      EXPECT_EQ(positive[1], &c3);
+      EXPECT_EQ(positive[0], CRef{1});
+      EXPECT_EQ(positive[1], CRef{3});
 
       // Negative watches are in the right order
       auto const negative = watches.get(true);
       ASSERT_EQ(negative.size(), 2);
-      EXPECT_EQ(negative[0], &c2);
-      EXPECT_EQ(negative[1], &c4);
+      EXPECT_EQ(negative[0], CRef{2});
+      EXPECT_EQ(negative[1], CRef{4});
    }
 
    {
       // Inserting a positive watcher at the end rotates the negative group:
       // the first negative watcher is swapped out to the end of the vector.
-      watches.add(&c5, false);
+      watches.add(CRef{5}, false);
 
       // Positive watchers keep their insertion order.
       auto const positive = watches.get(false);
       ASSERT_EQ(positive.size(), 3);
-      EXPECT_EQ(positive[0], &c1);
-      EXPECT_EQ(positive[1], &c3);
-      EXPECT_EQ(positive[2], &c5);
+      EXPECT_EQ(positive[0], CRef{1});
+      EXPECT_EQ(positive[1], CRef{3});
+      EXPECT_EQ(positive[2], CRef{5});
 
-      // The negative group rotated [c2, c4] -> [c4, c2].
+      // The negative group rotated [2, 4] -> [4, 2].
       auto const negative = watches.get(true);
       ASSERT_EQ(negative.size(), 2);
-      EXPECT_EQ(negative[0], &c4);
-      EXPECT_EQ(negative[1], &c2);
+      EXPECT_EQ(negative[0], CRef{4});
+      EXPECT_EQ(negative[1], CRef{2});
    }
 }
 

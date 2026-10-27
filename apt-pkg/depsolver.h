@@ -177,7 +177,7 @@ class DependencySolver final : public Solver
    /// \brief Discover the dependencies of the variable
    void Discover(Var var) override;
    /// \brief Link a clause into the watchers
-   const Clause *RegisterClause(Clause &&clause);
+   CRef RegisterClause(Clause &&clause);
    /// \brief Enqueue dependencies shared by all versions of the package.
    void RegisterCommonDependencies(pkgCache::PkgIterator Pkg);
 

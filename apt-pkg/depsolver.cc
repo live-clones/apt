@@ -346,9 +346,9 @@ constexpr bool SameOrGroup(pkgCache::DepIterator a, pkgCache::DepIterator b) noe
    return not(a->CompareOp & pkgCache::Dep::Or) && not(b->CompareOp & pkgCache::Dep::Or);
 }
 
-const Clause *DependencySolver::RegisterClause(Clause &&clause)
+CRef DependencySolver::RegisterClause(Clause &&clause)
 {
-   auto &clauses = states[clause.guard].clauses;
+   auto &stateClauses = states[clause.guard].clauses;
    pkgCache::DepIterator dep(cache, static_cast<pkgCache::Dependency *>(clause.dep));
 
    // Merge dependencies on the same name into a single one, and restrict their solution space.
@@ -360,38 +360,39 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
    if (not clause.negative && not dep.end() && not(dep->CompareOp & pkgCache::Dep::Or))
    {
       bool merged = false;
-      for (auto const &earlierClause : clauses)
+      for (auto earlierRef : stateClauses)
       {
-	 if (earlierClause->negative)
+	 auto &earlierClause = clauses[earlierRef];
+	 if (earlierClause.negative)
 	    continue;
 	 // Skip dependencies with or groups or dependencies on different names
-	 if (pkgCache::DepIterator earlierDep(cache, static_cast<pkgCache::Dependency *>(earlierClause->dep));
+	 if (pkgCache::DepIterator earlierDep(cache, static_cast<pkgCache::Dependency *>(earlierClause.dep));
 	     earlierDep.end() || (earlierDep->CompareOp & pkgCache::Dep::Or) ||
 	     earlierDep.TargetPkg() != dep.TargetPkg())
 	    continue;
-	 if (std::none_of(earlierClause->solutions.begin(), earlierClause->solutions.end(), [&clause](auto earlierSol) noexcept
+	 if (std::none_of(earlierClause.solutions.begin(), earlierClause.solutions.end(), [&clause](auto earlierSol) noexcept
 			  { return std::ranges::contains(clause.solutions,
 							 earlierSol); }))
 	    continue;
 
-	 if (earlierClause->optional == clause.optional)
+	 if (earlierClause.optional == clause.optional)
 	 {
-	    std::erase_if(earlierClause->solutions, [&clause, this](auto earlierSol) noexcept
+	    std::erase_if(earlierClause.solutions, [&clause, this](auto earlierSol) noexcept
 			  { return not std::ranges::contains(clause.solutions,
 							     earlierSol); });
 
-	    earlierClause->merged.push_front(clause);
+	    earlierClause.merged.push_front(clause);
 	    merged = true;
 	 }
 	 else if (clause.optional)
 	 {
 	    // If say a Depends has fewer solution than a Recommends, remove the Recommend's extranous ones.
 	    std::erase_if(clause.solutions, [&earlierClause, this](auto sol) noexcept
-			  { return not std::ranges::contains(earlierClause->solutions,
+			  { return not std::ranges::contains(earlierClause.solutions,
 							     sol); });
 
 	    // Remove recursion here, such that we display correctly (if we ever display anywhere...)
-	    auto earlierClauseCopy = *earlierClause;
+	    auto earlierClauseCopy = earlierClause;
 	    clause.merged = std::move(earlierClauseCopy.merged);
 	    clause.merged.push_front(earlierClauseCopy);
 	 }
@@ -401,17 +402,7 @@ const Clause *DependencySolver::RegisterClause(Clause &&clause)
 	 return nullptr;
    }
 
-   clauses.push_back(std::make_unique<Clause>(std::move(clause)));
-   auto const &inserted = clauses.back();
-   // Insert all our watches
-   if (not inserted->guard.empty())
-      states[inserted->guard].watches.add(inserted.get(), false);
-   for (auto sol : inserted->solutions)
-   {
-      auto lit = inserted->negative ? sol : ~sol;
-      states[lit.var()].watches.add(inserted.get(), lit.sign());
-   }
-   return inserted.get();
+   return newClause(std::move(clause));
 }
 
 // This is essentially asking whether any other binary in the source package has a higher candidate
@@ -557,8 +548,8 @@ void DependencySolver::Discover(Var var)
 
 	    // This dependency is shared across all versions, skip it.
 	    if (auto &pkgClauses = states[GetVar(Ver.ParentPkg())].clauses;
-		std::any_of(pkgClauses.begin(), pkgClauses.end(), [this, start](auto &c)
-			    { return c->dep && SameOrGroup(start, pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(c->dep))); }))
+		std::any_of(pkgClauses.begin(), pkgClauses.end(), [this, start](CRef c)
+			    { auto &clause = clauses[c]; return clause.dep && SameOrGroup(start, pkgCache::DepIterator(cache, static_cast<pkgCache::Dependency *>(clause.dep))); }))
 	       continue;
 
 	    if (auto clause = TranslateOrGroup(start, end, GetVar(Ver)))
@@ -567,8 +558,8 @@ void DependencySolver::Discover(Var var)
       }
 
       // Recursively discover everything else that is not already FALSE by fact (False at level 0)
-      for (auto const &clause : states[var].clauses)
-	 for (auto const &var : clause->solutions)
+      for (auto cref : states[var].clauses)
+	 for (auto const &var : clauses[cref].solutions)
 	    if (value(var) != LiftedBool::False || states[var].level > 0)
 	       discoverQ.push(var);
    }
@@ -906,9 +897,9 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 	       cand = V, candVar = verVar;
 
 	 auto reasonClause = cand.end() ? nullptr : states[candVar].reason;
-	 auto reason = reasonClause ? reasonClause->guard : Var();
+	 auto reason = reasonClause ? clauses[reasonClause].guard : Var();
 	 if (auto RP = GetPkg(reason); not RP.end() && RP == P)
-	    reason = states[var].reason ? states[var].reason->guard : Var();
+	    reason = states[var].reason ? clauses[states[var].reason].guard : Var();
 
 	 if (cand != P.CurrentVer())
 	 {
@@ -922,8 +913,8 @@ bool DependencySolver::ToDepCache(pkgDepCache &depcache) const
 	    else if (not(depcache[P].Flags & pkgCache::Flag::Auto) && P.CurrentVer()->Section && cand->Section && not _config->SectionInSubTree("APT::Move-Autobit-Sections", P.CurrentVer().Section()) && _config->SectionInSubTree("APT::Move-Autobit-Sections", cand.Section()))
 	    {
 	       bool moved = false;
-	       for (auto const &clause : states[candVar].clauses)
-		  for (auto sol : clause->solutions)
+	       for (auto cref : states[candVar].clauses)
+		  for (auto sol : clauses[cref].solutions)
 		  {
 		     // New installs move the auto-bit. TODO: Should we look at whether clause is the reason for installing it?
 		     if (AsPkg(sol) == P || AsPkg(sol)->CurrentVer)

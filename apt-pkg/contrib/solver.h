@@ -24,6 +24,7 @@
 #include <apt-pkg/header-is-private.h>
 
 #include <cassert>
+#include <cstddef> // required for nullptr_t
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
@@ -162,6 +163,30 @@ struct Lit
 };
 
 /**
+ * \brief A reference to a clause in the solver's clause store.
+ *
+ * All clauses live in a single VarVector (Solver::clauses); a CRef stores the
+ * index of a clause there, so references remain valid as the store grows.
+ * A null reference (constructed from nullptr) does not refer to a clause.
+ */
+struct CRef
+{
+   uint32_t value = UINT32_MAX;
+
+   // \brief Construct a null reference.
+   constexpr CRef() noexcept = default;
+   // \brief Construct a null reference.
+   constexpr CRef(std::nullptr_t) noexcept {}
+   // \brief Construct a reference to the clause at the given index.
+   constexpr explicit CRef(uint32_t value) noexcept : value{value} {}
+
+   // \brief Check if there is a referenced clause.
+   constexpr explicit operator bool() const noexcept { return value != UINT32_MAX; }
+   constexpr bool operator!=(CRef const other) const noexcept { return value != other.value; }
+   constexpr bool operator==(CRef const other) const noexcept { return value == other.value; }
+};
+
+/**
  * \brief A single clause
  *
  * A clause is a normalized, expanded dependency, translated into an implication
@@ -204,20 +229,21 @@ constexpr LiftedBool operator~(LiftedBool value) noexcept
 }
 
 /**
- * \brief A minimal, grow-only vector indexed by Var objects.
+ * \brief A minimal, grow-only vector indexed by index objects.
  *
  * Bypass bounds-checking done by _GLIBCXX_ASSERTIONS in a typed manner.
- * Variables are only handed out by Solver::newVar(), so accessing them is safe.
+ * Index objects such as Var or CRef are only handed out by the solver,
+ * so accessing them is safe.
  */
-template <typename T>
+template <typename T, typename K = Var>
 class VarVector : private std::vector<T>
 {
    public:
    // This is a fairly sensible lower bound for a Debian install
    VarVector() { std::vector<T>::reserve(64 * 1024); }
    // Bypass bounds checking in libstdc++ using data() as explained above
-   constexpr T &operator[](Var var) noexcept { return std::vector<T>::data()[var.value]; }
-   constexpr const T &operator[](Var var) const noexcept { return std::vector<T>::data()[var.value]; }
+   constexpr T &operator[](K k) noexcept { return std::vector<T>::data()[k.value]; }
+   constexpr const T &operator[](K k) const noexcept { return std::vector<T>::data()[k.value]; }
    // Safe functionality we can expose directly
    using std::vector<T>::size;
    using std::vector<T>::push_back;
@@ -254,13 +280,21 @@ class Solver
    // \brief State for each registered variable; the root is at index 0.
    VarVector<State> states;
 
+   // \brief Store owning all clauses of the solver; clauses are referenced
+   // by CRef (their index here), which stays valid as the store grows.
+   VarVector<Clause, CRef> clauses;
+
+   // \brief Add a clause to the store, register it with its guard's state,
+   // and set up its watchers, returning its reference.
+   CRef newClause(Clause &&clause);
+
    // \brief Register a new variable, returning its identifier.
    //
    // Concrete solvers may override this to keep auxiliary data structures
    // indexed by variables in sync.
    virtual Var newVar();
 
-   constexpr std::span<const Clause *const> watches(Lit lit) const noexcept;
+   constexpr std::span<const CRef> watches(Lit lit) const noexcept;
 
    // \brief Heap of the remaining work.
    //
@@ -299,14 +333,14 @@ class Solver
    // \brief Propagate all pending propagations
    [[nodiscard]] bool Propagate();
    // \brief Propagate all pending propagations
-   [[nodiscard]] bool Propagate(const Clause *clause, Lit lit);
+   [[nodiscard]] bool Propagate(CRef clause, Lit lit);
 
    // \brief Return the current level (.size() with casting)
    level_type decisionLevel()
    {
       return static_cast<level_type>(trailLim.size());
    }
-   Var bestReason(Clause const *clause, Var var) const noexcept;
+   Var bestReason(CRef clause, Var var) const noexcept;
    constexpr LiftedBool value(Lit lit) const noexcept;
 
    public:
@@ -314,6 +348,8 @@ class Solver
    [[nodiscard]] bool Pop();
    // \brief Undo a single assignment / trail work item
    void UndoOne();
+   // \brief This function determines if a work item is less important than another.
+   bool workLess(Work const &a, Work const &b) const noexcept;
    // \brief Add work to our work queue.
    [[nodiscard]] bool AddWork(Work &&work);
 
@@ -322,9 +358,9 @@ class Solver
    virtual ~Solver();
 
    // Assume a literal
-   [[nodiscard]] bool Assume(Lit lit, const Clause *reason = nullptr);
+   [[nodiscard]] bool Assume(Lit lit, CRef reason = nullptr);
    // Enqueue a fact
-   [[nodiscard]] bool Enqueue(Lit lit, const Clause *reason = nullptr);
+   [[nodiscard]] bool Enqueue(Lit lit, CRef reason = nullptr);
 
    // \brief Solve the dependencies
    [[nodiscard]] bool Solve();
@@ -357,7 +393,7 @@ class Solver
     * \param prefix A prefix, for indentation purposes, as this is recursive
     * \param seen A set of seen objects such that the output does not repeat itself (not for safety, it is acyclic)
     */
-   virtual std::string LongWhyStr(Var var, bool assignment, const Clause *rclause, std::string prefix, std::unordered_set<Var> &seen) const;
+   virtual std::string LongWhyStr(Var var, bool assignment, CRef rclause, std::string prefix, std::unordered_set<Var> &seen) const;
 };
 
 /**
@@ -365,12 +401,12 @@ class Solver
  */
 class Solver::Watches
 {
-   std::vector<const Clause *> watches;
+   std::vector<CRef> watches;
    // [0, split) are positive, [split, end) are negative.
    size_t split{0};
 
    public:
-   void add(const Clause *clause, bool sign)
+   void add(CRef clause, bool sign)
    {
       watches.push_back(clause);
       if (not sign)
@@ -381,7 +417,7 @@ class Solver::Watches
       }
    }
 
-   std::span<const Clause *const> get(bool sign) const
+   std::span<const CRef> get(bool sign) const
    {
       if (not sign)
 	 return {watches.begin(), watches.begin() + split};
@@ -402,7 +438,7 @@ class Solver::Watches
  */
 struct Solver::Work
 {
-   const Clause *clause;
+   CRef clause;
 
    // \brief The level at which the item has been added
    level_type level;
@@ -410,8 +446,7 @@ struct Solver::Work
    /// Number of valid choices at insertion time
    size_t size{0};
 
-   constexpr bool operator<(Solver::Work const &b) const noexcept;
-   constexpr Work(const Clause *clause, level_type level) noexcept : clause(clause), level(level) {}
+   constexpr Work(CRef clause, level_type level) noexcept : clause(clause), level(level) {}
 };
 
 /**
@@ -433,7 +468,7 @@ struct Solver::State
    // doesn't increase to unwind.
    //
    // Vars < 0 are package ID, reasons > 0 are version IDs.
-   const Clause *reason{};
+   CRef reason{};
 
    // \brief The level at which the value has been assigned
    level_type level{0};
@@ -450,8 +485,8 @@ struct Solver::State
 
    static_assert(sizeof(flags) <= sizeof(int));
 
-   // \brief Clauses owned by this package/version
-   std::vector<std::unique_ptr<Clause>> clauses;
+   // \brief Clauses guarded by this package/version
+   std::vector<CRef> clauses;
    // \brief Watches watching a clause by sign
    Watches watches;
 };
@@ -476,7 +511,7 @@ struct Solver::Trail
    std::optional<Work> work;
 };
 
-constexpr std::span<const Clause *const> Solver::watches(Lit lit) const noexcept
+constexpr std::span<const CRef> Solver::watches(Lit lit) const noexcept
 {
    return states[lit.var()].watches.get(lit.sign());
 }
