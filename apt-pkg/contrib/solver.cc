@@ -108,7 +108,7 @@ bool Solver::workLess(Solver::Work const &a, Solver::Work const &b) const noexce
       return ca.group > cb.group;
    if ((a.size < 2) != (b.size < 2))
       return b.size < 2;
-   if (a.size == 1 && b.size == 1) // Special case: 'shortcircuit' optional packages
+   if (a.size < 2 && b.size < 2) // Special case: 'shortcircuit' optional packages
       return ca.solutions().size() < cb.solutions().size();
    return false;
 }
