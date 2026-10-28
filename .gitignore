@@ -130,3 +130,6 @@ Makefile
 /build
 /obj-*
 .*.swp
+
+# Hegel property-test example database (counterexample replay)
+.hegel/

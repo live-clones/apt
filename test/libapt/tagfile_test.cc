@@ -343,3 +343,84 @@ TEST(TagFileTest, EmptyTagName)
 
    EXPECT_FALSE(tfile.Step(section));
 }
+
+TEST(TagFileTest, DuplicateTags)
+{
+   FileFd fd;
+   openTemporaryFile("duplicatetags", fd, "Package: first\n"
+					  "FieldA: one\n"
+					  "Package: second\n"
+					  "FieldA: two\n"
+					  "\n");
+
+   pkgTagFile tfile(&fd);
+   pkgTagSection section;
+   ASSERT_TRUE(tfile.Step(section));
+
+   // Repeated tags are counted multiple times, but only the last
+   // occurrence is available via Find - for known (triehash) and
+   // unknown (fallback hash) tags alike.
+   EXPECT_EQ(4u, section.Count());
+   EXPECT_EQ("second", section.FindS("Package"));
+   EXPECT_EQ("two", section.FindS("FieldA"));
+
+   EXPECT_FALSE(tfile.Step(section));
+}
+
+TEST(TagFileTest, CaseInsensitiveLookup)
+{
+   FileFd fd;
+   openTemporaryFile("caseinsensitive", fd, "Package: aa\n"
+					    "FieldA: bb\n"
+					    "\n");
+
+   pkgTagFile tfile(&fd);
+   pkgTagSection section;
+   ASSERT_TRUE(tfile.Step(section));
+
+   // A known tag via the triehash, built --ignore-case
+   EXPECT_TRUE(section.Exists("package"));
+   EXPECT_EQ("aa", section.FindS("pAckAgE"));
+   // An unknown tag via the fallback hash, compared with strncasecmp
+   EXPECT_TRUE(section.Exists("fielda"));
+   EXPECT_EQ("bb", section.FindS("FiElDa"));
+
+   EXPECT_FALSE(tfile.Step(section));
+}
+
+TEST(TagFileTest, StepAndJump)
+{
+   // Small buffers force stanzas to straddle buffer refills and resizes.
+   for (unsigned long long const bufSize : {1ULL, 7ULL, 16ULL, 32768ULL})
+   {
+      FileFd fd;
+      openTemporaryFile("stepjump", fd, "Package: a\n"
+				       "Size: 1\n"
+				       "\n"
+				       "Package: b\n"
+				       "Size: 2\n"
+				       "\n"
+				       "Package: c\n"
+				       "Size: 3\n"
+				       "\n");
+
+      pkgTagFile tfile(&fd, bufSize);
+      pkgTagSection section;
+      std::vector<unsigned long> offsets;
+      for (char const *const pkg : {"a", "b", "c"})
+      {
+	 offsets.push_back(tfile.Offset());
+	 ASSERT_TRUE(tfile.Step(section));
+	 EXPECT_EQ(pkg, section.FindS("Package"));
+      }
+      EXPECT_FALSE(tfile.Step(section));
+
+      // Jumping back to a recorded offset rereads the same section, out of order
+      ASSERT_TRUE(tfile.Jump(section, offsets[2]));
+      EXPECT_EQ("c", section.FindS("Package"));
+      ASSERT_TRUE(tfile.Jump(section, offsets[0]));
+      EXPECT_EQ("a", section.FindS("Package"));
+      ASSERT_TRUE(tfile.Jump(section, offsets[1]));
+      EXPECT_EQ("b", section.FindS("Package"));
+   }
+}

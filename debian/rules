@@ -11,10 +11,17 @@ export DPKG_GENSYMBOLS_CHECK_LEVEL=0
 export CTEST_OUTPUT_ON_FAILURE=1
 
 
-ifneq ($(filter nocheck,$(DEB_BUILD_OPTIONS)),)
-	configure_test_flags = -DWITH_TESTS=OFF
+# Hegel property-based tests download Hegel and libhegel at configure time,
+# which is not allowed during package builds. Enable them explicitly with
+# the pkg.apt.dev build profile.
+configure_test_flags =
+ifneq ($(filter pkg.apt.dev,$(DEB_BUILD_PROFILES)),)
+	configure_test_flags += -DWITH_HEGEL_TESTS=ON
 else
-	configure_test_flags =
+	configure_test_flags += -DWITH_HEGEL_TESTS=OFF
+endif
+ifneq ($(filter nocheck,$(DEB_BUILD_OPTIONS)),)
+	configure_test_flags += -DWITH_TESTS=OFF
 endif
 
 %:

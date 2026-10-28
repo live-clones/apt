@@ -196,6 +196,8 @@ TEST(StrUtilTest,Base64Decode)
    EXPECT_EQ(Base64Decode("/w=="), "\xff");
    EXPECT_EQ(Base64Decode("/A=="), "\xfc");
    EXPECT_EQ(Base64Decode("//8="), "\xff\xff");
+   // The decoder skips non-alphabet bytes, even mid-quantum.
+   EXPECT_EQ(Base64Decode("cGxl\r\n YXN1\tcmUu"), "pleasure.");
 }
 static void ReadMessagesTestWithNewLine(char const * const nl, char const * const ab)
 {
@@ -274,6 +276,25 @@ TEST(StrUtilTest,QuoteString)
    EXPECT_EQ("~-_$#|uäöŦ™⅞±Æẞªß", DeQuoteString(QuoteString("~-_$#|uäöŦ™⅞±Æẞªß", "")));
    EXPECT_EQ("%45ltvill%65%2d%45rbach", QuoteString("Eltville-Erbach", "E-Ae"));
    EXPECT_EQ("Eltville-Erbach", DeQuoteString(QuoteString("Eltville-Erbach", "")));
+}
+TEST(StrUtilTest,ParseQuoteWord)
+{
+   const char *cursor = "plain \"quoted with spaces %22 %25\" [bracketed %5d]";
+   std::string word;
+
+   ASSERT_TRUE(ParseQuoteWord(cursor, word));
+   EXPECT_EQ("plain", word);
+   ASSERT_TRUE(ParseQuoteWord(cursor, word));
+   EXPECT_EQ("quoted with spaces \" %", word);
+   ASSERT_TRUE(ParseQuoteWord(cursor, word));
+   EXPECT_EQ("[bracketed ]]", word);
+   EXPECT_FALSE(ParseQuoteWord(cursor, word));
+
+   // Unclosed tokens fail.
+   cursor = "\"unclosed";
+   EXPECT_FALSE(ParseQuoteWord(cursor, word));
+   cursor = "[unclosed";
+   EXPECT_FALSE(ParseQuoteWord(cursor, word));
 }
 
 static void EXPECT_STRTONUM(std::string_view const str, bool const success, unsigned long const expected, unsigned const base)
