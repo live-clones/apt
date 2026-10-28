@@ -146,6 +146,64 @@ TEST(SolverTest, NegativeClause)
    EXPECT_EQ(s.value(c), LiftedBool::False);
 }
 
+TEST(SolverTest, Contrapositive)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   Clause clause{a, Group::Satisfy};
+   clause.solutions = {b, c};
+   s.AddClause(std::move(clause));
+
+   // With all solutions rejected and the guard undecided, the guard is
+   // rejected by contraposition.
+   EXPECT_TRUE(s.Enqueue(~b));
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(a), LiftedBool::Undefined);
+   EXPECT_EQ(s.value(b), LiftedBool::False);
+   EXPECT_EQ(s.value(c), LiftedBool::Undefined);
+   EXPECT_TRUE(s.Enqueue(~c));
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(a), LiftedBool::False);
+   EXPECT_EQ(s.value(b), LiftedBool::False);
+   EXPECT_EQ(s.value(c), LiftedBool::False);
+}
+
+TEST(SolverTest, OptionalClause)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   Clause clause{a, Group::Satisfy, true};
+   clause.solutions = {b, c};
+   s.AddClause(std::move(clause));
+
+   // An optional clause does not unit-propagate its last solution, but
+   // queues it as work for Solve() which selects c.
+   EXPECT_TRUE(s.Enqueue(a));
+   EXPECT_TRUE(s.Enqueue(~b));
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(a), LiftedBool::True);
+   EXPECT_EQ(s.value(b), LiftedBool::False);
+   EXPECT_EQ(s.value(c), LiftedBool::Undefined);
+
+   EXPECT_TRUE(s.Solve());
+   EXPECT_EQ(s.value(a), LiftedBool::True);
+   EXPECT_EQ(s.value(b), LiftedBool::False);
+   EXPECT_EQ(s.value(c), LiftedBool::True);
+
+   // Backtracking rejects the soft choice, and with it requeued, Solve()
+   // drops the unsolvable work item, leaving the guard alone.
+   EXPECT_TRUE(s.Pop());
+   EXPECT_EQ(s.value(a), LiftedBool::True);
+   EXPECT_EQ(s.value(b), LiftedBool::False);
+   EXPECT_EQ(s.value(c), LiftedBool::False);
+   EXPECT_TRUE(s.Solve());
+   EXPECT_EQ(s.value(a), LiftedBool::True);
+   EXPECT_EQ(s.value(b), LiftedBool::False);
+   EXPECT_EQ(s.value(c), LiftedBool::False);
+}
+
 TEST(SolverTest, SolveChoice)
 {
    TestSolver s;
