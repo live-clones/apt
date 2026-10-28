@@ -346,4 +346,59 @@ TEST(SolverTest, RenderReasons)
    EXPECT_NE(longWhy.find("x2 is selected for install because"), std::string::npos);
    EXPECT_NE(longWhy.find("~x1 | x2"), std::string::npos);
 }
+
+TEST(SolverTest, WorkLessStrictWeakOrdering)
+{
+   TestSolver s;
+
+   // Generate every clause/work combination that affects workLess.
+   std::vector<CRef> clauses;
+   for (auto optional : {false, true})
+      for (auto eager : {false, true})
+	 for (auto group : {Group::Satisfy, Group::SelectVersion})
+	    for (size_t solCount = 0; solCount <= 2; ++solCount)
+	    {
+	       Clause clause{Var{}, group, optional};
+	       clause.eager = eager;
+	       for (size_t i = 0; i < solCount; ++i)
+		  clause.solutions.push_back(s.newVar());
+	       clauses.push_back(s.AddClause(std::move(clause)));
+	    }
+
+   // Sizes 0, 1, 2 are the only values that affect ordering.
+   std::vector<TestSolver::Work> items;
+   for (auto cref : clauses)
+      for (uint32_t size = 0; size <= 2; ++size)
+      {
+	 TestSolver::Work w{cref, 0};
+	 w.size = size;
+	 items.push_back(w);
+      }
+
+   auto equivalent = [&](TestSolver::Work const &x, TestSolver::Work const &y)
+   {
+      return not s.workLess(x, y) && not s.workLess(y, x);
+   };
+
+   for (size_t i = 0; i < items.size(); ++i)
+   {
+      // Irreflexivity
+      EXPECT_FALSE(s.workLess(items[i], items[i]));
+
+      for (size_t j = 0; j < items.size(); ++j)
+      {
+	 // Antisymmetry
+	 EXPECT_FALSE(s.workLess(items[i], items[j]) && s.workLess(items[j], items[i]));
+
+	 for (size_t k = 0; k < items.size(); ++k)
+	 {
+	    // Transitivity (<= is implication for booleans).
+	    EXPECT_TRUE((s.workLess(items[i], items[j]) && s.workLess(items[j], items[k])) <= s.workLess(items[i], items[k]));
+
+	    // Equivalence transitivity
+	    EXPECT_TRUE((equivalent(items[i], items[j]) && equivalent(items[j], items[k])) <= equivalent(items[i], items[k]));
+	 }
+      }
+   }
+}
 } // namespace
