@@ -15,10 +15,10 @@
 # binary = двійковий
 msgid ""
 msgstr ""
-"Project-Id-Version: apt 3.3.4\n"
+"Project-Id-Version: apt 3.3.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
 "POT-Creation-Date: 2026-10-27 22:16+0000\n"
-"PO-Revision-Date: 2026-10-22 20:33+0300\n"
+"PO-Revision-Date: 2026-10-28 17:41+0200\n"
 "Last-Translator: Andriy Pysyk <ep.nestor@gmail.com>\n"
 "Language-Team: Українська <uk@li.org>\n"
 "Language: uk\n"
@@ -1071,10 +1071,9 @@ msgid "Invalid '%s' entry in Release file %s"
 msgstr "Некоректний запис '%s' у файлі Release %s"
 
 #: apt-pkg/deb/debmetaindex.cc
-#, fuzzy, c-format
-#| msgid "Invalid '%s' entry in Release file %s"
+#, c-format
 msgid "Ignoring '%s' entry in Release file %s (no longer supported)"
-msgstr "Некоректний запис '%s' у файлі Release %s"
+msgstr "Ігнорується запис '%s' у файлі Release %s (більше не підтримується)"
 
 #. TRANSLATOR: The first is an option name from sources.list manpage, the other two URI and Suite
 #: apt-pkg/deb/debmetaindex.cc
@@ -3519,10 +3518,9 @@ msgstr "Відсутній параметр Signed-By у записі %s для 
 
 #. TRANSLATOR: the first is manpage reference, the last the URI from a sources.list
 #: apt-private/private-update.cc
-#, fuzzy, c-format
-#| msgid "Missing Signed-By in the %s entry for '%s'"
+#, c-format
 msgid "Deprecated Signed-By fingerprint in the %s entry for '%s'"
-msgstr "Відсутній параметр Signed-By у записі %s для ‘%s’"
+msgstr "У записі %s для '%s' використано застарілий відбиток Signed-By"
 
 #: apt-private/private-update.cc
 msgid ""
