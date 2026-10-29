@@ -356,7 +356,12 @@ std::string Solver::LongWhyStr(Var var, bool assignment, CRef rclause, std::stri
 bool Solver::Assume(Lit lit, CRef reason)
 {
    trailLim.push_back(trail.size());
-   return Enqueue(lit, std::move(reason));
+   if (not Enqueue(lit, reason))
+      return false;
+   // An assumption is a heuristic choice, not a logical implication; record
+   // the reason as soft such that conflict analysis treats it as not available.
+   states[lit.var()].flags.soft_reason = true;
+   return true;
 }
 
 bool Solver::Enqueue(Lit lit, CRef reason)
@@ -483,6 +488,7 @@ void Solver::UndoOne()
 	 state.assignment = LiftedBool::Undefined;
 	 state.reason = nullptr;
 	 state.flags.backtracked = false;
+	 state.flags.soft_reason = false;
 	 state.level = 0;
       }
       else

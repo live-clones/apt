@@ -375,6 +375,42 @@ TEST(SolverTest, LiftedBoolBitMagic)
    EXPECT_EQ(~~LiftedBool::False, LiftedBool::False);
 }
 
+TEST(SolverTest, SoftReason)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   // a -> b
+   Clause dep{a, Group::Satisfy};
+   dep.solutions = {b};
+   auto depC = s.AddClause(std::move(dep));
+
+   // A choice clause to use as the assumption's reason
+   Clause choice{Var{}, Group::Satisfy};
+   choice.solutions = {a, c};
+   auto choiceC = s.AddClause(std::move(choice));
+
+   // An assumption records a soft reason: kept for rendering the implication
+   // graph, but not available to conflict analysis.
+   EXPECT_TRUE(s.Assume(a, choiceC));
+   EXPECT_TRUE(s.states[a].flags.soft_reason);
+   EXPECT_EQ(s.states[a].reason, choiceC);
+   EXPECT_EQ(s.states[a].hardReason(), nullptr);
+   EXPECT_EQ(s.WhyStr(a), "x1");
+
+   // A propagated assignment records a hard reason.
+   EXPECT_TRUE(s.Propagate());
+   EXPECT_EQ(s.value(b), LiftedBool::True);
+   EXPECT_FALSE(s.states[b].flags.soft_reason);
+   EXPECT_EQ(s.states[b].reason, depC);
+   EXPECT_EQ(s.states[b].hardReason(), depC);
+
+   // Backtracking clears the soft reason again.
+   EXPECT_TRUE(s.Pop());
+   EXPECT_EQ(s.value(a), LiftedBool::False);
+   EXPECT_FALSE(s.states[a].flags.soft_reason);
+}
+
 TEST(SolverTest, RenderSelection)
 {
    TestSolver s;

@@ -399,7 +399,8 @@ class Solver
    Solver();
    virtual ~Solver();
 
-   // Assume a literal
+   // Assume a literal. The reason is recorded as a soft reason on the variable,
+   // see State::flags::soft_reason.
    [[nodiscard]] bool Assume(Lit lit, CRef reason = nullptr);
    // Enqueue a fact
    [[nodiscard]] bool Enqueue(Lit lit, CRef reason = nullptr);
@@ -517,8 +518,14 @@ struct Solver::State
    // You can follow the reason chain upwards as long as the level
    // doesn't increase to unwind.
    //
-   // Vars < 0 are package ID, reasons > 0 are version IDs.
+   // The reason may be soft, see flags.soft_reason, in which case it
+   // must be treated as not available in conflict analysis.
    CRef reason{};
+
+   // \brief The reason if it is a hard reason, a null reference for soft reasons.
+   //
+   // Conflict analysis must use this rather than reason directly.
+   CRef hardReason() const noexcept { return flags.soft_reason ? nullptr : reason; }
 
    // \brief The level at which the value has been assigned
    level_type level{0};
@@ -531,6 +538,11 @@ struct Solver::State
       bool discovered{};
       bool manual{};
       bool backtracked{};
+      // \brief The reason is soft: It records a heuristic assumption rather
+      // than a logical implication. Soft reasons only exist to render the
+      // human-readable implication graph; conflict analysis must treat them
+      // as not available.
+      bool soft_reason{};
    } flags;
 
    static_assert(sizeof(flags) <= sizeof(int));
