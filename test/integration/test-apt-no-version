@@ -1,0 +1,58 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+setupenvironment
+configarchitecture 'amd64'
+
+msgtest 'Regression test: .deb file without Version field' 'is rejected'
+# dpkg-deb refuses to build a control file without Version, so craft a
+# malformed .deb archive by hand for this regression test.
+mkdir -p ./incoming/control ./incoming/data
+printf '2.0\n' > ./incoming/debian-binary
+cat > ./incoming/control/control <<EOF
+Package: pkg-no-version
+Architecture: all
+Description: test package without a Version field
+EOF
+# control.tar.gz (gzip with --no-name for reproducibility)
+(
+   cd ./incoming/control && tar --owner=0 --group=0 -czf ../control.tar.gz ./control
+)
+# data.tar.gz with a single placeholder file
+(
+   cd ./incoming/data && echo 'placeholder' > ./placeholder && tar --owner=0 --group=0 -czf ../data.tar.gz ./placeholder
+)
+# assemble the .deb ar archive
+DEBFILE='./incoming/pkg-no-version_0_all.deb'
+testsuccess --nomsg ar -rc "$DEBFILE" ./incoming/debian-binary ./incoming/control.tar.gz ./incoming/data.tar.gz
+
+# apt show on a local .deb parses it via debDebFileParser; without a
+# Version field this must fail gracefully rather than crash.
+testfailure apt show "$DEBFILE"
+testsuccess grep 'has no Version field' rootdir/tmp/testfailure.output
+msgpass
+
+msgtest 'Regression test: Packages file entry without Version field' 'is rejected'
+# Build a minimal flat archive with a package record missing Version.
+mkdir -p aptarchive
+cat > aptarchive/Packages <<EOF
+Package: broken-no-version
+Architecture: amd64
+Priority: optional
+Maintainer: Joe Sixpack <joe@example.org>
+Installed-Size: 42
+Description: a package record without a Version field
+Description-md5: $(printf 'a package record without a Version field' | md5sum | cut -d' ' -f1)
+
+EOF
+generatereleasefiles
+setupflataptarchive
+signreleasefiles 'Joe Sixpack'
+
+# apt update parsing a Packages file with a missing Version field must fail
+# gracefully rather than crash or corrupt the cache header.
+testfailure aptget update
+testsuccess grep 'has no Version field' rootdir/tmp/testfailure.output
+msgpass

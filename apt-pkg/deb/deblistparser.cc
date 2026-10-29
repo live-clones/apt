@@ -24,6 +24,8 @@
 #include <apt-pkg/tagfile-keys.h>
 #include <apt-pkg/tagfile.h>
 
+#include <apti18n.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
@@ -299,6 +301,9 @@ std::string_view debListParser::Description_md5()
 bool debListParser::UsePackage(pkgCache::PkgIterator &Pkg,
 			       pkgCache::VerIterator &Ver)
 {
+   if (Ver.end() == true)
+      return _error->Error(_("Package %s has no Version field"), Pkg.Name());
+
    if (essential == "all" || essential.empty() ||
        (essential == "native" && Pkg->Arch != 0 && myArch == Pkg.Arch()))
       if (Section.FindFlag(pkgTagSection::Key::Essential,Pkg->Flags,pkgCache::Flag::Essential) == false)
@@ -390,7 +395,7 @@ bool debListParser::ParseStatus(pkgCache::PkgIterator &,
    // the status file has no info about the download size and
    // usually this is fine as we will have picked that info up already –
    // except if we have volatile sources which are parsed after the status file.
-   if (Ver->Size == 0)
+   if (Ver.end() == false && Ver->Size == 0)
       Ver->Size = Section.FindULL(pkgTagSection::Key::Size);
    return true;
 }
@@ -1000,6 +1005,8 @@ debDebFileParser::debDebFileParser(FileFd *File, std::string const &DebFile)
 bool debDebFileParser::UsePackage(pkgCache::PkgIterator &Pkg,
                                   pkgCache::VerIterator &Ver)
 {
+   if (Ver.end() == true)
+      return _error->Error(_("Malformed deb file %s has no Version field"), DebFile.c_str());
    if (not debListParser::UsePackage(Pkg, Ver))
       return false;
    // we use the full file path as a provides so that the file is found by its name

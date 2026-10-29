@@ -121,11 +121,12 @@ class APT_HIDDEN debTranslationsParser : public debListParser
 {
  public:
    // a translation can never be a real package
- std::string_view Architecture() override { return {}; }
- std::string_view Version() override { return {}; }
+   std::string_view Architecture() override { return {}; }
+   std::string_view Version() override { return {}; }
+   bool UsePackage(pkgCache::PkgIterator &, pkgCache::VerIterator &) override { return true; }
 
- explicit debTranslationsParser(FileFd *File)
-     : debListParser(File) {};
+   explicit debTranslationsParser(FileFd *File)
+      : debListParser(File) {};
 };
 
 class APT_HIDDEN debStatusListParser : public debListParser
