@@ -1,4 +1,4 @@
-image: debian:testing
+image: debian:trixie
 variables:
   DEBIAN_FRONTEND: noninteractive
   CCACHE_DIR: $CI_PROJECT_DIR/.ccache
@@ -43,7 +43,7 @@ test solver3 and gpgv:
 
 test as user:
   image:
-    name: debian:testing
+    name: debian:trixie
     docker:
       platform: linux/i386
   stage: test
