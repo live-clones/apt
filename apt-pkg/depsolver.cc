@@ -510,15 +510,18 @@ void DependencySolver::Discover(Var var)
 	 clause.solutions = {GetVar(Ver.ParentPkg())};
 	 RegisterClause(clause);
 
+	 // A version conflicts with all other versions of the same package,
+	 // encoded as a single negative clause rather than one per other
+	 // version, which are equivalent.
+	 Clause conflicts{GetVar(Ver), Group::SelectVersion, false, true /* negative */};
 	 for (auto OV = Ver.ParentPkg().VersionList(); not OV.end(); ++OV)
 	 {
 	    if (OV == Ver)
 	       continue;
-
-	    Clause clause{GetVar(Ver), Group::SelectVersion, false, true /* negative */};
-	    clause.solutions = {GetVar(OV)};
-	    RegisterClause(clause);
+	    conflicts.solutions.push_back(GetVar(OV));
 	 }
+	 if (not conflicts.solutions.empty())
+	    RegisterClause(conflicts);
 
 	 if (UpgradeBySourcePackage && Ver != Ver.ParentPkg().CurrentVer())
 	 {
