@@ -319,6 +319,17 @@ class Solver
    // \brief State for each registered variable; the root is at index 0.
    VarVector<State> states;
 
+   // \brief Seen flags for conflict analysis, one per variable; grown in
+   // sync with states by newVar(). The marks of the last analysis remain
+   // available for inspection until they are cleared at the start of the
+   // next one.
+   VarVector<char> seen;
+   // \brief The variables marked in seen, for clearing at the next analysis.
+   std::vector<Var> seenLits;
+   // \brief Scratch for the reason of the literal being resolved in
+   // conflict analysis, kept to reuse its capacity across analyses.
+   std::vector<Lit> p_reason;
+
    // \brief Store owning all clauses of the solver; clauses are referenced
    // by CRef (their offset here), which stays valid as the store grows.
    VarVector<StoredClause, CRef, uint32_t> clauses;
@@ -378,12 +389,29 @@ class Solver
    [[nodiscard]] bool Propagate(CRef clause, Lit lit);
 
    // \brief Return the current level (.size() with casting)
-   level_type decisionLevel()
+   level_type decisionLevel() const
    {
       return static_cast<level_type>(trailLim.size());
    }
    Var bestReason(CRef clause, Var var) const noexcept;
    constexpr LiftedBool value(Lit lit) const noexcept;
+
+   // \brief Compute the reason for p as the set of (true) assignment
+   // literals that implied it.
+   void calcReason(CRef reason, Lit p, std::vector<Lit> &out_reason) const;
+
+   // \brief Analyze a conflicting clause, deriving a learnt clause (1st UIP).
+   //
+   // Walk the implication graph backwards from the falsified literals of
+   // `conflict`, resolving with the hard reasons (State::hardReason()) of the
+   // assignments at the current decision level, until only one literal at
+   // that level remains: the first unique implication point (UIP).
+   //
+   // The learnt clause is appended to `out_learnt`; its first literal is the
+   // asserting literal, the negation of the first UIP. `out_btlevel` is set
+   // to the level the learnt clause becomes asserting at, that is, the
+   // maximum level among the other literals (0 if there are none).
+   void analyze(std::vector<Lit> confl, std::vector<Lit> &out_learnt, level_type &out_btlevel);
 
    public:
    // \brief Revert to the previous decision level.
@@ -530,22 +558,27 @@ struct Solver::State
    // \brief The level at which the value has been assigned
    level_type level{0};
 
+   // \brief Trail position of the assignment, set on assignment and cleared
+   // on backtracking; valid only for assigned variables, UINT32_MAX else.
+   uint32_t trailPos{UINT32_MAX};
+
    LiftedBool assignment{LiftedBool::Undefined};
 
-   // \brief Flags.
+   // \brief Flags, packed into two bytes; discovered is a plain byte as it
+   // is hot in Discover().
    struct
    {
-      bool discovered{};
-      bool manual{};
-      bool backtracked{};
+      uint8_t discovered{};
+      uint8_t manual : 1 = 0;
+      uint8_t backtracked : 1 = 0;
       // \brief The reason is soft: It records a heuristic assumption rather
       // than a logical implication. Soft reasons only exist to render the
       // human-readable implication graph; conflict analysis must treat them
       // as not available.
-      bool soft_reason{};
+      uint8_t soft_reason : 1 = 0;
    } flags;
 
-   static_assert(sizeof(flags) <= sizeof(int));
+   static_assert(sizeof(flags) == 2);
    // \brief Watches watching a clause by sign
    Watches watches;
 };

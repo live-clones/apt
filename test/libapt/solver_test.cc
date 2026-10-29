@@ -21,9 +21,13 @@ using namespace APT::Solver;
 class TestSolver : public Solver
 {
    public:
+   using Solver::analyze;
    using Solver::bestReason;
+   using Solver::calcReason;
    using Solver::newVar;
    using Solver::Propagate;
+   using Solver::seen;
+   using Solver::seenLits;
    using Solver::states;
    using Solver::value;
    using Solver::Work;
@@ -409,6 +413,466 @@ TEST(SolverTest, SoftReason)
    EXPECT_TRUE(s.Pop());
    EXPECT_EQ(s.value(a), LiftedBool::False);
    EXPECT_FALSE(s.states[a].flags.soft_reason);
+}
+
+TEST(SolverTest, AnalyzeChain)
+{
+   TestSolver s;
+   auto d = s.newVar(), a = s.newVar(), b = s.newVar(), x = s.newVar();
+
+   Clause c1{d, Group::Satisfy};
+   c1.solutions = {a};
+   auto c1r = s.AddClause(std::move(c1));
+   Clause c2{a, Group::Satisfy};
+   c2.solutions = {b};
+   auto c2r = s.AddClause(std::move(c2));
+   Clause c3{b, Group::Satisfy};
+   c3.solutions = {x};
+   auto c3r = s.AddClause(std::move(c3));
+
+   EXPECT_TRUE(s.Assume(d));
+   EXPECT_TRUE(s.Enqueue(a, c1r));
+   EXPECT_TRUE(s.Enqueue(b, c2r));
+   EXPECT_TRUE(s.Enqueue(x, c3r));
+
+   // b conflicts with x (b -> none of x), so ~b | ~x is falsified.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~b, ~x}, learnt, backjump);
+
+   // b is the first UIP: resolving ~b | ~x with b's reason ~b | x yields ~b.
+   EXPECT_EQ(learnt, std::vector<Lit>{~b});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeFirstUIP)
+{
+   TestSolver s;
+   auto d = s.newVar(), a = s.newVar(), b = s.newVar(), c = s.newVar(), x = s.newVar(), y = s.newVar();
+
+   Clause c1{d, Group::Satisfy};
+   c1.solutions = {a};
+   auto c1r = s.AddClause(std::move(c1));
+   Clause c2{a, Group::Satisfy};
+   c2.solutions = {b};
+   auto c2r = s.AddClause(std::move(c2));
+   Clause c3{a, Group::Satisfy};
+   c3.solutions = {c};
+   auto c3r = s.AddClause(std::move(c3));
+   Clause c4{b, Group::Satisfy};
+   c4.solutions = {x};
+   auto c4r = s.AddClause(std::move(c4));
+   Clause c5{c, Group::Satisfy};
+   c5.solutions = {y};
+   auto c5r = s.AddClause(std::move(c5));
+
+   EXPECT_TRUE(s.Assume(d));
+   EXPECT_TRUE(s.Enqueue(a, c1r));
+   EXPECT_TRUE(s.Enqueue(b, c2r));
+   EXPECT_TRUE(s.Enqueue(c, c3r));
+   EXPECT_TRUE(s.Enqueue(x, c4r));
+   EXPECT_TRUE(s.Enqueue(y, c5r));
+
+   // The graph reconverges on a: d -> a -> {b -> x, c -> y}; ~x | ~y is falsified.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~x, ~y}, learnt, backjump);
+
+   // a is the first UIP: resolution stops there rather than at the decision d.
+   EXPECT_EQ(learnt, std::vector<Lit>{~a});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeDecisionUIP)
+{
+   TestSolver s;
+   auto d = s.newVar(), a = s.newVar(), b = s.newVar(), x = s.newVar();
+
+   Clause c1{d, Group::Satisfy};
+   c1.solutions = {a};
+   auto c1r = s.AddClause(std::move(c1));
+   Clause c2{d, Group::Satisfy};
+   c2.solutions = {b};
+   auto c2r = s.AddClause(std::move(c2));
+   Clause c3{a, Group::Satisfy};
+   c3.solutions = {x};
+   auto c3r = s.AddClause(std::move(c3));
+
+   EXPECT_TRUE(s.Assume(d));
+   EXPECT_TRUE(s.Enqueue(a, c1r));
+   EXPECT_TRUE(s.Enqueue(b, c2r));
+   EXPECT_TRUE(s.Enqueue(x, c3r));
+
+   // b conflicts with x (b -> none of x): two independent paths from d to
+   // the conflict, so ~b | ~x is falsified.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~b, ~x}, learnt, backjump);
+
+   // No interior UIP: the learnt clause is the negation of the decision.
+   EXPECT_EQ(learnt, std::vector<Lit>{~d});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeBackjump)
+{
+   TestSolver s;
+   auto d1 = s.newVar(), a = s.newVar(), b = s.newVar(), x = s.newVar(), d2 = s.newVar();
+
+   Clause c1{d1, Group::Satisfy};
+   c1.solutions = {a};
+   auto c1r = s.AddClause(std::move(c1));
+   Clause c2{a, Group::Satisfy};
+   c2.solutions = {b};
+   auto c2r = s.AddClause(std::move(c2));
+   Clause c3{b, Group::Satisfy};
+   c3.solutions = {x};
+   auto c3r = s.AddClause(std::move(c3));
+
+   // Level 1: d1 -> a -> b -> x
+   EXPECT_TRUE(s.Assume(d1));
+   EXPECT_TRUE(s.Enqueue(a, c1r));
+   EXPECT_TRUE(s.Enqueue(b, c2r));
+   EXPECT_TRUE(s.Enqueue(x, c3r));
+   // Level 2: d2 conflicts with x (d2 -> none of x), so ~d2 | ~x is falsified.
+   EXPECT_TRUE(s.Assume(d2));
+
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~d2, ~x}, learnt, backjump);
+
+   // d2 is the UIP; x remains as the lower-level literal to backjump to.
+   EXPECT_EQ(learnt, std::vector<Lit>({~d2, ~x}));
+   EXPECT_EQ(backjump, 1u);
+}
+
+TEST(SolverTest, AnalyzeBackjumpMax)
+{
+   TestSolver s;
+   auto d1 = s.newVar(), a = s.newVar(), d2 = s.newVar(), b = s.newVar(), d3 = s.newVar(), g = s.newVar();
+
+   Clause n1{d1, Group::Satisfy, false, true};
+   n1.solutions = {a};
+   auto n1r = s.AddClause(std::move(n1));
+   Clause n2{d2, Group::Satisfy, false, true};
+   n2.solutions = {b};
+   auto n2r = s.AddClause(std::move(n2));
+   Clause c3{d3, Group::Satisfy};
+   c3.solutions = {g};
+   auto c3r = s.AddClause(std::move(c3));
+
+   // Level 1: d1 rejects a; level 2: d2 rejects b; level 3: d3 -> g.
+   EXPECT_TRUE(s.Assume(d1));
+   EXPECT_TRUE(s.Enqueue(~a, n1r));
+   EXPECT_TRUE(s.Assume(d2));
+   EXPECT_TRUE(s.Enqueue(~b, n2r));
+   EXPECT_TRUE(s.Assume(d3));
+   EXPECT_TRUE(s.Enqueue(g, c3r));
+
+   // g -> a | b is conflicting: a and b are both rejected at levels 1 and 2.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~g, a, b}, learnt, backjump);
+
+   // Backjump to the higher level of the two rejected solutions.
+   EXPECT_EQ(learnt, std::vector<Lit>({~g, a, b}));
+   EXPECT_EQ(backjump, 2u);
+}
+
+TEST(SolverTest, AnalyzeReasonPullsLowerLevel)
+{
+   TestSolver s;
+   auto l1 = s.newVar(), z = s.newVar(), d = s.newVar(), a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   Clause n1{l1, Group::Satisfy, false, true};
+   n1.solutions = {z};
+   auto n1r = s.AddClause(std::move(n1));
+   Clause c1{d, Group::Satisfy};
+   c1.solutions = {a};
+   auto c1r = s.AddClause(std::move(c1));
+   Clause c2{a, Group::Satisfy};
+   c2.solutions = {b, z};
+   auto c2r = s.AddClause(std::move(c2));
+   Clause c3{b, Group::Satisfy};
+   c3.solutions = {c};
+   auto c3r = s.AddClause(std::move(c3));
+
+   // Level 1: l1 rejects z; level 2: d -> a -> b (z is rejected, so a -> b | z
+   // is unit) -> c.
+   EXPECT_TRUE(s.Assume(l1));
+   EXPECT_TRUE(s.Enqueue(~z, n1r));
+   EXPECT_TRUE(s.Assume(d));
+   EXPECT_TRUE(s.Enqueue(a, c1r));
+   EXPECT_TRUE(s.Enqueue(b, c2r));
+   EXPECT_TRUE(s.Enqueue(c, c3r));
+
+   // a conflicts with c, so ~a | ~c is falsified.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~a, ~c}, learnt, backjump);
+
+   // a is the first UIP; resolving b pulls in z from level 1 mid-resolution.
+   EXPECT_EQ(learnt, std::vector<Lit>({~a, Lit(z)}));
+   EXPECT_EQ(backjump, 1u);
+}
+
+TEST(SolverTest, AnalyzeDiamond)
+{
+   TestSolver s;
+   auto d = s.newVar(), a = s.newVar(), b = s.newVar();
+
+   Clause c1{d, Group::Satisfy};
+   c1.solutions = {a};
+   auto c1r = s.AddClause(std::move(c1));
+   Clause c2{d, Group::Satisfy};
+   c2.solutions = {b};
+   auto c2r = s.AddClause(std::move(c2));
+
+   EXPECT_TRUE(s.Assume(d));
+   EXPECT_TRUE(s.Enqueue(a, c1r));
+   EXPECT_TRUE(s.Enqueue(b, c2r));
+
+   // a conflicts with b, so ~a | ~b is falsified.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~a, ~b}, learnt, backjump);
+
+   // Resolving both branches pulls in ~d twice; the seen flag must prevent
+   // double counting such that the resolution stops at the decision.
+   EXPECT_EQ(learnt, std::vector<Lit>{~d});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeSoftReason)
+{
+   TestSolver s;
+   auto g = s.newVar(), c = s.newVar(), d = s.newVar(), e = s.newVar(), x = s.newVar();
+
+   Clause cg{g, Group::Satisfy};
+   cg.solutions = {c};
+   auto cgr = s.AddClause(std::move(cg));
+   // The (optional) work item the assumption below was made for: c -> d | e
+   Clause work{c, Group::Satisfy, true /* optional */};
+   work.solutions = {d, e};
+   auto workr = s.AddClause(std::move(work));
+   Clause c2{d, Group::Satisfy};
+   c2.solutions = {x};
+   auto c2r = s.AddClause(std::move(c2));
+
+   EXPECT_TRUE(s.Assume(g));
+   EXPECT_TRUE(s.Enqueue(c, cgr));
+   // The assumption records the work clause as a soft reason.
+   EXPECT_TRUE(s.Assume(d, workr));
+   EXPECT_TRUE(s.Enqueue(x, c2r));
+
+   // x conflicts with d (x -> none of d), so ~x | ~d is falsified.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~x, ~d}, learnt, backjump);
+
+   // Resolution stops at the assumption d: its soft reason is not available,
+   // so ~c (at level 1) must not enter the learnt clause.
+   EXPECT_EQ(learnt, std::vector<Lit>{~d});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeNegativeReason)
+{
+   TestSolver s;
+   auto sv = s.newVar(), g = s.newVar(), x = s.newVar();
+
+   // g is rejected because s is installed: g -> none of s
+   Clause n{g, Group::Satisfy, false, true};
+   n.solutions = {sv};
+   auto nr = s.AddClause(std::move(n));
+   Clause c2{sv, Group::Satisfy};
+   c2.solutions = {x};
+   auto c2r = s.AddClause(std::move(c2));
+
+   EXPECT_TRUE(s.Assume(sv));
+   EXPECT_TRUE(s.Enqueue(~g, nr));
+   EXPECT_TRUE(s.Enqueue(x, c2r));
+
+   // The conflict clause g | ~x is falsified: g is rejected and x is installed.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({Lit(g), ~x}, learnt, backjump);
+
+   // Resolving with the binary reason ~g | ~s of the rejected guard yields ~s.
+   EXPECT_EQ(learnt, std::vector<Lit>{~sv});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeNegativeUIP)
+{
+   TestSolver s;
+   auto a = s.newVar(), x = s.newVar();
+
+   // Root clause x | a; with a rejected it implies x.
+   Clause c2{Var{}, Group::Satisfy};
+   c2.solutions = {x, a};
+   auto c2r = s.AddClause(std::move(c2));
+
+   EXPECT_TRUE(s.Assume(~a));
+   EXPECT_TRUE(s.Enqueue(x, c2r));
+
+   // The conflict clause a | ~x is falsified: a is rejected, x installed.
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({Lit(a), ~x}, learnt, backjump);
+
+   // The first UIP is ~a: resolving a | ~x with x's reason x | a yields a.
+   EXPECT_EQ(learnt, std::vector<Lit>{Lit(a)});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeSkipsLevel0)
+{
+   TestSolver s;
+   auto f = s.newVar(), d = s.newVar(), x = s.newVar();
+
+   Clause c1{d, Group::Satisfy};
+   c1.solutions = {x};
+   auto c1r = s.AddClause(std::move(c1));
+
+   // A fact at level 0, e.g. a user request.
+   EXPECT_TRUE(s.Enqueue(f));
+   EXPECT_TRUE(s.Assume(d));
+   EXPECT_TRUE(s.Enqueue(x, c1r));
+
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~x, ~f}, learnt, backjump);
+
+   // Literals assigned at level 0 do not participate in the analysis.
+   EXPECT_EQ(learnt, std::vector<Lit>{~x});
+   EXPECT_EQ(backjump, 0u);
+}
+
+TEST(SolverTest, AnalyzeSeenInspectable)
+{
+   TestSolver s;
+   auto d = s.newVar(), a = s.newVar(), b = s.newVar(), x = s.newVar();
+
+   Clause c1{d, Group::Satisfy};
+   c1.solutions = {a};
+   auto c1r = s.AddClause(std::move(c1));
+   Clause c2{a, Group::Satisfy};
+   c2.solutions = {b};
+   auto c2r = s.AddClause(std::move(c2));
+   Clause c3{b, Group::Satisfy};
+   c3.solutions = {x};
+   auto c3r = s.AddClause(std::move(c3));
+
+   EXPECT_TRUE(s.Assume(d));
+   EXPECT_TRUE(s.Enqueue(a, c1r));
+   EXPECT_TRUE(s.Enqueue(b, c2r));
+   EXPECT_TRUE(s.Enqueue(x, c3r));
+
+   unsigned int backjump = 0;
+   std::vector<Lit> learnt;
+   s.analyze({~b, ~x}, learnt, backjump);
+
+   // The seen flags of the analysis remain available for inspection until
+   // the next analysis.
+   EXPECT_EQ(s.seenLits, std::vector<Var>({b, x}));
+   EXPECT_TRUE(s.seen[b]);
+   EXPECT_TRUE(s.seen[x]);
+   EXPECT_FALSE(s.seen[a]);
+
+   // The next analysis clears them first.
+   std::vector<Lit> learnt2;
+   s.analyze({~b}, learnt2, backjump);
+   EXPECT_EQ(s.seenLits, std::vector<Var>({b}));
+   EXPECT_FALSE(s.seen[x]);
+}
+
+TEST(SolverTest, CalcReasonPositive)
+{
+   TestSolver s;
+   auto g = s.newVar(), a = s.newVar(), b = s.newVar();
+
+   Clause c{g, Group::Satisfy};
+   c.solutions = {a, b};
+   auto cr = s.AddClause(std::move(c));
+
+   std::vector<Lit> lits;
+   s.calcReason(cr, Lit(a), lits);
+
+   // a was implied because the guard is installed and the other solution is
+   // rejected; the reason is the true assignment literals.
+   EXPECT_EQ(lits, std::vector<Lit>({Lit(g), ~b}));
+}
+
+TEST(SolverTest, CalcReasonPositiveImpliedGuard)
+{
+   TestSolver s;
+   auto g = s.newVar(), a = s.newVar(), b = s.newVar();
+
+   Clause c{g, Group::Satisfy};
+   c.solutions = {a, b};
+   auto cr = s.AddClause(std::move(c));
+
+   std::vector<Lit> lits;
+   s.calcReason(cr, ~g, lits);
+
+   // The guard was rejected because all solutions are rejected.
+   EXPECT_EQ(lits, std::vector<Lit>({~a, ~b}));
+}
+
+TEST(SolverTest, CalcReasonPositiveRootGuard)
+{
+   TestSolver s;
+   auto a = s.newVar(), b = s.newVar();
+
+   Clause c{Var{}, Group::Satisfy};
+   c.solutions = {a, b};
+   auto cr = s.AddClause(std::move(c));
+
+   std::vector<Lit> lits;
+   s.calcReason(cr, Lit(a), lits);
+
+   // The (always true) root guard is elided.
+   EXPECT_EQ(lits, std::vector<Lit>({~b}));
+}
+
+TEST(SolverTest, CalcReasonNegativeSolution)
+{
+   TestSolver s;
+   auto g = s.newVar(), a = s.newVar();
+
+   Clause n{g, Group::Satisfy, false, true};
+   n.solutions = {a};
+   auto nr = s.AddClause(std::move(n));
+
+   std::vector<Lit> lits;
+   s.calcReason(nr, ~a, lits);
+
+   // The solution was rejected because the guard is installed.
+   EXPECT_EQ(lits, std::vector<Lit>({Lit(g)}));
+}
+
+TEST(SolverTest, CalcReasonNegativeGuard)
+{
+   TestSolver s;
+   auto g = s.newVar(), a = s.newVar(), b = s.newVar(), c = s.newVar();
+
+   Clause n{g, Group::Satisfy, false, true};
+   n.solutions = {a, b, c};
+   auto nr = s.AddClause(std::move(n));
+
+   // a is rejected; c was installed before b.
+   EXPECT_TRUE(s.Enqueue(~a));
+   EXPECT_TRUE(s.Enqueue(c));
+   EXPECT_TRUE(s.Enqueue(b));
+
+   std::vector<Lit> lits;
+   s.calcReason(nr, ~g, lits);
+
+   // The guard was rejected because a solution is installed; the earliest
+   // installed solution in trail order (c, not the preference-earlier b) is
+   // the antecedent.
+   EXPECT_EQ(lits, std::vector<Lit>({Lit(c)}));
 }
 
 TEST(SolverTest, RenderSelection)

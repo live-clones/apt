@@ -46,6 +46,7 @@ Solver::Solver()
    static_assert(std::is_trivially_destructible_v<Trail>);
    // The root state is "true".
    states.emplace_back();
+   seen.push_back(0);
    states[Var{}].assignment = LiftedBool::True;
 }
 
@@ -54,6 +55,7 @@ Solver::~Solver() = default;
 Var Solver::newVar()
 {
    states.emplace_back();
+   seen.push_back(0);
    return Var{static_cast<uint32_t>(states.size() - 1)};
 }
 
@@ -181,6 +183,134 @@ Var Solver::bestReason(CRef cref, Var var) const noexcept
 	    return choice;
       }
    return clause.guard;
+}
+
+void Solver::calcReason(CRef reason, Lit p, std::vector<Lit> &out_reason) const
+{
+   // Optional clauses never record hard reasons: propagation is guarded by
+   // Clause::optional throughout, and assumptions record their (possibly
+   // optional) clause as a soft reason, see State::flags::soft_reason. A
+   // hard reason must be entailed, an optional clause is not.
+   auto const &rclause = clauses[reason];
+   assert(not rclause.optional);
+
+   // The reason for p is the set of (true) assignment literals that implied
+   // it, excluding p itself, like the paper: invariantly, every literal is
+   // false under the current assignment except the implied one.
+   if (rclause.negative)
+   {
+      if (p.var() == rclause.guard)
+      {
+	 // The guard was rejected because a solution is installed; the earliest
+	 // installed solution (in trail order) is the antecedent.
+	 Var best{};
+	 for (auto sol : rclause.solutions())
+	    if (value(sol) == LiftedBool::True && (best.empty() || states[sol].trailPos < states[best].trailPos))
+	       best = sol;
+	 assert(not best.empty());
+	 out_reason.push_back(Lit(best));
+      }
+      else
+      {
+	 // The solution was rejected because the guard is installed.
+	 out_reason.push_back(Lit(rclause.guard));
+      }
+      return;
+   }
+
+   // A positive clause implies a solution because the guard is installed and
+   // the other solutions are rejected, and rejects its guard because all
+   // solutions are rejected.
+   if (not rclause.guard.empty() && p.var() != rclause.guard)
+      out_reason.push_back(Lit(rclause.guard));
+   for (auto sol : rclause.solutions())
+      if (sol != p.var())
+	 out_reason.push_back(~sol);
+}
+
+// Conflict analysis after the MiniSAT paper (Eén and Sörensson, "An
+// extensible SAT-solver"), with deliberate deviations noted inline.
+void Solver::analyze(std::vector<Lit> confl, std::vector<Lit> &out_learnt, level_type &out_btlevel)
+{
+   // Clear the marks of the previous analysis; they remain available for
+   // inspection until the next analysis.
+   for (auto var : seenLits)
+      seen[var] = 0;
+   seenLits.clear();
+
+   int counter = 0;
+   Lit p{};			// The literal resolved last
+   size_t index = trail.size(); // Trail walker, going backwards
+   out_learnt.push_back(Lit{}); // Leave room for the asserting literal
+   out_btlevel = 0;
+
+   while (true)
+   {
+      // Trace reason for p; the first iteration traces the conflict itself.
+      //
+      // Deviation: the paper fetches reason[var(p)] unconditionally while
+      // selecting p, relying on the invariant that there is exactly one
+      // reason-less literal (the decision) per level; we fetch lazily, which
+      // is what guarantees that a decision's null reason is never read.
+      p_reason.clear();
+      if (p.empty())
+	 // The conflict is given as the falsified literals of a clause; like
+	 // the paper's calcReason, we want the true assignment literals that
+	 // falsify them.
+	 for (auto q : confl)
+	    p_reason.push_back(~q);
+      else if (auto reason = states[p.var()].hardReason())
+	 calcReason(reason, p, p_reason);
+      else
+	 // A root of the graph without a hard reason to resolve. This cannot
+	 // be a decision or an assumption: those are the oldest assignment of
+	 // their level and are selected last, when counter == 1. It can only
+	 // be a literal backtracked by Pop(), which gets no reason. Keeping
+	 // the literal in the clause leaves it a sound resolvent, though no
+	 // longer necessarily an asserting one; once learning is wired in,
+	 // backtracked literals should get the learnt clause of the failed
+	 // branch as their reason (see the FIXME in Pop()) and this case
+	 // goes away.
+	 out_learnt.push_back(~p);
+
+      for (auto q : p_reason)
+      {
+	 if (not seen[q.var()])
+	 {
+	    seen[q.var()] = 1;
+	    seenLits.push_back(q.var());
+	    if (states[q.var()].level == decisionLevel())
+	       ++counter;
+	    else if (states[q.var()].level > 0) // Exclude variables from decision level 0
+	    {
+	       out_learnt.push_back(~q);
+	       out_btlevel = std::max(out_btlevel, states[q.var()].level);
+	    }
+	 }
+      }
+
+      // Select next literal to look at: the most recently assigned seen
+      // literal; there is always one as long as counter > 0.
+      //
+      // Deviation: the paper consumes the trail with undoOne() as it goes;
+      // we walk an index instead, leaving the trail and the assignments
+      // untouched (our trail also carries work items, which have no
+      // assignment).
+      while (true)
+      {
+	 assert(index > 0);
+	 auto choicePtr = std::get_if<Var>(&trail[--index]);
+	 if (choicePtr && not choicePtr->empty() && seen[*choicePtr])
+	 {
+	    p = Lit(*choicePtr, states[*choicePtr].assignment == LiftedBool::False);
+	    break;
+	 }
+      }
+      if (--counter == 0)
+	 break;
+   }
+
+   out_learnt[0] = ~p;
 }
 
 // Prints an implication graph part of the form A -> B -> C, possibly with "not"
@@ -394,6 +524,7 @@ bool Solver::Enqueue(Lit lit, CRef reason)
       std::cerr << "[" << decisionLevel() << "] " << (lit.sign() ? "Reject" : "Install") << ":" << toString(lit.var()) << " (" << WhyStr(bestReason(reason, lit.var())) << ")\n";
 
    trail.push_back(Trail{lit.var()});
+   state.trailPos = static_cast<uint32_t>(trail.size() - 1);
    propQ.push(lit.var());
 
    return true;
@@ -490,6 +621,7 @@ void Solver::UndoOne()
 	 state.flags.backtracked = false;
 	 state.flags.soft_reason = false;
 	 state.level = 0;
+	 state.trailPos = UINT32_MAX;
       }
       else
       {
