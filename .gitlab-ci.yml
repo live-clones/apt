@@ -1,4 +1,4 @@
-image: debian:stretch
+image: debian/eol:stretch
 variables:
   DEBIAN_FRONTEND: noninteractive
 
