@@ -67,7 +67,7 @@ constexpr bool Solver::Work::operator<(Solver::Work const &b) const noexcept
       return clause->group > b.clause->group;
    if ((size < 2) != (b.size < 2))
       return b.size < 2;
-   if (size == 1 && b.size == 1) // Special case: 'shortcircuit' optional packages
+   if (size < 2 && b.size < 2) // Special case: 'shortcircuit' optional packages
       return clause->solutions.size() < b.clause->solutions.size();
    return false;
 }
