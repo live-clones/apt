@@ -1,3 +1,19 @@
+apt (2.0.12) focal-security; urgency=medium
+
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * SECURITY UPDATE: Out-of-bounds accesses
+    - deb: guard against unsigned underflow when trimming control newlines
+    - gpgv: don't advance past the null terminator in PushEntryWithKeyID
+    - debDebFileParser: reject .deb without a Version field
+    - srvrec: reject res_query answers bigger than our buffer
+    - tagfile: fix unbounded backward scan in Fill()'s trailing-newline check
+  * Test suite reliability:
+    - test: Limit valgrind to 1024 open files
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Mon, 02 Nov 2026 13:58:53 +0100
+
 apt (2.0.11) focal; urgency=medium
 
   * Fix buffer overflow, stack overflow, exponential complexity in
