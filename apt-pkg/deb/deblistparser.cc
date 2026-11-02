@@ -24,6 +24,7 @@
 #include <apt-pkg/cacheiterators.h>
 #include <apt-pkg/tagfile.h>
 #include <apt-pkg/macros.h>
+#include <apti18n.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -1029,6 +1030,8 @@ debDebFileParser::debDebFileParser(FileFd *File, std::string const &DebFile)
 bool debDebFileParser::UsePackage(pkgCache::PkgIterator &Pkg,
                                   pkgCache::VerIterator &Ver)
 {
+   if (Ver.end())
+      return _error->Error("Package %s has no Version field", Pkg.Name());
    bool res = debListParser::UsePackage(Pkg, Ver);
    // we use the full file path as a provides so that the file is found
    // by its name
