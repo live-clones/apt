@@ -1,3 +1,15 @@
+apt (1.2.36) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * SECURITY UPDATE: Out-of-bounds accesses
+    - debDebFileParser: reject package records without a Version field
+    - srvrec: reject res_query answers bigger than our buffer
+    - tagfile: fix unbounded backward scan in Fill()'s trailing-newline check
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Mon, 02 Nov 2026 13:26:37 +0100
+
 apt (1.2.35) xenial; urgency=medium
 
   * Backport JSON hooks, version 0.2, to xenial (LP: #1926150). The JSON code
