@@ -1,3 +1,14 @@
+apt (3.3.3ubuntu0.1) stonking-security; urgency=medium
+
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * SECURITY UPDATE: Out-of-bounds accesses
+    - debDebFileParser: reject .deb without a Version field
+    - solver: Ensure workLess is a strict weak ordering
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Mon, 02 Nov 2026 15:29:58 +0100
+
 apt (3.3.3) unstable; urgency=medium
 
   This release introduces initial interactive help output for apt(8)
