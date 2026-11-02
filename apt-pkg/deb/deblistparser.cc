@@ -24,6 +24,8 @@
 #include <apt-pkg/tagfile-keys.h>
 #include <apt-pkg/tagfile.h>
 
+#include <apti18n.h>
+
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -1055,6 +1057,8 @@ debDebFileParser::debDebFileParser(FileFd *File, std::string const &DebFile)
 bool debDebFileParser::UsePackage(pkgCache::PkgIterator &Pkg,
                                   pkgCache::VerIterator &Ver)
 {
+   if (Ver.end())
+      return _error->Error("Package %s has no Version field", Pkg.Name());
    bool res = debListParser::UsePackage(Pkg, Ver);
    // we use the full file path as a provides so that the file is found
    // by its name
