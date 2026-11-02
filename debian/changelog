@@ -1,3 +1,16 @@
+apt (1.6.19) bionic-security; urgency=medium
+
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * SECURITY UPDATE: Out-of-bounds accesses
+    - gpgv: don't advance past the null terminator in PushEntryWithKeyID
+    - debDebFileParser: reject .deb without a Version field
+    - srvrec: reject res_query answers bigger than our buffer
+    - tagfile: fix unbounded backward scan in Fill()'s trailing-newline check
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Mon, 02 Nov 2026 14:00:07 +0100
+
 apt (1.6.18) bionic; urgency=medium
 
   * Backport archive snapshot integration as of 2.7.3 (LP: #2038453)
