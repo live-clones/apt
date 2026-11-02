@@ -1,3 +1,24 @@
+apt (3.0.4) trixie-security; urgency=medium
+
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * SECURITY UPDATE: Out-of-bounds accesses
+    - deb: guard against unsigned underflow when trimming control newlines
+    - gpgv: don't advance past the null terminator in PushEntryWithKeyID
+    - debDebFileParser: reject .deb without a Version field
+    - srvrec: reject res_query answers bigger than our buffer
+    - tagfile: fix unbounded backward scan in Fill()'s trailing-newline check
+    - solver: Ensure workLess is a strict weak ordering
+  * Memory exhaustion during download
+    - Move "Tried to start delayed item […], but failed" to debugging
+     (Closes: #1111554)
+  * Test suite reliability:
+    - test: Limit valgrind to 1024 open files
+    - .gitlab-ci.yml: Point at debian:trixie
+
+ -- Julian Andres Klode <jak@debian.org>  Mon, 02 Nov 2026 14:41:34 +0100
+
 apt (3.0.3) unstable; urgency=medium
 
   [ Américo Monteiro ]
