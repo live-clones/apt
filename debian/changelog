@@ -1,3 +1,22 @@
+apt (2.8.4) noble-security; urgency=medium
+
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * SECURITY UPDATE: Out-of-bounds accesses
+    - deb: guard against unsigned underflow when trimming control newlines
+    - gpgv: don't advance past the null terminator in PushEntryWithKeyID
+    - debDebFileParser: reject .deb without a Version field
+    - srvrec: reject res_query answers bigger than our buffer
+    - tagfile: fix unbounded backward scan in Fill()'s trailing-newline check
+  * Memory exhaustion during download
+    - Move "Tried to start delayed item […], but failed" to debugging
+     (Closes: #1111554)
+  * Test suite reliability:
+    - test: Limit valgrind to 1024 open files
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Mon, 02 Nov 2026 13:55:21 +0100
+
 apt (2.8.3) noble; urgency=medium
 
   * Revert increased key size requirements from 2.8.0-2.8.2 (LP: #2073126)
