@@ -1,3 +1,19 @@
+apt (1.4.12) stretch-security; urgency=medium
+
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * SECURITY UPDATE: Out-of-bounds accesses
+    - gpgv: don't advance past the null terminator in PushEntryWithKeyID
+    - debDebFileParser: reject .deb without a Version field
+    - srvrec: reject res_query answers bigger than our buffer
+    - tagfile: fix unbounded backward scan in Fill()'s trailing-newline check
+  * Test suite reliability:
+    - Fix location of testdeb in added regression tests
+    - tests: Do not expect requested-by if sudo was invoked by root
+
+ -- Julian Andres Klode <jak@debian.org>  Mon, 02 Nov 2026 15:16:20 +0100
+
 apt (1.4.11) stretch-security; urgency=high
 
   * SECURITY UPDATE: Integer overflow in parsing (LP: #1899193)
