@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2008-08-02 01:47-0400\n"
 "Last-Translator: Gintautas Miliauskas <gintas@akl.lt>\n"
 "Language-Team: Lithuanian <komp_lt@konferencijos.lt>\n"
@@ -965,6 +965,11 @@ msgstr ""
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
 msgstr "Nepavyko rezervuoti rakinimo failo %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+msgid "Package %s has no Version field"
+msgstr "Paketas %s neturi diegimo kandidatų"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

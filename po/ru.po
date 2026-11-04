@@ -18,7 +18,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.9.30\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2025-02-26 11:30+0300\n"
 "Last-Translator: Алексей Шилин <shilin.aleksej@gmail.com>\n"
 "Language-Team: Russian <debian-l10n-russian@lists.debian.org>\n"
@@ -1047,6 +1047,12 @@ msgstr "Не удалось разобрать содержимое файла c
 #, c-format
 msgid "Could not read meta data from %s"
 msgstr "Не удалось прочесть метаданные из %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Package '%s' has no installation candidate"
+msgid "Package %s has no Version field"
+msgstr "Для пакета «%s» не найден кандидат на установку"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

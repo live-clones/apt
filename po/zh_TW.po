@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.2.X\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2009-01-28 10:41+0800\n"
 "Last-Translator: Tetralet <tetralet@gmail.com>\n"
 "Language-Team: Debian-user in Chinese [Big5] <debian-chinese-"
@@ -968,6 +968,12 @@ msgstr "無法分析的 control 檔"
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
 msgstr "無法將 %s 鎖定"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Package '%s' has no installation candidate"
+msgid "Package %s has no Version field"
+msgstr "套件 %s 沒有可安裝的候選版本"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

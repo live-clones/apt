@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 2.9.33\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2025-03-15 04:08+0000\n"
 "Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: l10n Portuguese <debian-l10n-portuguese@lists.debian.org>\n"
@@ -1051,6 +1051,12 @@ msgstr "Arquivo de controle não interpretável"
 #, c-format
 msgid "Could not read meta data from %s"
 msgstr "Não foi possível ler os metadados de %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Package '%s' has no installation candidate"
+msgid "Package %s has no Version field"
+msgstr "O pacote '%s' não tem candidato para instalação"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

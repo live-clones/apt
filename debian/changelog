@@ -1,3 +1,30 @@
+apt (3.3.6) unstable; urgency=medium
+
+  [ Julian Andres Klode ]
+  * SECURITY UPDATE: Download verification bypass
+    - methods/*.cc: Open target files exclusively
+    - CVE-2026-109518
+  * Out of bounds accesses
+    - debDebFileParser: reject .deb without a Version field
+    - solver: Ensure workLess is a strict weak ordering
+  * Performance evaluation tooling
+    - perf: scale multiplexed hardware counters
+    - perf: set CLOEXEC on perf and output file descriptors
+    - perf: make PerformanceContext non-copyable
+    - perf: clean up includes, member initialization, and stub signature
+  * Additional unit tests and property-based tests using Hegel
+    - test: Add Hegel property-based testing support
+    - test: Hegel tests for Debian version comparison
+    - test: Additional tag file parser unit tests
+    - test: Hegel round-trip property tests for string utilities
+    - test: Hegel and more unit tests for the solver
+    - test: Add ParseQuoteWord and Base64 whitespace unit tests
+
+  [ Andriy Pysyk ]
+  * Update Ukrainian translation for APT 3.3.5
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Wed, 04 Nov 2026 13:07:30 +0100
+
 apt (3.3.5) unstable; urgency=medium
 
   [ Johan Walles ]

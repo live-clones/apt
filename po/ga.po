@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.4\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2026-08-23 13:47+0100\n"
 "Last-Translator: Aindriú Mac Giolla Eoin <aindriu80@yahoo.com>\n"
 "Language-Team: Irish\n"
@@ -1040,6 +1040,12 @@ msgstr "Comhad rialaithe neamh-pharsáilte"
 #, c-format
 msgid "Could not read meta data from %s"
 msgstr "Níorbh fhéidir meiteashonraí a léamh ó %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Allow changes to Version field"
+msgid "Package %s has no Version field"
+msgstr "Ceadaigh athruithe ar an réimse Leagan"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

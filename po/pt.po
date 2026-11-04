@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.1.15\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2026-02-05 23:58+0000\n"
 "Last-Translator: Américo Monteiro <a_monteiro@gmx.com>\n"
 "Language-Team: Portuguese <>\n"
@@ -1041,6 +1041,12 @@ msgstr "Ficheiro de controle não interpretável"
 #, c-format
 msgid "Could not read meta data from %s"
 msgstr "Não pude ler meta dados de %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Package '%s' has no installation candidate"
+msgid "Package %s has no Version field"
+msgstr "O pacote '%s' não tem candidato para instalação"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

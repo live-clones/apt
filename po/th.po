@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2014-12-12 13:00+0700\n"
 "Last-Translator: Theppitak Karoonboonyanan <thep@debian.org>\n"
 "Language-Team: Thai <thai-l10n@googlegroups.com>\n"
@@ -977,6 +977,12 @@ msgstr "ไม่สามารถแจงแฟ้มควบคุมได
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
 msgstr "ไม่สามารถล็อค %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Package '%s' has no installation candidate"
+msgid "Package %s has no Version field"
+msgstr "แพกเกจ '%s' ไม่มีรุ่นที่จะใช้ติดตั้ง"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

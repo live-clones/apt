@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2009-05-17 00:41+0200\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <debian-l10n-basque@lists.debian.org>\n"
@@ -974,6 +974,11 @@ msgstr "Kontrol fitxategi ezin analizagarria"
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
 msgstr "Ezin izan da %s blokeoa hartu"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+msgid "Package %s has no Version field"
+msgstr "%s paketeak ez du instalatzeko hautagairik"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

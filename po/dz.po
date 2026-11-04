@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2006-09-19 09:49+0530\n"
 "Last-Translator: Kinley Tshering <gasepkuenden2k3@hotmail.com>\n"
 "Language-Team: Dzongkha <pgeyleg@dit.gov.bt>\n"
@@ -971,6 +971,11 @@ msgstr "མིང་དཔྱད་འབད་མ་བཏུབ་པའི་
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
 msgstr "%sལྡེ་མིག་རྐྱབ་ནི་ལེན་མ་ཚུགས།"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+msgid "Package %s has no Version field"
+msgstr "ཐུམ་སྒྲིལ་%s་ལུ་གཞི་བཙུགས་ཀྱི་མི་ངོ་མིན་འདུག"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

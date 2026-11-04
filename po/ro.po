@@ -29,7 +29,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 3.3.1\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2026-05-26 20:41+0200\n"
 "Last-Translator: Remus-Gabriel Chelu <remusgabriel.chelu@disroot.org>\n"
 "Language-Team: Romanian <debian-l10n-romanian@lists.debian.org>\n"
@@ -1087,6 +1087,12 @@ msgstr "Fișier de control neanalizabil"
 #, c-format
 msgid "Could not read meta data from %s"
 msgstr "Nu s-au putut citi metadatele din %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Package '%s' has no installation candidate"
+msgid "Package %s has no Version field"
+msgstr "Pachetul „%s” nu are un candidat pentru instalare"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2005-02-14 23:30+0100\n"
 "Last-Translator: Havard Korsvoll <korsvoll@skulelinux.no>\n"
 "Language-Team: Norwegian nynorsk <i18n-nn@lister.ping.uio.no>\n"
@@ -974,6 +974,11 @@ msgstr "Kontrollfila kan ikkje tolkast"
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
 msgstr "Klarte ikkje låsa %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+msgid "Package %s has no Version field"
+msgstr "Det finst ingen installasjonskandidat for pakken %s"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

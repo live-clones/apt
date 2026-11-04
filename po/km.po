@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 1.0.5\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2006-10-10 09:48+0700\n"
 "Last-Translator: Khoem Sokhem <khoemsokhem@khmeros.info>\n"
 "Language-Team: Khmer <support@khmeros.info>\n"
@@ -971,6 +971,11 @@ msgstr "ឯកសារត្រួតពិនិត្យ​ដែលមិន
 #| msgid "Could not get lock %s"
 msgid "Could not read meta data from %s"
 msgstr "មិន​អាច​ចាក់សោ %s បានឡើយ"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+msgid "Package %s has no Version field"
+msgstr "កញ្ចប់​ %s មិនមាន​ការដំឡើងសាកល្បងឡើយ"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;

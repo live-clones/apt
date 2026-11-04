@@ -38,7 +38,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt 0.8.10\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-04 12:14+0000\n"
 "PO-Revision-Date: 2025-07-24 22:11-0500\n"
 "Last-Translator: Igor Támara <igor.tamara@gmail.com>\n"
 "Language-Team: Español; Castellano <debian-l10n-spanish@lists.debian.org>\n"
@@ -1108,6 +1108,12 @@ msgstr "Archivo de control inanalizable"
 #, c-format
 msgid "Could not read meta data from %s"
 msgstr "No se pudo leer los datos meta de %s"
+
+#: apt-pkg/deb/deblistparser.cc
+#, fuzzy, c-format
+#| msgid "Package '%s' has no installation candidate"
+msgid "Package %s has no Version field"
+msgstr "El paquete «%s» no tiene un candidato para la instalación"
 
 #. TRANSLATOR: an identifier like Packages; Releasefile key indicating
 #. a file like main/binary-amd64/Packages; another identifier like Contents;
