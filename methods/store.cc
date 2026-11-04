@@ -90,8 +90,8 @@ bool StoreMethod::Fetch(FetchItem *Itm)					/*{{{*/
    {
       if (_config->FindB("Method::Compress", false) == false)
 	 To.Open(Itm->DestFile, FileFd::WriteOnly | FileFd::Create | FileFd::Atomic, FileFd::Extension);
-      else if (OpenFileWithCompressorByName(To, Itm->DestFile, FileFd::WriteOnly | FileFd::Create | FileFd::Empty, Binary) == false)
-	    return false;
+      else if (OpenFileWithCompressorByName(To, Itm->DestFile, FileFd::WriteOnly | FileFd::Create | FileFd::Exclusive, Binary) == false)
+	 return false;
 
       if (To.IsOpen() == false || To.Failed() == true)
 	 return false;
