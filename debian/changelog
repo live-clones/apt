@@ -1,3 +1,20 @@
+apt (3.2.2) resolute; urgency=medium
+
+  * Team upload.
+
+  [ Mark Atwood ]
+  * hashes: don't crash on an unavailable digest (LP: #2171346)
+  * test: exercise hashes with a disabled digest (LP: #2171346)
+
+  [ Julian Andres Klode ]
+  * hashes: Fix lingering OpenSSL error (Closes: #1140227) (LP: #2171346)
+
+  [ Gianpiero Carpinelli ]
+  * Reject downloads whose hash cannot be computed (LP: #2172252)
+  * Report OpenSSL failures while hashing (LP: #2172252)
+
+ -- Gianpiero Carpinelli <gianpiero.carpinelli@canonical.com>  Thu, 05 Nov 2026 14:48:45 +0000
+
 apt (3.2.1) resolute-security; urgency=medium
 
   * SECURITY UPDATE: Download verification bypass
