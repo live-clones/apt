@@ -15,7 +15,7 @@ else
 fi
 
 if [ ! -e "${BUILD_DIR}/CMakeCache.txt" ]; then
-   cmake -S "$SOURCE_DIR" -B "$BUILD_DIR" -DUSE_SYSTEM_APTPKG=ON -DWITH_DOC=OFF -DUSE_NLS=OFF
+   cmake -S "$SOURCE_DIR" -B "$BUILD_DIR" -DUSE_SYSTEM_APTPKG=ON -DWITH_DOC=OFF -DUSE_NLS=OFF -DWITH_HEGEL_TESTS=OFF
 fi
 
 make -C "${BUILD_DIR}/test/interactive-helper"
