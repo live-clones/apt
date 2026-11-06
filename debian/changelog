@@ -1,3 +1,9 @@
+apt (3.3.7) unstable; urgency=medium
+
+  * autopkgtest: disable property-based tests
+
+ -- Julian Andres Klode <jak@debian.org>  Fri, 06 Nov 2026 11:57:29 +0100
+
 apt (3.3.6) unstable; urgency=medium
 
   [ Julian Andres Klode ]
