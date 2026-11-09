@@ -13,6 +13,7 @@
 #include <config.h>
 
 #include <apt-pkg/configuration.h>
+#include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
 #include <apt-pkg/hashes.h>
 #include <apt-pkg/macros.h>
@@ -30,6 +31,7 @@
 #include <string>
 #include <unistd.h>
 
+#include <openssl/err.h>
 #include <openssl/evp.h>
 									/*}}}*/
 
@@ -263,6 +265,10 @@ bool HashStringList::VerifyFile(std::string filename) const		/*{{{*/
    }
    hashes.AddFD(file);
    HashStringList const hsl = hashes.GetHashStringList();
+   // operator== skips types only one side has, so a list without any usable
+   // hash (OpenSSL could not provide it) would match on the file size alone
+   if (hsl.usable() == false)
+      return false;
    return hsl == *this;
 }
 									/*}}}*/
@@ -314,6 +320,16 @@ static APT_PURE std::string HexDigest(std::basic_string_view<unsigned char> cons
    return Result;
 };
 
+// Report an OpenSSL failure through _error with the reason of the newest
+// record on the thread's error queue. The caller removes only the records
+// the failed call raised so nothing older on the queue is lost.
+static void ReportOpenSSLError(char const *const algo)
+{
+   auto const err = ERR_peek_last_error();
+   char const *const reason = err == 0 ? nullptr : ERR_reason_error_string(err);
+   _error->Error("Computing the %s hash failed: %s", algo, reason == nullptr ? "unknown error" : reason);
+}
+
 // PrivateHashes							/*{{{*/
 class PrivateHashes
 {
@@ -341,30 +357,60 @@ class PrivateHashes
 
    bool Write(unsigned char const *Data, size_t Size)
    {
-      for (auto &context : contexts)
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
+      for (auto const &algo : Algorithms)
       {
-	 if (context)
-	    EVP_DigestUpdate(context, Data, Size);
+	 auto const context = contexts[algo.index];
+	 if (context != nullptr && EVP_DigestUpdate(context, Data, Size) != 1)
+	 {
+	    ReportOpenSSLError(algo.name);
+	    return false;
+	 }
       }
       return true;
    }
 
    std::string HexDigest(HashAlgo const &algo)
    {
+      // The digest may be unavailable, e.g. MD5 under an OpenSSL FIPS provider.
+      // Enable() then left the context nullptr and EVP_MD_CTX_copy() below would
+      // dereference it, so bail out with an empty digest instead of crashing.
+      if (contexts[algo.index] == nullptr)
+	 return std::string();
+
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
       auto Size = EVP_MD_size(algo.evpLink());
       unsigned char Sum[Size];
 
       // We need to work on a copy, as we update the hash after creating a digest...
       auto tmpContext = EVP_MD_CTX_create();
-      EVP_MD_CTX_copy(tmpContext, contexts[algo.index]);
-      EVP_DigestFinal_ex(tmpContext, Sum, nullptr);
+      if (tmpContext == nullptr)
+      {
+	 ReportOpenSSLError(algo.name);
+	 return std::string();
+      }
+      bool const finished = EVP_MD_CTX_copy(tmpContext, contexts[algo.index]) == 1 &&
+			    EVP_DigestFinal_ex(tmpContext, Sum, nullptr) == 1;
       EVP_MD_CTX_destroy(tmpContext);
+      if (not finished)
+      {
+	 ReportOpenSSLError(algo.name);
+	 return std::string();
+      }
 
       return ::HexDigest(std::basic_string_view<unsigned char>(Sum, Size));
    }
 
    bool Enable(HashAlgo const &algo)
    {
+      // Discard errors from disabled algorithms.
+      // SECURITY: Enabling a digest may fail. If no secure digests are available,
+      // security is not compromised.
+      ERR_set_mark();
+      DEFER([] { ERR_pop_to_mark(); });
+
       contexts[algo.index] = EVP_MD_CTX_new();
       if (contexts[algo.index] == nullptr)
 	 return false;
@@ -477,7 +523,7 @@ HashString Hashes::GetHashString(SupportedHashes hash)
 {
    for (auto &Algo : d->Algorithms)
       if (hash == Algo.ourAlgo)
-	 return HashString(Algo.name, d->HexDigest(Algo));
+	 return d->IsEnabled(Algo) ? HashString(Algo.name, d->HexDigest(Algo)) : HashString();
 
    abort();
 }

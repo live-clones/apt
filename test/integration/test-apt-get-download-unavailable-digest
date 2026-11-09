@@ -1,0 +1,50 @@
+#!/bin/sh
+set -e
+
+TESTDIR="$(readlink -f "$(dirname "$0")")"
+. "$TESTDIR/framework"
+
+setupenvironment
+configarchitecture 'amd64'
+
+# A download is verified by comparing the hashes the archive published with
+# the ones apt computed. If OpenSSL cannot provide an algorithm, apt computes
+# no hash for it and the computed list holds only the file size. Such a
+# download must be rejected, not accepted on the size alone.
+
+buildsimplenativepackage 'foo' 'all' '1' 'unstable'
+setupaptarchive --no-update
+changetowebserver
+testsuccess aptget update
+
+# a different file of the same size, so only a digest can tell
+breakfiles aptarchive/pool/foo_1_all.deb
+
+cd downloaded
+msgmsg 'Tampered package is rejected with digests available'
+testfailure aptget download foo
+testsuccess grep 'Hash Sum mismatch' ../rootdir/tmp/testfailure.output
+testfailure test -e foo_1_all.deb
+
+if ! command -v openssl >/dev/null 2>&1; then
+	msgskip 'openssl tool not available to disable digests'
+	exit 0
+fi
+cat > ../openssl-null.cnf <<'EOC'
+openssl_conf = openssl_init
+[openssl_init]
+providers = provider_sect
+[provider_sect]
+null = null_sect
+[null_sect]
+activate = 1
+EOC
+export OPENSSL_CONF="${TMPWORKINGDIRECTORY}/openssl-null.cnf"
+if printf 'x' | openssl dgst -sha256 >/dev/null 2>&1; then
+	msgskip 'OpenSSL null provider did not disable SHA256 (needs OpenSSL >= 3.0)'
+	exit 0
+fi
+
+msgmsg 'Tampered package is rejected with no digest available'
+testfailure aptget download foo
+testsuccess grep 'Insufficient information available to perform this download securely' ../rootdir/tmp/testfailure.output
