@@ -1,3 +1,11 @@
+apt (3.3.3ubuntu0.2) stonking; urgency=medium
+
+  * Team upload.
+  * Reject downloads whose hash cannot be computed (LP: #2172252)
+  * Report OpenSSL failures while hashing (LP: #2172252)
+
+ -- Gianpiero Carpinelli <gianpiero.carpinelli@canonical.com>  Mon, 09 Nov 2026 12:38:12 +0000
+
 apt (3.3.3ubuntu0.1) stonking-security; urgency=medium
 
   * SECURITY UPDATE: Download verification bypass
