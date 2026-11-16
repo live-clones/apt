@@ -225,6 +225,11 @@ bool HashStringList::VerifyFile(std::string filename) const		/*{{{*/
    return hsl == *this;
 }
 									/*}}}*/
+// FIXME: any overlapping type counts as a match, including Checksum-FileSize,
+// so two lists that overlap in nothing but the file size compare equal. A
+// comparison without an overlapping usable hash is arguably not comparable
+// and should return false; VerifyFile() and methods/basehttp.cc currently
+// work around this locally.
 bool HashStringList::operator==(HashStringList const &other) const	/*{{{*/
 {
    std::string const forcedType = _config->Find("Acquire::ForceHash", "");
