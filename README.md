@@ -209,5 +209,5 @@ targeted at developers of related programs or only of special interest.
 * [Protocol specification of APT's communication with external installation planners (EIPP)](./doc/external-installation-planner-protocol.md)
 * [How to use and configure APT to acquire additional files in 'update' operations](./doc/acquire-additional-files.md)
 * [Download and package installation progress reporting details](./doc/progress-reporting.md)
-* [Remarks on DNS SRV record support in APT](./doc/srv-records-support.md)
+* [Remarks on DNS SRV record support in APT](./doc/apt-transport-http.1.xml)
 * [Protocol specification of APT interfacing with external hooks via JSON](./doc/json-hooks-protocol.md)
