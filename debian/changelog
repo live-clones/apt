@@ -1,3 +1,21 @@
+apt (3.3.8) unstable; urgency=medium
+
+  [ ferreo ]
+  * Cherry picked from PikaOS
+    - Let download verification compute only the strongest hash we trust
+    - Let store, and sqv methods run in parallel
+    - Hoist per-stanza constants out of the cache generation loop
+    - Notice deb822 .sources files when timestamping the source list
+    - Memoise the "does this version satisfy this dependency" question
+    - Ask the resolver for the SRV records of a host only once
+
+  [ Julian Andres Klode ]
+  * apt-get(8): Document that update always regenerates the cache
+  * apt-transport-http(1): Document SRV record support
+  * hashes: Add FIXME about HashStringList size-only matches
+
+ -- Julian Andres Klode <jak@debian.org>  Mon, 16 Nov 2026 22:15:21 +0100
+
 apt (3.3.7) unstable; urgency=medium
 
   * autopkgtest: disable property-based tests
