@@ -2519,6 +2519,8 @@ bool pkgAcqDiffIndex::ParseDiffIndex(string const &IndexDiffFile)	/*{{{*/
    if (LocalHashes.usable() == false)
    {
       FileFd fd(CurrentPackagesFile, FileFd::ReadOnly, FileFd::Auto);
+      /* Deliberately every hash, not Selection::Strongest: LocalHashes is
+	 probed below for which <Type>-History/-Patches sections to parse. */
       Hashes LocalHashesCalc(ServerHashes);
       LocalHashesCalc.AddFD(fd);
       LocalHashes = LocalHashesCalc.GetHashStringList();

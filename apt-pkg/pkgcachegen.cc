@@ -255,6 +255,14 @@ bool pkgCacheGenerator::MergeList(ListParser &List,
 {
    List.Owner = this;
 
+   MergeContext Ctx;
+   Ctx.Debug = _config->FindB("Debug::pkgCacheGen", false);
+   Ctx.DebList = dynamic_cast<debListParser *>(&List);
+   Ctx.ArchVariants = _config->FindVector("APT::Architecture-Variants");
+   // Always add "no variant" at the back of the list. If it's already configured earlier, that wins
+   if (Ctx.ArchVariants.empty() || Ctx.ArchVariants.back() != "")
+      Ctx.ArchVariants.push_back("");
+
    unsigned int Counter = 0;
    while (List.Step() == true)
    {
@@ -263,7 +271,7 @@ bool pkgCacheGenerator::MergeList(ListParser &List,
 	 return false;
 
       // Package is excluded
-      if (exclude.find(PackageName) != exclude.end())
+      if (not exclude.empty() && exclude.find(PackageName) != exclude.end())
 	 continue;
 
       // Includes are specified, this is the total set of packages to include,
@@ -304,7 +312,7 @@ bool pkgCacheGenerator::MergeList(ListParser &List,
       }
       else
       {
-	 if (MergeListVersion(List, Pkg, Version, OutVer) == false)
+	 if (MergeListVersion(List, Pkg, Version, OutVer, Ctx) == false)
 	    return false;
       }
 
@@ -385,7 +393,8 @@ bool pkgCacheGenerator::MergeListPackage(ListParser &List, pkgCache::PkgIterator
 									/*}}}*/
 // CacheGenerator::MergeListVersion					/*{{{*/
 bool pkgCacheGenerator::MergeListVersion(ListParser &List, pkgCache::PkgIterator &Pkg,
-					 std::string_view Version, pkgCache::VerIterator* &OutVer)
+					 std::string_view Version, pkgCache::VerIterator *&OutVer,
+					 MergeContext const &Ctx)
 {
    pkgCache::VerIterator Ver = Pkg.VersionList();
    Dynamic<pkgCache::VerIterator> DynVer(Ver);
@@ -396,17 +405,14 @@ bool pkgCacheGenerator::MergeListVersion(ListParser &List, pkgCache::PkgIterator
    std::string_view ListSHA256;
    std::string_view ListArchVariant;
 
-   bool const Debug = _config->FindB("Debug::pkgCacheGen", false);
-   auto DebList = dynamic_cast<debListParser *>(&List);
+   bool const Debug = Ctx.Debug;
+   auto const DebList = Ctx.DebList;
    if (DebList != nullptr)
       ListSHA256 = DebList->SHA256();
    if (DebList != nullptr)
       ListArchVariant = DebList->ArchVariant();
 
-   auto variants = _config->FindVector("APT::Architecture-Variants");
-   // Always add "no variant" at the back of the list. If it's already configured earlier, that wins
-   if (variants.empty() || variants.back() != "")
-      variants.push_back("");
+   auto const &variants = Ctx.ArchVariants;
 
    if (Ver.end() == false)
    {

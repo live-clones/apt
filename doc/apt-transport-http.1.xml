@@ -108,6 +108,32 @@ negotiation.</para>
 </refsect2>
 </refsect1>
 
+<refsect1><title>Network configuration</title>
+
+<refsect2><title>SRV records</title>
+<para>This transport supports a subset of the DNS SRV server records protocol
+as described in RFC 2782 for service discovery. SRV records are an integral
+part of the download approach rather than a fallback: the servers they name
+take priority, and the host given in the URI is only contacted if no usable
+SRV records exist. The lookup can be disabled with the &apt-conf; option
+<literal>Acquire::EnableSrvRecords</literal>.</para>
+<para>Before connecting to the requested server APT will send a SRV
+record request of the form
+<literal>_<replaceable>protocol</replaceable>._tcp._<replaceable>host</replaceable></literal>,
+e.g. <literal>_http._tcp.ftp.debian.org</literal> or
+<literal>_http._tcp.security.debian.org</literal>.</para>
+<para>If the server sends SRV records as a reply APT will use those to connect
+to the server(s) in this reply. It will honor the <literal>priority</literal>
+field in the reply, trying servers with a lower priority value first and
+spreading consecutive connections across the servers of the same priority.</para>
+<para>However it does not implement the <literal>weight</literal> algorithm as
+described in RFC 2782. It will use an equal weight for each server of the
+same priority.</para>
+<para>If connecting to a server fails APT will retry with the next one
+and remove the server from the list of valid servers for this session.</para>
+</refsect2>
+</refsect1>
+
 <refsect1><title>Examples</title>
 <literallayout>
 Acquire::http {

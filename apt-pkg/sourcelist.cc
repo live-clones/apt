@@ -520,9 +520,15 @@ time_t pkgSourceList::GetLastModifiedTime()
    string Main = _config->FindFile("Dir::Etc::sourcelist");
    string Parts = _config->FindDir("Dir::Etc::sourceparts");
 
-   // go over the parts
+   /* Only a timestamp is asked for here: the notices about files skipped
+      while scanning belong to whoever actually reads the sources, and
+      repeating them once per caller only duplicates them for the user. */
+   _error->PushToStack();
+   // go over the parts - the same set ReadSourceDir() reads, so that editing
+   // a deb822 .sources file invalidates the caches just like a .list one
    if (DirectoryExists(Parts) == true)
-      List = GetListOfFilesInDir(Parts, "list", true);
+      List = GetListOfFilesInDir(Parts, std::vector<std::string>{"list", "sources"}, true);
+   _error->RevertToStack();
 
    // calculate the time
    std::vector<time_t> modtimes;

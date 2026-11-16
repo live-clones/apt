@@ -453,7 +453,7 @@ bool pkgAcquire::Worker::RunMessages()
 		  HashStringList const ExpectedHashes = Itm->GetExpectedHashes();
 		  if (ExpectedHashes.usable() == true && RealFileExists(filename))
 		  {
-		     Hashes calc(ExpectedHashes);
+		     Hashes calc(ExpectedHashes, Hashes::Selection::Strongest);
 		     FileFd file(filename, FileFd::ReadOnly, FileFd::None);
 		     calc.AddFD(file);
 		     ReceivedHashes = calc.GetHashStringList();

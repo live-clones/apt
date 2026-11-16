@@ -681,7 +681,7 @@ APT_PURE bool HttpServerState::IsOpen()					/*{{{*/
 bool HttpServerState::InitHashes(HashStringList const &ExpectedHashes)	/*{{{*/
 {
    delete In.Hash;
-   In.Hash = new Hashes(ExpectedHashes);
+   In.Hash = new Hashes(ExpectedHashes, Hashes::Selection::Strongest);
    return true;
 }
 									/*}}}*/

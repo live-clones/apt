@@ -206,7 +206,7 @@ bool HashStringList::VerifyFile(std::string filename) const		/*{{{*/
    if (usable() == false)
       return false;
 
-   Hashes hashes(*this);
+   Hashes hashes(*this, Hashes::Selection::Strongest);
    FileFd file(filename, FileFd::ReadOnly);
    HashString const * const hsf = find("Checksum-FileSize");
    if (hsf != NULL)
@@ -225,6 +225,11 @@ bool HashStringList::VerifyFile(std::string filename) const		/*{{{*/
    return hsl == *this;
 }
 									/*}}}*/
+// FIXME: any overlapping type counts as a match, including Checksum-FileSize,
+// so two lists that overlap in nothing but the file size compare equal. A
+// comparison without an overlapping usable hash is arguably not comparable
+// and should return false; VerifyFile() and methods/basehttp.cc currently
+// work around this locally.
 bool HashStringList::operator==(HashStringList const &other) const	/*{{{*/
 {
    std::string const forcedType = _config->Find("Acquire::ForceHash", "");
@@ -402,8 +407,47 @@ class PrivateHashes
       }
    }
 
-   explicit PrivateHashes(HashStringList const &Hashes) : PrivateHashes()
+   /* The strongest hash of the list that we trust: SupportedHashes() is
+      ordered strongest first. Acquire::ForceHash overrides the choice. */
+   static HashString const *StrongestUsable(HashStringList const &Hashes)
    {
+      std::string const forcedType = _config->Find("Acquire::ForceHash", "");
+      if (forcedType.empty() == false)
+	 return Hashes.find(forcedType.c_str());
+      for (char const *const *t = HashString::SupportedHashes(); *t != NULL; ++t)
+      {
+	 HashString const *const hs = Hashes.find(*t);
+	 if (hs != NULL && hs->usable())
+	    return hs;
+      }
+      return NULL;
+   }
+
+   explicit PrivateHashes(HashStringList const &Hashes, ::Hashes::Selection const selection) : PrivateHashes()
+   {
+      /* A received list holding just the strongest hash verifies with that
+	 hash's strength (see HashStringList::operator==), so computing the
+	 weaker ones too only costs another pass over every byte. Opt-in, as
+	 a caller may instead be probing which hash types the result has. */
+      HashString const *const strongest =
+	 (selection == ::Hashes::Selection::Strongest && Hashes.usable() &&
+	  not _config->FindB("Acquire::ComputeAllHashes", false))
+	    ? StrongestUsable(Hashes)
+	    : nullptr;
+      if (strongest != nullptr)
+      {
+	 for (auto &Algo : Algorithms)
+	    if (strcasecmp(strongest->HashType().c_str(), Algo.name) == 0)
+	    {
+	       if (Enable(Algo))
+		  return;
+	       /* The digest is unavailable, e.g. MD5 under a FIPS provider.
+		  Fall back to everything the list has rather than leaving
+		  only the file size to compare. */
+	       break;
+	    }
+      }
+
       for (auto & Algo : Algorithms)
       {
 	 if (not Hashes.usable() || Hashes.find(Algo.name) != NULL)
@@ -530,5 +574,6 @@ HashString Hashes::GetHashString(SupportedHashes hash)
 }
 Hashes::Hashes() : d(new PrivateHashes(~0)) { }
 Hashes::Hashes(unsigned int const Hashes) : d(new PrivateHashes(Hashes)) {}
-Hashes::Hashes(HashStringList const &Hashes) : d(new PrivateHashes(Hashes)) {}
+Hashes::Hashes(HashStringList const &List) : d(new PrivateHashes(List, Selection::All)) {}
+Hashes::Hashes(HashStringList const &List, Selection const Sel) : d(new PrivateHashes(List, Sel)) {}
 Hashes::~Hashes() { delete d; }

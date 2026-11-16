@@ -28,7 +28,11 @@ class SQVMethod : public aptMethod
    SQVMethod();
 };
 
-SQVMethod::SQVMethod() : aptMethod("sqv", "1.1", SingleInstance | SendConfig | SendURIEncoded)
+/* Keyrings are read-only and the temporary message/signature files come
+   from mkstemp(), so verifications are independent of each other. gpgv
+   keeps its SingleInstance flag: it is out of support, so there is no
+   point in speeding it up. */
+SQVMethod::SQVMethod() : aptMethod("sqv", "1.1", SendConfig | SendURIEncoded)
 {
 }
 

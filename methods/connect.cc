@@ -54,6 +54,15 @@ static struct addrinfo *LastUsed = 0;
 
 static std::vector<SrvRec> SrvRecords;
 
+/* The records we found for LastSrvHost. Connecting consumes SrvRecords, and
+   LastHost is the host we connected to in the end, which for a host with
+   records is the target of one of them, so we have to remember on our own
+   which host we asked the resolver about to not ask it again for each
+   connection we open to the same host. */
+static std::string LastSrvHost;
+static int LastSrvPort = -1;
+static std::vector<SrvRec> LastSrvRecords;
+
 // Set of IP/hostnames that we timed out before or couldn't resolve
 static std::set<std::string> bad_addr;
 
@@ -489,22 +498,27 @@ ResultState Connect(std::string Host, int Port, const char *Service,
    // Used by getaddrinfo(); prefer port if given, else fallback to service
    std::string ServiceNameOrPort = Port != 0 ? std::to_string(Port) : Service;
 
-   if(LastHost != Host || LastService != ServiceNameOrPort)
+   if (_config->FindB("Acquire::EnableSrvRecords", true) == true)
    {
-      SrvRecords.clear();
-      if (_config->FindB("Acquire::EnableSrvRecords", true) == true)
+      if (LastSrvHost != Host || LastSrvPort != DefPort)
       {
-         GetSrvRecords(Host, DefPort, SrvRecords);
-	 // RFC2782 defines that a lonely '.' target is an abort reason
-	 if (SrvRecords.size() == 1 && SrvRecords[0].target.empty())
-	 {
-	    _error->Error("SRV records for %s indicate that "
-			  "%s service is not available at this domain",
-			  Host.c_str(), Service);
-	    return ResultState::FATAL_ERROR;
-	 }
+	 LastSrvRecords.clear();
+	 GetSrvRecords(Host, DefPort, LastSrvRecords);
+	 LastSrvHost = Host;
+	 LastSrvPort = DefPort;
+      }
+      SrvRecords = LastSrvRecords;
+      // RFC2782 defines that a lonely '.' target is an abort reason
+      if (SrvRecords.size() == 1 && SrvRecords[0].target.empty())
+      {
+	 _error->Error("SRV records for %s indicate that "
+		       "%s service is not available at this domain",
+		       Host.c_str(), Service);
+	 return ResultState::FATAL_ERROR;
       }
    }
+   else
+      SrvRecords.clear();
 
    size_t stackSize = 0;
    // try to connect in the priority order of the srv records

@@ -50,7 +50,9 @@
      and updated packages is available. An <literal>update</literal> should always be 
      performed before an <literal>upgrade</literal> or <literal>dist-upgrade</literal>. Please 
      be aware that the overall progress meter will be incorrect as the size 
-     of the package files cannot be known in advance.</para></listitem>
+     of the package files cannot be known in advance.</para>
+     <para>The <literal>update</literal> command always regenerates the cache even if no changes were
+     detected, providing resilience across a range of possible bugs.</para></listitem>
      </varlistentry>
      
      <varlistentry><term><option>upgrade</option></term>
