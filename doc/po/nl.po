@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apt-doc 3.2.0\n"
 "Report-Msgid-Bugs-To: APT Development Team <deity@lists.debian.org>\n"
-"POT-Creation-Date: 2026-10-27 22:16+0000\n"
+"POT-Creation-Date: 2026-11-16 22:18+0100\n"
 "PO-Revision-Date: 2026-04-18 21:21+0200\n"
 "Last-Translator: Frans Spiesschaert <Frans.Spiesschaert@yucom.be>\n"
 "Language-Team: Debian Dutch l10n Team <debian-l10n-dutch@lists.debian.org>\n"
@@ -1254,6 +1254,14 @@ msgstr ""
 "<literal>dist-upgrade</literal>. U moet er rekening mee houden dat de "
 "globale voortgangsindicator niet betrouwbaar is, aangezien de grootte van de "
 "pakketbestanden vooraf niet gekend is."
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt-get.8.xml
+msgid ""
+"The <literal>update</literal> command always regenerates the cache even if "
+"no changes were detected, providing resilience across a range of possible "
+"bugs."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt-get.8.xml
@@ -5203,6 +5211,38 @@ msgstr ""
 "Gebruik symbolische koppelingen voor bronarchieven. Indien dit op true "
 "(waar) ingesteld staat, zal geen kopie van een bronarchief gemaakt worden "
 "als een symbolische koppeling mogelijk is. Waar is de standaardinstelling."
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid ""
+"Compute every checksum a repository lists for a file instead of only the "
+"strongest one APT trusts. False by default."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid ""
+"A download is accepted only if every checksum APT computed for it matches "
+"the value the repository published, and at least one such checksum exists. "
+"Adding a weak checksum like <literal>MD5Sum</literal> to a file that is "
+"already covered by <literal>SHA256</literal> therefore does not make the "
+"check any harder to forge, it only digests every byte of the download a "
+"second time. APT consequently computes just the strongest checksum it is "
+"willing to trust (see <option>APT::Hashes::<replaceable>HashName</"
+"replaceable>::Untrusted</option> and <option>Acquire::ForceHash</option>) "
+"and ignores the weaker ones. Files for which the repository publishes no "
+"trustworthy checksum at all are unaffected and are still handled as "
+"described in &apt-secure;."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
+#: apt.conf.5.xml
+msgid ""
+"Setting this option to true restores the historic behaviour of computing all "
+"published checksums, at the cost of one additional pass over every "
+"downloaded byte per extra checksum. It is meant for diagnosing repositories "
+"that publish inconsistent checksums."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><variablelist><varlistentry><listitem><para>
 #: apt.conf.5.xml
@@ -11289,6 +11329,63 @@ msgstr ""
 "zendt een kopveld <literal>Accept: text/*</literal> naar de server voor "
 "verzoeken zonder bestandsextensie om te voorkomen dat de server content "
 "negotiation (inhoudsonderhandeling) zou proberen toe te passen."
+
+#. type: Content of: <refentry><refsect1><title>
+#: apt-transport-http.1.xml
+#, fuzzy
+#| msgid "User Configuration"
+msgid "Network configuration"
+msgstr "Configuratie op gebruikersniveau"
+
+#. type: Content of: <refentry><refsect1><refsect2><title>
+#: apt-transport-http.1.xml
+msgid "SRV records"
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><refsect2><para>
+#: apt-transport-http.1.xml
+msgid ""
+"This transport supports a subset of the DNS SRV server records protocol as "
+"described in RFC 2782 for service discovery. SRV records are an integral "
+"part of the download approach rather than a fallback: the servers they name "
+"take priority, and the host given in the URI is only contacted if no usable "
+"SRV records exist. The lookup can be disabled with the &apt-conf; option "
+"<literal>Acquire::EnableSrvRecords</literal>."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><refsect2><para>
+#: apt-transport-http.1.xml
+msgid ""
+"Before connecting to the requested server APT will send a SRV record request "
+"of the form <literal>_<replaceable>protocol</"
+"replaceable>._tcp._<replaceable>host</replaceable></literal>, e.g. "
+"<literal>_http._tcp.ftp.debian.org</literal> or "
+"<literal>_http._tcp.security.debian.org</literal>."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><refsect2><para>
+#: apt-transport-http.1.xml
+msgid ""
+"If the server sends SRV records as a reply APT will use those to connect to "
+"the server(s) in this reply. It will honor the <literal>priority</literal> "
+"field in the reply, trying servers with a lower priority value first and "
+"spreading consecutive connections across the servers of the same priority."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><refsect2><para>
+#: apt-transport-http.1.xml
+msgid ""
+"However it does not implement the <literal>weight</literal> algorithm as "
+"described in RFC 2782. It will use an equal weight for each server of the "
+"same priority."
+msgstr ""
+
+#. type: Content of: <refentry><refsect1><refsect2><para>
+#: apt-transport-http.1.xml
+msgid ""
+"If connecting to a server fails APT will retry with the next one and remove "
+"the server from the list of valid servers for this session."
+msgstr ""
 
 #. type: Content of: <refentry><refsect1><literallayout>
 #: apt-transport-http.1.xml
