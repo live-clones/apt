@@ -1,7 +1,6 @@
 [Unit]
 Description=Daily apt upgrade and clean activities
 Documentation=man:apt(8)
-ConditionACPower=true
 After=apt-daily.service network.target network-online.target systemd-networkd.service NetworkManager.service connman.service
 
 [Service]

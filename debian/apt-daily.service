@@ -1,7 +1,6 @@
 [Unit]
 Description=Daily apt download activities
 Documentation=man:apt(8)
-ConditionACPower=true
 After=network.target network-online.target systemd-networkd.service NetworkManager.service connman.service
 
 [Service]
