@@ -447,7 +447,6 @@ constexpr std::initializer_list<binary> binaries{
 	       {
 		  {0, "list-cleanup", "APT::Get::List-Cleanup", N_("Clean up old list files"), 0},
 		  {0, "allow-insecure-repositories", "Acquire::AllowInsecureRepositories", N_("Allow insecure repositories"), 0},
-		  {0, "allow-weak-repositories", "Acquire::AllowWeakRepositories", N_("Allow weak repositories"), 0},
 		  {0, "allow-releaseinfo-change", "Acquire::AllowReleaseInfoChange", N_("Allow Release info changes"), 0},
 		  {0, "allow-releaseinfo-change-origin", "Acquire::AllowReleaseInfoChange::Origin", N_("Allow changes to Origin field"), 0},
 		  {0, "allow-releaseinfo-change-label", "Acquire::AllowReleaseInfoChange::Label", N_("Allow changes to Label field"), 0},

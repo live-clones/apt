@@ -88,7 +88,6 @@ class APT_PUBLIC IndexTarget							/*{{{*/
       FALLBACK_OF,
       IDENTIFIER,
       ALLOW_INSECURE,
-      ALLOW_WEAK,
       ALLOW_DOWNGRADE_TO_INSECURE,
       INRELEASE_PATH,
       SHADOWED,

@@ -188,68 +188,37 @@ static APT_NONNULL(2) bool MessageInsecureRepository(bool const isError, char co
 }
 									/*}}}*/
 // AllowInsecureRepositories						/*{{{*/
-enum class InsecureType { UNSIGNED, WEAK };
-static bool TargetIsAllowedToBe(IndexTarget const &Target, InsecureType const type)
-{
-   if (_config->FindB("Acquire::AllowInsecureRepositories"))
-      return true;
-
-   if (Target.OptionBool(IndexTarget::ALLOW_INSECURE))
-      return true;
-
-   switch (type)
-   {
-      case InsecureType::UNSIGNED: break;
-      case InsecureType::WEAK:
-	 if (_config->FindB("Acquire::AllowWeakRepositories"))
-	    return true;
-	 if (Target.OptionBool(IndexTarget::ALLOW_WEAK))
-	    return true;
-	 break;
-   }
-   return false;
-}
-static bool APT_NONNULL(3, 4, 5) AllowInsecureRepositories(InsecureType const msg, std::string const &repo,
+static bool APT_NONNULL(2, 3, 4) AllowInsecureRepositories(std::string const &repo,
       metaIndex const * const MetaIndexParser, pkgAcqMetaClearSig * const TransactionManager, pkgAcquire::Item * const I)
 {
-   // we skip weak downgrades as its unlikely that a repository gets really weaker –
-   // its more realistic that apt got pickier in a newer version
-   if (msg == InsecureType::UNSIGNED)
+   std::string const FinalInRelease = TransactionManager->GetFinalFilename();
+   std::string const FinalReleasegpg = FinalInRelease.substr(0, FinalInRelease.length() - strlen("InRelease")) + "Release.gpg";
+   if (RealFileExists(FinalReleasegpg) || RealFileExists(FinalInRelease))
    {
-      std::string const FinalInRelease = TransactionManager->GetFinalFilename();
-      std::string const FinalReleasegpg = FinalInRelease.substr(0, FinalInRelease.length() - strlen("InRelease")) + "Release.gpg";
-      if (RealFileExists(FinalReleasegpg) || RealFileExists(FinalInRelease))
+      char const * const msgstr = _("The repository '%s' is no longer signed.");
+      if (_config->FindB("Acquire::AllowDowngradeToInsecureRepositories") ||
+	    TransactionManager->Target.OptionBool(IndexTarget::ALLOW_DOWNGRADE_TO_INSECURE))
       {
-	 char const * const msgstr = _("The repository '%s' is no longer signed.");
-	 if (_config->FindB("Acquire::AllowDowngradeToInsecureRepositories") ||
-	       TransactionManager->Target.OptionBool(IndexTarget::ALLOW_DOWNGRADE_TO_INSECURE))
-	 {
-	    // meh, the users wants to take risks (we still mark the packages
-	    // from this repository as unauthenticated)
-	    _error->Warning(msgstr, repo.c_str());
-	    _error->Warning(_("This is normally not allowed, but the option "
-		     "Acquire::AllowDowngradeToInsecureRepositories was "
-		     "given to override it."));
-	 } else {
-	    MessageInsecureRepository(true, msgstr, repo);
-	    TransactionManager->AbortTransaction();
-	    I->Status = pkgAcquire::Item::StatError;
-	    return false;
-	 }
+	 // meh, the users wants to take risks (we still mark the packages
+	 // from this repository as unauthenticated)
+	 _error->Warning(msgstr, repo.c_str());
+	 _error->Warning(_("This is normally not allowed, but the option "
+		  "Acquire::AllowDowngradeToInsecureRepositories was "
+		  "given to override it."));
+      } else {
+	 MessageInsecureRepository(true, msgstr, repo);
+	 TransactionManager->AbortTransaction();
+	 I->Status = pkgAcquire::Item::StatError;
+	 return false;
       }
    }
 
    if(MetaIndexParser->GetTrusted() == metaIndex::TRI_YES)
       return true;
 
-   char const * msgstr = nullptr;
-   switch (msg)
-   {
-      case InsecureType::UNSIGNED: msgstr = _("The repository '%s' is not signed."); break;
-      case InsecureType::WEAK: msgstr = _("The repository '%s' provides only weak security information."); break;
-   }
-
-   if (TargetIsAllowedToBe(TransactionManager->Target, msg) == true)
+   char const * const msgstr = _("The repository '%s' is not signed.");
+   if (_config->FindB("Acquire::AllowInsecureRepositories") ||
+	 TransactionManager->Target.OptionBool(IndexTarget::ALLOW_INSECURE))
    {
       MessageInsecureRepository(false, msgstr, repo);
       return true;
@@ -308,29 +277,6 @@ public:
    to true and should be as restrictive as possible for false cases. Note that if
    a hash is returned by ::GetExpectedHashes it must match. Only if it doesn't
    ::HashesRequired is called to evaluate if its okay to have no hashes. */
-APT_PURE bool pkgAcqTransactionItem::HashesRequired() const
-{
-   /* signed repositories obviously have a parser and good hashes.
-      unsigned repositories, too, as even if we can't trust them for security,
-      we can at least trust them for integrity of the download itself.
-      Only repositories with weak hashes load unsuccessfully but can still
-      be in use, so their files are checked if hashes exist – which they
-      have to – but not required to be usable */
-   if (TransactionManager->MetaIndexParser->GetLoadedSuccessfully() != metaIndex::TRI_YES)
-      return false;
-   if (TargetIsAllowedToBe(Target, InsecureType::WEAK))
-   {
-      /* If we allow weak hashes, we check that we have some (weak) and then
-         declare hashes not needed. That will tip us in the right direction
-	 as if hashes exist, they will be used, even if not required */
-      auto const hsl = GetExpectedHashes();
-      if (hsl.usable())
-	 return true;
-      if (hsl.empty() == false)
-	 return false;
-   }
-   return true;
-}
 HashStringList pkgAcqTransactionItem::GetExpectedHashes() const
 {
    return GetExpectedHashesFor(GetMetaKey());
@@ -1541,9 +1487,10 @@ bool pkgAcqMetaBase::CheckAuthDone(string const &Message, pkgAcquire::MethodConf
       LoadLastMetaIndexParser(TransactionManager, FinalRelease, FinalInRelease);
    }
 
-   bool const GoodAuth = TransactionManager->MetaIndexParser->Load(DestFile, &ErrorText);
-   if (GoodAuth == false && AllowInsecureRepositories(InsecureType::WEAK, Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == false)
+   if (TransactionManager->MetaIndexParser->Load(DestFile, &ErrorText) == false)
    {
+      _error->Error(_("The repository '%s' provides only weak security information."), Target.Description.c_str());
+      _error->Notice("%s", _("See apt-secure(8) manpage for repository creation and user configuration details."));
       Status = StatAuthError;
       return false;
    }
@@ -1555,25 +1502,27 @@ bool pkgAcqMetaBase::CheckAuthDone(string const &Message, pkgAcquire::MethodConf
    }
 
    // Download further indexes with verification
-   TransactionManager->QueueIndexes(GoodAuth);
+   TransactionManager->QueueIndexes();
 
-   return GoodAuth;
+   return true;
 }
 									/*}}}*/
-void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
+void pkgAcqMetaClearSig::QueueIndexes() /*{{{*/
 {
    // at this point the real Items are loaded in the fetcher
    ExpectedAdditionalItems = 0;
 
    std::unordered_set<std::string> targetsSeen, componentsSeen;
    auto IndexTargets = TransactionManager->MetaIndexParser->GetIndexTargets();
-   // Repositories without hashes can not be used, not even insecurely:
-   // Weak hashes are okay, but there has to be something to check against.
-   if (verify == false &&
-       std::none_of(IndexTargets.begin(), IndexTargets.end(),
-	    [&](IndexTarget const &Target) { return TransactionManager->MetaIndexParser->Exists(Target.MetaKey); }))
+   // Repositories without (strong) hashes can not be used, not even insecurely
+   if (TransactionManager->MetaIndexParser->GetLoadedSuccessfully() != metaIndex::TRI_YES)
    {
-      _error->Error(_("The repository '%s' does not provide any hashes."), DetachedDataTarget.Description.c_str());
+      bool const hasAnyHashes = std::any_of(IndexTargets.begin(), IndexTargets.end(),
+	    [&](IndexTarget const &Target) { return TransactionManager->MetaIndexParser->Exists(Target.MetaKey); });
+      char const * const msgstr = hasAnyHashes
+	 ? _("The repository '%s' provides only weak security information.")
+	 : _("The repository '%s' does not provide any hashes.");
+      _error->Error(msgstr, DetachedDataTarget.Description.c_str());
       _error->Notice("%s", _("See apt-secure(8) manpage for repository creation and user configuration details."));
       Status = StatAuthError;
       AbortTransaction();
@@ -1727,12 +1676,12 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
 	       Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str());
 	 continue;
       }
-      else if (verify)
+      else
       {
 	 auto const hashes = GetExpectedHashesFor(Target.MetaKey);
 	 if (hashes.empty() == false)
 	 {
-	    if (hashes.usable() == false && TargetIsAllowedToBe(TransactionManager->Target, InsecureType::WEAK) == false)
+	    if (hashes.usable() == false)
 	    {
 	       new CleanupItem(Owner, TransactionManager, Target);
 	       _error->Warning(_("Skipping acquire of configured file '%s' as repository '%s' provides only weak security information for it"),
@@ -2086,7 +2035,7 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
 	 // as this is going to fail anyway and instead abort our try (LP#346386)
 	 _error->PushToStack();
 	 _error->Error(_("Failed to fetch %s  %s"), Target.URI.c_str(), ErrorText.c_str());
-	 if (Target.Option(IndexTarget::INRELEASE_PATH).empty() == true && AllowInsecureRepositories(InsecureType::UNSIGNED, Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
+	 if (Target.Option(IndexTarget::INRELEASE_PATH).empty() == true && AllowInsecureRepositories(Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
 	    _error->RevertToStack();
 	 else
 	    return;
@@ -2107,7 +2056,7 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
       if(CheckStopAuthentication(this, Message))
          return;
 
-      if(AllowInsecureRepositories(InsecureType::UNSIGNED, Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
+      if (AllowInsecureRepositories(Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
       {
 	 Status = StatDone;
 
@@ -2121,12 +2070,13 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
 
 	 // we parse the indexes here because at this point the user wanted
 	 // a repository that may potentially harm him
-	 if (TransactionManager->MetaIndexParser->Load(PartialRelease, &ErrorText) == false || VerifyVendor(Message) == false)
+	 TransactionManager->MetaIndexParser->Load(PartialRelease, &ErrorText);
+	 if (VerifyVendor(Message) == false)
 	    /* expired Release files are still a problem you need extra force for */;
 	 else
 	 {
 	    TransactionManager->TransactionStageCopy(this, PartialRelease, FinalRelease);
-	    TransactionManager->QueueIndexes(true);
+	    TransactionManager->QueueIndexes();
 	 }
       }
    }
@@ -2318,7 +2268,7 @@ void pkgAcqMetaSig::Failed(string const &Message,pkgAcquire::MethodConfig const 
    TransactionManager->TransactionStageRemoval(this, DestFile);
 
    // only allow going further if the user explicitly wants it
-   if (AllowInsecureRepositories(InsecureType::UNSIGNED, MetaIndex->Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
+   if (AllowInsecureRepositories(MetaIndex->Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
    {
       string const FinalRelease = MetaIndex->GetFinalFilename();
       string const FinalInRelease = TransactionManager->GetFinalFilename();
@@ -2326,13 +2276,13 @@ void pkgAcqMetaSig::Failed(string const &Message,pkgAcquire::MethodConfig const 
 
       // we parse the indexes here because at this point the user wanted
       // a repository that may potentially harm him
-      bool const GoodLoad = TransactionManager->MetaIndexParser->Load(MetaIndex->DestFile, &ErrorText);
+      TransactionManager->MetaIndexParser->Load(MetaIndex->DestFile, &ErrorText);
       if (MetaIndex->VerifyVendor(Message) == false)
 	 /* expired Release files are still a problem you need extra force for */;
       else
       {
 	 TransactionManager->TransactionStageCopy(MetaIndex, MetaIndex->DestFile, FinalRelease);
-	 TransactionManager->QueueIndexes(GoodLoad);
+	 TransactionManager->QueueIndexes();
       }
    }
    else if (TransactionManager->IMSHit == false)

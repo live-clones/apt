@@ -107,11 +107,10 @@
 
    <para>
    If an archive has no Release file at all, or its Release file provides
-   no checksums, it is rejected unconditionally: The Release file is the
-   only source of the checksums data files are verified against, so
-   without them there is no way to acquire anything from the archive,
-   not even insecurely. Repositories providing only checksums which are
-   considered weak can be allowed via the options mentioned above.
+   no or only weak checksums, it is rejected unconditionally: The Release
+   file is the only source of the checksums data files are verified
+   against, so without them there is no way to acquire anything from the
+   archive, not even insecurely.
    </para>
 
    <para>

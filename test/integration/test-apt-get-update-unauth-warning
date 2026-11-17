@@ -20,7 +20,6 @@ setupaptarchive --no-update
 
 APTARCHIVE="$(readlink -f ./aptarchive)"
 find "$APTARCHIVE/dists/unstable" \( -name 'InRelease' -o -name 'Release.gpg' \) -delete
-sed -i -n '/^SHA1:$/q;p' "${APTARCHIVE}/dists/unstable/Release"
 testfailure aptget update
 testwarning aptget update --allow-insecure-repositories
 

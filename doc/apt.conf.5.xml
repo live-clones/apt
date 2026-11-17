@@ -697,16 +697,6 @@ APT::Compressor::rev {
 	 </para></listitem>
      </varlistentry>
 
-     <varlistentry><term><option>AllowWeakRepositories</option></term>
-	 <listitem><para>
-	   Allow update operations to load data files from
-	   repositories which provide security information, but these
-	   are deemed no longer cryptographically strong enough.
-	   The default value is "<literal>false</literal>".
-	   Concept, implications as well as alternatives are detailed in &apt-secure;.
-	 </para></listitem>
-     </varlistentry>
-
      <varlistentry><term><option>AllowDowngradeToInsecureRepositories</option></term>
 	 <listitem><para>
 	   Allow that a repository that was previously gpg signed to become

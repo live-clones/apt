@@ -1225,8 +1225,6 @@ class APT_HIDDEN debSLTypeDebian : public pkgSourceList::Type		/*{{{*/
       }};
       if (GetBoolOption(Options, "allow-insecure", _config->FindB("Acquire::AllowInsecureRepositories")))
 	 ReleaseOptions.emplace("ALLOW_INSECURE", "true");
-      if (GetBoolOption(Options, "allow-weak", _config->FindB("Acquire::AllowWeakRepositories")))
-	 ReleaseOptions.emplace("ALLOW_WEAK", "true");
       if (GetBoolOption(Options, "allow-downgrade-to-insecure", _config->FindB("Acquire::AllowDowngradeToInsecureRepositories")))
 	 ReleaseOptions.emplace("ALLOW_DOWNGRADE_TO_INSECURE", "true");
       if (GetBoolOption(Options, "SHADOWED", false))

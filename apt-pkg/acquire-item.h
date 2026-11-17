@@ -396,7 +396,6 @@ class APT_HIDDEN pkgAcqTransactionItem: public pkgAcquire::Item		/*{{{*/
    [[nodiscard]] std::string DescURI() const override { return Target.URI; }
    [[nodiscard]] HashStringList GetExpectedHashes() const override;
    [[nodiscard]] virtual std::string GetMetaKey() const;
-   [[nodiscard]] bool HashesRequired() const override;
    [[nodiscard]] virtual bool AcquireByHash() const;
 
    pkgAcqTransactionItem(pkgAcquire * const Owner, pkgAcqMetaClearSig * const TransactionManager, IndexTarget const &Target) APT_NONNULL(2, 3);
@@ -589,7 +588,7 @@ class APT_HIDDEN pkgAcqMetaClearSig final : public pkgAcqMetaIndex
     *  #StatAuthError if there is a mismatch).  If verify is \b false,
     *  no hashsum checking will be performed.
     */
-   void QueueIndexes(bool const verify);
+   void QueueIndexes();
 
    /** \brief Create a new pkgAcqMetaClearSig. */
    pkgAcqMetaClearSig(pkgAcquire * const Owner,
