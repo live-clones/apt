@@ -137,6 +137,6 @@ rm -rf rootdir/var/lib/apt/lists
 find aptarchive -name '*Release*' -delete
 configarchitecture 'amd64'
 testfailure apt update
-testwarning apt update --allow-insecure-repositories
-testequal 'foo-1
-foo-2' aptcache pkgnames foo-
+testfailure apt update --allow-insecure-repositories
+testsuccess grep 'does not have a Release file' rootdir/tmp/testfailure.output
+testempty aptcache pkgnames foo-

@@ -70,10 +70,11 @@ find aptarchive -name '*Release*' -delete
 rm -rf rootdir/var/lib/apt/lists
 
 msgmsg 'Running update with no indexes' '0'
-testsuccess apt update
+testfailure apt update
+testsuccess grep 'does not have a Release file' rootdir/tmp/testfailure.output
 listcurrentlistsdirectory > lists.before
 for i in $(seq 1 3); do
 	msgmsg 'Running update with no indexes' "$i"
-	testsuccess apt update -o Debug::pkgAcquire::Worker=1 -o Debug::Acquire::Transaction=1
+	testfailure apt update -o Debug::pkgAcquire::Worker=1 -o Debug::Acquire::Transaction=1
 	testfileequal lists.before "$(listcurrentlistsdirectory)"
 done

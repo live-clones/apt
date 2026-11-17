@@ -101,5 +101,6 @@ rm -rf rootdir/var/lib/apt/lists
 find aptarchive -name 'Release.gpg' -delete
 find aptarchive -name 'Release' -delete
 testfailure aptget update
-testwarning aptget update --allow-insecure-repositories
-testsuccess grep 'does not have a Release file' rootdir/tmp/testwarning.output
+testsuccess grep 'does not have a Release file' rootdir/tmp/testfailure.output
+testfailure aptget update --allow-insecure-repositories
+testsuccess grep 'does not have a Release file' rootdir/tmp/testfailure.output

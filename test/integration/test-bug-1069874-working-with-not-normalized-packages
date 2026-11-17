@@ -30,6 +30,8 @@ cp -a "${WORKDIR}/DEBIAN/control" aptarchive/Packages
 rm -rf "$WORKDIR"
 
 setupaptarchive --no-update
+# the flat repository needs a Release file to be usable
+aptftparchiverelease ./aptarchive > aptarchive/Release
 echo "deb [trusted=yes] file:${TMPWORKINGDIRECTORY}/aptarchive ./" > rootdir/etc/apt/sources.list.d/00badcontrol.list
 testsuccess apt update
 

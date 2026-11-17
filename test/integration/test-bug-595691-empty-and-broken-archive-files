@@ -20,18 +20,28 @@ successupdate() {
 	testwarning aptget update --allow-insecure-repositories
 }
 
+# The archive needs a Release file to be usable at all. It is left unsigned
+# and with only weak hashes so that even empty index files are downloaded
+# (with strong hashes empty files are skipped as a waste of time).
+regenerateweakrelease() {
+	find aptarchive \( -name 'InRelease' -o -name 'Release.gpg' \) -delete
+	aptftparchiverelease ./aptarchive \
+		-o APT::FTPArchive::SHA256=false -o APT::FTPArchive::SHA512=false \
+		-o APT::FTPArchive::MD5=true > aptarchive/Release
+}
+
 createemptyarchive() {
 	find aptarchive/ \( -name "Packages*" -o -name "en*" \) -type f -delete
 	touch aptarchive/Packages
 	echo -n "" | $COMPRESSOR_CMD > aptarchive/${1}.$COMPRESS
-	find aptarchive -name '*Release*' -delete
+	regenerateweakrelease
 	rm -f aptarchive/Packages
 }
 
 createemptyfile() {
 	find aptarchive/ \( -name "Packages*" -o -name "en*" \) -type f -delete
 	touch aptarchive/Packages aptarchive/${1}.$COMPRESS
-	find aptarchive -name '*Release*' -delete
+	regenerateweakrelease
 	rm -f aptarchive/Packages
 }
 

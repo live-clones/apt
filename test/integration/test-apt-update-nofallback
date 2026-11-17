@@ -114,21 +114,24 @@ test_from_inrelease_to_norelease_with_override()
     # setup archive with InRelease file
     setupaptarchive_with_lists_clean
     testsuccess aptget update
+    listcurrentlistsdirectory > lists.before
 
-    # simulate moving to a unsigned but otherwise valid repo
+    # simulate the repository loosing all its Release files
     simulate_mitm_and_inject_evil_package
     find "$APTARCHIVE" -name '*Release*' -delete
     find "$APTARCHIVE" -name '*Packages*' -exec touch -d '+2 hours' {} \;
 
-    # and ensure we can update to it (with enough force) 
+    # updating is not allowed, not even with all the force
+    testfailure apt update
     testfailure aptget update
     testfailure aptget update --allow-insecure-repositories
-    testwarning aptget update --allow-insecure-repositories \
-        -o Acquire::AllowDowngradeToInsecureRepositories=1 -o Debug::pkgAcquire::Worker=1 -o Debug::pkgAcquire::Auth=1
-    # but that the individual packages are still considered untrusted
-    testfailureequal "WARNING: The following packages cannot be authenticated!
-  evil
-E: There were unauthenticated packages and -y was used without --allow-unauthenticated" aptget install -qq -y evil
+    testfailure aptget update --allow-insecure-repositories \
+        -o Acquire::AllowDowngradeToInsecureRepositories=1
+    testsuccess grep 'does not have a Release file' rootdir/tmp/testfailure.output
+
+    # the previous state is kept and the evil package not available
+    assert_repo_is_intact
+    testfileequal lists.before "$(listcurrentlistsdirectory)"
 }
 
 test_cve_2012_0214()

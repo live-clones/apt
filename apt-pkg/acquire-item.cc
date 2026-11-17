@@ -188,7 +188,7 @@ static APT_NONNULL(2) bool MessageInsecureRepository(bool const isError, char co
 }
 									/*}}}*/
 // AllowInsecureRepositories						/*{{{*/
-enum class InsecureType { UNSIGNED, WEAK, NORELEASE };
+enum class InsecureType { UNSIGNED, WEAK };
 static bool TargetIsAllowedToBe(IndexTarget const &Target, InsecureType const type)
 {
    if (_config->FindB("Acquire::AllowInsecureRepositories"))
@@ -200,7 +200,6 @@ static bool TargetIsAllowedToBe(IndexTarget const &Target, InsecureType const ty
    switch (type)
    {
       case InsecureType::UNSIGNED: break;
-      case InsecureType::NORELEASE: break;
       case InsecureType::WEAK:
 	 if (_config->FindB("Acquire::AllowWeakRepositories"))
 	    return true;
@@ -215,19 +214,13 @@ static bool APT_NONNULL(3, 4, 5) AllowInsecureRepositories(InsecureType const ms
 {
    // we skip weak downgrades as its unlikely that a repository gets really weaker –
    // its more realistic that apt got pickier in a newer version
-   if (msg != InsecureType::WEAK)
+   if (msg == InsecureType::UNSIGNED)
    {
       std::string const FinalInRelease = TransactionManager->GetFinalFilename();
       std::string const FinalReleasegpg = FinalInRelease.substr(0, FinalInRelease.length() - strlen("InRelease")) + "Release.gpg";
       if (RealFileExists(FinalReleasegpg) || RealFileExists(FinalInRelease))
       {
-	 char const * msgstr = nullptr;
-	 switch (msg)
-	 {
-	    case InsecureType::UNSIGNED: msgstr = _("The repository '%s' is no longer signed."); break;
-	    case InsecureType::NORELEASE: msgstr = _("The repository '%s' no longer has a Release file."); break;
-	    case InsecureType::WEAK: /* unreachable */ break;
-	 }
+	 char const * const msgstr = _("The repository '%s' is no longer signed.");
 	 if (_config->FindB("Acquire::AllowDowngradeToInsecureRepositories") ||
 	       TransactionManager->Target.OptionBool(IndexTarget::ALLOW_DOWNGRADE_TO_INSECURE))
 	 {
@@ -253,7 +246,6 @@ static bool APT_NONNULL(3, 4, 5) AllowInsecureRepositories(InsecureType const ms
    switch (msg)
    {
       case InsecureType::UNSIGNED: msgstr = _("The repository '%s' is not signed."); break;
-      case InsecureType::NORELEASE: msgstr = _("The repository '%s' does not have a Release file."); break;
       case InsecureType::WEAK: msgstr = _("The repository '%s' provides only weak security information."); break;
    }
 
@@ -2206,19 +2198,13 @@ void pkgAcqMetaIndex::Failed(string const &Message,
                              pkgAcquire::MethodConfig const * const Cnf)
 {
    pkgAcquire::Item::Failed(Message, Cnf);
-   Status = StatDone;
 
-   // No Release file was present so fall
-   // back to queueing Packages files without verification
-   // only allow going further if the user explicitly wants it
-   if(AllowInsecureRepositories(InsecureType::NORELEASE, Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
-   {
-      // ensure old Release files are removed
-      TransactionManager->TransactionStageRemoval(this, GetFinalFilename());
-
-      // queue without any kind of hashsum support
-      TransactionManager->QueueIndexes(false);
-   }
+   // Repositories without a Release file can not be used, not even insecurely,
+   // as without one we do not have any hashes to verify downloads against.
+   _error->Error(_("The repository '%s' does not have a Release file."), Target.Description.c_str());
+   _error->Notice("%s", _("See apt-secure(8) manpage for repository creation and user configuration details."));
+   Status = StatError;
+   TransactionManager->AbortTransaction();
 }
 									/*}}}*/
 std::string pkgAcqMetaIndex::DescURI() const				/*{{{*/

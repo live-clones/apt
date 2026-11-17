@@ -18,7 +18,7 @@ buildsimplenativepackage 'foo' 'all' '2.0'
 setupaptarchive --no-update
 
 APTARCHIVE="$(readlink -f ./aptarchive)"
-find "$APTARCHIVE/dists/unstable" -name '*Release*' -delete
+find "$APTARCHIVE/dists/unstable" \( -name 'InRelease' -o -name 'Release.gpg' \) -delete
 
 # update without authenticated InRelease file
 testwarning aptget update --allow-insecure-repositories

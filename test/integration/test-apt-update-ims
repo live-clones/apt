@@ -148,45 +148,19 @@ runtest 'failure' 'warning'
 msgmsg 'no Release at all'
 EXPECT="Ign:1 http://localhost:${APTHTTPPORT} unstable InRelease
   404  Not Found
-Ign:2 http://localhost:${APTHTTPPORT} unstable Release
+Err:2 http://localhost:${APTHTTPPORT} unstable Release
   404  Not Found
-Ign:3 http://localhost:${APTHTTPPORT} unstable/main Sources
-  404  Not Found
-Ign:4 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
-  404  Not Found
-Ign:5 http://localhost:${APTHTTPPORT} unstable/main all Packages
-  404  Not Found
-Ign:6 http://localhost:${APTHTTPPORT} unstable/main Translation-en
-  404  Not Found
-Ign:3 http://localhost:${APTHTTPPORT} unstable/main Sources
-  404  Not Found
-Ign:4 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
-  404  Not Found
-Ign:5 http://localhost:${APTHTTPPORT} unstable/main all Packages
-  404  Not Found
-Ign:6 http://localhost:${APTHTTPPORT} unstable/main Translation-en
-  404  Not Found
-Ign:3 http://localhost:${APTHTTPPORT} unstable/main Sources
-  404  Not Found
-Ign:4 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
-  404  Not Found
-Ign:5 http://localhost:${APTHTTPPORT} unstable/main all Packages
-  404  Not Found
-Ign:6 http://localhost:${APTHTTPPORT} unstable/main Translation-en
-  404  Not Found
-Hit:3 http://localhost:${APTHTTPPORT} unstable/main Sources
-Hit:4 http://localhost:${APTHTTPPORT} unstable/main amd64 Packages
-Hit:5 http://localhost:${APTHTTPPORT} unstable/main all Packages
-Hit:6 http://localhost:${APTHTTPPORT} unstable/main Translation-en
 Reading package lists...
-W: The repository 'http://localhost:${APTHTTPPORT} unstable Release' does not have a Release file.
-N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.
+E: The repository 'http://localhost:${APTHTTPPORT} unstable Release' does not have a Release file.
 N: See apt-secure(8) manpage for repository creation and user configuration details."
 find aptarchive -name '*Release*' -delete
 logcurrentarchivedirectory
+rm -rf rootdir/var/lib/apt/lists
 echo 'Acquire::GzipIndexes "0";
 Acquire::PDiffs "0";' > rootdir/etc/apt/apt.conf.d/02compressindex
-runtest 'warning'
-echo 'Acquire::GzipIndexes "1";
-Acquire::PDiffs "0";' > rootdir/etc/apt/apt.conf.d/02compressindex
-runtest 'warning'
+testfailureequal "$EXPECT" aptget update
+testfailureequal "$EXPECT" aptget update --allow-insecure-repositories
+testfailureequal "$EXPECT" aptget update --allow-insecure-repositories -o Acquire::AllowDowngradeToInsecureRepositories=1
+testequal 'auxfiles
+lock
+partial' ls rootdir/var/lib/apt/lists

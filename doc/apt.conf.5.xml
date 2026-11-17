@@ -689,6 +689,8 @@ APT::Compressor::rev {
 	 <listitem><para>
 	   Allow update operations to load data files from
 	   repositories without sufficient security information.
+	   Repositories without a Release file are always rejected
+	   regardless of this setting.
 	   The default value is "<literal>false</literal>".
 	   Concept, implications as well as alternatives are detailed in &apt-secure;.
 	 </para></listitem>

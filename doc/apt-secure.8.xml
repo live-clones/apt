@@ -98,12 +98,18 @@
 
  <refsect1><title>Unsigned Repositories</title>
    <para>
-   If an archive has an unsigned Release file or no Release file at all
-   current APT versions will refuse to download data from them by default
-   in <command>update</command> operations and even if forced to download
-   front-ends like &apt-get; will require explicit confirmation if an
-   installation request includes a package from such an unauthenticated
-   archive.
+   If an archive has an unsigned Release file current APT versions will
+   refuse to download data from it by default in <command>update</command>
+   operations and even if forced to download front-ends like &apt-get; will
+   require explicit confirmation if an installation request includes a
+   package from such an unauthenticated archive.
+   </para>
+
+   <para>
+   If an archive has no Release file at all it is rejected unconditionally:
+   The Release file is the only source of the checksums data files are
+   verified against, so without one there is no way to acquire anything
+   from the archive, not even insecurely.
    </para>
 
    <para>

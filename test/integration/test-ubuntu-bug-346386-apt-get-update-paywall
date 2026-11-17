@@ -98,5 +98,8 @@ sed -i 's#^deb\(-src\)\? #deb\1 [allow-insecure=yes] #' rootdir/etc/apt/sources.
 testfailure apt update
 testequal "Ign:1 http://localhost:${APTHTTPPORT} unstable InRelease
   403  Forbidden
-Ign:2 http://localhost:${APTHTTPPORT} unstable Release
-  403  Forbidden" head -n 4 rootdir/tmp/testfailure.output
+Err:2 http://localhost:${APTHTTPPORT} unstable Release
+  403  Forbidden
+Reading package lists...
+E: The repository 'http://localhost:${APTHTTPPORT} unstable Release' does not have a Release file.
+N: See apt-secure(8) manpage for repository creation and user configuration details." head -n 8 rootdir/tmp/testfailure.output
