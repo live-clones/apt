@@ -82,11 +82,15 @@ N: See apt-secure(8) manpage for repository creation and user configuration deta
 		testfileequal lists.before "$(listcurrentlistsdirectory)"
 		testnopkg 'foo'
 	else
-		testwarningmsg "W: No Hash entry in Release file ${MANGLED}
+		listcurrentlistsdirectory > lists.before
+		testfailuremsg "W: No Hash entry in Release file ${MANGLED}
 W: The repository 'file:${APTARCHIVE} unstable $(basename "$FILENAME")' provides only weak security information.
 N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.
+N: See apt-secure(8) manpage for repository creation and user configuration details.
+E: The repository 'file:${APTARCHIVE} unstable Release' does not provide any hashes.
 N: See apt-secure(8) manpage for repository creation and user configuration details." apt update "$@"
-		testbadpkg 'foo'
+		testfileequal lists.before "$(listcurrentlistsdirectory)"
+		testnopkg 'foo'
 	fi
 
 	msgmsg "$TYPE contains only weak hashes for some files"
@@ -130,6 +134,21 @@ preparetest() {
 }
 testrun 'Release+Release.gpg' "${APTARCHIVE}/dists/unstable/Release"
 testrun 'Release+Release.gpg' "${APTARCHIVE}/dists/unstable/Release" --allow-weak-repositories -o APT::Get::List-Cleanup=0
+
+msgmsg 'Repository contains no hashes and is unsigned'
+rm -rf rootdir/var/lib/apt/lists
+confighashes 'MD5'
+generatereleasefiles
+sed -i -e '/^ / d' -e '/^MD5Sum:/ d' "$APTARCHIVE/dists/unstable/Release"
+find "$APTARCHIVE/dists/unstable" \( -name 'InRelease' -o -name 'Release.gpg' \) -delete
+MANGLED="$(readlink -f ./rootdir)/var/lib/apt/lists/partial/$(echo "${APTARCHIVE}/dists/unstable/Release" | sed 's#/#_#g')"
+testfailuremsg "W: The repository 'file:${APTARCHIVE} unstable Release' is not signed.
+N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.
+N: See apt-secure(8) manpage for repository creation and user configuration details.
+W: No Hash entry in Release file ${MANGLED}
+E: The repository 'file:${APTARCHIVE} unstable Release' does not provide any hashes.
+N: See apt-secure(8) manpage for repository creation and user configuration details." apt update --allow-insecure-repositories
+testnopkg 'foo'
 
 preparetest() {
 	rm -f "${APTARCHIVE}/dists/unstable/InRelease" "${APTARCHIVE}/dists/unstable/Release.gpg"

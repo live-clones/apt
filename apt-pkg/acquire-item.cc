@@ -313,8 +313,9 @@ APT_PURE bool pkgAcqTransactionItem::HashesRequired() const
    /* signed repositories obviously have a parser and good hashes.
       unsigned repositories, too, as even if we can't trust them for security,
       we can at least trust them for integrity of the download itself.
-      Only repositories without a Release file can (obviously) not have
-      hashes – and they are very uncommon and strongly discouraged */
+      Only repositories with weak hashes load unsuccessfully but can still
+      be in use, so their files are checked if hashes exist – which they
+      have to – but not required to be usable */
    if (TransactionManager->MetaIndexParser->GetLoadedSuccessfully() != metaIndex::TRI_YES)
       return false;
    if (TargetIsAllowedToBe(Target, InsecureType::WEAK))
@@ -1565,12 +1566,19 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
    ExpectedAdditionalItems = 0;
 
    std::unordered_set<std::string> targetsSeen, componentsSeen;
-   bool const hasReleaseFile = TransactionManager->MetaIndexParser != NULL;
-   bool hasHashes = true;
    auto IndexTargets = TransactionManager->MetaIndexParser->GetIndexTargets();
-   if (hasReleaseFile && verify == false)
-      hasHashes = std::any_of(IndexTargets.begin(), IndexTargets.end(),
-	    [&](IndexTarget const &Target) { return TransactionManager->MetaIndexParser->Exists(Target.MetaKey); });
+   // Repositories without hashes can not be used, not even insecurely:
+   // Weak hashes are okay, but there has to be something to check against.
+   if (verify == false &&
+       std::none_of(IndexTargets.begin(), IndexTargets.end(),
+	    [&](IndexTarget const &Target) { return TransactionManager->MetaIndexParser->Exists(Target.MetaKey); }))
+   {
+      _error->Error(_("The repository '%s' does not provide any hashes."), DetachedDataTarget.Description.c_str());
+      _error->Notice("%s", _("See apt-secure(8) manpage for repository creation and user configuration details."));
+      Status = StatAuthError;
+      AbortTransaction();
+      return;
+   }
    if (_config->FindB("Acquire::IndexTargets::Randomized", true) && likely(IndexTargets.empty() == false))
    {
       /* For fallback handling and to have some reasonable progress information
@@ -1591,55 +1599,51 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
    /* Collect all components for which files exist to prevent apt from warning users
       about "hidden" components for which not all files exist like main/debian-installer
       and Translation files */
-   if (hasReleaseFile == true)
-      for (auto const &Target : IndexTargets)
-	 if (TransactionManager->MetaIndexParser->Exists(Target.MetaKey))
-	 {
-	    auto component = Target.Option(IndexTarget::COMPONENT);
-	    if (component.empty() == false)
-	       componentsSeen.emplace(std::move(component));
-	 }
+   for (auto const &Target : IndexTargets)
+      if (TransactionManager->MetaIndexParser->Exists(Target.MetaKey))
+      {
+	 auto component = Target.Option(IndexTarget::COMPONENT);
+	 if (component.empty() == false)
+	    componentsSeen.emplace(std::move(component));
+      }
 
    auto variants = APT::Configuration::getArchitectureVariants(true);
    std::set<IndexTarget *> supplantedTargets;
    std::set<std::string> seenVariants;
-   if (hasReleaseFile)
+   // Figure out the variants that are standalone and supplant 'lesser' variants
+   for (auto &variant : variants)
    {
-      // Figure out the variants that are standalone and supplant 'lesser' variants
-      for (auto &variant : variants)
+      // Check if the variant is standalone, that is, in the Architectures: field.
+      // FIXME: We should support Standalone-Architecture-Variants field here
+      if (not TransactionManager->MetaIndexParser->IsArchitectureSupported(variant.name))
+	 continue;
+
+      seenVariants.insert(variant.name);
+
+      // Iterate over all targets belonging to the architecture variant and then see if they
+      // supplant any other target. For example main/binary-amd64v3/Packages supplants main/binary-amd64/Packages
+      // but it won't supplant the contrib entry, or a Contents file.
+      for (auto &Target : IndexTargets)
       {
-	 // Check if the variant is standalone, that is, in the Architectures: field.
-	 // FIXME: We should support Standalone-Architecture-Variants field here
-	 if (not TransactionManager->MetaIndexParser->IsArchitectureSupported(variant.name))
+	 if (Target.Option(IndexTarget::ARCHITECTURE) != variant.name)
 	    continue;
 
-	 seenVariants.insert(variant.name);
-
-	 // Iterate over all targets belonging to the architecture variant and then see if they
-	 // supplant any other target. For example main/binary-amd64v3/Packages supplants main/binary-amd64/Packages
-	 // but it won't supplant the contrib entry, or a Contents file.
-	 for (auto &Target : IndexTargets)
+	 for (auto &BaseTarget : IndexTargets)
 	 {
-	    if (Target.Option(IndexTarget::ARCHITECTURE) != variant.name)
-	       continue;
-
-	    for (auto &BaseTarget : IndexTargets)
+	    if (BaseTarget.Option(IndexTarget::IDENTIFIER) == Target.Option(IndexTarget::IDENTIFIER) &&
+		BaseTarget.Option(IndexTarget::COMPONENT) == Target.Option(IndexTarget::COMPONENT) &&
+		// Variants we already saw can never be supplanted here, because they are ordered by preference
+		seenVariants.find(BaseTarget.Option(IndexTarget::ARCHITECTURE)) == seenVariants.end() &&
+		// BaseTarget is supplanted by Target on the architecture CPU
+		std::find(variant.supplants.begin(), variant.supplants.end(), BaseTarget.Option(IndexTarget::ARCHITECTURE)) != variant.supplants.end())
 	    {
-	       if (BaseTarget.Option(IndexTarget::IDENTIFIER) == Target.Option(IndexTarget::IDENTIFIER) &&
-		   BaseTarget.Option(IndexTarget::COMPONENT) == Target.Option(IndexTarget::COMPONENT) &&
-		   // Variants we already saw can never be supplanted here, because they are ordered by preference
-		   seenVariants.find(BaseTarget.Option(IndexTarget::ARCHITECTURE)) == seenVariants.end() &&
-		   // BaseTarget is supplanted by Target on the architecture CPU
-		   std::find(variant.supplants.begin(), variant.supplants.end(), BaseTarget.Option(IndexTarget::ARCHITECTURE)) != variant.supplants.end())
-	       {
-		  if (_config->FindB("Debug::Acquire::Variants", false))
-		     std::clog << "Variant target " << Target.Description << " supplants target " << BaseTarget.Description << std::endl;
-		  supplantedTargets.insert(&BaseTarget);
-	       }
+	       if (_config->FindB("Debug::Acquire::Variants", false))
+		  std::clog << "Variant target " << Target.Description << " supplants target " << BaseTarget.Description << std::endl;
+	       supplantedTargets.insert(&BaseTarget);
 	    }
 	 }
-	 //
       }
+      //
    }
 
    for (auto&& Target: IndexTargets)
@@ -1666,7 +1670,7 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
       // download time, bandwidth and diskspace for nothing, BUT Debian doesn't feature all
       // in the set of supported architectures, so we can filter based on this property rather
       // than invent an entirely new flag we would need to carry for all of eternity.
-      if (hasReleaseFile && Target.Option(IndexTarget::ARCHITECTURE) == "all")
+      if (Target.Option(IndexTarget::ARCHITECTURE) == "all")
       {
 	 if (TransactionManager->MetaIndexParser->IsArchitectureAllSupportedFor(Target) == false)
 	 {
@@ -1676,140 +1680,124 @@ void pkgAcqMetaClearSig::QueueIndexes(bool const verify)			/*{{{*/
       }
 
       bool trypdiff = Target.OptionBool(IndexTarget::PDIFFS);
-      if (hasReleaseFile == true)
+      if (TransactionManager->MetaIndexParser->Exists(Target.MetaKey) == false)
       {
-	 if (TransactionManager->MetaIndexParser->Exists(Target.MetaKey) == false)
+	 auto const component = Target.Option(IndexTarget::COMPONENT);
+	 if (component.empty() == false &&
+	     componentsSeen.find(component) == std::end(componentsSeen) &&
+	     TransactionManager->MetaIndexParser->HasSupportForComponent(component) == false)
 	 {
-	    auto const component = Target.Option(IndexTarget::COMPONENT);
-	    if (component.empty() == false &&
-		componentsSeen.find(component) == std::end(componentsSeen) &&
-		TransactionManager->MetaIndexParser->HasSupportForComponent(component) == false)
-	    {
-	       new CleanupItem(Owner, TransactionManager, Target);
-	       _error->Warning(_("Skipping acquire of configured file '%s' as repository '%s' doesn't have the component '%s' (component misspelt in sources.list?)"),
-		     Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str(), component.c_str());
-	       continue;
+	    new CleanupItem(Owner, TransactionManager, Target);
+	    _error->Warning(_("Skipping acquire of configured file '%s' as repository '%s' doesn't have the component '%s' (component misspelt in sources.list?)"),
+		  Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str(), component.c_str());
+	    continue;
 
-	    }
-
-	    // optional targets that we do not have in the Release file are skipped
-	    if (hasHashes == true && Target.IsOptional)
-	    {
-	       new CleanupItem(Owner, TransactionManager, Target);
-	       continue;
-	    }
-
-	    std::string const &arch = Target.Option(IndexTarget::ARCHITECTURE);
-	    if (arch.empty() == false)
-	    {
-	       if (TransactionManager->MetaIndexParser->IsArchitectureSupported(arch) == false)
-	       {
-		  new CleanupItem(Owner, TransactionManager, Target);
-		  if (not std::ranges::contains(APT::Configuration::getArchitectureVariants(true), arch, [](auto v) { return v.name; }))
-		     _error->Notice(_("Skipping acquire of configured file '%s' as repository '%s' doesn't support architecture '%s'"),
-			   Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str(), arch.c_str());
-		  continue;
-	       }
-	       // if the architecture is officially supported but currently no packages for it available,
-	       // ignore silently as this is pretty much the same as just shipping an empty file.
-	       // if we don't know which architectures are supported, we do NOT ignore it to notify user about this
-	       if (hasHashes == true && TransactionManager->MetaIndexParser->IsArchitectureSupported("*undefined*") == false)
-	       {
-		  new CleanupItem(Owner, TransactionManager, Target);
-		  continue;
-	       }
-	    }
-
-	    if (hasHashes == true)
-	    {
-	       new CleanupItem(Owner, TransactionManager, Target);
-	       _error->Warning(_("Skipping acquire of configured file '%s' as repository '%s' does not seem to provide it (sources.list entry misspelt?)"),
-		     Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str());
-	       continue;
-	    }
-	    else
-	    {
-	       new pkgAcqIndex(Owner, TransactionManager, Target);
-	       continue;
-	    }
-	 }
-	 else if (verify)
-	 {
-	    auto const hashes = GetExpectedHashesFor(Target.MetaKey);
-	    if (hashes.empty() == false)
-	    {
-	       if (hashes.usable() == false && TargetIsAllowedToBe(TransactionManager->Target, InsecureType::WEAK) == false)
-	       {
-		  new CleanupItem(Owner, TransactionManager, Target);
-		  _error->Warning(_("Skipping acquire of configured file '%s' as repository '%s' provides only weak security information for it"),
-			Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str());
-		  continue;
-	       }
-	       // empty files are skipped as acquiring the very small compressed files is a waste of time
-	       else if (hashes.FileSize() == 0)
-	       {
-		  new CleanupItem(Owner, TransactionManager, Target);
-		  targetsSeen.emplace(Target.Option(IndexTarget::CREATED_BY));
-		  continue;
-	       }
-	    }
 	 }
 
-	 // autoselect the compression method
-	 std::vector<std::string> types = VectorizeString(Target.Option(IndexTarget::COMPRESSIONTYPES), ' ');
-	 types.erase(std::remove_if(types.begin(), types.end(), [&](std::string const &t) {
-	    if (t == "uncompressed")
-	       return TransactionManager->MetaIndexParser->Exists(Target.MetaKey) == false;
-	    std::string const MetaKey = Target.MetaKey + "." + t;
-	    return TransactionManager->MetaIndexParser->Exists(MetaKey) == false;
-	 }), types.end());
-	 if (types.empty() == false)
+	 // optional targets that we do not have in the Release file are skipped
+	 if (Target.IsOptional)
 	 {
-	    std::ostringstream os;
-	    std::copy(types.begin(), types.end()-1, std::ostream_iterator<std::string>(os, " "));
-	    os << *types.rbegin();
-	    Target.Options["COMPRESSIONTYPES"] = os.str();
-	 }
-	 else
-	    Target.Options["COMPRESSIONTYPES"].clear();
-
-	 std::string filename = GetExistingFilename(GetFinalFileNameFromURI(Target.URI));
-	 if (filename.empty() == false)
-	 {
-	    // if the Release file is a hit and we have an index it must be the current one
-	    if (TransactionManager->IMSHit == true)
-	       ;
-	    else if (TransactionManager->LastMetaIndexParser != NULL)
-	    {
-	       // see if the file changed since the last Release file
-	       // we use the uncompressed files as we might compress differently compared to the server,
-	       // so the hashes might not match, even if they contain the same data.
-	       HashStringList const newFile = GetExpectedHashesFromFor(TransactionManager->MetaIndexParser, Target.MetaKey);
-	       HashStringList const oldFile = GetExpectedHashesFromFor(TransactionManager->LastMetaIndexParser, Target.MetaKey);
-	       if (newFile != oldFile)
-		  filename.clear();
-	    }
-	    else
-	       filename.clear();
-	 }
-	 else
-	    trypdiff = false; // no file to patch
-
-	 if (filename.empty() == false)
-	 {
-	    new NoActionItem(Owner, Target, filename);
-	    targetsSeen.emplace(Target.Option(IndexTarget::CREATED_BY));
+	    new CleanupItem(Owner, TransactionManager, Target);
 	    continue;
 	 }
 
-	 // check if we have patches available
-	 trypdiff &= TransactionManager->MetaIndexParser->Exists(GetDiffIndexFileName(Target.MetaKey));
+	 std::string const &arch = Target.Option(IndexTarget::ARCHITECTURE);
+	 if (arch.empty() == false)
+	 {
+	    if (TransactionManager->MetaIndexParser->IsArchitectureSupported(arch) == false)
+	    {
+	       new CleanupItem(Owner, TransactionManager, Target);
+	       if (not std::ranges::contains(APT::Configuration::getArchitectureVariants(true), arch, [](auto v) { return v.name; }))
+		  _error->Notice(_("Skipping acquire of configured file '%s' as repository '%s' doesn't support architecture '%s'"),
+			Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str(), arch.c_str());
+	       continue;
+	    }
+	    // if the architecture is officially supported but currently no packages for it available,
+	    // ignore silently as this is pretty much the same as just shipping an empty file.
+	    // if we don't know which architectures are supported, we do NOT ignore it to notify user about this
+	    if (TransactionManager->MetaIndexParser->IsArchitectureSupported("*undefined*") == false)
+	    {
+	       new CleanupItem(Owner, TransactionManager, Target);
+	       continue;
+	    }
+	 }
+
+	 new CleanupItem(Owner, TransactionManager, Target);
+	 _error->Warning(_("Skipping acquire of configured file '%s' as repository '%s' does not seem to provide it (sources.list entry misspelt?)"),
+	       Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str());
+	 continue;
+      }
+      else if (verify)
+      {
+	 auto const hashes = GetExpectedHashesFor(Target.MetaKey);
+	 if (hashes.empty() == false)
+	 {
+	    if (hashes.usable() == false && TargetIsAllowedToBe(TransactionManager->Target, InsecureType::WEAK) == false)
+	    {
+	       new CleanupItem(Owner, TransactionManager, Target);
+	       _error->Warning(_("Skipping acquire of configured file '%s' as repository '%s' provides only weak security information for it"),
+		     Target.MetaKey.c_str(), TransactionManager->Target.Description.c_str());
+	       continue;
+	    }
+	    // empty files are skipped as acquiring the very small compressed files is a waste of time
+	    else if (hashes.FileSize() == 0)
+	    {
+	       new CleanupItem(Owner, TransactionManager, Target);
+	       targetsSeen.emplace(Target.Option(IndexTarget::CREATED_BY));
+	       continue;
+	    }
+	 }
+      }
+
+      // autoselect the compression method
+      std::vector<std::string> types = VectorizeString(Target.Option(IndexTarget::COMPRESSIONTYPES), ' ');
+      types.erase(std::remove_if(types.begin(), types.end(), [&](std::string const &t) {
+	 if (t == "uncompressed")
+	    return TransactionManager->MetaIndexParser->Exists(Target.MetaKey) == false;
+	 std::string const MetaKey = Target.MetaKey + "." + t;
+	 return TransactionManager->MetaIndexParser->Exists(MetaKey) == false;
+      }), types.end());
+      if (types.empty() == false)
+      {
+	 std::ostringstream os;
+	 std::copy(types.begin(), types.end()-1, std::ostream_iterator<std::string>(os, " "));
+	 os << *types.rbegin();
+	 Target.Options["COMPRESSIONTYPES"] = os.str();
       }
       else
+	 Target.Options["COMPRESSIONTYPES"].clear();
+
+      std::string filename = GetExistingFilename(GetFinalFileNameFromURI(Target.URI));
+      if (filename.empty() == false)
       {
-	 // if we have no file to patch, no point in trying
-	 trypdiff &= (GetExistingFilename(GetFinalFileNameFromURI(Target.URI)).empty() == false);
+	 // if the Release file is a hit and we have an index it must be the current one
+	 if (TransactionManager->IMSHit == true)
+	    ;
+	 else if (TransactionManager->LastMetaIndexParser != NULL)
+	 {
+	    // see if the file changed since the last Release file
+	    // we use the uncompressed files as we might compress differently compared to the server,
+	    // so the hashes might not match, even if they contain the same data.
+	    HashStringList const newFile = GetExpectedHashesFromFor(TransactionManager->MetaIndexParser, Target.MetaKey);
+	    HashStringList const oldFile = GetExpectedHashesFromFor(TransactionManager->LastMetaIndexParser, Target.MetaKey);
+	    if (newFile != oldFile)
+	       filename.clear();
+	 }
+	 else
+	    filename.clear();
       }
+      else
+	 trypdiff = false; // no file to patch
+
+      if (filename.empty() == false)
+      {
+	 new NoActionItem(Owner, Target, filename);
+	 targetsSeen.emplace(Target.Option(IndexTarget::CREATED_BY));
+	 continue;
+      }
+
+      // check if we have patches available
+      trypdiff &= TransactionManager->MetaIndexParser->Exists(GetDiffIndexFileName(Target.MetaKey));
 
       // no point in patching from local sources
       if (trypdiff)
