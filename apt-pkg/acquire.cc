@@ -738,9 +738,13 @@ pkgAcquire::RunResult pkgAcquire::Run(int PulseInterval)
 
 	 if (f <= now)
 	 {
+	    auto const OldPipeDepth = I->PipeDepth;
 	    if (not I->Cycle()) // Queue got stuck, unstuck it.
 	       goto stop;
-	    fetchAfter = now; // need to time out in select() below
+	    // A conflicting retry can remain deferred. Avoid a select(0) loop
+	    // unless work was queued; ItemDone() will retry it when unblocked.
+	    if (I->PipeDepth > OldPipeDepth)
+	       fetchAfter = now; // need to time out in select() below
 	    if (Debug && I->Items->Owner->Status == pkgAcquire::Item::StatIdle)
 	       clog << "Tried to start delayed item but failed:" << I->Items->Description.c_str() << std::endl;
 	 }
