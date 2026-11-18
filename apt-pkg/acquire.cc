@@ -1164,26 +1164,19 @@ bool pkgAcquire::Queue::Shutdown(bool Final)
 // Queue::FindItem - Find a URI in the item list			/*{{{*/
 // ---------------------------------------------------------------------
 /* */
+static std::string MethodURI(std::string const &URI, pkgAcquire::MethodConfig const *const Config)
+{
+   if (Config->GetSendURIEncoded())
+      return URI;
+   ::URI tmp{URI};
+   tmp.Path = DeQuoteString(tmp.Path);
+   return tmp;
+}
 pkgAcquire::Queue::QItem *pkgAcquire::Queue::FindItem(string URI,pkgAcquire::Worker *Owner)
 {
-   if (Owner->Config->GetSendURIEncoded())
-   {
-      for (QItem *I = Items; I != nullptr; I = I->Next)
-	 if (I->URI == URI && I->Worker == Owner)
-	    return I;
-   }
-   else
-   {
-      for (QItem *I = Items; I != nullptr; I = I->Next)
-      {
-	 if (I->Worker != Owner)
-	    continue;
-	 ::URI tmpuri{I->URI};
-	 tmpuri.Path = DeQuoteString(tmpuri.Path);
-	 if (URI == std::string(tmpuri))
-	    return I;
-      }
-   }
+   for (QItem *I = Items; I != nullptr; I = I->Next)
+      if (I->Worker == Owner && MethodURI(I->URI, Owner->Config) == URI)
+	 return I;
    return nullptr;
 }
 									/*}}}*/
