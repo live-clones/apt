@@ -28,6 +28,14 @@ set(CMAKE_CXX_FLAGS_COVERAGE "-g -fprofile-arcs -ftest-coverage")
 set(CMAKE_EXE_LINKER_FLAGS_COVERAGE "-lgcov")
 set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE "-lgcov")
 
+# Add sanitizer build type, RelWithDebInfo with ASan and UBSan at -O1
+set(APT_SANITIZE_FLAGS "-g -O1 -DNDEBUG -fsanitize=address,undefined -fno-sanitize=vptr -fsanitize-address-use-after-scope -fno-sanitize-recover=all -fno-omit-frame-pointer")
+set(CMAKE_C_FLAGS_SANITIZE "${APT_SANITIZE_FLAGS}")
+set(CMAKE_CXX_FLAGS_SANITIZE "${APT_SANITIZE_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_SANITIZE "-fsanitize=address,undefined")
+set(CMAKE_SHARED_LINKER_FLAGS_SANITIZE "-fsanitize=address,undefined")
+set(CMAKE_MODULE_LINKER_FLAGS_SANITIZE "-fsanitize=address,undefined")
+
 # Work around bug in GNUInstallDirs
 if (EXISTS "/etc/debian_version")
   set(CMAKE_INSTALL_LIBEXECDIR "lib")

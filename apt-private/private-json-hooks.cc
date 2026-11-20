@@ -316,6 +316,7 @@ bool RunJsonHook(std::string const &option, std::string const &method, const cha
       fflush(F);
 
       char *line = nullptr;
+      DEFER([&] { free(line); });
       size_t linesize = 0;
       ssize_t size = getline(&line, &linesize, F);
 

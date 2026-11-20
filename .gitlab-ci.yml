@@ -3,6 +3,7 @@ variables:
   DEBIAN_FRONTEND: noninteractive
   CCACHE_DIR: $CI_PROJECT_DIR/.ccache
   CCACHE_BASEDIR: $CI_PROJECT_DIR
+  APT_CMAKE_BUILD_TYPE: 'RelWithDebInfo'
   APT_CMAKE_BUILD_OPTIONS: ''
   DEB_BUILD_PROFILES: ''
   BUILD_PRE: ':'
@@ -19,12 +20,13 @@ before_script:
     - ./prepare-release travis-ci
     - sudo -u travis mkdir -p build .ccache
     - $BUILD_PRE
-    - sudo -u travis env -C build cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ${APT_CMAKE_BUILD_OPTIONS} -G Ninja ..
+    - sudo -u travis env -C build cmake -DCMAKE_BUILD_TYPE=${APT_CMAKE_BUILD_TYPE} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ${APT_CMAKE_BUILD_OPTIONS} -G Ninja ..
     - sudo -u travis --preserve-env=CCACHE_DIR,CCACHE_BASEDIR ninja -C build
 
 test as root:
   stage: test
   variables:
+    APT_CMAKE_BUILD_TYPE: 'Sanitize'
     APT_CMAKE_BUILD_OPTIONS: '-DWITH_DOC=OFF -DUSE_NLS=OFF'
     DEB_BUILD_PROFILES: 'nodoc'
   script:

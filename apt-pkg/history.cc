@@ -167,6 +167,7 @@ bool ParseLogDir(HistoryBuffer &buf)
    int ret = glob(pattern, GLOB_TILDE, nullptr, &result);
    if (ret != 0)
       return _error->Error(_("Cannot find history files: %s"), files.c_str());
+   DEFER([&] { globfree(&result); });
 
    for (size_t i = 0; i < result.gl_pathc; ++i)
    {

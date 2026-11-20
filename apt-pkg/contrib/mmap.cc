@@ -23,6 +23,7 @@
 #include <apt-pkg/macros.h>
 #include <apt-pkg/mmap.h>
 
+#include <cassert>
 #include <cerrno>
 #include <cstdint>
 #include <cstdlib>
@@ -415,6 +416,8 @@ unsigned long DynamicMMap::Allocate(unsigned long ItemSize)
 unsigned long DynamicMMap::WriteString(const char *String,
 				       unsigned long Len)
 {
+   // An empty std::string_view may be a nullptr
+   assert(String != nullptr || Len == 0);
    if (Len == std::numeric_limits<unsigned long>::max())
       Len = strlen(String);
 
@@ -433,7 +436,8 @@ unsigned long DynamicMMap::WriteString(const char *String,
    memcpy((char *)Base + Result, &LenToWrite, sizeof(LenToWrite));
    Result += + sizeof(LenToWrite);
 
-   memcpy((char *)Base + Result,String,Len);
+   if (String != nullptr)
+      memcpy((char *)Base + Result,String,Len);
    ((char *)Base)[Result + Len] = 0;
    return Result;
 }

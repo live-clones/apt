@@ -188,7 +188,7 @@ runapt() {
 	*) CMD="${APTCMDLINEBINDIR}/$CMD";;
 	esac
 	if [ "$CMD" = 'aptitude' ]; then
-		MALLOC_PERTURB_=21 MALLOC_CHECK_=2 APT_CONFIG="$(getaptconfig)" LD_LIBRARY_PATH="${LIBRARYPATH}:${LD_LIBRARY_PATH}" command $unbuffer "$CMD" "$@"
+		MALLOC_PERTURB_=21 MALLOC_CHECK_=2 APT_CONFIG="$(getaptconfig)" LD_LIBRARY_PATH="${LIBRARYPATH}:${LD_LIBRARY_PATH}" LD_PRELOAD=$(gcc -print-file-name=libasan.so) command $unbuffer "$CMD" "$@"
 	else
 		MALLOC_PERTURB_=21 MALLOC_CHECK_=2 APT_CONFIG="$(getaptconfig)" LD_LIBRARY_PATH="${LIBRARYPATH}:${LD_LIBRARY_PATH}" $unbuffer "$CMD" "$@"
 	fi
@@ -263,7 +263,7 @@ valgrind() {
 	if [ "${CMD##*/}" = "$CMD" ]; then
 		CMD="${APTCMDLINEBINDIR}/${CMD}"
 	fi
-	if command valgrind --version >/dev/null 2>&1; then
+	if command valgrind --version >/dev/null 2>&1 && ! grep -q fsanitize "${BUILDDIRECTORY}/compile_commands.json"; then
 		runapt command prlimit --nofile=1024 valgrind -q --error-exitcode=7 "$CMD" "$@"
 	else
 		runapt command prlimit --nofile=1024 "$CMD" "$@"
