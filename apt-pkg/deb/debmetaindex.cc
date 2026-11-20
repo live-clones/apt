@@ -743,7 +743,7 @@ bool debReleaseIndex::GetIndexes(pkgAcquire *Owner, bool const &GetAll)/*{{{*/
 {
 #define APT_TARGET(X) IndexTarget("", X, MetaIndexInfo(X), MetaIndexURI(X), false, false, d->ReleaseOptions)
    pkgAcqMetaClearSig * const TransactionManager = new pkgAcqMetaClearSig(Owner,
-	 APT_TARGET("InRelease"), APT_TARGET("Release"), APT_TARGET("Release.gpg"), this);
+	 APT_TARGET("InRelease"), APT_TARGET("Release"), this);
 #undef APT_TARGET
    // special case for --print-uris
    if (GetAll)

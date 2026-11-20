@@ -350,16 +350,6 @@ runtest2() {
 " aptcache show apt
 	failaptnew
 
-	msgmsg 'Cold archive signed by' 'Empty signature'
-	rm -rf rootdir/var/lib/apt/lists
-	find aptarchive -name Release -exec touch {}.gpg \;
-	testfailuremsg "E: Signature verification failed: http://localhost:${APTHTTPPORT}  Release: Signed file isn't valid, got 'NODATA' (does the network require authentication?)" aptget update -o Debug::gpgv=1
-
-	msgmsg 'Cold archive signed by' 'Unknown format signature'
-	rm -rf rootdir/var/lib/apt/lists
-	find aptarchive -name Release -exec sh -c "echo Hello > {}.gpg" \;
-	testfailuremsg "E: Signature verification failed: http://localhost:${APTHTTPPORT}  Release: Signed file isn't valid, got 'NODATA' (does the network require authentication?)" aptget update
-
 	find aptarchive/ \( -name InRelease -o -name Release.gpg \) -delete
 
 	# Unsigned archive from the beginning must also be detected.
@@ -376,7 +366,7 @@ runtest3() {
 	msgmsg "Running base test with $1 digest"
 	runtest2
 
-	for DELETEFILE in 'InRelease' 'Release.gpg'; do
+	for DELETEFILE in 'Release.gpg'; do
 		export APT_DONT_SIGN="$DELETEFILE"
 		msgmsg "Running test with deletion of $DELETEFILE and $1 digest"
 		runtest
@@ -414,7 +404,7 @@ foreachgpg --no-sqv runtest3 'Weak'
 msgmsg "Running test with apt-untrusted digest"
 echo "APT::Hashes::$APT_TESTS_DIGEST_ALGO::Untrusted \"yes\";" > rootdir/etc/apt/apt.conf.d/truststate
 runfailure() {
-	for DELETEFILE in 'InRelease' 'Release.gpg'; do
+	for DELETEFILE in 'Release.gpg'; do
 		export APT_DONT_SIGN="$DELETEFILE"
 		msgmsg 'Cold archive signed by' 'Joe Sixpack'
 		prepare "${PKGFILE}"

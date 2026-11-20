@@ -439,9 +439,8 @@ bool pkgAcqTransactionItem::QueueURI(pkgAcquire::ItemDesc &Item)
    }
    return pkgAcquire::Item::QueueURI(Item);
 }
-/* The transition manager InRelease itself (or its older sisters-in-law
-   Release & Release.gpg) is always queued as this allows us to rerun gpgv
-   on it to verify that we aren't stalled with old files */
+/* The transition manager InRelease itself (or its older sister Release)
+   is always queued to ensure that we aren't stalled with old files */
 bool pkgAcqMetaBase::QueueURI(pkgAcquire::ItemDesc &Item)
 {
    return pkgAcquire::Item::QueueURI(Item);
@@ -470,10 +469,6 @@ std::string pkgAcqIndex::GetFinalFilename() const
 {
    std::string const FinalFile = GetFinalFileNameFromURI(Target.URI);
    return GetKeepCompressedFileName(FinalFile, Target);
-}
-std::string pkgAcqMetaSig::GetFinalFilename() const
-{
-   return GetFinalFileNameFromURI(Target.URI);
 }
 std::string pkgAcqBaseIndex::GetFinalFilename() const
 {
@@ -1140,8 +1135,7 @@ int pkgAcquire::Item::Priority()					/*{{{*/
    // Stage 1: Meta indices and diff indices
    // - those need to be fetched first to have progress reporting working
    //   for the rest
-   if (dynamic_cast<pkgAcqMetaSig*>(this) != nullptr
-       || dynamic_cast<pkgAcqMetaBase*>(this) != nullptr
+   if (dynamic_cast<pkgAcqMetaBase*>(this) != nullptr
        || dynamic_cast<pkgAcqDiffIndex*>(this) != nullptr)
       return 1000;
    // Stage 2: Diff files
@@ -1916,13 +1910,13 @@ pkgAcqMetaBase::~pkgAcqMetaBase()
 
 pkgAcqMetaClearSig::pkgAcqMetaClearSig(pkgAcquire * const Owner,	/*{{{*/
       IndexTarget const &ClearsignedTarget,
-      IndexTarget const &DetachedDataTarget, IndexTarget const &DetachedSigTarget,
+      IndexTarget const &DetachedDataTarget,
       metaIndex * const MetaIndexParser) :
-   pkgAcqMetaIndex(Owner, this, ClearsignedTarget, DetachedSigTarget),
+   pkgAcqMetaIndex(Owner, this, ClearsignedTarget),
    d(NULL), DetachedDataTarget(DetachedDataTarget),
    MetaIndexParser(MetaIndexParser), LastMetaIndexParser(NULL)
 {
-   // index targets + (worst case:) Release/Release.gpg
+   // index targets + (worst case:) Release
    ExpectedAdditionalItems = std::numeric_limits<decltype(ExpectedAdditionalItems)>::max();
    TransactionManager->Add(this);
 }
@@ -1992,10 +1986,9 @@ void pkgAcqMetaClearSig::Done(std::string const &Message,
       else if (RealFileExists(GetFinalFilename()) == false)
       {
 	 // We got an InRelease file IMSHit, but we haven't one, which means
-	 // we had a valid Release/Release.gpg combo stepping in, which we have
-	 // to 'acquire' now to ensure list cleanup isn't removing them
+	 // we had a Release file stepping in, which we have to 'acquire'
+	 // now to ensure list cleanup isn't removing it
 	 new NoActionItem(Owner, DetachedDataTarget);
-	 new NoActionItem(Owner, DetachedSigTarget);
       }
    }
    else if (Status != StatAuthError)
@@ -2022,6 +2015,12 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
 	 TransactionManager->AbortTransaction();
 	 return;
       }
+      // Only fall back to unsigned Release files for insecure repositories,
+      // and never if a specific InRelease file was requested.
+      if (not Target.Option(IndexTarget::INRELEASE_PATH).empty() ||
+	  not AllowInsecureRepositories(DetachedDataTarget.Description, TransactionManager->MetaIndexParser, TransactionManager, this))
+	 return;
+
       auto const failreason = LookupTag(Message, "FailReason");
       auto const httperror = "HttpError";
       if (Status == StatAuthError ||
@@ -2031,7 +2030,7 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
       {
 	 // if we expected a ClearTextSignature (InRelease) but got a network
 	 // error or got a file, but it wasn't valid, we end up here (see VerifyDone).
-	 // As these is usually called by web-portals we do not try Release/Release.gpg
+	 // As these is usually called by web-portals we do not try Release
 	 // as this is going to fail anyway and instead abort our try (LP#346386)
 	 _error->PushToStack();
 	 _error->Error(_("Failed to fetch %s  %s"), Target.URI.c_str(), ErrorText.c_str());
@@ -2043,13 +2042,12 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
 
       _error->Audit(_("Repositories should provide a clear-signed InRelease file, but none found at %s."), Target.URI.c_str());
 
-      // Queue the 'old' InRelease file for removal if we try Release.gpg
+      // Queue the 'old' InRelease file for removal if we try Release
       // as otherwise the file will stay around and gives a false-auth
       // impression (CVE-2012-0214)
       TransactionManager->TransactionStageRemoval(this, GetFinalFilename());
       Status = StatDone;
-
-      new pkgAcqMetaIndex(Owner, TransactionManager, DetachedDataTarget, DetachedSigTarget);
+      new pkgAcqMetaIndexUnsigned(Owner, TransactionManager, DetachedDataTarget);
    }
    else
    {
@@ -2083,12 +2081,38 @@ void pkgAcqMetaClearSig::Failed(string const &Message,pkgAcquire::MethodConfig c
 }
 									/*}}}*/
 
+pkgAcqMetaIndexUnsigned::pkgAcqMetaIndexUnsigned(pkgAcquire * const Owner,
+                                                 pkgAcqMetaClearSig * const TransactionManager,
+                                                 IndexTarget const &DataTarget) :
+   pkgAcqMetaIndex(Owner, TransactionManager, DataTarget)
+{
+}
+void pkgAcqMetaIndexUnsigned::Done(string const &Message,
+                                   HashStringList const &Hashes,
+                                   pkgAcquire::MethodConfig const * const Cfg)
+{
+   Item::Done(Message, Hashes, Cfg);
+
+   if (not CheckDownloadDone(this, Message, Hashes))
+      return;
+
+   string const FinalRelease = GetFinalFilename();
+   string const FinalInRelease = TransactionManager->GetFinalFilename();
+   LoadLastMetaIndexParser(TransactionManager, FinalRelease, FinalInRelease);
+
+   TransactionManager->MetaIndexParser->Load(DestFile, &ErrorText);
+   if (not VerifyVendor(Message))
+      /* expired Release files are still a problem you need extra force for */;
+   else
+   {
+      TransactionManager->TransactionStageCopy(this, DestFile, FinalRelease);
+      TransactionManager->QueueIndexes();
+   }
+}
 pkgAcqMetaIndex::pkgAcqMetaIndex(pkgAcquire * const Owner,		/*{{{*/
                                  pkgAcqMetaClearSig * const TransactionManager,
-				 IndexTarget const &DataTarget,
-				 IndexTarget const &DetachedSigTarget) :
-   pkgAcqMetaBase(Owner, TransactionManager, DataTarget), d(NULL),
-   DetachedSigTarget(DetachedSigTarget)
+				 IndexTarget const &DataTarget) :
+   pkgAcqMetaBase(Owner, TransactionManager, DataTarget), d(NULL)
 {
    if(_config->FindB("Debug::Acquire::Transaction", false) == true)
       std::clog << "New pkgAcqMetaIndex with TransactionManager "
@@ -2116,21 +2140,6 @@ pkgAcqMetaIndex::pkgAcqMetaIndex(pkgAcquire * const Owner,		/*{{{*/
    QueueURI(Desc);
 }
 									/*}}}*/
-void pkgAcqMetaIndex::Done(string const &Message,			/*{{{*/
-                           HashStringList const &Hashes,
-			   pkgAcquire::MethodConfig const * const Cfg)
-{
-   Item::Done(Message,Hashes,Cfg);
-
-   if(CheckDownloadDone(this, Message, Hashes))
-   {
-      // we have a Release file, now download the Signature, all further
-      // verify/queue for additional downloads will be done in the
-      // pkgAcqMetaSig::Done() code
-      new pkgAcqMetaSig(Owner, TransactionManager, DetachedSigTarget, this);
-   }
-}
-									/*}}}*/
 // pkgAcqMetaIndex::Failed - no Release file present			/*{{{*/
 void pkgAcqMetaIndex::Failed(string const &Message,
                              pkgAcquire::MethodConfig const * const Cnf)
@@ -2151,153 +2160,6 @@ std::string pkgAcqMetaIndex::DescURI() const				/*{{{*/
 }
 									/*}}}*/
 pkgAcqMetaIndex::~pkgAcqMetaIndex() {}
-
-// AcqMetaSig::AcqMetaSig - Constructor					/*{{{*/
-pkgAcqMetaSig::pkgAcqMetaSig(pkgAcquire * const Owner,
-      pkgAcqMetaClearSig * const TransactionManager,
-      IndexTarget const &Target,
-      pkgAcqMetaIndex * const MetaIndex) :
-   pkgAcqTransactionItem(Owner, TransactionManager, Target), d(NULL), MetaIndex(MetaIndex)
-{
-   DestFile = GetPartialFileNameFromURI(Target.URI);
-
-   // remove any partial downloaded sig-file in partial/.
-   // it may confuse proxies and is too small to warrant a
-   // partial download anyway
-   RemoveFile("pkgAcqMetaSig", DestFile);
-
-   // set the TransactionManager
-   if(_config->FindB("Debug::Acquire::Transaction", false) == true)
-      std::clog << "New pkgAcqMetaSig with TransactionManager "
-                << TransactionManager << std::endl;
-
-   // Create the item
-   Desc.Description = Target.Description;
-   Desc.Owner = this;
-   Desc.ShortDesc = Target.ShortDesc;
-   Desc.URI = Target.URI;
-
-   // If we got a hit for Release, we will get one for Release.gpg too (or obscure errors),
-   // so we skip the download step and go instantly to verification
-   if (TransactionManager->IMSHit == true && RealFileExists(GetFinalFilename()))
-   {
-      Complete = true;
-      Status = StatDone;
-      PartialFile = DestFile = GetFinalFilename();
-      MetaIndexFileSignature = DestFile;
-      MetaIndex->QueueForSignatureVerify(this, MetaIndex->DestFile, DestFile);
-   }
-   else
-      QueueURI(Desc);
-}
-									/*}}}*/
-pkgAcqMetaSig::~pkgAcqMetaSig()						/*{{{*/
-{
-}
-									/*}}}*/
-// pkgAcqMetaSig::Custom600Headers - Insert custom request headers	/*{{{*/
-std::string pkgAcqMetaSig::Custom600Headers() const
-{
-   std::string Header = pkgAcqTransactionItem::Custom600Headers();
-   std::string const key = TransactionManager->MetaIndexParser->GetSignedBy();
-   if (key.empty() == false)
-      Header += "\nSigned-By: " + QuoteString(key, "");
-   return Header;
-}
-									/*}}}*/
-// AcqMetaSig::Done - The signature was downloaded/verified		/*{{{*/
-void pkgAcqMetaSig::Done(string const &Message, HashStringList const &Hashes,
-			 pkgAcquire::MethodConfig const * const Cfg)
-{
-   if (MetaIndexFileSignature.empty() == false)
-   {
-      DestFile = MetaIndexFileSignature;
-      MetaIndexFileSignature.clear();
-   }
-   Item::Done(Message, Hashes, Cfg);
-
-   if(MetaIndex->AuthPass == false)
-   {
-      if(MetaIndex->CheckDownloadDone(this, Message, Hashes) == true)
-      {
-	 // destfile will be modified to point to MetaIndexFile for the
-	 // gpgv method, so we need to save it here
-	 MetaIndexFileSignature = DestFile;
-	 MetaIndex->QueueForSignatureVerify(this, MetaIndex->DestFile, DestFile);
-      }
-      return;
-   }
-   else if (MetaIndex->CheckAuthDone(Message, Cfg) == true)
-   {
-      auto const Releasegpg = GetFinalFilename();
-      auto const Release = MetaIndex->GetFinalFilename();
-      // if this is an IMS-Hit on Release ensure we also have the Release.gpg file stored
-      // (previously an unknown pubkey) – but only if the Release file exists locally (unlikely
-      // event of InRelease removed from the mirror causing fallback but still an IMS-Hit)
-      if (TransactionManager->IMSHit == false ||
-	    (FileExists(Releasegpg) == false && FileExists(Release) == true))
-      {
-	 TransactionManager->TransactionStageCopy(this, DestFile, Releasegpg);
-	 TransactionManager->TransactionStageCopy(MetaIndex, MetaIndex->DestFile, Release);
-      }
-   }
-   else if (MetaIndex->Status != StatAuthError)
-   {
-      std::string const FinalFile = MetaIndex->GetFinalFilename();
-      if (TransactionManager->IMSHit == false)
-	 TransactionManager->TransactionStageCopy(MetaIndex, MetaIndex->DestFile, FinalFile);
-      else
-	 TransactionManager->TransactionStageCopy(MetaIndex, FinalFile, FinalFile);
-   }
-}
-									/*}}}*/
-void pkgAcqMetaSig::Failed(string const &Message,pkgAcquire::MethodConfig const * const Cnf)/*{{{*/
-{
-   Item::Failed(Message,Cnf);
-
-   // check if we need to fail at this point
-   if (MetaIndex->AuthPass == true && MetaIndex->CheckStopAuthentication(this, Message))
-         return;
-
-   // ensures that a Release.gpg file in the lists/ is removed by the transaction
-   if (not MetaIndexFileSignature.empty())
-   {
-      DestFile = MetaIndexFileSignature;
-      MetaIndexFileSignature.clear();
-   }
-   TransactionManager->TransactionStageRemoval(this, DestFile);
-
-   // only allow going further if the user explicitly wants it
-   if (AllowInsecureRepositories(MetaIndex->Target.Description, TransactionManager->MetaIndexParser, TransactionManager, this) == true)
-   {
-      string const FinalRelease = MetaIndex->GetFinalFilename();
-      string const FinalInRelease = TransactionManager->GetFinalFilename();
-      LoadLastMetaIndexParser(TransactionManager, FinalRelease, FinalInRelease);
-
-      // we parse the indexes here because at this point the user wanted
-      // a repository that may potentially harm him
-      TransactionManager->MetaIndexParser->Load(MetaIndex->DestFile, &ErrorText);
-      if (MetaIndex->VerifyVendor(Message) == false)
-	 /* expired Release files are still a problem you need extra force for */;
-      else
-      {
-	 TransactionManager->TransactionStageCopy(MetaIndex, MetaIndex->DestFile, FinalRelease);
-	 TransactionManager->QueueIndexes();
-      }
-   }
-   else if (TransactionManager->IMSHit == false)
-      Rename(MetaIndex->DestFile, MetaIndex->DestFile + ".FAILED");
-
-   // FIXME: this is used often (e.g. in pkgAcqIndexTrans) so refactor
-   if (Cnf->LocalOnly == true ||
-       StringToBool(LookupTag(Message,"Transient-Failure"),false) == false)
-   {
-      // Ignore this
-      Status = StatDone;
-   }
-}
-									/*}}}*/
-
 
 // AcqBaseIndex - Constructor						/*{{{*/
 pkgAcqBaseIndex::pkgAcqBaseIndex(pkgAcquire * const Owner,

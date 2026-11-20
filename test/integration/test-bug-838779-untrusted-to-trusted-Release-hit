@@ -33,16 +33,3 @@ testsuccess apt install foo -y
 testdpkginstalled 'foo'
 testsuccess apt purge foo -y
 testdpkgnotinstalled 'foo'
-
-msgmsg 'Untrusted to trusted hit' 'Release.gpg'
-find aptarchive -name 'InRelease' -delete
-rm -rf rootdir/var/lib/apt/lists rootdir/var/cache/apt/archives
-mv rootdir/etc/apt/trusted.gpg.d rootdir/etc/apt/trusted.gpg.d-bak
-testfailure aptget update
-testwarning aptget update --allow-insecure-repositories
-testfailure apt install foo -y
-testdpkgnotinstalled 'foo'
-mv rootdir/etc/apt/trusted.gpg.d-bak rootdir/etc/apt/trusted.gpg.d
-testsuccess aptget update
-testsuccess apt install foo -y
-testdpkginstalled 'foo'

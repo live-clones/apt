@@ -68,18 +68,16 @@ partial' ls "$LISTS"
 	ensure_n_canary_strings_in_dir "$LISTS" 'peng neee-wom' 3
 	ensure_n_canary_strings_in_dir "$LISTS" 'ni ni ni' 0
 }
-runtests '^E:.*Clearsigned file .*NOSPLIT.*'
-webserverconfig 'aptwebserver::overwrite::.*InRelease::filename' '/404'
-runtests '^E:.*Signed file .*NODATA.*'
+runtests "^E: The repository 'http://localhost:${APTHTTPPORT} unstable Release' is not signed."
 
+webserverconfig 'aptwebserver::overwrite::.*InRelease::filename' '/404'
 webserverconfig 'aptwebserver::overwrite::.*::filename' '/404'
 webserverconfig 'aptwebserver::httpcode::404' '511 Network Authentication Required'
 rm -rf rootdir/var/lib/apt/lists
 testfailureequal "Err:1 http://localhost:${APTHTTPPORT} unstable InRelease
   511  Network Authentication Required
 Reading package lists...
-E: Failed to fetch http://localhost:${APTHTTPPORT}/dists/unstable/InRelease  511  Network Authentication Required
-E: The repository 'http://localhost:${APTHTTPPORT} unstable InRelease' is not signed.
+E: The repository 'http://localhost:${APTHTTPPORT} unstable Release' is not signed.
 N: Updating from such a repository can't be done securely, and is therefore disabled by default.
 N: See apt-secure(8) manpage for repository creation and user configuration details." aptget update
 
@@ -89,8 +87,7 @@ rm -rf rootdir/var/lib/apt/lists
 testfailureequal "Err:1 http://localhost:${APTHTTPPORT} unstable InRelease
   403  Forbidden
 Reading package lists...
-E: Failed to fetch http://localhost:${APTHTTPPORT}/dists/unstable/InRelease  403  Forbidden
-E: The repository 'http://localhost:${APTHTTPPORT} unstable InRelease' is not signed.
+E: The repository 'http://localhost:${APTHTTPPORT} unstable Release' is not signed.
 N: Updating from such a repository can't be done securely, and is therefore disabled by default.
 N: See apt-secure(8) manpage for repository creation and user configuration details." apt update
 
@@ -101,5 +98,8 @@ testequal "Ign:1 http://localhost:${APTHTTPPORT} unstable InRelease
 Err:2 http://localhost:${APTHTTPPORT} unstable Release
   403  Forbidden
 Reading package lists...
+W: The repository 'http://localhost:${APTHTTPPORT} unstable Release' is not signed.
+N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.
+N: See apt-secure(8) manpage for repository creation and user configuration details.
 E: The repository 'http://localhost:${APTHTTPPORT} unstable Release' does not have a Release file.
-N: See apt-secure(8) manpage for repository creation and user configuration details." head -n 8 rootdir/tmp/testfailure.output
+N: See apt-secure(8) manpage for repository creation and user configuration details." head -n 10 rootdir/tmp/testfailure.output

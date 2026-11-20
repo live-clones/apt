@@ -419,7 +419,7 @@ Signed-By:
 		determines the path to the InRelease file, relative
 		to the normal position of an <filename>InRelease</filename> file.
 		By default, this option is unset and APT will try to fetch an <filename>InRelease</filename>
-		or, if that fails, a <filename>Release</filename> file and its associated <filename>Release.gpg</filename> file. By setting this option,
+		or, if that fails, a <filename>Release</filename> file. By setting this option,
 		the specified path will be tried instead of the InRelease file,
 		and the fallback to <filename>Release</filename> files will be disabled.
     </para></listitem>

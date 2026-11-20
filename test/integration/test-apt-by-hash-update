@@ -104,4 +104,5 @@ cp -a aptarchive/dists.bak aptarchive/dists
 testfailureequal "Err:1 http://localhost:${APTHTTPPORT} unstable InRelease
   404  Not Found
 Reading package lists...
-E: Failed to fetch http://localhost:${APTHTTPPORT}/dists/unstable/InRelease  404  Not Found" aptget update
+E: Failed to fetch http://localhost:${APTHTTPPORT}/dists/unstable/InRelease  404  Not Found
+E: Some index files failed to download. They have been ignored, or old ones used instead." aptget update

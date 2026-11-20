@@ -671,7 +671,7 @@ APT::Compressor::rev {
 
      <varlistentry><term><option>MaxReleaseFileSize</option></term>
 	 <listitem><para>
-           The maximum file size of Release/Release.gpg/InRelease files.
+           The maximum file size of Release/InRelease files.
            The default is 10MB.
 	 </para></listitem>
      </varlistentry>

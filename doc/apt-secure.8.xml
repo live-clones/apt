@@ -235,8 +235,7 @@
        (provided in apt-utils).</para></listitem>
    
       <listitem><para><emphasis>Sign it</emphasis>. You can do this by running
-      <command>gpg --clearsign -o InRelease Release</command> and
-      <command>gpg -abs -o Release.gpg Release</command>.</para></listitem>
+      <command>gpg --clearsign -o InRelease Release</command>.</para></listitem>
 
       <listitem><para>
       <emphasis>Publish the key fingerprint</emphasis>, so that your users

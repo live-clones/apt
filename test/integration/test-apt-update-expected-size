@@ -18,9 +18,9 @@ test_inreleasetoobig() {
 	# make InRelease really big to trigger fallback
 	dd if=/dev/zero of=aptarchive/dists/unstable/InRelease bs=1M count=2 2>/dev/null
 	touch -d '+1hour' aptarchive/dists/unstable/InRelease
-	testsuccess aptget update -o Apt::Get::List-Cleanup=0  -o acquire::MaxReleaseFileSize=$((1*1000*1000)) -o Debug::pkgAcquire::worker=0
+	testwarning aptget update -o Apt::Get::List-Cleanup=0  -o acquire::MaxReleaseFileSize=$((1*1000*1000)) -o Debug::pkgAcquire::worker=0 -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true
 	msgtest 'Check that the max write warning is triggered'
-	cp rootdir/tmp/testsuccess.output update.output
+	cp rootdir/tmp/testwarning.output update.output
 	testsuccess --nomsg grep -q 'File has unexpected size' update.output
 	rm -f update.output
 	# ensure the failed InRelease file got renamed

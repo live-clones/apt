@@ -26,7 +26,7 @@ MD5Sum:
 done
 
 testfailure aptget update
-testsuccess grep '^E:.*Clearsigned file .*NOSPLIT.*' rootdir/tmp/testfailure.output
+testsuccess grep "^E: The repository 'file:.* unstable Release' is not signed." rootdir/tmp/testfailure.output
 
 testsuccessequal "Package files:
 Pinned packages:" aptcache policy

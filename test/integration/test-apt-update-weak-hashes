@@ -77,12 +77,6 @@ N: See apt-secure(8) manpage for repository creation and user configuration deta
 }
 testrun 'InRelease' "${APTARCHIVE}/dists/unstable/InRelease"
 
-preparetest() {
-	rm -f "${APTARCHIVE}/dists/unstable/InRelease"
-	genericprepare
-}
-testrun 'Release+Release.gpg' "${APTARCHIVE}/dists/unstable/Release"
-
 MANGLED="$(readlink -f ./rootdir)/var/lib/apt/lists/partial/$(echo "${APTARCHIVE}/dists/unstable/Release" | sed 's#/#_#g')"
 
 msgmsg 'Repository contains no hashes and is unsigned'

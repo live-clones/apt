@@ -14,6 +14,7 @@ setupaptarchive --no-update
 changetowebserver
 webserverconfig 'aptwebserver::redirect::replace::/redirectme/' "http://0.0.0.0:${APTHTTPPORT}/"
 rewritesourceslist "http://localhost:${APTHTTPPORT}/redirectme"
+sed -i 's#^deb\(-src\)\? #deb\1 [allow-insecure=yes] #' rootdir/etc/apt/sources.list.d/*
 
 testsuccessequal "Get:1 http://0.0.0.0:${APTHTTPPORT} unstable InRelease [$(stat -c %s aptarchive/dists/unstable/InRelease) B]
 Get:2 http://0.0.0.0:${APTHTTPPORT} unstable/main Sources [$(stat -c %s aptarchive/dists/unstable/main/source/Sources.gz) B]
@@ -83,19 +84,24 @@ All packages are up to date." apt update -o Acquire::Progress::Ignore::ShowError
 find aptarchive -name 'InRelease' -delete
 rm -rf rootdir/var/lib/apt/lists
 
-testsuccessequal "Ign:1 http://0.0.0.0:${APTHTTPPORT}/storage unstable InRelease
+testwarningequal "Ign:1 http://0.0.0.0:${APTHTTPPORT}/storage unstable InRelease
   404  Not Found
 Get:2 http://0.0.0.0:${APTHTTPPORT} unstable Release [$(stat -c %s aptarchive/dists/unstable/Release) B]
-Get:3 http://0.0.0.0:${APTHTTPPORT} unstable Release.gpg [$(stat -c %s aptarchive/dists/unstable/Release.gpg) B]
-Get:4 http://0.0.0.0:${APTHTTPPORT} unstable/main Sources [$(stat -c %s aptarchive/dists/unstable/main/source/Sources.gz) B]
-Get:5 http://0.0.0.0:${APTHTTPPORT} unstable/main all Packages [$(stat -c %s aptarchive/dists/unstable/main/binary-all/Packages.gz) B]
-Get:6 http://0.0.0.0:${APTHTTPPORT} unstable/main Translation-en [$(stat -c %s aptarchive/dists/unstable/main/i18n/Translation-en.gz) B]
-Reading package lists..." aptget update
+Get:3 http://0.0.0.0:${APTHTTPPORT} unstable/main Sources [$(stat -c %s aptarchive/dists/unstable/main/source/Sources.gz) B]
+Get:4 http://0.0.0.0:${APTHTTPPORT} unstable/main all Packages [$(stat -c %s aptarchive/dists/unstable/main/binary-all/Packages.gz) B]
+Get:5 http://0.0.0.0:${APTHTTPPORT} unstable/main Translation-en [$(stat -c %s aptarchive/dists/unstable/main/i18n/Translation-en.gz) B]
+Reading package lists...
+W: The repository 'http://localhost:${APTHTTPPORT}/redirectme unstable Release' is not signed.
+N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.
+N: See apt-secure(8) manpage for repository creation and user configuration details." aptget update
 
-testsuccessequal "Ign:1 http://0.0.0.0:${APTHTTPPORT}/storage unstable InRelease
+testwarningequal "Ign:1 http://0.0.0.0:${APTHTTPPORT}/storage unstable InRelease
   404  Not Found
 Hit:2 http://0.0.0.0:${APTHTTPPORT} unstable Release
-Reading package lists..." aptget update
+Reading package lists...
+W: The repository 'http://localhost:${APTHTTPPORT}/redirectme unstable Release' is not signed.
+N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.
+N: See apt-secure(8) manpage for repository creation and user configuration details." aptget update
 
 rm -rf rootdir/var/lib/apt/lists
 find aptarchive -name 'Release.gpg' -delete

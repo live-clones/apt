@@ -8,7 +8,7 @@ configarchitecture 'amd64'
 
 insertpackage 'unstable' 'cool' 'amd64' '1.0'
 
-export APT_DONT_SIGN='InRelease'
+export APT_DONT_SIGN='Release.gpg'
 setupaptarchive --no-update
 
 echo 'NotAutomatic: yes' >> aptarchive/dists/unstable/Release

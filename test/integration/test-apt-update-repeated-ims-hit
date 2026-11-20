@@ -37,14 +37,12 @@ setupaptarchive --no-update
 rm -f aptarchive/Packages aptarchive/en
 
 rm -f rootdir/etc/apt/trusted.gpg.d/*
-sed -i -e 's#^deb #deb [trusted=yes] #' rootdir/etc/apt/sources.list.d/*
+sed -i -e 's#^deb #deb [allow-insecure=yes] #' rootdir/etc/apt/sources.list.d/*
 
 APTARCHIVE="$(readlink -f ./aptarchive)"
-if test -e "${METHODSDIR}/sqv"; then
-GPGERROR="W: Signature verification failed: file:$APTARCHIVE  Release: The signatures couldn't be verified because no keyring is specified"
-else
-GPGERROR="W: Signature verification failed: file:$APTARCHIVE  Release: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 5A90D141DBAC8DAE"
-fi
+GPGERROR="W: The repository 'file:$APTARCHIVE  Release' is not signed.
+N: Data from such a repository can't be authenticated and is therefore potentially dangerous to use.
+N: See apt-secure(8) manpage for repository creation and user configuration details."
 
 msgmsg 'Running update again does not change result' '0'
 testwarningmsg "$GPGERROR" apt update

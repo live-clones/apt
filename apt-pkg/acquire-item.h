@@ -490,7 +490,7 @@ class APT_HIDDEN pkgAcqMetaBase : public pkgAcqTransactionItem		/*{{{*/
 };
 									/*}}}*/
 /** \brief An item that is responsible for downloading the meta-index	{{{
- *  file (i.e., Release) itself and verifying its signature.
+ *  file (i.e., Release) itself.
  *
  *  Once the download and verification are complete, the downloads of
  *  the individual index files are queued up using pkgAcqDiffIndex.
@@ -503,8 +503,6 @@ class APT_HIDDEN pkgAcqMetaIndex : public pkgAcqMetaBase
 {
    void * const d;
    protected:
-   IndexTarget const DetachedSigTarget;
-
    /** \brief delayed constructor */
    void Init(std::string const &URIDesc, std::string const &ShortDesc);
 
@@ -513,52 +511,22 @@ class APT_HIDDEN pkgAcqMetaIndex : public pkgAcqMetaBase
 
    // Specialized action members
    void Failed(std::string const &Message, pkgAcquire::MethodConfig const *Cnf) override;
-   void Done(std::string const &Message, HashStringList const &Hashes,
-		     pkgAcquire::MethodConfig const *Cnf) override;
 
    /** \brief Create a new pkgAcqMetaIndex. */
    pkgAcqMetaIndex(pkgAcquire * const Owner, pkgAcqMetaClearSig * const TransactionManager,
-		   IndexTarget const &DataTarget, IndexTarget const &DetachedSigTarget) APT_NONNULL(2, 3);
+		   IndexTarget const &DataTarget) APT_NONNULL(2, 3);
    ~pkgAcqMetaIndex() override;
-
-   friend class pkgAcqMetaSig;
 };
 									/*}}}*/
-/** \brief An acquire item that downloads the detached signature	{{{
- *  of a meta-index (Release) file, then queues up the release
- *  file itself.
- *
- *  \todo Why protected members?
- *
- *  \sa pkgAcqMetaIndex
- */
-class APT_HIDDEN pkgAcqMetaSig final : public pkgAcqTransactionItem
+/** \brief An item responsible for downloading unsigned metaindexes	{{{*/
+class APT_HIDDEN pkgAcqMetaIndexUnsigned final : public pkgAcqMetaIndex
 {
-   void * const d;
-
-   pkgAcqMetaIndex * const MetaIndex;
-
-   /** \brief The file we use to verify the MetaIndexFile with (not always set!) */
-   std::string MetaIndexFileSignature;
-
-   protected:
-
-   /** \brief Get the full pathname of the final file for the current URI */
-   [[nodiscard]] std::string GetFinalFilename() const override;
-
-   public:
-   [[nodiscard]] bool HashesRequired() const override { return false; }
-
-   // Specialized action members
-   void Failed(std::string const &Message, pkgAcquire::MethodConfig const *Cnf) override;
+ public:
    void Done(std::string const &Message, HashStringList const &Hashes,
-		     pkgAcquire::MethodConfig const *Cnf) override;
-   [[nodiscard]] std::string Custom600Headers() const override;
+	     pkgAcquire::MethodConfig const *Cnf) override;
 
-   /** \brief Create a new pkgAcqMetaSig. */
-   pkgAcqMetaSig(pkgAcquire * const Owner, pkgAcqMetaClearSig * const TransactionManager,
-	 IndexTarget const &Target, pkgAcqMetaIndex * const MetaIndex) APT_NONNULL(2, 3, 5);
-   ~pkgAcqMetaSig() override;
+   pkgAcqMetaIndexUnsigned(pkgAcquire * const Owner, pkgAcqMetaClearSig * const TransactionManager,
+			   IndexTarget const &DataTarget) APT_NONNULL(2, 3);
 };
 									/*}}}*/
 /** \brief An item responsible for downloading clearsigned metaindexes	{{{*/
@@ -594,7 +562,6 @@ class APT_HIDDEN pkgAcqMetaClearSig final : public pkgAcqMetaIndex
    pkgAcqMetaClearSig(pkgAcquire * const Owner,
 		IndexTarget const &ClearsignedTarget,
 		IndexTarget const &DetachedDataTarget,
-		IndexTarget const &DetachedSigTarget,
 		metaIndex * const MetaIndexParser);
    ~pkgAcqMetaClearSig() override;
 };
