@@ -250,6 +250,10 @@ bool RunJsonHook(std::string const &option, std::string const &method, const cha
    sighandler_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
    sighandler_t old_sigint = signal(SIGINT, SIG_IGN);
    sighandler_t old_sigquit = signal(SIGQUIT, SIG_IGN);
+   DEFER([&] {
+      signal(SIGINT, old_sigint);
+      signal(SIGPIPE, old_sigpipe);
+      signal(SIGQUIT, old_sigquit); });
 
    unsigned int Count = 1;
    for (; Opts != 0; Opts = Opts->Next, Count++)
@@ -303,19 +307,28 @@ bool RunJsonHook(std::string const &option, std::string const &method, const cha
 	 execv(Args[0], (char **)Args);
 	 _exit(100);
       }
+      bool processWaited = false;
+      DEFER([&] {
+         if (not processWaited)
+            ExecWait(Process, Opts->Value.c_str()); });
       close(Pipes[0]);
       FILE *F = fdopen(Pipes[1], "w+");
       if (F == 0)
       {
+	 close(Pipes[1]);
 	 result = _error->Errno("fdopen", "Failed to open new FD");
 	 break;
       }
 
+      DEFER([&] {
+         if (F != nullptr)
+            fclose(F); });
       fwrite(HelloData.data(), HelloData.size(), 1, F);
       fwrite("\n\n", 2, 1, F);
       fflush(F);
 
       char *line = nullptr;
+      DEFER([&] { free(line); });
       size_t linesize = 0;
       ssize_t size = getline(&line, &linesize, F);
 
@@ -373,17 +386,16 @@ bool RunJsonHook(std::string const &option, std::string const &method, const cha
       fwrite("\n\n", 2, 1, F);
    out:
       fclose(F);
+      F = nullptr;
       // Clean up the sub process
-      if (ExecWait(Process, Opts->Value.c_str()) == false)
+      const bool waitResult = ExecWait(Process, Opts->Value.c_str());
+      processWaited = true;
+      if (waitResult == false)
       {
 	 result = _error->Error("Failure running hook %s", Opts->Value.c_str());
 	 break;
       }
-
    }
-   signal(SIGINT, old_sigint);
-   signal(SIGPIPE, old_sigpipe);
-   signal(SIGQUIT, old_sigquit);
 
    return result;
 }
