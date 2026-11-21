@@ -142,6 +142,8 @@ endif()
 
 find_package(XXHASH REQUIRED)
 
+find_package(json-c REQUIRED)
+
 # Mount()ing and stat()ing and friends
 check_symbol_exists(statfs sys/vfs.h HAVE_VFS_H)
 check_include_files(sys/params.h HAVE_PARAMS_H)
@@ -247,6 +249,7 @@ configure_file(CMake/apti18n.h.in ${PROJECT_BINARY_DIR}/include/apti18n.h)
 # Add our subdirectories
 add_subdirectory(vendor)
 if (NOT USE_SYSTEM_APTPKG)
+add_subdirectory(apt-core)
 add_subdirectory(apt-pkg)
 add_subdirectory(apt-private)
 endif()

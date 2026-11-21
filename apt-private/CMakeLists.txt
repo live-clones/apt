@@ -15,6 +15,7 @@ file(GLOB_RECURSE headers "*.h")
 add_library(apt-private-object OBJECT ${library})
 set_target_properties(apt-private-object PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(apt-private-object PROPERTIES CXX_VISIBILITY_PRESET hidden)
+target_link_libraries(apt-private-object PUBLIC apt-core)
 
 # Create the shared library from the object library and set the SONAME
 add_library(apt-private SHARED)
