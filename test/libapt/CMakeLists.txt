@@ -29,6 +29,10 @@ if (WITH_TESTS)
       message(FATAL_ERROR "Could not find GTest")
    endif()
 
+   # Hegel needs those, add them before adding it so it picks them up
+   add_optional_compile_options(Wno-noexcept)
+   add_optional_compile_options(Wno-missing-field-initializers)
+
    # Hegel (https://hegel.dev) downloads a prebuilt libhegel at configure
    # time; disable with -DWITH_HEGEL_TESTS=OFF (as done in debian/rules).
    if (WITH_HEGEL_TESTS)
