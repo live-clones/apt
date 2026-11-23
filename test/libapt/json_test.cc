@@ -5,12 +5,15 @@
 #include <json-c/json_tokener.h>
 
 #include <cstdint>
+#include <expected>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "common.h"
 
@@ -261,4 +264,135 @@ TEST(JSONValue, RejectsNonPortableValues)
    EXPECT_EQ(JSON::Value::string(stringWithNul).error(), JSON::Error::InvalidArgument);
    EXPECT_EQ(JSON::Value::real(std::numeric_limits<double>::quiet_NaN()).error(), JSON::Error::InvalidArgument);
    EXPECT_EQ(JSON::Value::real(std::numeric_limits<double>::infinity()).error(), JSON::Error::InvalidArgument);
+}
+
+/* Tests for the Encode/Decode functionality: encode(), get(), into() */
+
+static_assert(noexcept(std::declval<JSON::View>().get<bool>()));
+static_assert(noexcept(std::declval<JSON::View>().get<std::int64_t>()));
+static_assert(noexcept(std::declval<JSON::View>().get<std::uint64_t>()));
+static_assert(noexcept(std::declval<JSON::View>().get<int>()));
+static_assert(noexcept(std::declval<JSON::View>().get<double>()));
+static_assert(noexcept(std::declval<JSON::View>().get<std::string_view>()));
+static_assert(not noexcept(std::declval<JSON::View>().get<std::string>()));
+
+static_assert(not JSON::Encodable<std::nullptr_t>);
+static_assert(not JSON::Encodable<JSON::Value>);
+
+struct TestStruct
+{
+   std::string name;
+   std::optional<int> count;
+};
+
+template <>
+struct JSON::Decode<TestStruct>
+{
+   static std::expected<TestStruct, JSON::Error> operator()(JSON::View v)
+   {
+      TestStruct result;
+      return v.into("name", result.name)
+	 .and_then([&] noexcept { return v.into("count", result.count); })
+	 .transform([&] { return result; });
+   }
+};
+
+static_assert(JSON::Decodable<TestStruct>);
+
+template <>
+struct JSON::Encode<TestStruct>
+{
+   static std::expected<Value, JSON::Error> operator()(const TestStruct &val)
+   {
+      auto obj = Value::object();
+      return obj.set("name", val.name)
+	 .and_then([&] { return obj.set("count", val.count); })
+	 .transform([&] { return std::move(obj); });
+   }
+};
+static_assert(JSON::Encodable<TestStruct>);
+static_assert(JSON::Encodable<std::vector<int>>);
+static_assert(JSON::Decodable<std::vector<int>>);
+static_assert(JSON::Encodable<std::vector<bool>>);
+static_assert(JSON::Decodable<std::vector<bool>>);
+
+TEST(JSONValue, EncodeAndGetDispatch)
+{
+   EXPECT_EQ(JSON::Value::encode(true)->get<bool>().value(), true);
+   EXPECT_EQ(JSON::Value::encode(5.0)->get<double>().value(), 5.0);
+   EXPECT_EQ(JSON::Value::encode(-5)->get<int>().value(), -5); // sign bypass
+   const auto unsignedMaximum = std::numeric_limits<std::uint64_t>::max();
+   EXPECT_EQ(JSON::Value::encode(unsignedMaximum)->get<std::uint64_t>().value(), unsignedMaximum);
+   EXPECT_EQ(JSON::Value::encode("hello")->get<std::string>().value(), "hello");
+   EXPECT_EQ(JSON::Value::encode(static_cast<char *>(nullptr)).error(), JSON::Error::InvalidArgument);
+
+   auto value = JSON::Value::encode(TestStruct{"banana", 42});
+   EXPECT_EQ(value->stringify(), R"({"name":"banana","count":42})");
+
+   auto nullCount = JSON::Value::encode(TestStruct{"banana", std::nullopt});
+   EXPECT_EQ(nullCount->stringify(), R"({"name":"banana","count":null})");
+
+   EXPECT_TRUE(JSON::Value::array().get<std::vector<int>>().value().empty());
+}
+
+TEST(JSONValue, EncodeContainers)
+{
+   EXPECT_EQ(JSON::Value::encode(std::vector<int>{})->stringify(), R"([])");
+   EXPECT_EQ(JSON::Value::encode(std::vector<int>{1, 2, 3})->stringify(), R"([1,2,3])");
+   EXPECT_EQ(JSON::Value::encode(std::vector<bool>{true, false, true})->stringify(), R"([true,false,true])");
+   EXPECT_EQ(JSON::Value::encode(std::vector<std::string>{"a", "b"})->stringify(), R"(["a","b"])");
+   EXPECT_EQ(JSON::Value::encode(std::vector<std::vector<int>>{{}, {1}, {2, 3}})->stringify(), R"([[],[1],[2,3]])");
+}
+
+TEST(JSONValue, DecodeIntoContainers)
+{
+   auto array = JSON::Value::parse(R"([1,2,3])");
+   ASSERT_TRUE(array.has_value()) << array.error().message;
+
+   std::vector<int> out{7};
+   ASSERT_TRUE(array->into(out).has_value());
+   EXPECT_EQ(out, (std::vector<int>{1, 2, 3}));
+
+   std::vector<int> unchanged{7};
+   EXPECT_EQ(array->at(1)->into(unchanged).error(), JSON::Error::TypeMismatch);
+   EXPECT_EQ(unchanged, (std::vector<int>{7}));
+
+   auto badElement = JSON::Value::parse(R"([1,"x"])");
+   ASSERT_TRUE(badElement.has_value()) << badElement.error().message;
+   EXPECT_EQ(badElement->get<std::vector<int>>().error(), JSON::Error::TypeMismatch);
+}
+
+TEST(JSONValue, DecodeCustomStructs)
+{
+   auto withCount = JSON::Value::parse(R"({"name":"banana","count":42})");
+   ASSERT_TRUE(withCount.has_value()) << withCount.error().message;
+   auto banana = withCount->get<TestStruct>();
+   ASSERT_TRUE(banana.has_value());
+   EXPECT_EQ(banana->name, "banana");
+   EXPECT_EQ(banana->count, 42);
+
+   auto withNull = JSON::Value::parse(R"({"name":"banana","count":null})");
+   ASSERT_TRUE(withNull.has_value()) << withNull.error().message;
+   auto nullCount = withNull->get<TestStruct>();
+   ASSERT_TRUE(nullCount.has_value());
+   EXPECT_EQ(nullCount->count, std::nullopt);
+
+   auto missingCount = JSON::Value::parse(R"({"name":"banana"})");
+   ASSERT_TRUE(missingCount.has_value()) << missingCount.error().message;
+   EXPECT_EQ(missingCount->get<TestStruct>().error(), JSON::Error::MissingKey);
+
+   auto wrongNameType = JSON::Value::parse(R"({"name":42,"count":1})");
+   ASSERT_TRUE(wrongNameType.has_value()) << wrongNameType.error().message;
+   EXPECT_EQ(wrongNameType->get<TestStruct>().error(), JSON::Error::TypeMismatch);
+}
+
+TEST(JSONValue, RejectsOutOfRangeNarrowing)
+{
+   auto overflow = JSON::Value::parse("3000000000");
+   ASSERT_TRUE(overflow.has_value()) << overflow.error().message;
+   EXPECT_EQ(overflow->get<int>().error(), JSON::Error::OutOfRange);
+
+   auto tooLarge = JSON::Value::parse("4294967296");
+   ASSERT_TRUE(tooLarge.has_value()) << tooLarge.error().message;
+   EXPECT_EQ(tooLarge->get<unsigned>().error(), JSON::Error::OutOfRange);
 }
