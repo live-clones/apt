@@ -12,7 +12,6 @@
 #include <expected>
 #include <optional>
 #include <ranges>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -20,11 +19,7 @@
 
 struct json_object;
 
-namespace APT
-{
-inline namespace Internal
-{
-namespace JSON
+namespace APT::inline Internal::JSON
 {
 using Handle = json_object;
 
@@ -155,7 +150,7 @@ class View
    template <Decodable T>
    [[nodiscard]] std::expected<void, Error> into(T &out) const noexcept(noexcept(get<T>()) && std::is_nothrow_move_assignable_v<T>)
    {
-      return get<T>().transform([&out](auto &&val) noexcept(std::is_nothrow_move_assignable_v<T>) { out = std::move(val); });
+      return get<T>().transform([&out](auto &&val) noexcept(std::is_nothrow_move_assignable_v<T>) { out = std::forward<decltype(val)>(val); });
    }
 
    template <Decodable T>
@@ -256,7 +251,7 @@ requires(Decodable<typename Container::value_type> &&
 	 not Reflectable<Container> &&
 	 std::is_default_constructible_v<Container> &&
 	 not std::convertible_to<Container, std::string_view> &&
-	 requires(Container &c, typename Container::value_type &&val) {
+	 requires(Container &c, Container::value_type &&val) {
 	    c.insert(c.end(), std::move(val));
 	 })
 struct Decode<Container>
@@ -387,8 +382,5 @@ struct Decode<T>
       return result;
    }
 };
-} // namespace JSON
-} // namespace Internal
-} // namespace APT
-
+} // namespace APT::inline Internal::JSON
 #endif

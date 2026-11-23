@@ -37,16 +37,18 @@ Handle *nonNull(Handle *handle)
 // - single quoted strings
 std::expected<void, ParseError> validateJsonSyntax(std::string_view input)
 {
+   constexpr std::string_view escapedNul = "\\u0000"sv;
    bool inString = false;
    for (std::size_t index = 0; index < input.size(); ++index)
    {
-      switch (input[index])
+      const std::string_view remaining = input.substr(index);
+      switch (remaining.front())
       {
       case '\0':
-	 return std::unexpected(ParseError{ParseErrorCode::EmbeddedNul, index, "JSON input contains an embedded NUL character"});
+	 return std::unexpected(ParseError{.code = ParseErrorCode::EmbeddedNul, .offset = index, .message = "JSON input contains an embedded NUL character"});
       case '\'':
 	 if (not inString)
-	    return std::unexpected(ParseError{ParseErrorCode::InvalidSyntax, index, "Single-quoted strings are not valid JSON"});
+	    return std::unexpected(ParseError{.code = ParseErrorCode::InvalidSyntax, .offset = index, .message = "Single-quoted strings are not valid JSON"});
 	 break;
       case '"':
 	 inString = not inString;
@@ -54,11 +56,13 @@ std::expected<void, ParseError> validateJsonSyntax(std::string_view input)
       case '\\':
 	 if (inString)
 	 {
-	    if (input.substr(index, 6) == "\\u0000"sv)
-	       return std::unexpected(ParseError{ParseErrorCode::EmbeddedNul, index, "JSON strings cannot contain embedded NUL characters"});
-	    else if (index + 1 < input.size() && (input[index + 1] == '"' || input[index + 1] == '\\'))
+	    if (remaining.starts_with(escapedNul))
+	       return std::unexpected(ParseError{.code = ParseErrorCode::EmbeddedNul, .offset = index, .message = "JSON strings cannot contain embedded NUL characters"});
+	    if (remaining.starts_with("\\\""sv) || remaining.starts_with("\\\\"sv))
 	       ++index; // ignore those special escaped characters so our quoting and escape logic is consistent
 	 }
+	 break;
+      default:
 	 break;
       }
    }
@@ -178,7 +182,7 @@ std::expected<View, Error> View::find(const char *key, MissingKeyPolicy missingK
       return std::unexpected(Error::TypeMismatch);
 
    json_object *value = nullptr;
-   if (not json_object_object_get_ex(handle, key, &value))
+   if (json_object_object_get_ex(handle, key, &value) == 0)
    {
       if (missingKeyPolicy == MissingKeyPolicy::Null)
 	 return View();
@@ -251,7 +255,7 @@ Value Value::array()
 
 Value Value::boolean(bool value)
 {
-   return Value(nonNull(json_object_new_boolean(value)), Adopt{});
+   return Value(nonNull(json_object_new_boolean(static_cast<json_bool>(value))), Adopt{});
 }
 
 Value Value::integer(std::int64_t value)
@@ -273,7 +277,7 @@ std::expected<Value, Error> Value::real(double value)
 
 std::expected<Value, Error> Value::string(std::string_view value)
 {
-   if (value.find('\0') != std::string_view::npos)
+   if (value.contains('\0'))
       return std::unexpected(Error::InvalidArgument);
    if (not std::in_range<int>(value.size()))
       return std::unexpected(Error::OutOfRange);
@@ -283,13 +287,13 @@ std::expected<Value, Error> Value::string(std::string_view value)
 std::expected<Value, ParseError> Value::parse(std::string_view input)
 {
    if (not std::in_range<int>(input.size())) // We cast down to int below
-      return std::unexpected(ParseError{ParseErrorCode::InputTooLarge, 0, "JSON input is too large"});
+      return std::unexpected(ParseError{.code = ParseErrorCode::InputTooLarge, .offset = 0, .message = "JSON input is too large"});
    if (input.empty())
-      return std::unexpected(ParseError{ParseErrorCode::UnexpectedEnd, 0, "JSON input is empty"});
+      return std::unexpected(ParseError{.code = ParseErrorCode::UnexpectedEnd, .offset = 0, .message = "JSON input is empty"});
    if (auto res = validateJsonSyntax(input); not res)
       return std::unexpected(std::move(res.error()));
 
-   std::unique_ptr<json_tokener, decltype(&json_tokener_free)> tokener(json_tokener_new_ex(JSON_TOKENER_DEFAULT_DEPTH), &json_tokener_free);
+   const std::unique_ptr<json_tokener, decltype(&json_tokener_free)> tokener(json_tokener_new_ex(JSON_TOKENER_DEFAULT_DEPTH), &json_tokener_free);
    if (not tokener)
       throw std::bad_alloc();
    json_tokener_set_flags(tokener.get(), JSON_TOKENER_STRICT | JSON_TOKENER_VALIDATE_UTF8);
@@ -302,7 +306,7 @@ std::expected<Value, ParseError> Value::parse(std::string_view input)
    // json-c needs a final NUL to finish top-level numbers.
    if (parseError == json_tokener_continue && consumed == input.size())
    {
-      char terminator = '\0';
+      const char terminator = '\0';
       value.handle = json_tokener_parse_ex(tokener.get(), &terminator, 1);
       parseError = json_tokener_get_error(tokener.get());
    }
@@ -318,10 +322,10 @@ std::expected<Value, ParseError> Value::parse(std::string_view input)
 	 code = ParseErrorCode::InputTooLarge;
       else if (parseError == json_tokener_error_memory)
 	 throw std::bad_alloc();
-      return std::unexpected(ParseError{code, consumed, json_tokener_error_desc(parseError)});
+      return std::unexpected(ParseError{.code = code, .offset = consumed, .message = json_tokener_error_desc(parseError)});
    }
    if (consumed != input.size())
-      return std::unexpected(ParseError{ParseErrorCode::InvalidSyntax, consumed, "Trailing characters after the JSON value"});
+      return std::unexpected(ParseError{.code = ParseErrorCode::InvalidSyntax, .offset = consumed, .message = "Trailing characters after the JSON value"});
    return value;
 }
 
