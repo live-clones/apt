@@ -114,48 +114,48 @@ class View
    explicit View(Handle *handle) noexcept : handle(handle) {}
 
    public:
-   std::expected<bool, Error> asBoolean() const noexcept;
-   std::expected<std::int64_t, Error> asInt64() const noexcept;
-   std::expected<std::uint64_t, Error> asUInt64() const noexcept;
-   std::expected<double, Error> asDouble() const noexcept;
-   std::expected<std::string_view, Error> asString() const noexcept;
+   auto asBoolean() const noexcept -> std::expected<bool, Error>;
+   auto asInt64() const noexcept -> std::expected<std::int64_t, Error>;
+   auto asUInt64() const noexcept -> std::expected<std::uint64_t, Error>;
+   auto asDouble() const noexcept -> std::expected<double, Error>;
+   auto asString() const noexcept -> std::expected<std::string_view, Error>;
 
    View() noexcept = default;
 
-   Type type() const noexcept;
-   bool operator==(std::nullptr_t) const noexcept { return type() == Type::Null; }
+   auto type() const noexcept -> Type;
+   auto operator==(std::nullptr_t) const noexcept -> bool { return type() == Type::Null; }
 
    /// \brief Return the number of members in an object or elements in an array.
-   std::expected<std::size_t, Error> size() const noexcept;
+   auto size() const noexcept -> std::expected<std::size_t, Error>;
    /// \brief Find a NUL-terminated member key; a null key is reported as InvalidArgument.
-   std::expected<View, Error> find(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const noexcept;
-   std::expected<View, Error> at(std::size_t index) const noexcept;
+   auto find(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const noexcept -> std::expected<View, Error>;
+   auto at(std::size_t index) const noexcept -> std::expected<View, Error>;
 
-   bool operator==(const View &other) const noexcept;
-   std::string stringify(Format format = Format::Compact) const;
+   auto operator==(const View &other) const noexcept -> bool;
+   auto stringify(Format format = Format::Compact) const -> std::string;
 
    template <Decodable T>
-   std::expected<T, Error> get() const noexcept(noexcept(Decode<T>{}(*this)))
+   auto get() const noexcept(noexcept(Decode<T>{}(*this))) -> std::expected<T, Error>
    {
       return Decode<T>{}(*this);
    }
 
    template <Decodable T>
-   std::expected<T, Error> get(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const
-      noexcept(noexcept(Decode<T>{}(*this)))
+   auto get(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const
+      noexcept(noexcept(Decode<T>{}(*this))) -> std::expected<T, Error>
    {
       return find(key, missingKeyPolicy).and_then(Decode<T>{});
    }
 
    template <Decodable T>
-   [[nodiscard]] std::expected<void, Error> into(T &out) const noexcept(noexcept(get<T>()) && std::is_nothrow_move_assignable_v<T>)
+   [[nodiscard]] auto into(T &out) const noexcept(noexcept(get<T>()) && std::is_nothrow_move_assignable_v<T>) -> std::expected<void, Error>
    {
       return get<T>().transform([&out](auto &&val) noexcept(std::is_nothrow_move_assignable_v<T>) { out = std::forward<decltype(val)>(val); });
    }
 
    template <Decodable T>
-   [[nodiscard]] std::expected<void, Error> into(const char *key, T &out, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const
-      noexcept(noexcept(into(out)))
+   [[nodiscard]] auto into(const char *key, T &out, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const
+      noexcept(noexcept(into(out))) -> std::expected<void, Error>
    {
       return find(key, missingKeyPolicy).and_then([&out](View v) noexcept(noexcept(v.into(out))) { return v.into(out); });
    }
@@ -180,31 +180,31 @@ class Value final : public View
 
    ~Value();
    Value(Value &&other) noexcept;
-   Value &operator=(Value &&other) noexcept;
+   auto operator=(Value &&other) noexcept -> Value &;
    Value(const Value &) = delete;
-   Value &operator=(const Value &) = delete;
+   auto operator=(const Value &) -> Value & = delete;
 
-   static Value object();
-   static Value array();
-   static Value boolean(bool value);
-   static Value integer(std::int64_t value);
-   static Value unsignedInteger(std::uint64_t value);
-   static std::expected<Value, Error> real(double value);
-   static std::expected<Value, Error> string(std::string_view value);
+   static auto object() -> Value;
+   static auto array() -> Value;
+   static auto boolean(bool value) -> Value;
+   static auto integer(std::int64_t value) -> Value;
+   static auto unsignedInteger(std::uint64_t value) -> Value;
+   static auto real(double value) -> std::expected<Value, Error>;
+   static auto string(std::string_view value) -> std::expected<Value, Error>;
 
-   static std::expected<Value, ParseError> parse(std::string_view input);
+   static auto parse(std::string_view input) -> std::expected<Value, ParseError>;
 
    /// \brief Replace or add a non-null NUL-terminated object member key, transferring ownership of value.
-   [[nodiscard]] std::expected<void, Error> set(const char *key, Value value);
+   [[nodiscard]] auto set(const char *key, Value value) -> std::expected<void, Error>;
    /// \brief Append to an array, transferring ownership of value.
-   [[nodiscard]] std::expected<void, Error> append(Value value);
+   [[nodiscard]] auto append(Value value) -> std::expected<void, Error>;
 
-   static std::expected<Value, Error> encode(const Encodable auto &val) { return Encode<std::remove_cvref_t<decltype(val)>>{}(val); }
-   [[nodiscard]] std::expected<void, Error> set(const char *key, const Encodable auto &val)
+   static auto encode(const Encodable auto &val) -> std::expected<Value, Error> { return Encode<std::remove_cvref_t<decltype(val)>>{}(val); }
+   [[nodiscard]] auto set(const char *key, const Encodable auto &val) -> std::expected<void, Error>
    {
       return encode(val).and_then([&](auto v) { return set(key, std::move(v)); });
    }
-   [[nodiscard]] std::expected<void, Error> append(const Encodable auto &val)
+   [[nodiscard]] auto append(const Encodable auto &val) -> std::expected<void, Error>
    {
       return encode(val).and_then([&](auto v) { return append(std::move(v)); });
    }
@@ -222,7 +222,7 @@ template <> struct Decode<std::string>
 template <Decodable T>
 struct Decode<std::optional<T>>
 {
-   static std::expected<std::optional<T>, Error> operator()(View v) noexcept(noexcept(std::expected<std::optional<T>, Error>(v.get<T>())))
+   static auto operator()(View v) noexcept(noexcept(std::expected<std::optional<T>, Error>(v.get<T>()))) -> std::expected<std::optional<T>, Error>
    {
       if (v == nullptr)
 	 return std::nullopt;
@@ -256,7 +256,7 @@ requires(Decodable<typename Container::value_type> &&
 	 })
 struct Decode<Container>
 {
-   static std::expected<Container, Error> operator()(View v)
+   static auto operator()(View v) -> std::expected<Container, Error>
    {
       if (v.type() != Type::Array)
 	 return std::unexpected(Error::TypeMismatch);
@@ -288,7 +288,7 @@ template <typename T>
 requires(std::convertible_to<T, std::string_view> && not std::same_as<std::remove_cvref_t<T>, std::nullptr_t>)
 struct Encode<T>
 {
-   static std::expected<Value, Error> operator()(const auto &val)
+   static auto operator()(const auto &val) -> std::expected<Value, Error>
    {
       // std::remove_cvref_t to not treat char[N] array as pointer and trigger nonnull warning
       if constexpr (std::is_pointer_v<std::remove_cvref_t<decltype(val)>>)
@@ -300,7 +300,7 @@ struct Encode<T>
 template <std::integral T> requires(not std::same_as<T, bool>)
 struct Encode<T>
 {
-   static Value operator()(T val)
+   static auto operator()(T val) -> Value
    {
       if constexpr (std::is_signed_v<T>)
 	 return Value::integer(val);
@@ -315,7 +315,7 @@ requires(std::ranges::input_range<const R> &&
 	 not Reflectable<R>)
 struct Encode<R>
 {
-   static std::expected<Value, Error> operator()(const R &range)
+   static auto operator()(const R &range) -> std::expected<Value, Error>
    {
       auto arr = Value::array();
       for (const auto &elem : range)
@@ -328,7 +328,7 @@ struct Encode<R>
 template <Reflectable T>
 struct Encode<T>
 {
-   static std::expected<Value, Error> operator()(const T &val)
+   static auto operator()(const T &val) -> std::expected<Value, Error>
    {
       auto obj = Value::object();
       std::expected<void, Error> status{};
@@ -358,7 +358,7 @@ template <Reflectable T>
 requires std::is_default_constructible_v<T>
 struct Decode<T>
 {
-   static std::expected<T, Error> operator()(View v)
+   static auto operator()(View v) -> std::expected<T, Error>
    {
       if (v.type() != Type::Object)
 	 return std::unexpected(Error::TypeMismatch);
