@@ -6,8 +6,30 @@ UseTab:            Always
 IndentWidth:       3
 ContinuationIndentWidth: 3
 ColumnLimit:       0
-BreakBeforeBraces: Allman
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterExternBlock: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
 AccessModifierOffset: 0
+AlwaysBreakTemplateDeclarations: No
+RequiresClausePosition: SingleLine
+IndentRequiresClause: true
 IncludeCategories:
   - Regex:           'apti18n.h'
     Priority:        9999

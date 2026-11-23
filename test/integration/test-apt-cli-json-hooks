@@ -33,7 +33,7 @@ clean_json() {
 	jq 'del (.params.options[]? | select(.name != "APT::Architecture"))'
 }
 while true; do
-	read request <&\$APT_HOOK_SOCKET || exit 1
+	read -r request <&\$APT_HOOK_SOCKET || exit 1
 
 	if echo "\$request" 2>/dev/null | grep -q ".hello"; then
 		echo "HOOK: HELLO"
