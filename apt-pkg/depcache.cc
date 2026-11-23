@@ -1912,9 +1912,8 @@ bool pkgDepCache::IsInstallOkDependenciesSatisfiableByCandidates(PkgIterator con
    {
       DepIterator Start = Dep;
       bool foundSolution = false;
-      unsigned Ors = 0;
       // Is it possible to satisfy this dependency?
-      for (bool LastOR = true; not Dep.end() && LastOR; ++Dep, ++Ors)
+      for (bool LastOR = true; not Dep.end() && LastOR; ++Dep)
       {
 	 LastOR = (Dep->CompareOp & Dep::Or) == Dep::Or;
 

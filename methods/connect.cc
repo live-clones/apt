@@ -1007,6 +1007,30 @@ static SSL_CTX *GetContextForHost(std::string const &host, aptConfigWrapperForMe
    return ctx;
 }
 
+static bool IsIpAddress(const char *host)
+{
+   struct in_addr addr4;
+   struct in6_addr addr6;
+
+   return inet_pton(AF_INET, host, &addr4) == 1 ||
+	  inet_pton(AF_INET6, host, &addr6) == 1;
+}
+
+static bool SetExpectedPeerName(SSL *ssl, const char *host)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L
+   const auto res = IsIpAddress(host) ? SSL_set1_ipaddr(ssl, host) : SSL_set1_dnsname(ssl, host);
+#else
+   const auto res = SSL_set1_host(ssl, host);
+#endif
+   if (res != 1)
+   {
+      _error->Error("Could not set hostname: %s", ssl_strerr());
+      return false;
+   }
+   return true;
+}
+
 ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
 		      unsigned long const Timeout, aptMethod *const /*Owner*/,
 		      aptConfigWrapperForMethods const *const OwnerConf)
@@ -1054,20 +1078,16 @@ ResultState UnwrapTLS(std::string const &Host, std::unique_ptr<MethodFd> &Fd,
    if (OwnerConf->ConfigFindB("Verify-Peer", true))
    {
       SSL_set_verify(tlsFd->ssl, SSL_VERIFY_PEER, nullptr);
-      if (auto res = SSL_set1_host(tlsFd->ssl, OwnerConf->ConfigFindB("Verify-Host", true) ? tlsFd->hostname.c_str() : nullptr); res != 1)
+      if (OwnerConf->ConfigFindB("Verify-Host", true))
       {
-	 _error->Error("Could not set hostname: %s", ssl_strerr());
-	 return ResultState::FATAL_ERROR;
+	 if (not SetExpectedPeerName(tlsFd->ssl, tlsFd->hostname.c_str()))
+	    return ResultState::FATAL_ERROR;
       }
    }
 
    // set SNI only if the hostname is really a name and not an address
    {
-      struct in_addr addr4;
-      struct in6_addr addr6;
-
-      if (inet_pton(AF_INET, tlsFd->hostname.c_str(), &addr4) == 1 ||
-	  inet_pton(AF_INET6, tlsFd->hostname.c_str(), &addr6) == 1)
+      if (IsIpAddress(tlsFd->hostname.c_str()))
 	 /* not a host name */;
       else if (auto res = SSL_set_tlsext_host_name(tlsFd->ssl, tlsFd->hostname.c_str()); res != 1)
       {

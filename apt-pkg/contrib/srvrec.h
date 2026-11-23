@@ -29,10 +29,10 @@ class APT_PUBLIC SrvRec
    int random_number_range_end;
    int random_number_range_max;
 
-   bool operator<(SrvRec const &other) const {
+   bool operator<(SrvRec const &other) const noexcept {
       return this->priority < other.priority;
    }
-   bool operator==(SrvRec const &other) const;
+   bool operator==(SrvRec const &other) const noexcept;
 
    SrvRec(std::string const Target, u_int16_t const Priority,
 	 u_int16_t const Weight, u_int16_t const Port) :

@@ -421,8 +421,7 @@ bool pkgDPkgPM::RunScriptsWithPkgs(const char *Cnf)
    sighandler_t old_sigint = signal(SIGINT, SIG_IGN);
    sighandler_t old_sigquit = signal(SIGQUIT, SIG_IGN);
 
-   unsigned int Count = 1;
-   for (; Opts != 0; Opts = Opts->Next, Count++)
+   for (; Opts != 0; Opts = Opts->Next)
    {
       if (Opts->Value.empty() == true)
          continue;

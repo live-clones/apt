@@ -484,12 +484,10 @@ bool pkgCdrom::WriteSourceList(string Name,vector<string> &List,bool Source)
    else
       Type = "deb";
 
-   int CurLine = 0;
    bool First = true;
    std::string Buffer;
    while (F.ReadLine(Buffer))
    {
-      ++CurLine;
       std::string const Cleaned{APT::String::Strip(SubstVar(Buffer, "\t", "        "))};
 
       // Comment or blank

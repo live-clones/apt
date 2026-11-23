@@ -4,6 +4,7 @@ variables:
   CCACHE_DIR: $CI_PROJECT_DIR/.ccache
   CCACHE_BASEDIR: $CI_PROJECT_DIR
   APT_CMAKE_BUILD_OPTIONS: ''
+  APT_NINJA_TARGETS: ''
   DEB_BUILD_PROFILES: ''
   BUILD_PRE: ':'
 cache:
@@ -20,7 +21,7 @@ before_script:
     - sudo -u travis mkdir -p build .ccache
     - $BUILD_PRE
     - sudo -u travis env -C build cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ${APT_CMAKE_BUILD_OPTIONS} -G Ninja ..
-    - sudo -u travis --preserve-env=CCACHE_DIR,CCACHE_BASEDIR ninja -C build
+    - sudo -u travis --preserve-env=CCACHE_DIR,CCACHE_BASEDIR ninja -C build ${APT_NINJA_TARGETS}
 
 test as root:
   stage: test
@@ -57,3 +58,13 @@ test as user:
     - sudo -u travis CTEST_OUTPUT_ON_FAILURE=1 ninja -C build test
     - chmod -R o-w $PWD
     - sudo -u travis unbuffer ./test/integration/run-tests -q -j 4
+
+clang-tidy apt-core:
+  stage: test
+  variables:
+    APT_CMAKE_BUILD_OPTIONS: '-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DWITH_DOC=OFF -DUSE_NLS=OFF -DWITH_TESTS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
+    DEB_BUILD_PROFILES: 'nodoc nocheck'
+    BUILD_PRE: 'apt-get install --no-install-recommends -qq clang clang-tidy'
+    APT_NINJA_TARGETS: 'apt-core/all'
+  script:
+    - sudo -u travis env -C apt-core run-clang-tidy -p ../build -quiet -warnings-as-errors='*' apt-core
