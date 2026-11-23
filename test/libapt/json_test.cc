@@ -396,3 +396,57 @@ TEST(JSONValue, RejectsOutOfRangeNarrowing)
    ASSERT_TRUE(tooLarge.has_value()) << tooLarge.error().message;
    EXPECT_EQ(tooLarge->get<unsigned>().error(), JSON::Error::OutOfRange);
 }
+
+struct ReflectableTestStruct
+{
+   std::string name;
+   std::optional<int> count;
+};
+
+template <>
+struct JSON::Reflect<ReflectableTestStruct>
+{
+   static constexpr auto operator()(auto &val) noexcept
+   {
+      return std::tuple{
+	 std::pair{"name", std::ref(val.name)},
+	 std::pair{"count", std::ref(val.count)},
+      };
+   }
+};
+
+static_assert(JSON::Reflectable<ReflectableTestStruct>);
+static_assert(JSON::Decodable<ReflectableTestStruct>);
+static_assert(JSON::Encodable<ReflectableTestStruct>);
+
+TEST(JSONValue, ReflectableStructsEncode)
+{
+   auto obj = JSON::Value::encode(ReflectableTestStruct{"test", 42});
+   ASSERT_TRUE(obj.has_value());
+   ASSERT_EQ(obj->stringify(), R"({"name":"test","count":42})");
+}
+
+TEST(JSONValue, ReflectableStructsDecode)
+{
+   auto obj = JSON::Value::parse(R"({"name":"test","count":43})");
+   EXPECT_TRUE(obj->get<ReflectableTestStruct>().has_value());
+   EXPECT_EQ(obj->get<ReflectableTestStruct>()->name, "test");
+   EXPECT_EQ(obj->get<ReflectableTestStruct>()->count, 43);
+}
+
+TEST(JSONValue, ReflectableStructsNull)
+{
+   // Missing key is fine
+   auto parsedMissing = JSON::Value::parse(R"({"name":"test"})");
+   EXPECT_EQ(parsedMissing->get<ReflectableTestStruct>()->name, "test");
+   EXPECT_EQ(parsedMissing->get<ReflectableTestStruct>()->count, std::nullopt);
+   ASSERT_EQ(parsedMissing->stringify(), R"({"name":"test"})");
+   // Parse explicit null; object is fine
+   auto parsedNull = JSON::Value::parse(R"({"name":"test","count":null})");
+   auto reflectedNull = parsedNull->get<ReflectableTestStruct>();
+   EXPECT_EQ(reflectedNull->name, "test");
+   EXPECT_EQ(reflectedNull->count, std::nullopt);
+   ASSERT_EQ(parsedNull->stringify(), R"({"name":"test","count":null})");
+   // Encoding it back we do not render null
+   ASSERT_EQ(JSON::Value::encode(*reflectedNull)->stringify(), R"({"name":"test"})");
+}

@@ -96,6 +96,16 @@ concept Encodable = not std::derived_from<std::remove_cvref_t<T>, View> && requi
    { Encode<std::remove_cvref_t<T>>{}(val) } -> EncodeResult;
 };
 
+/// \brief Instantiate to provide member reflection for custom classes
+/// Note: A null value is treated like an absent field when parsing and writing.
+template <typename T>
+struct Reflect;
+template <typename T>
+concept Reflectable = requires(T &val, const T &cval) {
+   Reflect<std::remove_cvref_t<T>>{}(val);
+   Reflect<std::remove_cvref_t<T>>{}(cval);
+};
+
 /** \brief A non-owning view of a JSON value.
  *
  * A view must not outlive its owning Value. Mutating or destroying the owning
@@ -243,6 +253,7 @@ struct Decode<T>
 };
 template <typename Container>
 requires(Decodable<typename Container::value_type> &&
+	 not Reflectable<Container> &&
 	 std::is_default_constructible_v<Container> &&
 	 not std::convertible_to<Container, std::string_view> &&
 	 requires(Container &c, typename Container::value_type &&val) {
@@ -305,7 +316,8 @@ struct Encode<T>
 template <typename R>
 requires(std::ranges::input_range<const R> &&
 	 Encodable<std::ranges::range_reference_t<const R>> &&
-	 not std::convertible_to<R, std::string_view>)
+	 not std::convertible_to<R, std::string_view> &&
+	 not Reflectable<R>)
 struct Encode<R>
 {
    static std::expected<Value, Error> operator()(const R &range)
@@ -315,6 +327,64 @@ struct Encode<R>
 	 if (auto res = arr.append(elem); not res)
 	    return std::unexpected(res.error());
       return arr;
+   }
+};
+
+template <Reflectable T>
+struct Encode<T>
+{
+   static std::expected<Value, Error> operator()(const T &val)
+   {
+      auto obj = Value::object();
+      std::expected<void, Error> status{};
+      std::apply(
+	 [&](const auto &...fields) noexcept(sizeof...(fields) == 0) {
+	    if constexpr (sizeof...(fields) > 0)
+	    {
+	       auto setMember = [&](const auto &key, const auto &field) -> std::expected<void, Error> {
+		  if constexpr (requires { field.has_value(); })
+		  {
+		     if (not field.has_value())
+			return {};
+		  }
+		  return obj.set(key, field);
+	       };
+	       (void)((status = setMember(fields.first, fields.second.get())).has_value() && ...);
+	    }
+	 },
+	 Reflect<T>{}(val));
+      if (not status)
+	 return std::unexpected(status.error());
+      return obj;
+   }
+};
+
+template <Reflectable T>
+requires std::is_default_constructible_v<T>
+struct Decode<T>
+{
+   static std::expected<T, Error> operator()(View v)
+   {
+      if (v.type() != Type::Object)
+	 return std::unexpected(Error::TypeMismatch);
+
+      T result;
+      std::expected<void, Error> status{};
+      std::apply(
+	 [&](auto &&...fields) noexcept(sizeof...(fields) == 0) {
+	    if constexpr (sizeof...(fields) > 0)
+	    {
+	       auto getMember = [&](const auto &key, auto &field) -> std::expected<void, Error> {
+		  return v.into(key, field, MissingKeyPolicy::Null);
+	       };
+	       (void)((status = getMember(fields.first, fields.second.get())).has_value() && ...);
+	    }
+	 },
+	 Reflect<T>{}(result));
+
+      if (not status)
+	 return std::unexpected(status.error());
+      return result;
    }
 };
 } // namespace JSON
