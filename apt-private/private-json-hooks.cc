@@ -18,7 +18,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -32,7 +31,16 @@ namespace JSON = APT::JSON;
 
 namespace Hook
 {
-struct Origin
+struct Origin;
+struct Version;
+struct Versions;
+struct Package;
+struct Notification;
+struct Hello;
+struct Bye;
+} // namespace Hook
+
+struct Hook::Origin
 {
    std::optional<std::string> archive;
    std::optional<std::string> codename;
@@ -42,7 +50,15 @@ struct Origin
    std::optional<std::string> site;
 };
 
-struct Version
+APT_REFLECT(Hook::Origin,
+	    APT_FIELD(archive),
+	    APT_FIELD(codename),
+	    APT_FIELD(version),
+	    APT_FIELD(origin),
+	    APT_FIELD(label),
+	    APT_FIELD(site));
+
+struct Hook::Version
 {
    unsigned int id;
    std::string version;
@@ -51,14 +67,26 @@ struct Version
    std::vector<Origin> origins;
 };
 
-struct Versions
+APT_REFLECT(Hook::Version,
+	    APT_FIELD(id),
+	    APT_FIELD(version),
+	    APT_FIELD(architecture),
+	    APT_FIELD(pin),
+	    APT_FIELD(origins));
+
+struct Hook::Versions
 {
    std::optional<Version> candidate;
    std::optional<Version> install;
    std::optional<Version> current;
 };
 
-struct Package
+APT_REFLECT(Hook::Versions,
+	    APT_FIELD(candidate),
+	    APT_FIELD(install),
+	    APT_FIELD(current));
+
+struct Hook::Package
 {
    unsigned int id;
    std::string name;
@@ -68,7 +96,15 @@ struct Package
    Versions versions;
 };
 
-struct Notification
+APT_REFLECT(Hook::Package,
+	    APT_FIELD(id),
+	    APT_FIELD(name),
+	    APT_FIELD(architecture),
+	    APT_FIELD(mode),
+	    APT_FIELD(automatic),
+	    APT_FIELD(versions));
+
+struct Hook::Notification
 {
    struct Params
    {
@@ -83,7 +119,17 @@ struct Notification
    Params params;
 };
 
-struct Hello
+APT_REFLECT(Hook::Notification::Params,
+	    APT_FIELD(command),
+	    APT_FIELD(searchTerms, "search-terms"),
+	    APT_FIELD(unknownPackages, "unknown-packages"),
+	    APT_FIELD(packages));
+APT_REFLECT(Hook::Notification,
+	    APT_FIELD(jsonRPC, "jsonrpc"),
+	    APT_FIELD(method),
+	    APT_FIELD(params));
+
+struct Hook::Hello
 {
    struct Params
    {
@@ -113,7 +159,20 @@ struct Hello
    Params params;
 };
 
-struct Bye
+APT_REFLECT(Hook::Hello::Params::Option, APT_FIELD(name), APT_FIELD(value));
+APT_REFLECT(Hook::Hello::Params, APT_FIELD(versions), APT_FIELD(options));
+APT_REFLECT(Hook::Hello::Reply::Result, APT_FIELD(version));
+APT_REFLECT(Hook::Hello::Reply,
+	    APT_FIELD(jsonRPC, "jsonrpc"),
+	    APT_FIELD(id),
+	    APT_FIELD(result));
+APT_REFLECT(Hook::Hello,
+	    APT_FIELD(jsonRPC, "jsonrpc"),
+	    APT_FIELD(method),
+	    APT_FIELD(id),
+	    APT_FIELD(params));
+
+struct Hook::Bye
 {
    struct Params
    {
@@ -123,177 +182,12 @@ struct Bye
    std::string_view method = "org.debian.apt.hooks.bye";
    Params params;
 };
-} // namespace Hook
 
-template <>
-struct JSON::Reflect<Hook::Origin>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"archive", std::ref(val.archive)},
-	 std::pair{"codename", std::ref(val.codename)},
-	 std::pair{"version", std::ref(val.version)},
-	 std::pair{"origin", std::ref(val.origin)},
-	 std::pair{"label", std::ref(val.label)},
-	 std::pair{"site", std::ref(val.site)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Version>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"id", std::ref(val.id)},
-	 std::pair{"version", std::ref(val.version)},
-	 std::pair{"architecture", std::ref(val.architecture)},
-	 std::pair{"pin", std::ref(val.pin)},
-	 std::pair{"origins", std::ref(val.origins)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Versions>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"candidate", std::ref(val.candidate)},
-	 std::pair{"install", std::ref(val.install)},
-	 std::pair{"current", std::ref(val.current)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Package>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"id", std::ref(val.id)},
-	 std::pair{"name", std::ref(val.name)},
-	 std::pair{"architecture", std::ref(val.architecture)},
-	 std::pair{"mode", std::ref(val.mode)},
-	 std::pair{"automatic", std::ref(val.automatic)},
-	 std::pair{"versions", std::ref(val.versions)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Notification::Params>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"command", std::ref(val.command)},
-	 std::pair{"search-terms", std::ref(val.searchTerms)},
-	 std::pair{"unknown-packages", std::ref(val.unknownPackages)},
-	 std::pair{"packages", std::ref(val.packages)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Notification>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"jsonrpc", std::ref(val.jsonRPC)},
-	 std::pair{"method", std::ref(val.method)},
-	 std::pair{"params", std::ref(val.params)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Hello::Params::Option>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"name", std::ref(val.name)},
-	 std::pair{"value", std::ref(val.value)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Hello::Params>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"versions", std::ref(val.versions)},
-	 std::pair{"options", std::ref(val.options)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Hello>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"jsonrpc", std::ref(val.jsonRPC)},
-	 std::pair{"method", std::ref(val.method)},
-	 std::pair{"id", std::ref(val.id)},
-	 std::pair{"params", std::ref(val.params)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Hello::Reply>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"jsonrpc", std::ref(val.jsonRPC)},
-	 std::pair{"id", std::ref(val.id)},
-	 std::pair{"result", std::ref(val.result)},
-      };
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Hello::Reply::Result>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::make_tuple(
-	 std::pair{"version", std::ref(val.version)});
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Bye::Params>
-{
-   static constexpr auto operator()(auto &) noexcept
-   {
-      return std::tuple{};
-   }
-};
-
-template <>
-struct JSON::Reflect<Hook::Bye>
-{
-   static constexpr auto operator()(auto &val) noexcept
-   {
-      return std::tuple{
-	 std::pair{"jsonrpc", std::ref(val.jsonRPC)},
-	 std::pair{"method", std::ref(val.method)},
-	 std::pair{"params", std::ref(val.params)},
-      };
-   }
-};
+APT_REFLECT(Hook::Bye::Params);
+APT_REFLECT(Hook::Bye,
+	    APT_FIELD(jsonRPC, "jsonrpc"),
+	    APT_FIELD(method),
+	    APT_FIELD(params));
 
 /** Build the origin object for a VerFileIterator. */
 static Hook::Origin verFileToHook(pkgCache::VerFileIterator const &vf)

@@ -10,10 +10,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <optional>
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -100,6 +102,23 @@ concept Reflectable = requires(T &val, const T &cval) {
    Reflect<std::remove_cvref_t<T>>{}(val);
    Reflect<std::remove_cvref_t<T>>{}(cval);
 };
+
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+#define APT_FIELD_SELECT(key, ...) key
+
+#define APT_FIELD(member, ...) \
+   std::pair { APT_FIELD_SELECT(__VA_ARGS__ __VA_OPT__(, ) #member), std::ref(val.member) }
+
+#define APT_REFLECT(Type, ...)                                              \
+   template <>                                                              \
+   struct APT::JSON::Reflect<Type>                                          \
+   {                                                                        \
+      static constexpr auto operator()([[maybe_unused]] auto &val) noexcept \
+      {                                                                     \
+	 return std::make_tuple(__VA_ARGS__);                               \
+      }                                                                     \
+   }
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
 /** \brief A non-owning view of a JSON value.
  *
