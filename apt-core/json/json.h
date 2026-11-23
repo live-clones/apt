@@ -114,34 +114,34 @@ class View
    explicit View(Handle *handle) noexcept : handle(handle) {}
 
    public:
-   auto asBoolean() const noexcept -> std::expected<bool, Error>;
-   auto asInt64() const noexcept -> std::expected<std::int64_t, Error>;
-   auto asUInt64() const noexcept -> std::expected<std::uint64_t, Error>;
-   auto asDouble() const noexcept -> std::expected<double, Error>;
-   auto asString() const noexcept -> std::expected<std::string_view, Error>;
+   [[nodiscard]] auto asBoolean() const noexcept -> std::expected<bool, Error>;
+   [[nodiscard]] auto asInt64() const noexcept -> std::expected<std::int64_t, Error>;
+   [[nodiscard]] auto asUInt64() const noexcept -> std::expected<std::uint64_t, Error>;
+   [[nodiscard]] auto asDouble() const noexcept -> std::expected<double, Error>;
+   [[nodiscard]] auto asString() const noexcept -> std::expected<std::string_view, Error>;
 
    View() noexcept = default;
 
-   auto type() const noexcept -> Type;
+   [[nodiscard]] auto type() const noexcept -> Type;
    auto operator==(std::nullptr_t) const noexcept -> bool { return type() == Type::Null; }
 
    /// \brief Return the number of members in an object or elements in an array.
-   auto size() const noexcept -> std::expected<std::size_t, Error>;
+   [[nodiscard]] auto size() const noexcept -> std::expected<std::size_t, Error>;
    /// \brief Find a NUL-terminated member key; a null key is reported as InvalidArgument.
-   auto find(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const noexcept -> std::expected<View, Error>;
-   auto at(std::size_t index) const noexcept -> std::expected<View, Error>;
+   [[nodiscard]] auto find(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const noexcept -> std::expected<View, Error>;
+   [[nodiscard]] auto at(std::size_t index) const noexcept -> std::expected<View, Error>;
 
    auto operator==(const View &other) const noexcept -> bool;
-   auto stringify(Format format = Format::Compact) const -> std::string;
+   [[nodiscard]] auto stringify(Format format = Format::Compact) const -> std::string;
 
    template <Decodable T>
-   auto get() const noexcept(noexcept(Decode<T>{}(*this))) -> std::expected<T, Error>
+   [[nodiscard]] auto get() const noexcept(noexcept(Decode<T>{}(*this))) -> std::expected<T, Error>
    {
       return Decode<T>{}(*this);
    }
 
    template <Decodable T>
-   auto get(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const
+   [[nodiscard]] auto get(const char *key, MissingKeyPolicy missingKeyPolicy = MissingKeyPolicy::Error) const
       noexcept(noexcept(Decode<T>{}(*this))) -> std::expected<T, Error>
    {
       return find(key, missingKeyPolicy).and_then(Decode<T>{});
