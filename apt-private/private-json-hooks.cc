@@ -385,8 +385,7 @@ bool RunJsonHook(std::string const &option, std::string const &method, const cha
       signal(SIGPIPE, old_sigpipe);
       signal(SIGQUIT, old_sigquit); });
 
-   unsigned int Count = 1;
-   for (; Opts != 0; Opts = Opts->Next, Count++)
+   for (; Opts != 0; Opts = Opts->Next)
    {
       if (Opts->Value.empty() == true)
 	 continue;

@@ -27,7 +27,7 @@
 
 #include "srvrec.h"
 
-bool SrvRec::operator==(SrvRec const &other) const
+bool SrvRec::operator==(SrvRec const &other) const noexcept
 {
    return (std::tie(target, priority, weight, port) ==
            std::tie(other.target, other.priority, other.weight, other.port));

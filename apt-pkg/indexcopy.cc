@@ -706,7 +706,6 @@ bool TranslationsCopy::CopyTranslations(string CDROM,string Name,	/*{{{*/
       pkgTagSection Section;
       this->Section = &Section;
       string Prefix;
-      unsigned long Hits = 0;
       while (Parser.Step(Section) == true)
       {
 	 if(Progress)
@@ -716,7 +715,6 @@ bool TranslationsCopy::CopyTranslations(string CDROM,string Name,	/*{{{*/
 	    return false;
 
 	 Packages++;
-	 Hits++;
       }
 
       if (Debug == true)
