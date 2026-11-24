@@ -9,7 +9,9 @@
 
 #include <array>
 #include <cerrno>
+#include <chrono>
 #include <utility>
+#include <vector>
 
 #include "common.h"
 
@@ -246,6 +248,132 @@ TEST(IoLoopTest, DestructorDestroysSuspendedRoot)
    }
    // ~Loop cleared the waiters, then destroyed the suspended root frame,
    // running its destructors; no dangling waiter, no crash.
+   EXPECT_EQ(destroyed, 1);
+}
+
+TEST(IoLoopTest, SleepResumesAfterDuration)
+{
+   Loop loop;
+   bool ran = false;
+   auto sleeper = [&]() -> Task<void>
+   {
+      co_await loop.sleep(std::chrono::nanoseconds{std::chrono::milliseconds{5}});
+      ran = true;
+   };
+   // Record the start before schedule(): the deadline is created (relative
+   // to now) during schedule(), so only a pre-schedule start bounds it.
+   auto const start = std::chrono::steady_clock::now();
+   loop.schedule(sleeper());
+   EXPECT_FALSE(ran);
+   EXPECT_TRUE(loop.run().has_value());
+   auto const elapsed = std::chrono::steady_clock::now() - start;
+   EXPECT_TRUE(ran);
+   // Only a lower bound: scheduling may overshoot but never undershoot.
+   EXPECT_GE(elapsed, std::chrono::milliseconds{5});
+}
+
+TEST(IoLoopTest, SleepZeroDoesNotSuspend)
+{
+   Loop loop;
+   bool ran = false;
+   auto sleeper = [&]() -> Task<void>
+   {
+      co_await loop.sleep(std::chrono::nanoseconds{0});
+      ran = true;
+   };
+   loop.schedule(sleeper());
+   // Completed during schedule(): await_ready() returned true, no timer.
+   EXPECT_TRUE(ran);
+   EXPECT_TRUE(loop.run().has_value());
+}
+
+TEST(IoLoopTest, SleepOrderingPreserved)
+{
+   Loop loop;
+   std::vector<int> order;
+   auto sleeper = [&](int tag, std::chrono::nanoseconds duration) -> Task<void>
+   {
+      co_await loop.sleep(duration);
+      order.push_back(tag);
+   };
+   loop.schedule(sleeper(1, std::chrono::milliseconds{30}));
+   loop.schedule(sleeper(2, std::chrono::milliseconds{5}));
+   EXPECT_TRUE(order.empty());
+   EXPECT_TRUE(loop.run().has_value());
+   // collectDueTimers() stably orders due handles by deadline, so the
+   // 5 ms timer resumes before the 30 ms one regardless of registration
+   // order; equal deadlines would keep registration order.
+   EXPECT_EQ(order, (std::vector<int>{2, 1}));
+}
+
+TEST(IoLoopTest, TimerAndFdInterleave)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   bool fdRan = false;
+   bool timerRan = false;
+   auto reader = [&]() -> Task<void>
+   {
+      co_await loop.poll(pipe.readEnd.get(), PollEvents::Read);
+      fdRan = true;
+   };
+   auto sleeper = [&]() -> Task<void>
+   {
+      co_await loop.sleep(std::chrono::milliseconds{50});
+      timerRan = true;
+   };
+   char const byte = 'x';
+   ASSERT_EQ(::write(pipe.writeEnd.get(), &byte, 1), 1);
+   auto const start = std::chrono::steady_clock::now();
+   loop.schedule(reader());
+   loop.schedule(sleeper());
+   EXPECT_TRUE(loop.run().has_value());
+   // Both complete in a single run(); no relative order between them is
+   // asserted (a late run() can legitimately make the timer due first).
+   EXPECT_TRUE(fdRan);
+   EXPECT_TRUE(timerRan);
+   // The fd task observed its data.
+   char got = 0;
+   ASSERT_EQ(::read(pipe.readEnd.get(), &got, 1), 1);
+   EXPECT_EQ(got, byte);
+   // Lower bound only: the timer's 50 ms elapsed within the run.
+   EXPECT_GE(std::chrono::steady_clock::now() - start, std::chrono::milliseconds{50});
+}
+
+TEST(IoLoopTest, RunReturnsAfterLastTimer)
+{
+   Loop loop;
+   bool ran = false;
+   auto sleeper = [&]() -> Task<void>
+   {
+      co_await loop.sleep(std::chrono::milliseconds{5});
+      ran = true;
+   };
+   loop.schedule(sleeper());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+}
+
+TEST(IoLoopTest, DestructorCancelsPendingTimer)
+{
+   int destroyed = 0;
+   {
+      Loop loop;
+      int *observer = &destroyed;
+      auto make = [&]() -> Task<void>
+      {
+	 FrameProbe probe{observer};
+	 (void)probe;
+	 // Root suspends on a timer that never fires within this scope.
+	 co_await loop.sleep(std::chrono::hours{1});
+      };
+      loop.schedule(make());
+      EXPECT_EQ(destroyed, 0);
+   }
+   // ~Loop cleared the timers, then destroyed the suspended root frame,
+   // running its destructors; no dangling timer, no crash.
    EXPECT_EQ(destroyed, 1);
 }
 

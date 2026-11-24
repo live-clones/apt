@@ -6,6 +6,10 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <chrono>
+#include <ctime>
+#include <optional>
+#include <algorithm>
 #include <system_error>
 #include <utility>
 
@@ -14,9 +18,10 @@ namespace APT::inline Internal::IO
 
 Loop::~Loop()
 {
-   // Drop registered waiters first so cancelled roots leave no dangling
-   // entries, then destroy every remaining owned root frame.
+   // Drop registered waiters and timers first so cancelled roots leave no
+   // dangling entries, then destroy every remaining owned root frame.
    waiters.clear();
+   timers.clear();
    for (auto handle : owned)
       handle.destroy();
    owned.clear();
@@ -61,6 +66,20 @@ auto Loop::WaitFd::await_suspend(std::coroutine_handle<> handle) -> void
 
 auto Loop::WaitFd::await_resume() const noexcept -> void {}
 
+Loop::Sleep::Sleep(Loop &loop, std::chrono::steady_clock::time_point deadline) noexcept : loop(&loop), deadline(deadline) {}
+
+auto Loop::Sleep::await_ready() const noexcept -> bool
+{
+   return deadline <= std::chrono::steady_clock::now(); // never suspends when already due
+}
+
+auto Loop::Sleep::await_suspend(std::coroutine_handle<> handle) -> void
+{
+   loop->timers.emplace_back(handle, deadline);
+}
+
+auto Loop::Sleep::await_resume() const noexcept -> void {}
+
 auto Loop::toPollEvents(PollEvents flags) noexcept -> short
 {
    auto const bits = static_cast<unsigned>(flags);
@@ -72,20 +91,156 @@ auto Loop::toPollEvents(PollEvents flags) noexcept -> short
    return events;
 }
 
+// Clamp for absurd deadlines: converting a steady-clock time_point
+// remaining-time to nanoseconds can overflow time_t for far-future
+// deadlines; 24 hours is far beyond any plausible event-loop wait, so
+// clamping loses nothing while keeping the timespec well-defined.
+constexpr auto MaxTimeout = std::chrono::hours{24};
+
+auto Loop::toTimespec(std::chrono::steady_clock::time_point deadline) noexcept -> struct ::timespec
+{
+   auto const now = std::chrono::steady_clock::now();
+   if (deadline <= now)
+      return ::timespec{.tv_sec = 0, .tv_nsec = 0};
+   // Clamp the native steady-clock duration before converting to
+   // nanoseconds — the cast itself can overflow for far-future deadlines.
+   auto remaining = deadline - now;
+   if (remaining > MaxTimeout)
+      remaining = MaxTimeout;
+   auto const ns = std::chrono::duration_cast<std::chrono::nanoseconds>(remaining);
+   auto const seconds = std::chrono::duration_cast<std::chrono::seconds>(ns);
+   return ::timespec{.tv_sec = seconds.count(), .tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(ns - seconds).count()};
+}
+
+// Collect the due timers and remove them from the list before resuming
+// anything: resuming can register new timers and must not invalidate the
+// collection step. The due handles are stably ordered by deadline so
+// equal deadlines keep registration order.
+auto Loop::collectDueTimers(std::vector<std::coroutine_handle<>> &due, std::vector<Timer> &pending) -> void
+{
+   auto const now = std::chrono::steady_clock::now();
+   due.clear();
+   pending.clear();
+   std::vector<Timer> expired;
+   for (auto const &timer : timers)
+   {
+      if (timer.deadline <= now)
+	 expired.push_back(timer);
+      else
+	 pending.push_back(timer);
+   }
+   std::ranges::stable_sort(expired, [](Timer const &lhs, Timer const &rhs)
+   {
+      return lhs.deadline < rhs.deadline;
+   });
+   for (auto const &timer : expired)
+      due.push_back(timer.handle);
+   timers.swap(pending);
+}
+
+auto Loop::nearestDeadline() const noexcept -> std::optional<std::chrono::steady_clock::time_point>
+{
+   std::optional<std::chrono::steady_clock::time_point> result;
+   for (auto const &timer : timers)
+   {
+      if (!result || timer.deadline < *result)
+	 result = timer.deadline;
+   }
+   return result;
+}
+
+auto Loop::dispatchReady(std::vector<struct ::pollfd> const &pollfds) -> void
+{
+   // Collect the ready handles and update the waiter list before resuming
+   // anything: resuming can register new waiters and must not invalidate
+   // the collection step.
+   std::vector<std::coroutine_handle<>> ready;
+   std::vector<Waiter> remaining;
+   ready.reserve(waiters.size());
+   auto pollfd = pollfds.begin();
+   for (auto const &waiter : waiters)
+   {
+      // poll conveys no status, so the awaiting coroutine must be
+      // resumed on error/hangup conditions to observe them itself (this
+      // is what makes EOF — read() returning 0 — work).
+      short const revents = pollfd->revents;
+      ++pollfd;
+      bool const isError = (revents & (POLLERR | POLLHUP | POLLNVAL)) != 0;
+      bool const wanted = (revents & toPollEvents(waiter.flags)) != 0;
+      if (isError || wanted)
+	 ready.push_back(waiter.handle);
+      else
+	 remaining.push_back(waiter);
+   }
+   waiters.swap(remaining);
+
+   for (auto handle : ready)
+      handle.resume();
+   reapOwned();
+}
+
+auto Loop::reapOwned() -> void
+{
+   // Resumed waiters are mid-coroutine frames owned by their creating
+   // coroutines (or root frames owned here); the loop never destroys a
+   // waiter handle. Root frames that reached final suspension are
+   // destroyed exactly once; suspended (not-done) roots stay owned.
+   for (auto it = owned.begin(); it != owned.end();)
+   {
+      if (it->done())
+      {
+	 it->destroy();
+	 it = owned.erase(it);
+      }
+      else
+      {
+	 ++it;
+      }
+   }
+}
+
 auto Loop::run() -> std::expected<void, std::error_code>
 {
    std::vector<struct ::pollfd> pollfds;
-   std::vector<std::coroutine_handle<>> ready;
-   std::vector<Waiter> remaining;
-   while (!waiters.empty())
+   std::vector<std::coroutine_handle<>> due;
+   std::vector<Timer> pending;
+   while (!waiters.empty() || !timers.empty())
    {
-      // Rebuild the poll array from the current waiters, then wait.
+      // Every iteration resumes timers whose deadline has passed, whether
+      // or not ppoll reported readiness; collectDueTimers() updates the
+      // timer list first so resuming cannot invalidate it.
+      collectDueTimers(due, pending);
+      for (auto handle : due)
+	 handle.resume();
+      // Timers can complete root tasks too.
+      reapOwned();
+
+      if (waiters.empty() && timers.empty())
+	 break;
+
+      // Rebuild the poll array from the current waiters; it may
+      // legitimately be empty — ppoll(nullptr, 0, &timeout, ...) is a
+      // valid sleep for the timer-only case.
       pollfds.clear();
       pollfds.reserve(waiters.size());
       for (auto const &waiter : waiters)
 	 pollfds.push_back(::pollfd{.fd = waiter.fd, .events = toPollEvents(waiter.flags), .revents = 0});
 
-      int const count = ::ppoll(pollfds.data(), pollfds.size(), nullptr, nullptr);
+      // Wait with a timeout derived from the nearest timer deadline (null
+      // when there are none); the clamp in toTimespec avoids overflow for
+      // absurd durations. After collectDueTimers() the nearest pending
+      // deadline is strictly in the future, so the timeout is strictly
+      // positive and this cannot spin.
+      auto const nearest = nearestDeadline();
+      ::timespec const *timeout = nullptr;
+      ::timespec storage{};
+      if (nearest)
+      {
+	 storage = toTimespec(*nearest);
+	 timeout = &storage;
+      }
+
+      int const count = ::ppoll(pollfds.data(), pollfds.size(), timeout, nullptr);
       int const saved = errno;
       if (count < 0)
       {
@@ -94,49 +249,13 @@ auto Loop::run() -> std::expected<void, std::error_code>
 	 return std::unexpected(std::error_code(saved, std::system_category()));
       }
       if (count == 0)
+      {
+	 // Pure timeout: the deadline that produced it has (or is about to
+	 // have) passed; loop back to collect and resume the due timers.
 	 continue;
-
-      // Collect the ready handles and update the waiter list before resuming
-      // anything: resuming can register new waiters and must not invalidate
-      // the collection step.
-      ready.clear();
-      ready.reserve(waiters.size());
-      remaining.clear();
-      auto pollfd = pollfds.begin();
-      for (auto const &waiter : waiters)
-      {
-	 // poll conveys no status, so the awaiting coroutine must be
-	 // resumed on error/hangup conditions to observe them itself (this
-	 // is what makes EOF — read() returning 0 — work).
-	 short const revents = pollfd->revents;
-	 ++pollfd;
-	 bool const isError = (revents & (POLLERR | POLLHUP | POLLNVAL)) != 0;
-	 bool const wanted = (revents & toPollEvents(waiter.flags)) != 0;
-	 if (isError || wanted)
-	    ready.push_back(waiter.handle);
-	 else
-	    remaining.push_back(waiter);
       }
-      waiters.swap(remaining);
 
-      for (auto handle : ready)
-	 handle.resume();
-      // Resumed waiters are mid-coroutine frames owned by their creating
-      // coroutines (or root frames owned here); the loop never destroys a
-      // waiter handle. Root frames that reached final suspension are
-      // destroyed exactly once; suspended (not-done) roots stay owned.
-      for (auto it = owned.begin(); it != owned.end();)
-      {
-	 if (it->done())
-	 {
-	    it->destroy();
-	    it = owned.erase(it);
-	 }
-	 else
-	 {
-	    ++it;
-	 }
-      }
+      dispatchReady(pollfds);
    }
    return {};
 }

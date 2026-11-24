@@ -8,10 +8,15 @@
 
 #include <apt-core/io/task.h>
 
+#include <chrono>
 #include <coroutine>
 #include <expected>
+#include <optional>
 #include <system_error>
 #include <vector>
+
+// poll.h types used in private helpers; defined only where needed.
+struct pollfd;
 
 namespace APT::inline Internal::IO
 {
@@ -36,13 +41,15 @@ enum class PollEvents : unsigned
 /** \brief Single-threaded poll(2)-based event loop for Task coroutines.
  *
  * The loop drives scheduled Task<void> coroutines whose bodies suspend on
- * poll() awaitables until their descriptors are readable or writable.
+ * poll() awaitables until their descriptors are readable or writable, or
+ * on sleep() awaitables until their steady-clock deadline passes.
  * It is single-threaded by contract: all interaction must happen from the
  * thread running the loop. No synchronization is performed.
  *
- * run() returns when no waiters remain, even if some scheduled root task is
- * still suspended on something the loop cannot observe; such tasks are
- * destroyed (with their destructors run) by ~Loop().
+ * run() returns when there is neither an fd waiter nor a timer left, even
+ * if some scheduled root task is still suspended on something the loop
+ * cannot observe; such tasks are destroyed (with their destructors run)
+ * by ~Loop(). Timed waits use std::chrono::steady_clock.
  */
 class [[nodiscard]] Loop
 {
@@ -71,6 +78,28 @@ class [[nodiscard]] Loop
       PollEvents flags;
    };
 
+   /// \brief Awaitable suspending until the steady-clock deadline passes. Only Loop::sleep() creates one.
+   struct Sleep
+   {
+      Sleep() = delete;
+      Sleep(Sleep const &) = default;
+      Sleep(Sleep &&) = default;
+      auto operator=(Sleep const &) -> Sleep & = delete;
+      auto operator=(Sleep &&) -> Sleep & = delete;
+      ~Sleep() = default;
+
+      [[nodiscard]] auto await_ready() const noexcept -> bool;
+      auto await_suspend(std::coroutine_handle<> handle) -> void;
+      auto await_resume() const noexcept -> void;
+
+      private:
+      friend class Loop;
+      Sleep(Loop &loop, std::chrono::steady_clock::time_point deadline) noexcept;
+      // Never null: only Loop::sleep constructs a Sleep.
+      Loop *loop;
+      std::chrono::steady_clock::time_point deadline;
+   };
+
    Loop() noexcept = default;
    ~Loop();
 
@@ -93,6 +122,20 @@ class [[nodiscard]] Loop
       return WaitFd{*this, fd, flags};
    }
 
+   /// \brief Awaitable: suspends until the steady-clock deadline passes.
+   ///
+   /// A non-positive duration never suspends (await_ready() is true). The
+   /// deadline is saturated at the clock maximum so absurd durations cannot
+   /// overflow the time point.
+   [[nodiscard]] auto sleep(std::chrono::nanoseconds duration) -> Sleep
+   {
+      auto const now = std::chrono::steady_clock::now();
+      auto const delta = std::chrono::duration_cast<std::chrono::steady_clock::duration>(duration);
+      auto const maxDelta = std::chrono::steady_clock::time_point::max() - now;
+      auto const deadline = delta >= maxDelta ? std::chrono::steady_clock::time_point::max() : now + delta;
+      return Sleep{*this, deadline};
+   }
+
    private:
    struct Waiter
    {
@@ -103,9 +146,23 @@ class [[nodiscard]] Loop
       Waiter(std::coroutine_handle<> handle, int fd, PollEvents flags) noexcept : handle(handle), fd(fd), flags(flags) {}
    };
 
+   struct Timer
+   {
+      std::coroutine_handle<> handle;
+      std::chrono::steady_clock::time_point deadline;
+
+      Timer(std::coroutine_handle<> handle, std::chrono::steady_clock::time_point deadline) noexcept : handle(handle), deadline(deadline) {}
+   };
+
    [[nodiscard]] static auto toPollEvents(PollEvents flags) noexcept -> short;
+   [[nodiscard]] static auto toTimespec(std::chrono::steady_clock::time_point deadline) noexcept -> struct ::timespec;
+   [[nodiscard]] auto nearestDeadline() const noexcept -> std::optional<std::chrono::steady_clock::time_point>;
+   auto collectDueTimers(std::vector<std::coroutine_handle<>> &due, std::vector<Timer> &pending) -> void;
+   auto dispatchReady(std::vector<struct ::pollfd> const &pollfds) -> void;
+   auto reapOwned() -> void;
 
    std::vector<Waiter> waiters;
+   std::vector<Timer> timers;
    std::vector<std::coroutine_handle<>> owned;
 };
 
