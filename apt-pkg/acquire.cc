@@ -14,6 +14,7 @@
 // Include Files							/*{{{*/
 #include <config.h>
 
+#include <apt-core/io/loop.h>
 #include <apt-pkg/acquire-item.h>
 #include <apt-pkg/acquire-worker.h>
 #include <apt-pkg/acquire.h>
@@ -573,6 +574,61 @@ bool pkgAcquire::RunFds(fd_set *RSet,fd_set *WSet)
    return Res;
 }
 									/*}}}*/
+// Acquire::SetFds (poll) - Collect the descriptors			/*{{{*/
+// ---------------------------------------------------------------------
+/* Translate the fd_sets filled by the virtual SetFds() into pollfd
+   entries. Delegating keeps one dispatch path: subclass overrides of
+   the fd_set version keep working. A descriptor watched for both
+   directions becomes one combined-events entry, and the vector path
+   inherits the FD_SETSIZE limits of the fd_set contract. */
+void pkgAcquire::SetFds(std::vector<struct pollfd> &Fds)
+{
+   fd_set RSet, WSet;
+   FD_ZERO(&RSet);
+   FD_ZERO(&WSet);
+   int Highest = 0;
+   SetFds(Highest, &RSet, &WSet);
+
+   int const Last = std::min(Highest, FD_SETSIZE - 1);
+   for (int fd = 0; fd <= Last; ++fd)
+   {
+      short events = 0;
+      if (FD_ISSET(fd, &RSet) != 0)
+	 events |= POLLIN;
+      if (FD_ISSET(fd, &WSet) != 0)
+	 events |= POLLOUT;
+      if (events != 0)
+	 Fds.push_back(pollfd{.fd = fd, .events = events, .revents = 0});
+   }
+}
+									/*}}}*/
+// Acquire::RunFds (poll) - Deal with active FDs			/*{{{*/
+// ---------------------------------------------------------------------
+/* Translate the pollfd results back into fd_sets and delegate to the
+   virtual RunFds(): one dispatch implementation, subclass overrides
+   keep working, dispatch happens at most once per direction per
+   worker exactly like the legacy path, and the translation is bounded
+   by FD_SETSIZE like the fd_set contract. */
+bool pkgAcquire::RunFds(std::vector<struct pollfd> const &Fds)
+{
+   fd_set RSet, WSet;
+   FD_ZERO(&RSet);
+   FD_ZERO(&WSet);
+
+   for (auto const &Fd : Fds)
+   {
+      if (Fd.fd < 0 || Fd.fd >= FD_SETSIZE)
+	 continue;
+      short const readiness = Fd.revents & (POLLIN | POLLOUT | POLLERR | POLLHUP | POLLNVAL);
+      if ((Fd.events & POLLIN) != 0 && (readiness & (POLLIN | POLLERR | POLLHUP | POLLNVAL)) != 0)
+	 FD_SET(Fd.fd, &RSet);
+      if ((Fd.events & POLLOUT) != 0 && (readiness & (POLLOUT | POLLERR | POLLHUP | POLLNVAL)) != 0)
+	 FD_SET(Fd.fd, &WSet);
+   }
+
+   return RunFds(&RSet, &WSet);
+}
+									/*}}}*/
 // Acquire::Run - Run the fetch sequence				/*{{{*/
 // ---------------------------------------------------------------------
 /* This runs the queues. It manages a select loop for all of the
@@ -711,96 +767,117 @@ pkgAcquire::RunResult pkgAcquire::Run(int PulseInterval)
       I->Startup();
    
    bool WasCancelled = false;
+   bool WasStopped = false;
+   APT::IO::Loop loop;
 
    // Run till all things have been acquired
-   struct timeval tv = SteadyDurationToTimeVal(std::chrono::microseconds(PulseInterval));
-   while (ToFetch > 0)
-   {
-      fd_set RFds;
-      fd_set WFds;
-      int Highest = 0;
-      FD_ZERO(&RFds);
-      FD_ZERO(&WFds);
-      SetFds(Highest,&RFds,&WFds);
-
-      // Shorten the select() cycle in case we have items about to become ready
-      auto now = clock::now();
-      auto fetchAfter = time_point{};
-      for (Queue *I = Queues; I != nullptr; I = I->Next)
+   auto legacy = [&] -> APT::IO::Task<void>  {
+      while (ToFetch > 0 && WasStopped == false)
       {
-	 if (I->Items == nullptr)
-	    continue;
+	 std::vector<struct pollfd> pollfds;
+	 SetFds(pollfds);
 
-	 auto f = I->Items->GetFetchAfter();
-
-	 if (f == time_point() || I->Items->Owner->Status != pkgAcquire::Item::StatIdle)
-	    continue;
-
-	 if (f <= now)
+	 // Shorten the poll cycle in case we have items about to become ready
+	 auto now = clock::now();
+	 auto fetchAfter = time_point{};
+	 for (Queue *I = Queues; I != nullptr; I = I->Next)
 	 {
-	    auto const OldPipeDepth = I->PipeDepth;
-	    if (not I->Cycle()) // Queue got stuck, unstuck it.
-	       goto stop;
-	    // A conflicting retry can remain deferred. Avoid a select(0) loop
-	    // unless work was queued; ItemDone() will retry it when unblocked.
-	    if (I->PipeDepth > OldPipeDepth)
-	       fetchAfter = now; // need to time out in select() below
-	    if (Debug && I->Items->Owner->Status == pkgAcquire::Item::StatIdle)
-	       clog << "Tried to start delayed item but failed:" << I->Items->Description.c_str() << std::endl;
+	    if (I->Items == nullptr)
+	       continue;
+
+	    auto f = I->Items->GetFetchAfter();
+
+	    if (f == time_point() || I->Items->Owner->Status != pkgAcquire::Item::StatIdle)
+	       continue;
+
+	    if (f <= now)
+	    {
+	       auto const OldPipeDepth = I->PipeDepth;
+	       if (not I->Cycle()) // Queue got stuck, unstuck it.
+	       {
+		  WasStopped = true;
+		  break;
+	       }
+	       // A conflicting retry can remain deferred. Avoid a busy poll
+	       // loop unless work was queued; ItemDone() will retry it when
+	       // unblocked.
+	       if (I->PipeDepth > OldPipeDepth)
+		  fetchAfter = now; // need to time out in the poll below
+	       if (Debug && I->Items->Owner->Status == pkgAcquire::Item::StatIdle)
+		  clog << "Tried to start delayed item but failed:" << I->Items->Description.c_str() << std::endl;
+	    }
+	    else if (f < fetchAfter || fetchAfter == time_point{})
+	    {
+	       fetchAfter = f;
+	    }
 	 }
-	 else if (f < fetchAfter || fetchAfter == time_point{})
-	 {
-	    fetchAfter = f;
-	 }
-      }
-
-      if (fetchAfter != time_point{} && (fetchAfter - now) < std::chrono::seconds(tv.tv_sec) + std::chrono::microseconds(tv.tv_usec))
-      {
-	 tv = SteadyDurationToTimeVal(fetchAfter - now);
-      }
-
-      int Res;
-      do
-      {
-	 Res = select(Highest+1,&RFds,&WFds,0,&tv);
-      }
-      while (Res < 0 && errno == EINTR);
-      
-      if (Res < 0)
-      {
-	 _error->Errno("select","Select has failed");
-	 break;
-      }
-
-      if(RunFds(&RFds,&WFds) == false)
-         break;
-
-      // Timeout, notify the log class
-      if (Res == 0 || (Log != 0 && Log->Update == true))
-      {
-	 tv = SteadyDurationToTimeVal(std::chrono::microseconds(PulseInterval));
-
-	 for (Worker *I = Workers; I != 0; I = I->NextAcquire)
-	    I->Pulse();
-	 if (Log != 0 && Log->Pulse(this) == false)
-	 {
-	    WasCancelled = true;
+	 if (WasStopped == true)
 	    break;
+
+	 // Timeout for the poll: the pulse interval, shortened to the next
+	 // deferred item's fetch time when that is sooner (clamped at zero
+	 // when already due) — never lengthened past the pulse interval.
+	 auto timeout = std::chrono::microseconds(PulseInterval);
+	 if (fetchAfter != time_point{})
+	    timeout = std::min(timeout, std::max(std::chrono::microseconds{0}, std::chrono::duration_cast<std::chrono::microseconds>(fetchAfter - now)));
+
+	 // true = a descriptor is ready, false = the timeout expired.
+	 bool const ready = co_await loop.poll(pollfds, timeout);
+
+	 if (ready == false)
+	 {
+	    // Timeout, notify the log class
+	    for (Worker *I = Workers; I != 0; I = I->NextAcquire)
+	       I->Pulse();
+	    if (Log != 0 && Log->Pulse(this) == false)
+	    {
+	       WasCancelled = true;
+	       break;
+	    }
+	    continue;
 	 }
-      }      
+
+	 if (RunFds(pollfds) == false)
+	    break;
+
+	 // Data was processed; notify the log class if it asked for updates
+	 if (Log != 0 && Log->Update == true)
+	 {
+	    for (Worker *I = Workers; I != 0; I = I->NextAcquire)
+	       I->Pulse();
+	    if (Log->Pulse(this) == false)
+	    {
+	       WasCancelled = true;
+	       break;
+	    }
+	 }
+      }
+
+      co_return;
+   };
+
+   loop.schedule(legacy());
+   if (auto res = loop.run(); not res)
+   {
+      _error->Error("An error occured while polling the acquire descriptors: %s", res.error().message().c_str());
    }
-stop:
+   // The Loop outlives the cleanup sequence: its destructor clears the
+   // registered many-waiter spans before destroying the suspended root
+   // frame (the coroutine owning the pollfds vector), so no span is
+   // dereferenced and no cleanup-invalidated object is touched.
+
+   // Shut down the acquire bits; runs exactly once on both the normal
+   // and the failed-loop paths.
    if (Log != 0)
       Log->Stop();
-   
-   // Shut down the acquire bits
+
    Running = false;
    for (Queue *I = Queues; I != 0; I = I->Next)
       I->Shutdown(false);
 
    if (WasCancelled)
       for (ItemIterator I = Items.begin(); I != Items.end(); ++I)
-         (*I)->Cancelled();
+	 (*I)->Cancelled();
 
    // Shut down the items
    for (auto &Item : Items)

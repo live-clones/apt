@@ -74,6 +74,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <poll.h>
 #include <sys/select.h>
 #include <sys/time.h>
 
@@ -226,6 +227,16 @@ class APT_PUBLIC pkgAcquire
     */
    virtual void SetFds(int &Fd,fd_set *RSet,fd_set *WSet);
 
+   /** \brief Collect the descriptors to poll(2), honouring subclass hooks.
+    *
+    *  Delegates to the virtual fd_set version of SetFds() (so subclass
+    *  overrides keep working — there is one dispatch path) and translates
+    *  the sets into pollfd entries: a descriptor in both sets becomes one
+    *  combined-events entry. The vector path thereby inherits the
+    *  FD_SETSIZE limits of the fd_set contract.
+    */
+   void SetFds(std::vector<struct pollfd> &Fds);
+
    /** Handle input from and output to file descriptors which select()
     *  has determined are ready.  The default implementation
     *  dispatches to all active downloads.
@@ -239,6 +250,18 @@ class APT_PUBLIC pkgAcquire
     * \return false if there is an error condition on one of the fds
     */
    virtual bool RunFds(fd_set *RSet,fd_set *WSet);
+
+   /** Handle input/output for descriptors that poll(2) reported ready.
+    *
+    *  Translates back into fd_sets and delegates to the virtual fd_set
+    *  version of RunFds() (single dispatch path, subclass overrides keep
+    *  working): dispatch happens at most once per direction per worker,
+    *  exactly like the legacy path. Entries for descriptors no longer in
+    *  the worker list are ignored.
+    *
+    *  \return false if there is an error condition on one of the fds
+    */
+   bool RunFds(std::vector<struct pollfd> const &Fds);
 
    /** \brief Check for idle queues with ready-to-fetch items.
     *

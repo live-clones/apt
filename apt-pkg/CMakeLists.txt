@@ -80,6 +80,7 @@ target_link_libraries(apt-pkg-object
                              $<$<BOOL:${SYSTEMD_FOUND}>:${SYSTEMD_LIBRARIES}>
                              ${ICONV_LIBRARIES}
                              OpenSSL::Crypto
+                             apt-core-io
                              $<$<BOOL:${XXHASH_FOUND}>:${XXHASH_LIBRARIES}>
 )
 set_target_properties(apt-pkg-object PROPERTIES POSITION_INDEPENDENT_CODE ON)

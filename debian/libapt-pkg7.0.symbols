@@ -103,7 +103,9 @@ libapt-pkg.so.7.0 libapt-pkg7.0 #MINVER#
  (c++)"pkgAcquire::Remove(pkgAcquire::Item*)@APTPKG_7.0" 0.8.0
  (c++)"pkgAcquire::Remove(pkgAcquire::Worker*)@APTPKG_7.0" 0.8.0
  (c++)"pkgAcquire::RunFds(fd_set*, fd_set*)@APTPKG_7.0" 0.8.0
+ (c++)"pkgAcquire::RunFds(std::vector<pollfd, std::allocator<pollfd> > const&)@APTPKG_7.0" 3.3.8
  (c++)"pkgAcquire::SetFds(int&, fd_set*, fd_set*)@APTPKG_7.0" 0.8.0
+ (c++)"pkgAcquire::SetFds(std::vector<pollfd, std::allocator<pollfd> >&)@APTPKG_7.0" 3.3.8
  (c++)"pkgAcquire::UriEnd()@APTPKG_7.0" 0.8.0
  (c++)"pkgAcquire::Worker::OutFdReady()@APTPKG_7.0" 0.8.0
  (c++)"pkgAcquire::Worker::MediaChange(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)@APTPKG_7.0" 0.8.0
