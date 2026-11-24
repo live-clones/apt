@@ -10,6 +10,7 @@
 #include <array>
 #include <cerrno>
 #include <chrono>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -374,6 +375,176 @@ TEST(IoLoopTest, DestructorCancelsPendingTimer)
    }
    // ~Loop cleared the timers, then destroyed the suspended root frame,
    // running its destructors; no dangling timer, no crash.
+   EXPECT_EQ(destroyed, 1);
+}
+
+TEST(IoLoopTest, ManyWaitResumesOnAnyReady)
+{
+   Loop loop;
+   Pipe first;
+   Pipe second;
+   ASSERT_TRUE(first.readEnd.valid());
+   ASSERT_TRUE(second.readEnd.valid());
+
+   std::array<::pollfd, 2> set{
+      ::pollfd{.fd = first.readEnd.get(), .events = POLLIN, .revents = 0xFF},
+      ::pollfd{.fd = second.readEnd.get(), .events = POLLIN, .revents = 0xFF},
+   };
+   bool ran = false;
+   auto task = [&]() -> Task<void>
+   {
+      co_await loop.poll(std::span<::pollfd>(set));
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_FALSE(ran);
+
+   char const byte = 'x';
+   ASSERT_EQ(::write(second.writeEnd.get(), &byte, 1), 1);
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+   // Stale caller revents (0xFF above) must not leak: only the genuinely
+   // ready entry is reported set, the other is explicitly zero.
+   EXPECT_EQ(set[0].revents, 0);
+   EXPECT_EQ(set[1].revents, POLLIN);
+}
+
+TEST(IoLoopTest, ManyWaitBothReady)
+{
+   Loop loop;
+   Pipe first;
+   Pipe second;
+   ASSERT_TRUE(first.readEnd.valid());
+   ASSERT_TRUE(second.readEnd.valid());
+
+   std::array<::pollfd, 2> set{
+      ::pollfd{.fd = first.readEnd.get(), .events = POLLIN, .revents = 0},
+      ::pollfd{.fd = second.readEnd.get(), .events = POLLIN, .revents = 0},
+   };
+   char const byte = 'x';
+   ASSERT_EQ(::write(first.writeEnd.get(), &byte, 1), 1);
+   ASSERT_EQ(::write(second.writeEnd.get(), &byte, 1), 1);
+
+   bool ran = false;
+   auto task = [&]() -> Task<void>
+   {
+      co_await loop.poll(std::span<::pollfd>(set));
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+   EXPECT_EQ(set[0].revents, POLLIN);
+   EXPECT_EQ(set[1].revents, POLLIN);
+}
+
+TEST(IoLoopTest, ManyWaitEmptySpanDoesNotSuspend)
+{
+   Loop loop;
+   bool ran = false;
+   auto task = [&]() -> Task<void>
+   {
+      co_await loop.poll(std::span<::pollfd>{});
+      ran = true;
+   };
+   loop.schedule(task());
+   // Completed during schedule(): await_ready() returned true (an empty
+   // poll set can never become ready), nothing was registered.
+   EXPECT_TRUE(ran);
+   EXPECT_TRUE(loop.run().has_value());
+}
+
+TEST(IoLoopTest, ManyWaitHangupResumes)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   std::array<::pollfd, 1> set{
+      ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0},
+   };
+   bool ran = false;
+   auto task = [&]() -> Task<void>
+   {
+      co_await loop.poll(std::span<::pollfd>(set));
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_FALSE(ran);
+
+   // Close the writer with no data: poll reports POLLHUP only (no
+   // POLLIN), which must still resume the many-waiter.
+   EXPECT_TRUE(pipe.writeEnd.close().has_value());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+   EXPECT_EQ(set[0].revents, POLLHUP);
+}
+
+TEST(IoLoopTest, ManyWaitMixedWithSingleAndTimer)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   bool manyRan = false;
+   bool singleRan = false;
+   bool timerRan = false;
+   std::array<::pollfd, 1> set{
+      ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0},
+   };
+   auto many = [&]() -> Task<void>
+   {
+      co_await loop.poll(std::span<::pollfd>(set));
+      manyRan = true;
+   };
+   auto single = [&]() -> Task<void>
+   {
+      co_await loop.poll(pipe.readEnd.get(), PollEvents::Read);
+      singleRan = true;
+   };
+   auto timer = [&]() -> Task<void>
+   {
+      co_await loop.sleep(std::chrono::milliseconds{5});
+      timerRan = true;
+   };
+   char const byte = 'x';
+   ASSERT_EQ(::write(pipe.writeEnd.get(), &byte, 1), 1);
+   loop.schedule(many());
+   loop.schedule(single());
+   loop.schedule(timer());
+   // All three kinds complete in a single run(); the flat poll array
+   // interleaves the single waiter and the many-waiter entries, and each
+   // result must map back to the right coroutine (index alignment).
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(manyRan);
+   EXPECT_TRUE(singleRan);
+   EXPECT_TRUE(timerRan);
+   EXPECT_EQ(set[0].revents, POLLIN);
+}
+
+TEST(IoLoopTest, DestructorCancelsPendingManyWait)
+{
+   int destroyed = 0;
+   {
+      Loop loop;
+      Pipe pipe;
+      ASSERT_TRUE(pipe.readEnd.valid());
+      std::array<::pollfd, 1> set{
+	 ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0},
+      };
+      int *observer = &destroyed;
+      auto make = [&]() -> Task<void>
+      {
+	 FrameProbe probe{observer};
+	 (void)probe;
+	 // Root suspends on a many-wait that never becomes ready here.
+	 co_await loop.poll(std::span<::pollfd>(set));
+      };
+      loop.schedule(make());
+      EXPECT_EQ(destroyed, 0);
+   }
+   // ~Loop cleared the many-waiters, then destroyed the suspended root
+   // frame, running its destructors; no dangling span, no crash.
    EXPECT_EQ(destroyed, 1);
 }
 

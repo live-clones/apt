@@ -8,15 +8,15 @@
 
 #include <apt-core/io/task.h>
 
+#include <poll.h>
+
 #include <chrono>
 #include <coroutine>
 #include <expected>
 #include <optional>
+#include <span>
 #include <system_error>
 #include <vector>
-
-// poll.h types used in private helpers; defined only where needed.
-struct pollfd;
 
 namespace APT::inline Internal::IO
 {
@@ -78,6 +78,35 @@ class [[nodiscard]] Loop
       PollEvents flags;
    };
 
+   /// \brief Awaitable suspending until any entry of the poll set is ready. Only Loop::poll() creates one.
+   ///
+   /// The pollfd array is caller-owned and must stay alive and unmodified
+   /// until the await resumes. The loop only writes `revents` (never `fd`
+   /// or `events`); it resumes when at least one entry has non-zero
+   /// `revents`, including POLLERR/POLLHUP/POLLNVAL. On resumption
+   /// `revents` is written back for every entry (zeros for not-ready
+   /// ones).
+   struct ManyWaitFd
+   {
+      ManyWaitFd() = delete;
+      ManyWaitFd(ManyWaitFd const &) = default;
+      ManyWaitFd(ManyWaitFd &&) = default;
+      auto operator=(ManyWaitFd const &) -> ManyWaitFd & = delete;
+      auto operator=(ManyWaitFd &&) -> ManyWaitFd & = delete;
+      ~ManyWaitFd() = default;
+
+      [[nodiscard]] auto await_ready() const noexcept -> bool;
+      auto await_suspend(std::coroutine_handle<> handle) -> void;
+      auto await_resume() const noexcept -> void;
+
+      private:
+      friend class Loop;
+      ManyWaitFd(Loop &loop, std::span<pollfd> pollfds) noexcept;
+      // Never null: only Loop::poll constructs a WaitFd.
+      Loop *loop;
+      std::span<pollfd> pollfds;
+   };
+
    /// \brief Awaitable suspending until the steady-clock deadline passes. Only Loop::sleep() creates one.
    struct Sleep
    {
@@ -122,6 +151,18 @@ class [[nodiscard]] Loop
       return WaitFd{*this, fd, flags};
    }
 
+   /// \brief Awaitable: suspends until any entry of `pollfds` reports readiness.
+   ///
+   /// The array is caller-owned and must stay alive and unmodified until
+   /// the await resumes. The loop only writes `revents` back (never `fd`
+   /// or `events`); an empty span can never become ready and completes
+   /// without suspending. Assumes non-blocking descriptors; readiness is
+   /// level-triggered.
+   [[nodiscard]] auto poll(std::span<pollfd> pollfds) -> ManyWaitFd
+   {
+      return ManyWaitFd{*this, pollfds};
+   }
+
    /// \brief Awaitable: suspends until the steady-clock deadline passes.
    ///
    /// A non-positive duration never suspends (await_ready() is true). The
@@ -145,6 +186,12 @@ class [[nodiscard]] Loop
 
       Waiter(std::coroutine_handle<> handle, int fd, PollEvents flags) noexcept : handle(handle), fd(fd), flags(flags) {}
    };
+   struct ManyWaiter
+   {
+      std::coroutine_handle<> handle;
+      std::span<pollfd> pollfds;
+      ManyWaiter(std::coroutine_handle<> handle, std::span<pollfd> pollfds) noexcept : handle(handle), pollfds(pollfds) {}
+   };
 
    struct Timer
    {
@@ -162,6 +209,7 @@ class [[nodiscard]] Loop
    auto reapOwned() -> void;
 
    std::vector<Waiter> waiters;
+   std::vector<ManyWaiter> manyWaiters;
    std::vector<Timer> timers;
    std::vector<std::coroutine_handle<>> owned;
 };

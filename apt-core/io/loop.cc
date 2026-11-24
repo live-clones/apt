@@ -18,9 +18,11 @@ namespace APT::inline Internal::IO
 
 Loop::~Loop()
 {
-   // Drop registered waiters and timers first so cancelled roots leave no
-   // dangling entries, then destroy every remaining owned root frame.
+   // Drop registered waiters, many-waiters and timers first so cancelled
+   // roots leave no dangling entries or spans, then destroy every
+   // remaining owned root frame.
    waiters.clear();
+   manyWaiters.clear();
    timers.clear();
    for (auto handle : owned)
       handle.destroy();
@@ -66,6 +68,21 @@ auto Loop::WaitFd::await_suspend(std::coroutine_handle<> handle) -> void
 
 auto Loop::WaitFd::await_resume() const noexcept -> void {}
 
+Loop::ManyWaitFd::ManyWaitFd(Loop &loop, std::span<pollfd> pollfds) noexcept : loop(&loop), pollfds(pollfds) {}
+
+auto Loop::ManyWaitFd::await_ready() const noexcept -> bool
+{
+   // An empty poll set can never become ready; complete instead of
+   // deadlocking.
+   return pollfds.empty();
+}
+
+auto Loop::ManyWaitFd::await_suspend(std::coroutine_handle<> handle) -> void
+{
+   loop->manyWaiters.emplace_back(handle, pollfds);
+}
+
+auto Loop::ManyWaitFd::await_resume() const noexcept -> void {}
 Loop::Sleep::Sleep(Loop &loop, std::chrono::steady_clock::time_point deadline) noexcept : loop(&loop), deadline(deadline) {}
 
 auto Loop::Sleep::await_ready() const noexcept -> bool
@@ -151,28 +168,50 @@ auto Loop::nearestDeadline() const noexcept -> std::optional<std::chrono::steady
 
 auto Loop::dispatchReady(std::vector<struct ::pollfd> const &pollfds) -> void
 {
-   // Collect the ready handles and update the waiter list before resuming
-   // anything: resuming can register new waiters and must not invalidate
-   // the collection step.
+   // Collect the ready handles and update both waiter lists before
+   // resuming anything: resuming can register new waiters and must not
+   // invalidate the collection step. Alignment: the flat poll array
+   // holds the single waiters' entries first, then each many-waiter's
+   // entries in registration order — the same order the lists are
+   // walked here, so a sequential iterator cannot drift.
    std::vector<std::coroutine_handle<>> ready;
-   std::vector<Waiter> remaining;
-   ready.reserve(waiters.size());
-   auto pollfd = pollfds.begin();
+   std::vector<Waiter> remainingWaiters;
+   std::vector<ManyWaiter> remainingMany;
+   auto result = pollfds.begin();
+
    for (auto const &waiter : waiters)
    {
       // poll conveys no status, so the awaiting coroutine must be
       // resumed on error/hangup conditions to observe them itself (this
       // is what makes EOF — read() returning 0 — work).
-      short const revents = pollfd->revents;
-      ++pollfd;
+      short const revents = (result++)->revents;
       bool const isError = (revents & (POLLERR | POLLHUP | POLLNVAL)) != 0;
       bool const wanted = (revents & toPollEvents(waiter.flags)) != 0;
       if (isError || wanted)
 	 ready.push_back(waiter.handle);
       else
-	 remaining.push_back(waiter);
+	 remainingWaiters.push_back(waiter);
    }
-   waiters.swap(remaining);
+   waiters.swap(remainingWaiters);
+
+   for (auto const &waiter : manyWaiters)
+   {
+      bool any = false;
+      for (auto &entry : waiter.pollfds)
+      {
+	 // Write revents back for every entry; not-ready ones get an
+	 // explicit zero so stale caller values cannot masquerade as
+	 // readiness.
+	 entry.revents = (result++)->revents;
+	 if (entry.revents != 0)
+	    any = true;
+      }
+      if (any)
+	 ready.push_back(waiter.handle);
+      else
+	 remainingMany.push_back(waiter);
+   }
+   manyWaiters.swap(remainingMany);
 
    for (auto handle : ready)
       handle.resume();
@@ -204,7 +243,7 @@ auto Loop::run() -> std::expected<void, std::error_code>
    std::vector<struct ::pollfd> pollfds;
    std::vector<std::coroutine_handle<>> due;
    std::vector<Timer> pending;
-   while (!waiters.empty() || !timers.empty())
+   while (!waiters.empty() || !manyWaiters.empty() || !timers.empty())
    {
       // Every iteration resumes timers whose deadline has passed, whether
       // or not ppoll reported readiness; collectDueTimers() updates the
@@ -215,16 +254,24 @@ auto Loop::run() -> std::expected<void, std::error_code>
       // Timers can complete root tasks too.
       reapOwned();
 
-      if (waiters.empty() && timers.empty())
+      if (waiters.empty() && manyWaiters.empty() && timers.empty())
 	 break;
 
-      // Rebuild the poll array from the current waiters; it may
-      // legitimately be empty — ppoll(nullptr, 0, &timeout, ...) is a
-      // valid sleep for the timer-only case.
+      // Rebuild one flat poll array from the current waiters: single
+      // waiters' entries first, then each many-waiter's entries (copied
+      // with revents = 0 so stale caller values can never leak into the
+      // syscall). It may legitimately be empty — ppoll(nullptr, 0,
+      // &timeout, ...) is a valid sleep for the timer-only case.
       pollfds.clear();
       pollfds.reserve(waiters.size());
       for (auto const &waiter : waiters)
 	 pollfds.push_back(::pollfd{.fd = waiter.fd, .events = toPollEvents(waiter.flags), .revents = 0});
+      for (auto const &waiter : manyWaiters)
+      {
+	 pollfds.reserve(pollfds.size() + waiter.pollfds.size());
+	 for (auto const &entry : waiter.pollfds)
+	    pollfds.push_back(::pollfd{.fd = entry.fd, .events = entry.events, .revents = 0});
+      }
 
       // Wait with a timeout derived from the nearest timer deadline (null
       // when there are none); the clamp in toTimespec avoids overflow for
