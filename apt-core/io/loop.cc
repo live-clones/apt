@@ -68,21 +68,34 @@ auto Loop::WaitFd::await_suspend(std::coroutine_handle<> handle) -> void
 
 auto Loop::WaitFd::await_resume() const noexcept -> void {}
 
-Loop::ManyWaitFd::ManyWaitFd(Loop &loop, std::span<pollfd> pollfds) noexcept : loop(&loop), pollfds(pollfds) {}
+Loop::ManyWaitFd::ManyWaitFd(Loop &loop, std::span<pollfd> pollfds) noexcept : loop(&loop), pollfds(pollfds), deadline(std::nullopt) {}
+
+Loop::ManyWaitFd::ManyWaitFd(Loop &loop, std::span<pollfd> pollfds, std::chrono::steady_clock::time_point deadline) noexcept : loop(&loop), pollfds(pollfds), deadline(deadline) {}
 
 auto Loop::ManyWaitFd::await_ready() const noexcept -> bool
 {
-   // An empty poll set can never become ready; complete instead of
-   // deadlocking.
-   return pollfds.empty();
+   // An untimed empty poll set can never become ready; complete instead
+   // of deadlocking. Everything else suspends: in particular a zero or
+   // negative timeout must still perform one (non-blocking) poll so an
+   // already-ready descriptor is never missed — the loop turns a past
+   // deadline into a {0,0} timespec.
+   return pollfds.empty() && !deadline.has_value();
 }
 
 auto Loop::ManyWaitFd::await_suspend(std::coroutine_handle<> handle) -> void
 {
-   loop->manyWaiters.emplace_back(handle, pollfds);
+   loop->manyWaiters.emplace_back(handle, pollfds, deadline);
 }
 
-auto Loop::ManyWaitFd::await_resume() const noexcept -> void {}
+auto Loop::ManyWaitFd::await_resume() const noexcept -> bool
+{
+   // The loop writes revents back for every entry on resumption (zeros
+   // for not-ready ones), so any non-zero entry means ready.
+   return std::ranges::any_of(pollfds, [](pollfd const &entry)
+   {
+      return entry.revents != 0;
+   });
+}
 Loop::Sleep::Sleep(Loop &loop, std::chrono::steady_clock::time_point deadline) noexcept : loop(&loop), deadline(deadline) {}
 
 auto Loop::Sleep::await_ready() const noexcept -> bool
@@ -158,11 +171,17 @@ auto Loop::collectDueTimers(std::vector<std::coroutine_handle<>> &due, std::vect
 auto Loop::nearestDeadline() const noexcept -> std::optional<std::chrono::steady_clock::time_point>
 {
    std::optional<std::chrono::steady_clock::time_point> result;
-   for (auto const &timer : timers)
+   auto const consider = [&result](std::optional<std::chrono::steady_clock::time_point> deadline)
    {
-      if (!result || timer.deadline < *result)
-	 result = timer.deadline;
-   }
+      if (deadline && (!result || *deadline < *result))
+	 result = deadline;
+   };
+   for (auto const &timer : timers)
+      consider(timer.deadline);
+   // Timed many-waiters participate too, so ppoll blocks no longer than
+   // the earliest of all deadlines.
+   for (auto const &waiter : manyWaiters)
+      consider(waiter.deadline);
    return result;
 }
 
@@ -194,6 +213,8 @@ auto Loop::dispatchReady(std::vector<struct ::pollfd> const &pollfds) -> void
    }
    waiters.swap(remainingWaiters);
 
+   auto const now = std::chrono::steady_clock::now();
+
    for (auto const &waiter : manyWaiters)
    {
       bool any = false;
@@ -206,7 +227,12 @@ auto Loop::dispatchReady(std::vector<struct ::pollfd> const &pollfds) -> void
 	 if (entry.revents != 0)
 	    any = true;
       }
-      if (any)
+      // A timed many-waiter also resumes when its deadline has passed;
+      // the revents written back above are the zeros from its poll.
+      // An absent deadline can never time out.
+      auto const never = std::chrono::steady_clock::time_point::max();
+      bool const timedOut = now >= waiter.deadline.value_or(never);
+      if (any || timedOut)
 	 ready.push_back(waiter.handle);
       else
 	 remainingMany.push_back(waiter);
@@ -297,8 +323,12 @@ auto Loop::run() -> std::expected<void, std::error_code>
       }
       if (count == 0)
       {
-	 // Pure timeout: the deadline that produced it has (or is about to
-	 // have) passed; loop back to collect and resume the due timers.
+	 // Pure timeout: the deadline that produced it has (or is about
+	 // to) pass. Dispatch so timed many-waiters whose deadline passed
+	 // resume (poll leaves the array untouched on timeout, so the
+	 // revents here are the zeros this loop initialized); the loop top
+	 // then collects any due timers.
+	 dispatchReady(pollfds);
 	 continue;
       }
 

@@ -85,7 +85,8 @@ class [[nodiscard]] Loop
    /// or `events`); it resumes when at least one entry has non-zero
    /// `revents`, including POLLERR/POLLHUP/POLLNVAL. On resumption
    /// `revents` is written back for every entry (zeros for not-ready
-   /// ones).
+   /// ones). await_resume() returns true when at least one entry was
+   /// ready, false on timeout.
    struct ManyWaitFd
    {
       ManyWaitFd() = delete;
@@ -97,14 +98,16 @@ class [[nodiscard]] Loop
 
       [[nodiscard]] auto await_ready() const noexcept -> bool;
       auto await_suspend(std::coroutine_handle<> handle) -> void;
-      auto await_resume() const noexcept -> void;
+      [[nodiscard]] auto await_resume() const noexcept -> bool;
 
       private:
       friend class Loop;
       ManyWaitFd(Loop &loop, std::span<pollfd> pollfds) noexcept;
-      // Never null: only Loop::poll constructs a WaitFd.
+      ManyWaitFd(Loop &loop, std::span<pollfd> pollfds, std::chrono::steady_clock::time_point deadline) noexcept;
+      // Never null: only Loop::poll constructs a ManyWaitFd.
       Loop *loop;
       std::span<pollfd> pollfds;
+      std::optional<std::chrono::steady_clock::time_point> deadline;
    };
 
    /// \brief Awaitable suspending until the steady-clock deadline passes. Only Loop::sleep() creates one.
@@ -163,6 +166,23 @@ class [[nodiscard]] Loop
       return ManyWaitFd{*this, pollfds};
    }
 
+   /// \brief Awaitable: waits until any entry is ready or the timeout expires.
+   ///
+   /// On return, `revents` is written back for every entry. `await_resume()`
+   /// returns true when at least one entry was ready, false on timeout (all
+   /// `revents` zero). A zero timeout still performs one non-blocking poll,
+   /// so an already-ready descriptor is never missed. The deadline is
+   /// saturated at the clock maximum so absurd durations cannot overflow
+   /// the time point.
+   [[nodiscard]] auto poll(std::span<pollfd> pollfds, std::chrono::nanoseconds timeout) -> ManyWaitFd
+   {
+      auto const now = std::chrono::steady_clock::now();
+      auto const delta = std::chrono::duration_cast<std::chrono::steady_clock::duration>(timeout);
+      auto const maxDelta = std::chrono::steady_clock::time_point::max() - now;
+      auto const deadline = delta >= maxDelta ? std::chrono::steady_clock::time_point::max() : now + delta;
+      return ManyWaitFd{*this, pollfds, deadline};
+   }
+
    /// \brief Awaitable: suspends until the steady-clock deadline passes.
    ///
    /// A non-positive duration never suspends (await_ready() is true). The
@@ -190,7 +210,8 @@ class [[nodiscard]] Loop
    {
       std::coroutine_handle<> handle;
       std::span<pollfd> pollfds;
-      ManyWaiter(std::coroutine_handle<> handle, std::span<pollfd> pollfds) noexcept : handle(handle), pollfds(pollfds) {}
+      std::optional<std::chrono::steady_clock::time_point> deadline;
+      ManyWaiter(std::coroutine_handle<> handle, std::span<pollfd> pollfds, std::optional<std::chrono::steady_clock::time_point> deadline) noexcept : handle(handle), pollfds(pollfds), deadline(deadline) {}
    };
 
    struct Timer

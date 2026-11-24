@@ -393,7 +393,7 @@ TEST(IoLoopTest, ManyWaitResumesOnAnyReady)
    bool ran = false;
    auto task = [&]() -> Task<void>
    {
-      co_await loop.poll(std::span<::pollfd>(set));
+      [[maybe_unused]] bool const ready = co_await loop.poll(std::span<::pollfd>(set));
       ran = true;
    };
    loop.schedule(task());
@@ -428,7 +428,7 @@ TEST(IoLoopTest, ManyWaitBothReady)
    bool ran = false;
    auto task = [&]() -> Task<void>
    {
-      co_await loop.poll(std::span<::pollfd>(set));
+      [[maybe_unused]] bool const ready = co_await loop.poll(std::span<::pollfd>(set));
       ran = true;
    };
    loop.schedule(task());
@@ -444,7 +444,7 @@ TEST(IoLoopTest, ManyWaitEmptySpanDoesNotSuspend)
    bool ran = false;
    auto task = [&]() -> Task<void>
    {
-      co_await loop.poll(std::span<::pollfd>{});
+      [[maybe_unused]] bool const ready = co_await loop.poll(std::span<::pollfd>{});
       ran = true;
    };
    loop.schedule(task());
@@ -466,7 +466,7 @@ TEST(IoLoopTest, ManyWaitHangupResumes)
    bool ran = false;
    auto task = [&]() -> Task<void>
    {
-      co_await loop.poll(std::span<::pollfd>(set));
+      [[maybe_unused]] bool const ready = co_await loop.poll(std::span<::pollfd>(set));
       ran = true;
    };
    loop.schedule(task());
@@ -494,7 +494,7 @@ TEST(IoLoopTest, ManyWaitMixedWithSingleAndTimer)
    };
    auto many = [&]() -> Task<void>
    {
-      co_await loop.poll(std::span<::pollfd>(set));
+      [[maybe_unused]] bool const ready = co_await loop.poll(std::span<::pollfd>(set));
       manyRan = true;
    };
    auto single = [&]() -> Task<void>
@@ -538,7 +538,7 @@ TEST(IoLoopTest, DestructorCancelsPendingManyWait)
 	 FrameProbe probe{observer};
 	 (void)probe;
 	 // Root suspends on a many-wait that never becomes ready here.
-	 co_await loop.poll(std::span<::pollfd>(set));
+	 [[maybe_unused]] bool const ready = co_await loop.poll(std::span<::pollfd>(set));
       };
       loop.schedule(make());
       EXPECT_EQ(destroyed, 0);
@@ -546,6 +546,178 @@ TEST(IoLoopTest, DestructorCancelsPendingManyWait)
    // ~Loop cleared the many-waiters, then destroyed the suspended root
    // frame, running its destructors; no dangling span, no crash.
    EXPECT_EQ(destroyed, 1);
+}
+
+TEST(IoLoopTest, TimedPollReturnsReady)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   std::array<::pollfd, 1> set{
+      ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0},
+   };
+   char const byte = 'x';
+   ASSERT_EQ(::write(pipe.writeEnd.get(), &byte, 1), 1);
+
+   bool ran = false;
+   auto task = [&]() -> Task<void>
+   {
+      // Generous timeout: the data is already there, so this must report
+      // readiness, not time out.
+      bool const ready = co_await loop.poll(std::span<::pollfd>(set), std::chrono::seconds{2});
+      EXPECT_TRUE(ready);
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+   EXPECT_EQ(set[0].revents, POLLIN);
+}
+
+TEST(IoLoopTest, TimedPollTimesOut)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   std::array<::pollfd, 1> set{
+      ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0xFF},
+   };
+   bool ran = false;
+   auto const start = std::chrono::steady_clock::now();
+   auto task = [&]() -> Task<void>
+   {
+      // No data: times out; all revents written back as zero.
+      bool const ready = co_await loop.poll(std::span<::pollfd>(set), std::chrono::milliseconds{5});
+      EXPECT_FALSE(ready);
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+   // Lower bound only; all revents zero (stale 0xFF above must not leak).
+   EXPECT_GE(std::chrono::steady_clock::now() - start, std::chrono::milliseconds{5});
+   EXPECT_EQ(set[0].revents, 0);
+}
+
+TEST(IoLoopTest, TimedPollZeroTimeoutPollsOnce)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   std::array<::pollfd, 1> set{
+      ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0},
+   };
+   char const byte = 'x';
+   ASSERT_EQ(::write(pipe.writeEnd.get(), &byte, 1), 1);
+
+   bool ran = false;
+   auto task = [&]() -> Task<void>
+   {
+      // A zero timeout must still suspend and perform one non-blocking
+      // poll: if await_ready() returned true for zero timeouts, this
+      // ready descriptor would be missed.
+      bool const ready = co_await loop.poll(std::span<::pollfd>(set), std::chrono::nanoseconds{0});
+      EXPECT_TRUE(ready);
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_FALSE(ran); // suspended, not completed during schedule()
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+   EXPECT_EQ(set[0].revents, POLLIN);
+}
+
+TEST(IoLoopTest, TimedPollEmptySpanTimesOut)
+{
+   Loop loop;
+   bool ran = false;
+   auto const start = std::chrono::steady_clock::now();
+   auto task = [&]() -> Task<void>
+   {
+      // An empty timed span suspends (unlike the untimed one) and keeps
+      // run() alive until its deadline; it cannot report readiness.
+      bool const ready = co_await loop.poll(std::span<::pollfd>{}, std::chrono::milliseconds{5});
+      EXPECT_FALSE(ready);
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_FALSE(ran);
+   EXPECT_TRUE(loop.run().has_value()); // returns: no spin, no hang
+   EXPECT_TRUE(ran);
+   EXPECT_GE(std::chrono::steady_clock::now() - start, std::chrono::milliseconds{5});
+}
+
+TEST(IoLoopTest, TimedPollHangupIsReady)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   std::array<::pollfd, 1> set{
+      ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0},
+   };
+   bool ran = false;
+   auto task = [&]() -> Task<void>
+   {
+      bool const ready = co_await loop.poll(std::span<::pollfd>(set), std::chrono::seconds{2});
+      EXPECT_TRUE(ready);
+      ran = true;
+   };
+   loop.schedule(task());
+   EXPECT_FALSE(ran);
+
+   // Close the writer with no data: POLLHUP is readiness for the timed
+   // many-waiter too.
+   EXPECT_TRUE(pipe.writeEnd.close().has_value());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(ran);
+   EXPECT_EQ(set[0].revents, POLLHUP);
+}
+
+TEST(IoLoopTest, TimedPollMixedWithTimersAndWaiters)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   bool timedRan = false;
+   bool singleRan = false;
+   bool timerRan = false;
+   std::array<::pollfd, 1> set{
+      ::pollfd{.fd = pipe.readEnd.get(), .events = POLLIN, .revents = 0},
+   };
+   auto timed = [&]() -> Task<void>
+   {
+      bool const ready = co_await loop.poll(std::span<::pollfd>(set), std::chrono::seconds{2});
+      EXPECT_TRUE(ready); // the data is there before run()
+      timedRan = true;
+   };
+   auto single = [&]() -> Task<void>
+   {
+      co_await loop.poll(pipe.readEnd.get(), PollEvents::Read);
+      singleRan = true;
+   };
+   auto timer = [&]() -> Task<void>
+   {
+      co_await loop.sleep(std::chrono::milliseconds{5});
+      timerRan = true;
+   };
+   char const byte = 'x';
+   ASSERT_EQ(::write(pipe.writeEnd.get(), &byte, 1), 1);
+   loop.schedule(timed());
+   loop.schedule(single());
+   loop.schedule(timer());
+   // All three kinds complete in a single run(): the timed many-waiter
+   // is dispatched from dispatchReady (not from timers), and each result
+   // maps back to the right coroutine.
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(timedRan);
+   EXPECT_TRUE(singleRan);
+   EXPECT_TRUE(timerRan);
+   EXPECT_EQ(set[0].revents, POLLIN);
 }
 
 } // namespace
