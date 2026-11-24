@@ -144,7 +144,7 @@ auto Fd::read(Loop &loop, std::span<char> buffer) const -> Task<std::expected<st
       // EAGAIN on a non-blocking descriptor: wait for readability, retry.
       if (error == std::errc::resource_unavailable_try_again)
       {
-	 co_await loop.waitfd(fd, WaitFlags::Read);
+	 co_await loop.poll(fd, PollEvents::Read);
 	 continue;
       }
       co_return std::unexpected(error);
@@ -162,7 +162,7 @@ auto Fd::write(Loop &loop, std::span<char const> buffer) const -> Task<std::expe
       // EAGAIN on a non-blocking descriptor: wait for writability, retry.
       if (error == std::errc::resource_unavailable_try_again)
       {
-	 co_await loop.waitfd(fd, WaitFlags::Write);
+	 co_await loop.poll(fd, PollEvents::Write);
 	 continue;
       }
       co_return std::unexpected(error);

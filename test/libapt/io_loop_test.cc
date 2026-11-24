@@ -18,7 +18,7 @@ namespace {
 using APT::Internal::IO::Fd;
 using APT::Internal::IO::Loop;
 using APT::Internal::IO::Task;
-using APT::Internal::IO::WaitFlags;
+using APT::Internal::IO::PollEvents;
 
 // RAII probe living in a coroutine frame: its destructor observes frame
 // destruction. Moves are not counted: only real destructions matter.
@@ -73,7 +73,7 @@ TEST(IoLoopTest, ReadWaitResumesAfterData)
    bool resumed = false;
    auto reader = [&](int fd) -> Task<void>
    {
-      co_await loop.waitfd(fd, WaitFlags::Read);
+      co_await loop.poll(fd, PollEvents::Read);
       resumed = true;
    };
    loop.schedule(reader(pipe.readEnd.get()));
@@ -96,7 +96,7 @@ TEST(IoLoopTest, WriteWaitResumesOnEmptyPipe)
    bool resumed = false;
    auto writer = [&](int fd) -> Task<void>
    {
-      co_await loop.waitfd(fd, WaitFlags::Write);
+      co_await loop.poll(fd, PollEvents::Write);
       resumed = true;
    };
    loop.schedule(writer(pipe.writeEnd.get()));
@@ -116,7 +116,7 @@ TEST(IoLoopTest, TwoTasksBothResumeInOneRun)
    int resumed = 0;
    auto waitOn = [&](int fd) -> Task<void>
    {
-      co_await loop.waitfd(fd, WaitFlags::Read);
+      co_await loop.poll(fd, PollEvents::Read);
       ++resumed;
    };
    loop.schedule(waitOn(first.readEnd.get()));
@@ -130,7 +130,7 @@ TEST(IoLoopTest, TwoTasksBothResumeInOneRun)
    EXPECT_EQ(resumed, 2);
 }
 
-TEST(IoLoopTest, CombinedReadAndWaitFlagsAccepted)
+TEST(IoLoopTest, CombinedReadAndPollEventsAccepted)
 {
    Loop loop;
    // A connected socketpair send buffer is empty (POLLIN not ready) but
@@ -145,7 +145,7 @@ TEST(IoLoopTest, CombinedReadAndWaitFlagsAccepted)
    bool resumed = false;
    auto task = [&](int fd) -> Task<void>
    {
-      co_await loop.waitfd(fd, WaitFlags::Read | WaitFlags::Write);
+      co_await loop.poll(fd, PollEvents::Read | PollEvents::Write);
       resumed = true;
    };
    loop.schedule(task(ours.get()));
@@ -163,7 +163,7 @@ TEST(IoLoopTest, ScheduleTakesOwnership)
       {
 	 FrameProbe probe{&destroyed};
 	 (void)probe;
-	 co_await loop.waitfd(fd, WaitFlags::Read);
+	 co_await loop.poll(fd, PollEvents::Read);
 	 // Suspends; ownership now belongs to the loop.
       };
       Pipe pipe;
@@ -212,7 +212,7 @@ TEST(IoLoopTest, HangupResumesWaiter)
    bool resumed = false;
    auto reader = [&](int fd) -> Task<void>
    {
-      co_await loop.waitfd(fd, WaitFlags::Read);
+      co_await loop.poll(fd, PollEvents::Read);
       resumed = true;
    };
    loop.schedule(reader(pipe.readEnd.get()));
@@ -239,7 +239,7 @@ TEST(IoLoopTest, DestructorDestroysSuspendedRoot)
 	 FrameProbe probe{observer};
 	 (void)probe;
 	 // Root suspends on a descriptor nobody will make readable.
-	 co_await loop.waitfd(pipe.readEnd.get(), WaitFlags::Read);
+	 co_await loop.poll(pipe.readEnd.get(), PollEvents::Read);
       };
       loop.schedule(make());
       EXPECT_EQ(destroyed, 0);

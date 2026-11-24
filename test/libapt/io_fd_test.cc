@@ -23,7 +23,7 @@ namespace {
 using APT::Internal::IO::Fd;
 using APT::Internal::IO::Loop;
 using APT::Internal::IO::Task;
-using APT::Internal::IO::WaitFlags;
+using APT::Internal::IO::PollEvents;
 
 // Creates a fresh descriptor on an unlinked temp file; no temp files left behind.
 auto freshFd() -> int

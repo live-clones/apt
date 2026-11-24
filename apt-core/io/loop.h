@@ -17,26 +17,26 @@ namespace APT::inline Internal::IO
 {
 
 /// \brief Interests a coroutine can wait for on a descriptor.
-enum class WaitFlags : unsigned
+enum class PollEvents : unsigned
 {
    Read = (1U << 0U),
    Write = (1U << 1U),
 };
 
-[[nodiscard]] constexpr auto operator|(WaitFlags lhs, WaitFlags rhs) noexcept -> WaitFlags
+[[nodiscard]] constexpr auto operator|(PollEvents lhs, PollEvents rhs) noexcept -> PollEvents
 {
-   return static_cast<WaitFlags>(static_cast<unsigned>(lhs) | static_cast<unsigned>(rhs));
+   return static_cast<PollEvents>(static_cast<unsigned>(lhs) | static_cast<unsigned>(rhs));
 }
 
-[[nodiscard]] constexpr auto operator&(WaitFlags lhs, WaitFlags rhs) noexcept -> WaitFlags
+[[nodiscard]] constexpr auto operator&(PollEvents lhs, PollEvents rhs) noexcept -> PollEvents
 {
-   return static_cast<WaitFlags>(static_cast<unsigned>(lhs) & static_cast<unsigned>(rhs));
+   return static_cast<PollEvents>(static_cast<unsigned>(lhs) & static_cast<unsigned>(rhs));
 }
 
 /** \brief Single-threaded poll(2)-based event loop for Task coroutines.
  *
  * The loop drives scheduled Task<void> coroutines whose bodies suspend on
- * waitfd() awaitables until their descriptors are readable or writable.
+ * poll() awaitables until their descriptors are readable or writable.
  * It is single-threaded by contract: all interaction must happen from the
  * thread running the loop. No synchronization is performed.
  *
@@ -47,7 +47,7 @@ enum class WaitFlags : unsigned
 class [[nodiscard]] Loop
 {
    public:
-   /// \brief Awaitable suspending until the descriptor is ready. Only Loop::waitfd() creates one.
+   /// \brief Awaitable suspending until the descriptor is ready. Only Loop::poll() creates one.
    struct WaitFd
    {
       WaitFd() = delete;
@@ -64,11 +64,11 @@ class [[nodiscard]] Loop
 
       private:
       friend class Loop;
-      WaitFd(Loop &loop, int fd, WaitFlags flags) noexcept;
-      // Never null: only Loop::waitfd constructs a WaitFd.
+      WaitFd(Loop &loop, int fd, PollEvents flags) noexcept;
+      // Never null: only Loop::poll constructs a WaitFd.
       Loop *loop;
       int fd;
-      WaitFlags flags;
+      PollEvents flags;
    };
 
    Loop() noexcept = default;
@@ -88,7 +88,7 @@ class [[nodiscard]] Loop
    /// \brief Awaitable: suspends until `fd` is ready for `flags`.
    ///
    /// Assumes a non-blocking descriptor; readiness is level-triggered.
-   [[nodiscard]] auto waitfd(int fd, WaitFlags flags) -> WaitFd
+   [[nodiscard]] auto poll(int fd, PollEvents flags) -> WaitFd
    {
       return WaitFd{*this, fd, flags};
    }
@@ -98,12 +98,12 @@ class [[nodiscard]] Loop
    {
       std::coroutine_handle<> handle;
       int fd;
-      WaitFlags flags;
+      PollEvents flags;
 
-      Waiter(std::coroutine_handle<> handle, int fd, WaitFlags flags) noexcept : handle(handle), fd(fd), flags(flags) {}
+      Waiter(std::coroutine_handle<> handle, int fd, PollEvents flags) noexcept : handle(handle), fd(fd), flags(flags) {}
    };
 
-   [[nodiscard]] static auto toPollEvents(WaitFlags flags) noexcept -> short;
+   [[nodiscard]] static auto toPollEvents(PollEvents flags) noexcept -> short;
 
    std::vector<Waiter> waiters;
    std::vector<std::coroutine_handle<>> owned;

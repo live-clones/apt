@@ -46,7 +46,7 @@ auto Loop::schedule(Task<void> task) -> void
    }
 }
 
-Loop::WaitFd::WaitFd(Loop &loop, int fd, WaitFlags flags) noexcept : loop(&loop), fd(fd), flags(flags) {}
+Loop::WaitFd::WaitFd(Loop &loop, int fd, PollEvents flags) noexcept : loop(&loop), fd(fd), flags(flags) {}
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static) — awaiter protocol
 auto Loop::WaitFd::await_ready() const noexcept -> bool
@@ -61,14 +61,13 @@ auto Loop::WaitFd::await_suspend(std::coroutine_handle<> handle) -> void
 
 auto Loop::WaitFd::await_resume() const noexcept -> void {}
 
-// NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
-auto Loop::toPollEvents(WaitFlags flags) noexcept -> short
+auto Loop::toPollEvents(PollEvents flags) noexcept -> short
 {
    auto const bits = static_cast<unsigned>(flags);
    short events = 0;
-   if ((bits & static_cast<unsigned>(WaitFlags::Read)) != 0)
+   if ((bits & static_cast<unsigned>(PollEvents::Read)) != 0)
       events |= POLLIN;
-   if ((bits & static_cast<unsigned>(WaitFlags::Write)) != 0)
+   if ((bits & static_cast<unsigned>(PollEvents::Write)) != 0)
       events |= POLLOUT;
    return events;
 }
@@ -106,7 +105,7 @@ auto Loop::run() -> std::expected<void, std::error_code>
       auto pollfd = pollfds.begin();
       for (auto const &waiter : waiters)
       {
-	 // waitfd conveys no status, so the awaiting coroutine must be
+	 // poll conveys no status, so the awaiting coroutine must be
 	 // resumed on error/hangup conditions to observe them itself (this
 	 // is what makes EOF — read() returning 0 — work).
 	 short const revents = pollfd->revents;
@@ -141,6 +140,5 @@ auto Loop::run() -> std::expected<void, std::error_code>
    }
    return {};
 }
-// NOLINTEND(cppcoreguidelines-pro-type-vararg)
 
 } // namespace APT::inline Internal::IO

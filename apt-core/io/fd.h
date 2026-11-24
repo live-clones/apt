@@ -27,7 +27,7 @@ class Loop;
  *
  * The coroutine read()/write()/writeAll()/readUntil() methods assume a
  * non-blocking descriptor and never block the loop thread; EAGAIN is
- * turned into an await on Loop::waitfd().
+ * turned into an await on Loop::poll().
  *
  * Lifetime contract: the Loop and this Fd must outlive the returned
  * Task; the referenced buffer/scratch/delimiter data must remain valid
