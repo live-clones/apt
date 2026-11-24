@@ -17,5 +17,5 @@ add_library(apt-core INTERFACE)
 target_link_libraries(apt-core INTERFACE apt-core-json)
 
 # I/O library
-add_library(apt-core-io STATIC io/fd.cc)
+add_library(apt-core-io STATIC io/fd.cc io/loop.cc)
 target_link_libraries(apt-core INTERFACE apt-core-io)
