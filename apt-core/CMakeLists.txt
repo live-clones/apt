@@ -15,3 +15,7 @@ target_link_libraries(apt-core-json PRIVATE json-c::json-c)
 # An interface bundling all the core libraries
 add_library(apt-core INTERFACE)
 target_link_libraries(apt-core INTERFACE apt-core-json)
+
+# I/O library
+add_library(apt-core-io STATIC io/fd.cc)
+target_link_libraries(apt-core INTERFACE apt-core-io)
