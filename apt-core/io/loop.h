@@ -57,7 +57,8 @@ class [[nodiscard]] Loop
       auto operator=(WaitFd &&) -> WaitFd & = delete;
       ~WaitFd() = default;
 
-      [[nodiscard]] static auto await_ready() noexcept -> bool;
+      // NOLINTNEXTLINE(readability-convert-member-functions-to-static) — awaiter protocol
+      [[nodiscard]] auto await_ready() const noexcept -> bool;
       auto await_suspend(std::coroutine_handle<> handle) -> void;
       auto await_resume() const noexcept -> void;
 

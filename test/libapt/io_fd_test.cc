@@ -1,12 +1,18 @@
 #include <config.h>
 
 #include <apt-core/io/fd.h>
+#include <apt-core/io/loop.h>
+#include <apt-core/io/task.h>
 
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <array>
 #include <cerrno>
+#include <cstddef>
 #include <filesystem>
+#include <string>
+#include <string_view>
 #include <system_error>
 #include <utility>
 
@@ -15,6 +21,9 @@
 namespace {
 
 using APT::Internal::IO::Fd;
+using APT::Internal::IO::Loop;
+using APT::Internal::IO::Task;
+using APT::Internal::IO::WaitFlags;
 
 // Creates a fresh descriptor on an unlinked temp file; no temp files left behind.
 auto freshFd() -> int
@@ -203,6 +212,408 @@ TEST(IoFdTest, FcntlFailureOnClosedDescriptorIsReported)
 
    // Reconcile ownership: the Fd must not double-close the descriptor.
    EXPECT_EQ(fd.release(), raw);
+}
+
+// A pipe with both ends owned by Fd and set non-blocking, for loop tests.
+struct Pipe
+{
+   Fd readEnd;
+   Fd writeEnd;
+
+   explicit Pipe(bool nonBlocking = true) : readEnd(), writeEnd()
+   {
+      int fds[2] = {-1, -1};
+      if (::pipe(fds) != 0)
+	 return;
+      readEnd = Fd{fds[0]};
+      writeEnd = Fd{fds[1]};
+      if (nonBlocking)
+      {
+	 (void)readEnd.setNonBlocking();
+	 (void)writeEnd.setNonBlocking();
+      }
+   }
+};
+
+TEST(IoFdTest, ReadReturnsDataFromPipe)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   char const data[] = "hi";
+   ASSERT_EQ(::write(pipe.writeEnd.get(), data, 2), 2);
+
+   bool done = false;
+   std::size_t got = 0;
+   std::array<char, 16> buffer{};
+   auto reader = [&]() -> Task<void>
+   {
+      auto const count = co_await pipe.readEnd.read(loop, std::span(buffer));
+      if (count.has_value())
+	 got = *count;
+      done = true;
+   };
+   loop.schedule(reader());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(got, 2);
+   EXPECT_EQ(std::string_view(buffer.data(), got), std::string_view(data, 2));
+}
+
+TEST(IoFdTest, ReadWaitsForData)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   bool done = false;
+   std::size_t got = 0;
+   std::array<char, 16> buffer{};
+   auto reader = [&]() -> Task<void>
+   {
+      auto const count = co_await pipe.readEnd.read(loop, std::span(buffer));
+      if (count.has_value())
+	 got = *count;
+      done = true;
+   };
+   loop.schedule(reader());
+   // Empty pipe: the reader hit EAGAIN and is suspended, not errored.
+   EXPECT_FALSE(done);
+
+   char const data[] = "hi";
+   ASSERT_EQ(::write(pipe.writeEnd.get(), data, 2), 2);
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(got, 2);
+}
+
+TEST(IoFdTest, ReadReturnsZeroOnEof)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   bool done = false;
+   std::size_t got = 99;
+   std::array<char, 16> buffer{};
+   auto reader = [&]() -> Task<void>
+   {
+      auto const count = co_await pipe.readEnd.read(loop, std::span(buffer));
+      if (count.has_value())
+	 got = *count;
+      done = true;
+   };
+   // Close the write end: the read end reports EOF, not EAGAIN.
+   EXPECT_TRUE(pipe.writeEnd.close().has_value());
+   loop.schedule(reader());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(got, 0);
+}
+
+TEST(IoFdTest, WriteAllRoundTripsThroughDrainedPipe)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+   ASSERT_TRUE(pipe.writeEnd.valid());
+
+   // Larger than the pipe buffer so writeAll genuinely hits EAGAIN and waits.
+   std::string const payload(256U * 1024U, 'x');
+   bool writerDone = false;
+   bool writerOk = false;
+   auto writer = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.writeEnd.writeAll(loop, payload);
+      writerOk = result.has_value();
+      writerDone = true;
+   };
+   std::size_t received = 0;
+   bool readerDone = false;
+   auto reader = [&]() -> Task<void>
+   {
+      std::array<char, 4096> buffer{};
+      while (received < payload.size())
+      {
+	 auto const count = co_await pipe.readEnd.read(loop, std::span(buffer));
+	 if (!count.has_value() || *count == 0)
+	    break;
+	 received += *count;
+      }
+      readerDone = true;
+   };
+   loop.schedule(writer());
+   loop.schedule(reader());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(writerDone);
+   EXPECT_TRUE(writerOk);
+   EXPECT_TRUE(readerDone);
+   EXPECT_EQ(received, payload.size());
+}
+
+TEST(IoFdTest, WriteAllEmptyBufferSucceeds)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.writeEnd.valid());
+
+   bool done = false;
+   bool ok = false;
+   auto writer = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.writeEnd.writeAll(loop, std::span<char const>{});
+      ok = result.has_value();
+      done = true;
+   };
+   loop.schedule(writer());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_TRUE(ok);
+}
+
+TEST(IoFdTest, ReadOnExternallyClosedFdReportsEbadf)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   // Close the descriptor underneath the Fd so ::read fails with EBADF.
+   int const raw = pipe.readEnd.get();
+   EXPECT_EQ(pipe.readEnd.release(), raw);
+   ASSERT_EQ(::close(raw), 0);
+
+   bool done = false;
+   bool failed = false;
+   std::error_code error;
+   std::array<char, 16> buffer{};
+   auto reader = [&]() -> Task<void>
+   {
+      auto const count = co_await pipe.readEnd.read(loop, std::span(buffer));
+      if (!count.has_value())
+      {
+	 failed = true;
+	 error = count.error();
+      }
+      done = true;
+   };
+   loop.schedule(reader());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_TRUE(failed);
+   EXPECT_EQ(error, std::error_code(EBADF, std::system_category()));
+}
+
+TEST(IoFdTest, ReadUntilDelimiterAlreadyInScratch)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   std::string scratch = "a\nb";
+   bool done = false;
+   std::string record;
+   auto task = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.readEnd.readUntil(loop, scratch, "\n");
+      if (result.has_value())
+	 record = std::move(*result);
+      done = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(record, "a\n");
+   EXPECT_EQ(scratch, "b");
+}
+
+TEST(IoFdTest, ReadUntilTwoRecordsInOneWrite)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+   ASSERT_EQ(::write(pipe.writeEnd.get(), "one\ntwo\n", 8), 8);
+
+   std::string scratch;
+   bool done = false;
+   std::string first;
+   std::string second;
+   auto task = [&]() -> Task<void>
+   {
+      auto r1 = co_await pipe.readEnd.readUntil(loop, scratch, "\n");
+      if (r1.has_value())
+      {
+	 first = std::move(*r1);
+	 auto r2 = co_await pipe.readEnd.readUntil(loop, scratch, "\n");
+	 if (r2.has_value())
+	    second = std::move(*r2);
+      }
+      done = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(first, "one\n");
+   EXPECT_EQ(second, "two\n");
+   EXPECT_TRUE(scratch.empty());
+}
+
+TEST(IoFdTest, ReadUntilRecordSplitAcrossWrites)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+   ASSERT_EQ(::write(pipe.writeEnd.get(), "hel", 3), 3);
+
+   std::string scratch;
+   bool done = false;
+   std::string record;
+   auto task = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.readEnd.readUntil(loop, scratch, "\n");
+      if (result.has_value())
+	 record = std::move(*result);
+      done = true;
+   };
+   loop.schedule(task());
+   EXPECT_FALSE(done);
+
+   ASSERT_EQ(::write(pipe.writeEnd.get(), "lo\n", 3), 3);
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(record, "hello\n");
+   EXPECT_TRUE(scratch.empty());
+}
+
+TEST(IoFdTest, ReadUntilEofMidRecordReturnsRemainder)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+   ASSERT_EQ(::write(pipe.writeEnd.get(), "partial", 7), 7);
+   EXPECT_TRUE(pipe.writeEnd.close().has_value());
+
+   std::string scratch;
+   bool done = false;
+   std::string record;
+   auto task = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.readEnd.readUntil(loop, scratch, "\n");
+      if (result.has_value())
+	 record = std::move(*result);
+      done = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(record, "partial");
+   EXPECT_TRUE(scratch.empty());
+}
+
+TEST(IoFdTest, ReadUntilEofWithEmptyScratchReturnsEmptyString)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+   EXPECT_TRUE(pipe.writeEnd.close().has_value());
+
+   std::string scratch;
+   bool done = false;
+   bool ok = false;
+   std::string record;
+   auto task = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.readEnd.readUntil(loop, scratch, "\n");
+      if (result.has_value())
+      {
+	 ok = true;
+	 record = std::move(*result);
+      }
+      done = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_TRUE(ok);
+   EXPECT_TRUE(record.empty());
+   EXPECT_TRUE(scratch.empty());
+}
+
+TEST(IoFdTest, ReadUntilDelimiterViewIntoScratch)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   // Prime scratch so the delimiter view points into scratch itself; the
+   // view is copied up front, so nothing dangles and the record (including
+   // the delimiter) is extracted intact, without syscalls.
+   std::string scratch = "one\n";
+   bool done = false;
+   std::string record;
+   auto task = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.readEnd.readUntil(loop, scratch, std::string_view(scratch.data() + 3, 1));
+      if (result.has_value())
+	 record = std::move(*result);
+      done = true;
+   };
+   loop.schedule(task());
+   EXPECT_TRUE(loop.run().has_value());
+   EXPECT_TRUE(done);
+   EXPECT_EQ(record, "one\n");
+   EXPECT_TRUE(scratch.empty());
+}
+
+TEST(IoFdTest, ReadUntilLongRecordWithoutDelimiter)
+{
+   Loop loop;
+   Pipe pipe;
+   ASSERT_TRUE(pipe.readEnd.valid());
+
+   // 1 MiB with no delimiter, then EOF: the whole remainder must come
+   // back as the final record (also guards the search-offset logic).
+   std::size_t const size = 1024U * 1024U;
+   std::string payload(size, 'a');
+   payload.back() = 'z';
+   bool writeDone = false;
+   bool writeOk = false;
+   auto writer = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.writeEnd.writeAll(loop, payload);
+      writeOk = result.has_value();
+      // Close inside the task so the reader observes EOF during run().
+      if (writeOk)
+	 (void)pipe.writeEnd.close();
+      writeDone = true;
+   };
+   std::string scratch;
+   bool readDone = false;
+   bool readOk = false;
+   std::string record;
+   auto reader = [&]() -> Task<void>
+   {
+      auto const result = co_await pipe.readEnd.readUntil(loop, scratch, "\n");
+      if (result.has_value())
+      {
+	 readOk = true;
+	 record = std::move(*result);
+      }
+      readDone = true;
+   };
+   // Write and read concurrently; the writer closes its end on completion
+   // so the reader sees EOF and returns the delimiter-less remainder.
+   loop.schedule(writer());
+   loop.schedule(reader());
+   EXPECT_TRUE(loop.run().has_value());
+
+   EXPECT_TRUE(writeDone);
+   EXPECT_TRUE(writeOk);
+   EXPECT_TRUE(readDone);
+   EXPECT_TRUE(readOk);
+   EXPECT_EQ(record.size(), size);
+   EXPECT_EQ(record, payload);
+   EXPECT_TRUE(scratch.empty());
 }
 
 } // namespace

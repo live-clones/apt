@@ -48,7 +48,8 @@ auto Loop::schedule(Task<void> task) -> void
 
 Loop::WaitFd::WaitFd(Loop &loop, int fd, WaitFlags flags) noexcept : loop(&loop), fd(fd), flags(flags) {}
 
-auto Loop::WaitFd::await_ready() noexcept -> bool
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static) — awaiter protocol
+auto Loop::WaitFd::await_ready() const noexcept -> bool
 {
    return false; // always suspend
 }
