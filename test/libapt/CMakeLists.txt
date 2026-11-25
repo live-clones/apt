@@ -42,8 +42,9 @@ if (WITH_TESTS)
       set(HEGEL_REFLECTION OFF CACHE BOOL "" FORCE)
       FetchContent_Declare(
          hegel
-         GIT_REPOSITORY https://github.com/hegeldev/hegel-cpp.git
-         GIT_TAG v0.13.1
+         GIT_REPOSITORY https://github.com/hegeldev/hegel.git
+         GIT_TAG frontends/cpp/0.18.2
+         SOURCE_SUBDIR frontends/cpp
       )
       FetchContent_MakeAvailable(hegel)
    endif()
