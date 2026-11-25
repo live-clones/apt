@@ -42,8 +42,9 @@ if (WITH_TESTS)
       set(HEGEL_REFLECTION OFF CACHE BOOL "" FORCE)
       FetchContent_Declare(
          hegel
-         GIT_REPOSITORY https://github.com/hegeldev/hegel-cpp.git
-         GIT_TAG v0.13.1
+         GIT_REPOSITORY https://github.com/hegeldev/hegel.git
+         GIT_TAG frontends/cpp/0.18.2
+         SOURCE_SUBDIR frontends/cpp
       )
       FetchContent_MakeAvailable(hegel)
    endif()
@@ -54,6 +55,7 @@ if (WITH_TESTS)
    add_optional_compile_options(Wno-ctor-dtor-privacy)
    # Do not force override for gtest, gtest is missing override specifiers
    add_optional_compile_options(Wno-suggest-override)
+   add_optional_compile_options(Wno-unused-parameter)
 
    # Definition of the C++ files used to build the test binary - note that this
    # is expanded at CMake time, so you have to rerun cmake if you add or remove
