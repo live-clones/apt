@@ -25,14 +25,13 @@ namespace gs = hegel::generators;
 
 // A small alphabet makes colliding and near-equal versions (leading zeros,
 // tilde boundaries, epoch separators) frequent.
-static auto const versionGen = []()
-{
+auto const versionGen = [] {
    gs::TextParams p;
    p.min_size = 1;
    p.max_size = 12;
    p.alphabet = "0129ab~-.+:";
    return gs::text(p);
-}();
+};
 
 // Versions are C strings at some API boundaries: NUL bytes cannot occur.
 static std::string normalizeVersion(std::string version)
@@ -48,6 +47,7 @@ TEST(DebVersionHegelTest, ComparisonLaws)
       auto less = [](auto const &x, auto const &y) { return debVS.CmpVersion(x, y) < 0; };
       auto equal = [](auto const &x, auto const &y) { return debVS.CmpVersion(x, y) == 0; };
 
+      auto const versionGen = ::versionGen();
       auto const a = normalizeVersion(tc.draw("a", versionGen));
       auto const b = normalizeVersion(tc.draw("b", versionGen));
       auto const c = normalizeVersion(tc.draw("c", versionGen));

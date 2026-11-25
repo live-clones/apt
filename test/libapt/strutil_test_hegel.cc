@@ -29,14 +29,13 @@ static std::string asString(std::vector<uint8_t> const &bytes)
    return std::string(bytes.begin(), bytes.end());
 }
 
-static auto const badGen = []()
-{
+static auto const badGen = [] {
    gs::TextParams p;
    p.min_size = 0;
    p.max_size = 5;
    p.alphabet = " \"[]<>{}#!$";
    return gs::text(p);
-}();
+};
 
 TEST(StrUtilHegelTest, Base64Roundtrip)
 {
@@ -76,7 +75,7 @@ TEST(StrUtilHegelTest, QuoteStringRoundtrip)
       auto const input = asString(tc.draw("input", gs::binary({.min_size = 0, .max_size = 32})));
       // QuoteString always escapes '%' (and control and non-printable
       // characters), so the roundtrip holds for any set of Bad characters.
-      auto const bad = tc.draw("bad", badGen);
+      auto const bad = tc.draw("bad", badGen());
 
       EXPECT_EQ(input, DeQuoteString(QuoteString(input, bad.c_str()))); });
 }
