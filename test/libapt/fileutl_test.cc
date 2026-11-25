@@ -227,7 +227,7 @@ TEST(FileUtlTest, Glob)
 {
    std::vector<std::string> files;
    // normal match
-   files = Glob("*MakeLists.txt");
+   files = Glob(CMAKE_CURRENT_SOURCE_DIR "/*MakeLists.txt");
    EXPECT_EQ(1u, files.size());
 
    // not there
@@ -236,7 +236,7 @@ TEST(FileUtlTest, Glob)
    EXPECT_FALSE(_error->PendingError());
 
    // many matches (number is a bit random)
-   files = Glob("*.cc");
+   files = Glob(CMAKE_CURRENT_SOURCE_DIR "/*.cc");
    EXPECT_LT(10u, files.size());
 }
 TEST(FileUtlTest, GetTempDir)

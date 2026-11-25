@@ -1,33 +1,22 @@
 if (WITH_TESTS)
    set(PROJECT_TEST_LIBRARIES apt-pkg-object apt-private-object)
-   find_path(GTEST_SRCPATH src/gtest.cc
-      /usr/src/googletest/googletest
+
+   include(FetchContent)
+
+   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+   set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+
+   find_path(GTEST_SRCPATH CMakeLists.txt
       /usr/src/googletest
+      /usr/src/googletest/googletest
       /usr/src/gtest
    )
-   find_package(GTest)
-   set(GTEST_DEPENDENCIES)
 
-   if(NOT GTEST_FOUND AND EXISTS ${GTEST_SRCPATH})
-      include(ExternalProject)
-      ExternalProject_Add(gtest PREFIX ./gtest
-                                SOURCE_DIR ${GTEST_SRCPATH}
-                                INSTALL_COMMAND true)
-
-      link_directories(${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build)
-      link_directories(${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build/lib)
-
-      set(GTEST_LIBRARIES "-lgtest")
-      set(GTEST_DEPENDENCIES "gtest")
-      set(GTEST_FOUND TRUE)
-      find_path(GTEST_INCLUDE_DIRS NAMES gtest/gtest.h PATHS ${GTEST_SRCPATH}/include)
-
-      message(STATUS "Found GTest at ${GTEST_SRCPATH}, headers at ${GTEST_INCLUDE_DIRS}")
-   endif()
-
-   if (NOT GTEST_FOUND)
-      message(FATAL_ERROR "Could not find GTest")
-   endif()
+   FetchContent_Declare(googletest
+      SOURCE_DIR "${GTEST_SRCPATH}"
+      FIND_PACKAGE_ARGS CONFIG
+   )
+   FetchContent_MakeAvailable(googletest)
 
    # Hegel needs those, add them before adding it so it picks them up
    add_optional_compile_options(Wno-noexcept)
@@ -68,14 +57,14 @@ if (WITH_TESTS)
    endif()
    add_executable(lib${PROJECT_NAME}_test ${files})
    target_include_directories(lib${PROJECT_NAME}_test PRIVATE ${GTEST_INCLUDE_DIRS})
-   target_link_libraries(lib${PROJECT_NAME}_test ${GTEST_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_TEST_LIBRARIES} OpenSSL::Crypto ${CMAKE_DL_LIBS})
+   target_link_libraries(lib${PROJECT_NAME}_test GTest::gtest_main ${CMAKE_THREAD_LIBS_INIT} ${PROJECT_TEST_LIBRARIES} OpenSSL::Crypto ${CMAKE_DL_LIBS})
+   target_compile_definitions(libapt_test PRIVATE
+       CMAKE_CURRENT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/"
+   )
    if (WITH_HEGEL_TESTS)
       target_link_libraries(lib${PROJECT_NAME}_test hegel)
    endif()
-   if (GTEST_DEPENDENCIES)
-      add_dependencies(lib${PROJECT_NAME}_test ${GTEST_DEPENDENCIES})
-   endif()
-   add_test(NAME ${PROJECT_NAME}Tests
-            COMMAND lib${PROJECT_NAME}_test
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+   include(GoogleTest)
+   gtest_discover_tests(lib${PROJECT_NAME}_test)
+   set(CMAKE_CTEST_ARGUMENTS "-j" "--output-on-failure")
 endif()

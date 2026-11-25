@@ -195,7 +195,7 @@ TEST(URITest, AutoProxyTest)
    URI u0("http://www.debian.org:90/temp/test");
    URI u1("http://www.debian.org:91/temp/test");
 
-   _config->Set("Acquire::http::Proxy-Auto-Detect", "./apt-proxy-script");
+   _config->Set("Acquire::http::Proxy-Auto-Detect", CMAKE_CURRENT_SOURCE_DIR  "/apt-proxy-script");
 
    // Scenario 0: Autodetecting a simple proxy
    AutoDetectProxy(u0);
