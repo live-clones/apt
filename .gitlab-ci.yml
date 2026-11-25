@@ -13,7 +13,7 @@ cache:
 before_script:
     - rm -f /etc/dpkg/dpkg.cfg.d/excludes
     - apt-get update
-    - apt-get install --no-install-recommends -qq build-essential expect sudo ccache moreutils adduser git ca-certificates
+    - apt-get install --no-install-recommends -qq build-essential expect sudo ccache moreutils adduser git ca-certificates cargo
     - adduser --home /home/travis travis --quiet --disabled-login --gecos "" --shell /bin/sh
     - chmod 755 /root
     - chmod -R o+rwX $PWD
