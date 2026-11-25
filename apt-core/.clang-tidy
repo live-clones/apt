@@ -18,5 +18,38 @@ Checks: >
 CheckOptions:
   modernize-use-trailing-return-type.TransformLambdas: none
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
+  # Namespaces (e.g. APT, json, io, codec)
+  readability-identifier-naming.NamespaceCase: aNy_CasE # allows both APT and lowercase sub-namespaces (json, io)
+
+  # Types (PascalCase -> CamelCase in clang-tidy terminology)
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.ConceptCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+
+  # Enum Constants (e.g. IoStatus::WouldBlock, Error::MissingKey)
+  readability-identifier-naming.EnumConstantCase: CamelCase
+
+  # Functions & Methods (camelCase -> camelBack in clang-tidy terminology)
+  readability-identifier-naming.FunctionCase: camelBack
+  readability-identifier-naming.MethodCase: camelBack
+
+  # Variables & Parameters
+  readability-identifier-naming.VariableCase: camelBack
+  readability-identifier-naming.ParameterCase: camelBack
+  readability-identifier-naming.ConstantCase: camelBack
+  readability-identifier-naming.ConstexprVariableCase: camelBack
+
+  # Data Members (public struct fields have no suffix; private/protected get '_')
+  readability-identifier-naming.PublicMemberCase: camelBack
+  readability-identifier-naming.ProtectedMemberCase: camelBack
+  readability-identifier-naming.PrivateMemberCase: camelBack
+
+  # Macros
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
 HeaderFilterRegex: '.*/apt-core/.*'
 SystemHeaders: false

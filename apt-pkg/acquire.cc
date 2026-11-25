@@ -772,7 +772,7 @@ pkgAcquire::RunResult pkgAcquire::Run(int PulseInterval)
 
    // Run till all things have been acquired
    auto legacy = [&] -> APT::IO::Task<void>  {
-      while (ToFetch > 0 && WasStopped == false)
+      while (ToFetch > 0 && WasStopped == false && not WasCancelled)
       {
 	 std::vector<struct pollfd> pollfds;
 	 SetFds(pollfds);
@@ -824,39 +824,32 @@ pkgAcquire::RunResult pkgAcquire::Run(int PulseInterval)
 	 // true = a descriptor is ready, false = the timeout expired.
 	 bool const ready = co_await loop.poll(pollfds, timeout);
 
-	 if (ready == false)
-	 {
-	    // Timeout, notify the log class
-	    for (Worker *I = Workers; I != 0; I = I->NextAcquire)
-	       I->Pulse();
-	    if (Log != 0 && Log->Pulse(this) == false)
-	    {
-	       WasCancelled = true;
-	       break;
-	    }
-	    continue;
-	 }
-
-	 if (RunFds(pollfds) == false)
+	 if (ready && RunFds(pollfds) == false)
 	    break;
-
-	 // Data was processed; notify the log class if it asked for updates
-	 if (Log != 0 && Log->Update == true)
-	 {
-	    for (Worker *I = Workers; I != 0; I = I->NextAcquire)
-	       I->Pulse();
-	    if (Log->Pulse(this) == false)
-	    {
-	       WasCancelled = true;
-	       break;
-	    }
-	 }
       }
 
+      WasStopped=true;
       co_return;
    };
 
+   auto progress = [&] -> APT::IO::Task<void> {
+	 // Data was processed; notify the log class if it asked for updates
+	 while (not WasStopped && not WasCancelled)
+	 {
+	    if (Log != 0 && Log->Update == true)
+	    {
+	       for (Worker *I = Workers; I != 0; I = I->NextAcquire)
+		  I->Pulse();
+	       if (Log->Pulse(this) == false)
+	       {
+		  WasCancelled = true;
+	       }
+	    }
+	    co_await loop.sleep(std::chrono::milliseconds(100));
+	 }
+   };
    loop.schedule(legacy());
+   loop.schedule(progress());
    if (auto res = loop.run(); not res)
    {
       _error->Error("An error occured while polling the acquire descriptors: %s", res.error().message().c_str());
